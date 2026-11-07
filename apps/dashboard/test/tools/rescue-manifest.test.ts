@@ -2,7 +2,7 @@
  * Rescue manifest: what it computes from the Memories the page holds, and what its page shows and downloads.
  * Synthetic data only. Export links, zip paths and usernames carry canaries that must never reach a result, the page or the file.
  */
-import { insights, planMemories } from "@snappy-export/core";
+import { forgetMediaHandles, insights, planMemories } from "@snappy-export/core";
 import type { MemoryItem, ParsedExport } from "@snappy-export/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
@@ -13,7 +13,7 @@ import { COMMANDS, displayText } from "../../src/terminal/commands.ts";
 import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/rescue-manifest/copy.ts";
 import { descriptor } from "../../src/tools/rescue-manifest/index.ts";
-import { computeRescueManifest } from "../../src/tools/rescue-manifest/model.ts";
+import { computeRescueManifest, manifestText } from "../../src/tools/rescue-manifest/model.ts";
 import { view } from "../../src/tools/rescue-manifest/view.ts";
 import { collectCopy, RULES, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
@@ -101,6 +101,17 @@ describe("computeRescueManifest", () => {
     const { manifest } = computeRescueManifest(dataOf(real(mixed())));
     // Memory 5 shares memory 1's link, so the plan treats it as a repeat.
     expect(manifest.counts).toMatchObject({ items: 4, images: 2, videos: 1, unknown: 1, overlayFiles: 1, undated: 2, withSize: 0 });
+  });
+
+  it("lists the same overlay files after the import has forgotten the file handles", () => {
+    const parsed = base.latest as ParsedExport;
+    const forgotten = forgetMediaHandles(parsed);
+    const ws = { latest: forgotten, now: base.now, issues: [], parts: 3 };
+    const direct = computeRescueManifest(dataOf(stateWith({ ...ws, latest: parsed })));
+    const imported = computeRescueManifest(dataOf(stateWith(ws)));
+    expect(direct.manifest.counts.overlayFiles).toBeGreaterThan(0);
+    expect(imported.manifest.counts.overlayFiles).toBe(direct.manifest.counts.overlayFiles);
+    expect(manifestText(imported)).toBe(manifestText(direct));
   });
 
   it("reports repeats, and clears a date in the future with a note", () => {

@@ -11,6 +11,7 @@ import {
   forgetMediaHandles,
   formatStructureReport,
   inflateSource,
+  insights,
   inspectExport,
   listZipEntries,
   mergeParsedExports,
@@ -21,7 +22,7 @@ import {
   readZipEntry,
   validateExport,
 } from "../../src/index.ts";
-import type { ParsedExport, RandomAccessReader, StreamSource } from "../../src/index.ts";
+import type { MemoryItem, ParsedExport, RandomAccessReader, StreamSource } from "../../src/index.ts";
 import { crc32 } from "../../src/export/crc32.ts";
 import { enc } from "./helpers.ts";
 import { buildFixtureZip } from "./zip-fixture.ts";
@@ -329,13 +330,27 @@ describe("forgetMediaHandles", () => {
     issues: [],
   });
 
-  it("drops the media list, overlay paths, paths and links, keeping counts, sizes and parts", () => {
+  it("drops the media list, paths and links, keeping counts, sizes and parts", () => {
     const out = forgetMediaHandles(parsed());
     expect(out.bundledMedia).toBeUndefined();
     const text = JSON.stringify(out);
-    for (const secret of ["memories/", "AAAAAAAA", "example.invalid", "token=secret", "overlay"]) expect(text).not.toContain(secret);
+    for (const secret of ["memories/", "AAAAAAAA", "example.invalid", "token=secret", "x-overlay"]) expect(text).not.toContain(secret);
     expect(out.memories[0]).toMatchObject({ id: "a", partIndex: 2, sizeBytes: 10 });
-    expect(out.memories[0]?.overlayPaths).toBeUndefined();
+  });
+
+  it("keeps how many overlays an item has, each with only its plain extension", () => {
+    const input = parsed();
+    input.memories[0] = { ...(input.memories[0] as MemoryItem), overlayPaths: ["memories/ZQSECRET-overlay.PNG", "memories/odd.name.toolongext", "memories/third.webp"], overlayParts: [3, 3, 4] };
+    const out = forgetMediaHandles(input);
+    const paths = out.memories[0]?.overlayPaths as string[];
+    expect(paths).toHaveLength(3);
+    expect(paths.map((p) => /(\.[a-z0-9]+)?$/.exec(p)?.[1] ?? "")).toEqual([".png", "", ".webp"]);
+    expect(JSON.stringify(out)).not.toMatch(/ZQSECRET|memories\/|toolongext/);
+    expect(out.memories[0]?.overlayParts).toBeUndefined();
+    expect(forgetMediaHandles(out)).toEqual(out);
+    // The manifest names the same overlay files as before the handles were forgotten.
+    const entries = (m: ParsedExport) => insights.rescueManifest.recordsFromPlan(planMemories(m.memories, { layout: "year-month" }).entries);
+    expect(entries(out)).toEqual(entries(input));
   });
 
   it("keeps what the plan needs: two items with one link are still one duplicate, and two files stay two", () => {

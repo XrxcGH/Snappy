@@ -29,7 +29,11 @@ describe("importing the parts of an export", () => {
     // Pairing is counted, but where each file sits and what it is called is not kept: nothing here opens a file.
     expect(latest?.bundledMedia).toBeUndefined();
     expect(new Set(latest?.memories.map((m) => m.partIndex).filter((p) => p !== undefined))).toEqual(new Set([2, 3]));
-    expect(latest?.memories.some((m) => m.overlayPaths !== undefined || m.overlayParts !== undefined)).toBe(false);
+    expect(latest?.memories.some((m) => m.overlayParts !== undefined)).toBe(false);
+    // Overlays stay as a count with a plain extension, so the rescue manifest can name them like the command does.
+    const overlays = latest?.memories.flatMap((m) => m.overlayPaths ?? []) ?? [];
+    expect(overlays.length).toBe(latest?.memoriesPairing?.overlays);
+    for (const o of overlays) expect(o).toMatch(/^#file-\d+(\.[a-z0-9]{1,5})?$/);
     expect(JSON.stringify(latest?.memories)).not.toMatch(/memories\/|\.jpg|\.mp4|https?:/);
     expect(store.get().real.ledger.snapshots).toHaveLength(1);
   });
