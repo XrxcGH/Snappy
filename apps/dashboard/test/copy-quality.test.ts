@@ -16,6 +16,7 @@ import { Scope, runInScope } from "../src/reactive.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
+import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
 
 vi.mock("snappy:licenses", () => ({ licenses: [{ name: "Example", license: "MIT", copyright: "Example authors", text: "License text." }] }));
@@ -48,7 +49,7 @@ function collect(value: unknown, at: string, computed: boolean, out: Entry[] = [
 const entries = collect(copy, "", false).filter((e) => e.text.trim() !== "");
 
 /** Command lines and similar code: straight quotes and lowercase starts are right here. */
-const CODE_PATHS = new Set(["memories.rescueCommand", "guide.shapeCommand"]);
+const CODE_PATHS = new Set<string>();
 /** The independence line is fixed, word for word (docs/BRAND.md). */
 const FIXED_LINES = new Set(["brand.nonAffiliation"]);
 /** Written to be joined to a number or name, so it ends with a space on purpose. */
@@ -156,7 +157,7 @@ describe("maximum lengths", () => {
     const labels = [
       copy.common.copy, copy.common.keep, copy.common.unkeep, copy.common.openInSnapchat, copy.common.addExport, copy.common.openSettings, copy.common.openGuide,
       copy.start.choose, copy.start.sampleButton, copy.start.unlockButton, copy.start.sessionOnlyAction, copy.overview.emptyAction, copy.overview.healthMemoriesLink,
-      copy.cleanup.saveList, copy.cleanup.copyList, copy.cleanup.clearChecks, copy.memories.capUpdate, copy.memories.copyCommand, copy.guide.addLink,
+      copy.cleanup.saveList, copy.cleanup.copyList, copy.cleanup.clearChecks, copy.memories.capUpdate, copy.terminal.runButton, copy.terminal.copyOutputButton, copy.guide.addLink,
       copy.settings.setButton, copy.settings.changeButton, copy.settings.deleteButton, copy.settings.deleteConfirm, copy.settings.deleteCancel, copy.shell.lockNow, copy.shell.clearSampleShort,
     ];
     for (const label of labels) {
@@ -205,8 +206,10 @@ describe("words in the source", () => {
   it("keeps the stylesheet and the page free of the old command name", () => {
     const everything = [...walk(srcDir)].filter((f) => /\.(ts|html|css)$/.test(f)).map((f) => readFileSync(f, "utf8")).join("\n");
     expect(everything).not.toMatch(/npm run snappy(?!-export)\b/);
-    expect(everything).toMatch(/npm run snappy-export -- inspect/);
-    expect(everything).toMatch(/npm run snappy-export -- memories/);
+    // The command people copy starts with one prefix constant; the commands are words after it.
+    expect(everything).toMatch(/CLI_PREFIX = "npm run snappy-export --"/);
+    expect(everything).toMatch(/\["inspect", exportSlot\(SHAPE_EXAMPLE\)\]/);
+    expect(everything).toMatch(/\["memories", exportSlot\(\), "--out", outSlot\]/);
     expect(root).toBeTruthy();
   });
 });
@@ -247,13 +250,13 @@ function render(name: string, state: State): FakeElement {
   const view = views[name];
   if (!view) throw new Error(`no view ${name}`);
   const store = createStore(state);
-  return runInScope(new Scope(true), () => view({ store, actions: {} as Actions })) as unknown as FakeElement;
+  return runInScope(new Scope(true), () => view({ store, actions: {} as Actions, terminal: testTerminal() })) as unknown as FakeElement;
 }
 
 describe("rendered controls", () => {
   /** Buttons that name a choice rather than an action. */
   const CHOICES = new Set(["Guided removal", "Dark", "Light", "Match device", "Menu"]);
-  const VERBS = new Set(["Add", "Change", "Choose", "Clear", "Copy", "Delete", "Keep", "Lock", "Open", "Review", "Save", "Seal", "Set", "Show", "Try", "Undo", "Unlock", "Update", "Use", "Cancel", "Switch"]);
+  const VERBS = new Set(["Add", "Change", "Choose", "Clear", "Copy", "Delete", "Keep", "Lock", "Open", "Review", "Run", "Save", "Seal", "Set", "Show", "Try", "Undo", "Unlock", "Update", "Use", "Cancel", "Switch"]);
 
   const controls = (state: State): { view: string; text: string }[] =>
     VIEW_IDS.flatMap((view) => {

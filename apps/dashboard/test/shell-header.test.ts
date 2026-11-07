@@ -19,6 +19,7 @@ import type { Router } from "../src/router.ts";
 import { createStore } from "../src/store.ts";
 import type { Store } from "../src/store.ts";
 import type { VaultStore } from "../src/vault.ts";
+import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
 
 vi.mock("snappy:licenses", () => ({ licenses: [{ name: "Example", license: "MIT", copyright: "Example authors", text: "License text." }] }));
@@ -70,7 +71,7 @@ function openPage(state: State = initialState()): Page {
   // The page ships data-theme="dark" in its HTML; the fake page starts the same way.
   html.setAttribute("data-theme", "dark");
   followTheme(store);
-  const ctx = { store, actions };
+  const ctx = { store, actions, terminal: testTerminal() };
   const shell = buildShell(root as unknown as HTMLElement, ctx);
   const router = startRouter(shell.outlet, ctx, shell.onRoute);
   const go = (id: RouteId): void => {

@@ -6,7 +6,7 @@ import { h, setVar } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatBytes, formatCount, formatMonth, formatPercent, gibToBytes } from "../format.ts";
 import { button, routeLink } from "../components/button.ts";
-import { codeBlock } from "../components/codeBlock.ts";
+import { commandBlock } from "../components/commandBlock.ts";
 import { emptyState, pageHeader, section, slideIn, stat, statGrid, subsection } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pairingFacts } from "../pairing-facts.ts";
@@ -41,7 +41,7 @@ function render(ctx: ViewContext, a: Analysis, capGiB: number): Child[] {
     ),
     pairingSection(a),
     storageSection(ctx, plan.meter, capGiB),
-    rescueSection(),
+    rescueSection(ctx),
   ];
 }
 
@@ -130,11 +130,12 @@ function capForm(ctx: ViewContext, capGiB: number): HTMLElement {
   return form;
 }
 
-function rescueSection(): HTMLElement {
+function rescueSection(ctx: ViewContext): HTMLElement {
   return section(
     memories.rescueHeading,
     h("p", {}, memories.rescueBody),
     h("p", { class: "label" }, memories.rescueCommandLabel),
-    codeBlock(memories.rescueCommand, { key: "copy-command" }),
+    commandBlock(ctx, "memories-preview", { key: "memories-preview" }),
+    commandBlock(ctx, "memories-rescue", { key: "memories-rescue" }),
   );
 }

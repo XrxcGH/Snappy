@@ -42,7 +42,8 @@ function color(token: string, theme: Theme): string {
 function tokenOf(className: string): string | undefined {
   for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const selectors = (m[1] ?? "").split(",").map((s) => s.trim());
-    if (!selectors.includes(`.${className}`)) continue;
+    // A rule may be scoped (orange only inside the Memories area): its last part must be the class.
+    if (!selectors.some((s) => s === `.${className}` || s.endsWith(` .${className}`))) continue;
     const found = /(?:^|[;\s])color:\s*var\(--([a-z-]+)\)/.exec(m[2] ?? "")?.[1];
     if (found !== undefined) return found;
   }

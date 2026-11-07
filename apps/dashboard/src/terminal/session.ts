@@ -26,6 +26,8 @@ export interface TerminalSession {
   outCap: number;
   /** False when this browser cannot start a helper. */
   supported: boolean;
+  /** Where the width of the output area comes from: the block that is about to run says so. */
+  columnsFrom(source: () => number): void;
 }
 
 export interface SessionOptions {
@@ -60,6 +62,7 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
   const coarse = options.coarse ?? isCoarse();
   const outCap = coarse ? OUT_CAP_TOUCH : OUT_CAP_DESKTOP;
   const picked = createPickedFiles();
+  let source: () => number = options.columns ?? (() => 80);
   let spawnFailed = false;
   const runner = createRunner({
     spawn: () => {
@@ -83,7 +86,7 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     runner,
     getFiles: options.getFiles ?? (() => picked.files()),
     announce: options.announce ?? speak,
-    columns: options.columns ?? (() => 80),
+    columns: () => source(),
     beforeStoreRun: options.beforeStoreRun ?? (async () => undefined),
     afterStoreRun: options.afterStoreRun ?? (async () => undefined),
     workerAvailable: () => !spawnFailed,
@@ -92,6 +95,9 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     controller,
     picked,
     outCap,
+    columnsFrom(next) {
+      source = next;
+    },
     get supported() {
       return !spawnFailed;
     },

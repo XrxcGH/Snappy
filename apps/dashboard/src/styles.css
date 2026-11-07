@@ -592,16 +592,16 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 }
 .code { padding: var(--space-3) var(--space-4); background: var(--surface-sunken); border-radius: var(--radius-md); overflow-x: auto; font-size: var(--text-14); white-space: pre; }
 .code-wrap { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow-y: auto; }
-/* A command: the code scrolls sideways inside the frame, and a compact Copy button sits at its top right. The code
-   ends before the button (it never runs under it), and fades at its right edge to show there is more to scroll to. */
-.command { display: grid; gap: var(--space-2); }
-.code-block { grid-template-columns: minmax(0, 1fr) auto; gap: 0; align-items: start; background: var(--surface-sunken); border-radius: var(--radius-md); }
-.code-block .code {
-  background: transparent; padding-inline-end: var(--space-6);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
-  mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
-}
-.code-copy { margin: var(--space-1); padding-inline: var(--space-3); justify-self: end; }
+/* A command: a line saying what it does with Copy and Run on its right, then the code, which scrolls sideways
+   inside the frame and never runs under the buttons (they are above it, not over it). Under the code: the file
+   chip, why Run cannot start yet, and the output panel. */
+.command { display: grid; gap: var(--space-3); }
+.code-block { padding: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.command-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); }
+.command-title { margin: 0; flex: 1 1 12rem; min-width: 0; color: var(--text-muted); font-size: var(--text-14); font-weight: 600; }
+.command-actions { display: flex; gap: var(--space-2); margin-inline-start: auto; }
+.command > * { min-width: 0; }
+.btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
 /* Terminal output. The ground is the sunken surface; every color comes from a token, and each class below is
    checked against that ground in both themes by test/ansi-contrast.test.ts. Nothing here moves, so there is
    nothing to switch off for reduced motion. */
@@ -614,7 +614,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .t-trimmed { color: var(--text-muted); font-style: italic; }
 .t-probe { position: absolute; visibility: hidden; white-space: pre; }
 .ansi-violet { color: var(--accent-fg); }
-.ansi-orange { color: var(--orange-fg); }
+/* Orange is the Memories rescue color: output shows it only inside that area. Elsewhere it reads as plain text. */
+.cat-memories .ansi-orange { color: var(--orange-fg); }
 .ansi-ok { color: var(--success-fg); }
 .ansi-warn { color: var(--warning-fg); }
 .ansi-danger { color: var(--danger-fg); }

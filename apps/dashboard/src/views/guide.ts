@@ -1,12 +1,12 @@
 import { guide, routes } from "../copy.ts";
 import { h } from "../dom.ts";
 import { routeLink } from "../components/button.ts";
-import { codeBlock } from "../components/codeBlock.ts";
+import { commandBlock } from "../components/commandBlock.ts";
 import { dataTable } from "../components/dataTable.ts";
 import { pageHeader, section, stepCards } from "../components/layout.ts";
 import type { View } from "./context.ts";
 
-export const guideView: View = () =>
+export const guideView: View = (ctx) =>
   h(
     "div",
     { class: "view" },
@@ -17,6 +17,14 @@ export const guideView: View = () =>
     ),
     section(guide.rangeHeading, h("p", {}, guide.rangeBody)),
     section(guide.afterHeading, stepCards(guide.afterSteps)),
-    section(guide.shapeHeading, h("p", {}, guide.shapeBody), codeBlock(guide.shapeCommand, { key: "copy-inspect" })),
+    section(guide.shapeHeading, h("p", {}, guide.shapeBody), commandBlock(ctx, "inspect", { key: "guide-inspect" })),
+    section(
+      guide.tryHeading,
+      h("p", {}, guide.tryBody),
+      commandBlock(ctx, "help", { key: "guide-help" }),
+      commandBlock(ctx, "demo-run", { key: "guide-demo" }),
+      commandBlock(ctx, "analyze-save", { key: "guide-analyze" }),
+      commandBlock(ctx, "ledger-status", { key: "guide-ledger" }),
+    ),
     section(guide.storingHeading, h("p", {}, guide.storingBody), h("p", {}, routeLink("start", guide.addLink, "primary"))),
   );

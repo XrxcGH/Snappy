@@ -239,8 +239,30 @@ describe("built file: background reader", () => {
 
   it("starts that code only from a blob: URL, and the page has no other way to load a script", () => {
     expect(html).toMatch(/createObjectURL\(new Blob\(\[/);
-    expect(html).not.toMatch(/importScripts|new SharedWorker/);
+    // The command helper names these only in a list of features it removes; nothing on the page calls them.
+    expect(html).not.toMatch(/importScripts\s*\(|new\s+SharedWorker/);
     expect(directive("script-src")).toMatch(/^script-src 'sha256-[A-Za-z0-9+/=]+' 'sha256-[A-Za-z0-9+/=]+'$/);
+  });
+});
+
+describe("built file: the commands live in the helper, not on the page", () => {
+  const marker = "Snappy stopped unexpectedly";
+  const count = (text: string): number => text.split(marker).length - 1;
+
+  it("carries the helper's code as text inside the one script, and the commands appear nowhere else", () => {
+    expect(count(terminalWorker)).toBe(1);
+    // Every occurrence on the page is inside the helper's own text: the page itself has no command table.
+    expect(count(html)).toBe(count(terminalWorker));
+    expect(html).toContain("Usage: snappy-export");
+    expect((html.match(/<script/g) ?? []).length).toBe(2);
+  });
+
+  it("keeps the page under the size limit with the helper inside, and records how much it grew", () => {
+    const bytes = Buffer.byteLength(html);
+    // Measured when the helper was added: the page was 488 KB before and about 700 KB after. A jump past
+    // a quarter more than that means something large came in by accident.
+    expect(bytes).toBeLessThan(900_000);
+    expect(Buffer.byteLength(terminalWorker)).toBeLessThan(260_000);
   });
 });
 

@@ -4,7 +4,11 @@ import { browserImport } from "./browser-import.ts";
 import { initialState } from "./reducer.ts";
 import { startRouter } from "./router.ts";
 import { createStore } from "./store.ts";
+import { createTerminalSession } from "./terminal/session.ts";
+import { terminalWorkerSource } from "snappy:terminal-worker";
 import { browserVault, readThemePreference, writeThemePreference } from "./vault.ts";
+import { spawnBlobChannel } from "./worker-runner.ts";
+import type { ToWorker } from "./terminal/protocol.ts";
 import type { ViewContext } from "./views/context.ts";
 
 // The page ships with data-theme="dark" on <html>, so the first paint is dark with no script at
@@ -25,7 +29,13 @@ function boot(): void {
     saveTheme: writeThemePreference,
     runImport: browserImport,
   });
-  const ctx: ViewContext = { store, actions };
+  // The command blocks: each Run starts its own helper, from the same blob: rule as the background reader.
+  const terminal = createTerminalSession({
+    spawn: () => spawnBlobChannel<ToWorker, unknown>(terminalWorkerSource),
+    vault: browserVault,
+    vaultPhase: () => store.get().vault.phase,
+  });
+  const ctx: ViewContext = { store, actions, terminal };
 
   // Restore a remembered theme into the store first (dark when nothing was remembered), so the
   // header toggle and the Settings control start from the same state as the page.

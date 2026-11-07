@@ -2,10 +2,13 @@ import type { Actions } from "../actions.ts";
 import type { RouteId } from "../copy.ts";
 import type { State } from "../reducer.ts";
 import type { Store } from "../store.ts";
+import type { TerminalSession } from "../terminal/session.ts";
 
 export interface ViewContext {
   store: Store;
   actions: Actions;
+  /** The command blocks: one session for the whole page. */
+  terminal: TerminalSession;
 }
 
 export type View = (ctx: ViewContext) => HTMLElement;

@@ -27,7 +27,7 @@ describe("orange stays secondary", () => {
     const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({ selector: (m[1] ?? "").trim(), body: m[2] ?? "" }));
     const users = rules.filter((r) => /--orange-|--cat-memories-/.test(r.body));
     expect(users.length).toBeGreaterThan(0);
-    for (const rule of users) expect(rule.selector, `rule using orange: ${rule.selector}`).toMatch(/^\.cat-memories$|^\.g-orange$/);
+    for (const rule of users) expect(rule.selector, `rule using orange: ${rule.selector}`).toMatch(/^\.cat-memories$|^\.cat-memories \.ansi-orange$|^\.g-orange$/);
   });
 
   it("is never named in an accent, link, focus, selection or primary-button rule", () => {

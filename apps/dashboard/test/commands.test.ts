@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COMMAND_OPTIONS } from "../../cli/src/cli.ts";
-import { guide, memories, terminal } from "../src/copy.ts";
+import { terminal } from "../src/copy.ts";
 import { CLI_PREFIX, COMMANDS, COMMAND_IDS, OUT_FOLDER, bindArgv, displayText } from "../src/terminal/commands.ts";
 import type { CommandSpec } from "../src/terminal/commands.ts";
 import { checkArgv } from "../src/terminal/policy.ts";
@@ -8,8 +8,8 @@ import { assignInputNames } from "../src/terminal/input-names.ts";
 
 describe("what Copy shows", () => {
   it("is exactly the text the Export guide and Memories pages showed before", () => {
-    expect(displayText(COMMANDS.inspect)).toBe(guide.shapeCommand);
-    expect(displayText(COMMANDS["memories-rescue"])).toBe(memories.rescueCommand);
+    expect(displayText(COMMANDS.inspect)).toBe("npm run snappy-export -- inspect mydata~1234567890123.zip");
+    expect(displayText(COMMANDS["memories-rescue"])).toBe("npm run snappy-export -- memories \"<your export folder>\" --out \"<folder for rescued Memories>\"");
   });
 
   it("starts with the one prefix constant and quotes words with spaces or angle brackets", () => {

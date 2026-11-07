@@ -16,6 +16,7 @@ import { Scope, runInScope } from "../src/reactive.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
+import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
 
 // The license texts come from a virtual module the build provides.
@@ -63,7 +64,7 @@ function render(name: string, state: State): FakeElement {
   const view = views[name];
   if (!view) throw new Error(`no view ${name}`);
   const store = createStore(state);
-  return runInScope(new Scope(true), () => view({ store, actions: {} as Actions })) as unknown as FakeElement;
+  return runInScope(new Scope(true), () => view({ store, actions: {} as Actions, terminal: testTerminal() })) as unknown as FakeElement;
 }
 
 const has = (el: FakeElement, cls: string): boolean => el.classList.contains(cls);

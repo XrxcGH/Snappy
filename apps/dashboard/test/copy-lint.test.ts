@@ -38,6 +38,7 @@ import { Scope, runInScope } from "../src/reactive.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
+import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, FakeText, installFakeDom } from "./fake-dom.ts";
 import type { FakeNode } from "./fake-dom.ts";
 
@@ -91,7 +92,7 @@ const ACRONYMS = new Set(["JSON", "HTML", "ZIP", "CSV", "UTF", "AES", "GCM", "PB
  * Strings that are code, commands or file names rather than prose. They keep straight quotes and
  * are exempt from the prose rules (but not from the stale-name rule).
  */
-const CODE_PATHS = [/^guide\.tickKinds/, /^memories\.rescueCommand$/, /^guide\.shapeCommand$/, /^cleanup\.csv/, /^brand\.version$/, /^privacy\.policyLabel$/, /\.csvFile$/];
+const CODE_PATHS = [/^guide\.tickKinds/, /^cleanup\.csv/, /^brand\.version$/, /^privacy\.policyLabel$/, /\.csvFile$/];
 
 /**
  * Strings that are fixed on purpose and exempt from note and text limits: the independence line is
@@ -337,7 +338,7 @@ function classify(keys: string[], text = ""): Kind {
 /** Copy keys whose strings are buttons or button-like links, by name, where the key itself does not say so. */
 const BUTTON_KEYS = new Set([
   "common.copy", "common.openInSnapchat", "common.keep", "common.unkeep", "common.openSettings", "common.openGuide", "common.addExport", "common.addAnotherExport",
-  "start.choose", "start.sampleButton", "cleanup.saveList", "cleanup.copyList", "cleanup.done", "cleanup.clearChecks", "memories.capUpdate", "memories.copyCommand",
+  "start.choose", "start.sampleButton", "cleanup.saveList", "cleanup.copyList", "cleanup.done", "cleanup.clearChecks", "memories.capUpdate",
   "shell.clearSample", "shell.lockNow", "overview.open", "overview.emptyAction", "settings.setButton", "settings.changeButton", "settings.deleteButton", "settings.deleteCancel",
 ]);
 /** Page text that is longer than a note by design (an explainer paragraph). */
@@ -434,7 +435,7 @@ function render(name: string, state: State): FakeElement {
   const view = views[name];
   if (!view) throw new Error(`no view ${name}`);
   const store = createStore(state);
-  return runInScope(new Scope(true), () => view({ store, actions: {} as Actions })) as unknown as FakeElement;
+  return runInScope(new Scope(true), () => view({ store, actions: {} as Actions, terminal: testTerminal() })) as unknown as FakeElement;
 }
 
 const BLOCK_TAGS = new Set(["p", "div", "ul", "ol", "li", "section", "table", "thead", "tbody", "tr", "td", "th", "details", "summary", "header", "footer", "main", "nav", "h1", "h2", "h3", "h4", "dl", "dt", "dd", "form", "fieldset", "legend", "caption", "pre", "button", "label", "a", "select", "option"]);

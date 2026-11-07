@@ -8,6 +8,7 @@ import * as copy from "../src/copy.ts";
 import { pairingFacts } from "../src/pairing-facts.ts";
 import { runImport } from "../src/import-pipeline.ts";
 import { partFiles } from "./export-fixtures.ts";
+import { COMMANDS, displayText } from "../src/terminal/commands.ts";
 
 const NO_YIELD = async (): Promise<void> => {};
 
@@ -94,9 +95,11 @@ describe("Memories pairing wording", () => {
   });
 
   it("shows the exact command with the person's folder as a placeholder, never a real path", () => {
-    expect(copy.memories.rescueCommand).toBe('npm run snappy-export -- memories "<your export folder>" --out "<folder for rescued Memories>"');
+    const command = displayText(COMMANDS["memories-rescue"]);
+    expect(command).toBe('npm run snappy-export -- memories "<your export folder>" --out "<folder for rescued Memories>"');
     expect(copy.memories.rescueCommandLabel).toMatch(/placeholders/);
-    expect(copy.memories.rescueCommand).not.toMatch(/[A-Z]:\\|\/home\/|\/Users\//);
+    expect(copy.memories.rescueCommandLabel).toMatch(/press Run/);
+    expect(command).not.toMatch(/[A-Z]:\\|\/home\/|\/Users\//);
   });
 
   it("explains the background reader and the one policy line it needs", () => {

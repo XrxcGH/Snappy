@@ -333,8 +333,6 @@ export const memories = {
   capError: "Enter a number from 0.1 to 10,000.",
   capSet: "Storage cap updated.",
   capUpdate: "Update cap",
-  copyCommand: "Copy command",
-  commandCopied: "Command copied.",
   meterName: "Known size",
   meterText: (used: string, cap: string, percent: string) => `${used} of ${cap} (${percent})`,
   meterLabel: "Memories size compared with the storage cap",
@@ -360,8 +358,7 @@ export const memories = {
   pairingLinksEmpty: "This export has no download links. Snapchat now puts the files inside the ZIP parts.",
   rescueHeading: "Rescue your files",
   rescueBody: "The Snappy command line tool copies your Memories into year and month folders. It restores dates and skips likely duplicates.",
-  rescueCommandLabel: "Run this in a terminal, in the Snappy folder. Replace both placeholders with your own folders.",
-  rescueCommand: 'npm run snappy-export -- memories "<your export folder>" --out "<folder for rescued Memories>"',
+  rescueCommandLabel: "Copy a command to run in a terminal, in the Snappy folder, and replace its placeholders. Or press Run to try it here.",
 };
 
 export const guide = {
@@ -388,8 +385,9 @@ export const guide = {
     "Never send these files to anyone, including Snappy’s developers. Delete them when you are done.",
   ],
   shapeHeading: "Share the shape, never the contents",
-  shapeBody: "Run this in the Snappy folder if an export will not read. It prints only names and counts.",
-  shapeCommand: "npm run snappy-export -- inspect mydata~1234567890123.zip",
+  shapeBody: "Run this if an export will not read. It prints only names and counts.",
+  tryHeading: "Try the command line",
+  tryBody: "Press Run to try a command here, or copy it to run in a terminal, in the Snappy folder.",
   storingHeading: "Saved history",
   storingBody: "Snappy can keep past friend lists to spot who disappeared. They hold usernames, so seal them with a passphrase.",
   addLink: "Add export",
@@ -423,16 +421,17 @@ export const privacy = {
   networkHeading: "Network",
   networkOk: "This page cannot connect to the internet. Its security policy blocks every connection.",
   networkUnknown: "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",
-  workerBody: "A background helper reads large exports. It cannot connect anywhere either.",
+  workerBody: "Background helpers read exports and run commands. They cannot connect anywhere either.",
   policyHeading: "Technical details",
   networkDetail: "To check, open your browser’s developer tools. The network tab stays empty.",
   policyLabel: "Security policy in this page",
-  policyWorker: "A background helper starts under the worker-src blob: rule. If blocked, Snappy reads on the page instead.",
+  policyWorker: "Background helpers start under the worker-src blob: rule. If blocked, Snappy reads on the page instead, and Run is unavailable.",
   sealHeading: "Saved data",
   sealBody: [
     "By default Snappy keeps your results in memory only. Closing the tab clears them.",
     "With a passphrase, Snappy saves your friend history and keep list in this browser, encrypted.",
     "Snappy never stores your passphrase. If you forget it, the saved data cannot be recovered.",
+    "A passphrase typed into a command here is kept in memory only until the page closes.",
   ],
   sealTech: "The passphrase becomes a key with PBKDF2 (600,000 rounds). The data is sealed with AES-256-GCM.",
   keepHeading: "What the saved data holds",
@@ -505,6 +504,8 @@ export const vaultMessages = {
  * The in-app terminal: command blocks, the output panel and the prompts. One-line labels and short
  * notes, like the rest of the interface. Button labels are a verb plus a short noun.
  */
+const lowerFirst = (text: string): string => `${text.charAt(0).toLowerCase()}${text.slice(1)}`;
+
 export const terminal = {
   /** The muted one-line title above each command, by command. */
   titles: {
@@ -531,11 +532,11 @@ export const terminal = {
   saveAllButton: "Save all",
   clearOutButton: "Clear files",
   /** Accessible names. Each starts with the visible label. */
-  copyFor: (title: string) => `Copy command: ${title}`,
-  runFor: (title: string) => `Run command: ${title}`,
-  stopFor: (title: string) => `Stop command: ${title}`,
+  copyFor: (title: string) => `Copy command: ${lowerFirst(title)}`,
+  runFor: (title: string) => `Run command: ${lowerFirst(title)}`,
+  stopFor: (title: string) => `Stop command: ${lowerFirst(title)}`,
   saveFileFor: (name: string) => `Save ${name}`,
-  panelLabelFor: (title: string) => `Output of ${title}`,
+  panelLabelFor: (title: string) => `Output of ${lowerFirst(title)}`,
   logLabel: "Command output",
   filesChosen: (n: number) => (n === 1 ? "1 file chosen" : `${n} files chosen`),
   /** Why Run cannot start yet, or at all. */
