@@ -1,0 +1,6 @@
+/* Blocked and ignored review: the people lists are one quiet card with hairlines between rows. Tokens only. */
+.tool-blocked-review .review-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
+.tool-blocked-review .review-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-4); padding: var(--space-3) var(--space-4); min-height: var(--target-min-pointer); border-bottom: 1px solid var(--border); }
+.tool-blocked-review .review-row:last-child { border-bottom: 0; }
+.tool-blocked-review .review-row:focus-visible { outline-offset: -2px; }
+.tool-blocked-review .review-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); min-width: 0; font-size: var(--text-14); color: var(--text-muted); font-variant-numeric: tabular-nums; }
