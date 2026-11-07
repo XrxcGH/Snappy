@@ -19,6 +19,7 @@ import { repliesCommand } from "./commands/replies.ts";
 import { replySpeedCommand } from "./commands/reply-speed.ts";
 import { rescueCommand } from "./commands/rescue.ts";
 import { safetyCommand } from "./commands/safety.ts";
+import { sinceCommand } from "./commands/since.ts";
 import { storageCommand } from "./commands/storage.ts";
 import { yearCommand } from "./commands/year.ts";
 import type { InsightCommand } from "./insights-command.ts";
@@ -41,5 +42,6 @@ export const INSIGHT_COMMANDS: readonly InsightCommand[] = [
   rescueCommand,
   safetyCommand,
   privacyCommand,
+  sinceCommand,
   yearCommand,
 ];
