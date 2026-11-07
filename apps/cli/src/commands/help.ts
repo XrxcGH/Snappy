@@ -1,5 +1,7 @@
 /** snappy-export help: the overview, or one command's usage. */
 import { CliError } from "../errors.ts";
+import { INSIGHT_COMMANDS } from "../insight-commands.ts";
+import type { InsightGroup } from "../insights-command.ts";
 import type { Io } from "../io.ts";
 import { NOT_AFFILIATED, PRIVACY_IMPORT } from "../render.ts";
 import { createTerm } from "../term.ts";
@@ -18,12 +20,47 @@ const USAGE: Record<string, string> = {
   ledger: LEDGER_USAGE,
   memories: MEMORIES_USAGE,
   demo: DEMO_USAGE,
+  ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, c.usage])),
 };
+
+/** One line of the overview. A summary ends with a period here, and the list prints it without. */
+interface Row {
+  synopsis: string;
+  summary: string;
+}
+
+/** The overview groups, in print order. The insight commands name their own group. */
+const GROUPS: readonly (InsightGroup | "More")[] = ["Your export", "Friends", "Chats", "Memories", "Checklists", "More"];
+
+/** The commands that came before the insights, placed in the same groups. They come first in each group. */
+const CORE_ROWS: Record<InsightGroup | "More", Row[]> = {
+  "Your export": [
+    { synopsis: "inspect <ZIP files...>", summary: "Show your export's shape, never its contents." },
+    { synopsis: "ledger status", summary: "Show which exports are saved." },
+  ],
+  Friends: [
+    { synopsis: "analyze <ZIP files...>", summary: "Find friends to review, and save your history." },
+    { synopsis: "keep <username...>", summary: "Add friends to your keep list." },
+    { synopsis: "unkeep <username...>", summary: "Take friends off your keep list." },
+  ],
+  Chats: [],
+  Memories: [{ synopsis: "memories <ZIP files...>", summary: "Save your Memories with their dates restored." }],
+  Checklists: [],
+  More: [
+    { synopsis: "demo", summary: "Try Snappy on invented data." },
+    { synopsis: "help [command]", summary: "Show help." },
+  ],
+};
+
+/** The rows of one group: the earlier commands, then the insight commands that name the group. */
+function rowsOf(group: InsightGroup | "More"): Row[] {
+  return [...CORE_ROWS[group], ...INSIGHT_COMMANDS.filter((c) => c.group === group).map((c) => ({ synopsis: c.synopsis, summary: c.summary }))];
+}
 
 export function helpCommand(args: string[], io: Io, version: string): number {
   const topic = args[0];
   if (topic !== undefined) {
-    const usage = USAGE[topic];
+    const usage = Object.hasOwn(USAGE, topic) ? USAGE[topic] : undefined;
     if (usage === undefined) {
       throw new CliError("usage", `No help for "${topic}". Run "snappy-export help" to see the commands.`);
     }
@@ -32,6 +69,12 @@ export function helpCommand(args: string[], io: Io, version: string): number {
   }
 
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: args.includes("--no-color") });
+  const width = Math.max(...GROUPS.flatMap((g) => rowsOf(g).map((r) => r.synopsis.length)));
+  const listing = GROUPS.flatMap((group) => [
+    term.bold(group),
+    ...rowsOf(group).map((r) => `  ${r.synopsis.padEnd(width)}  ${r.summary.replace(/\.$/, "")}`),
+    "",
+  ]);
   io.out.write(
     [
       ...term.banner(),
@@ -40,16 +83,7 @@ export function helpCommand(args: string[], io: Io, version: string): number {
       "",
       "Usage: snappy-export <command> [options]",
       "",
-      term.bold("Commands"),
-      "  analyze <ZIP files...>   Find friends to review and update your saved history",
-      "  memories <ZIP files...>  Save your Memories with their dates restored",
-      "  inspect <ZIP files...>   Show the shape of your export, never its contents",
-      "  keep <username...>       Add friends to your keep list",
-      "  unkeep <username...>     Take friends off your keep list",
-      "  ledger status            Show which exports are saved",
-      "  demo                     Try Snappy on invented data",
-      "  help [command]           Show help",
-      "",
+      ...listing,
       "<ZIP files...> means .zip files, or a folder with every part of one export.",
       'The "ledger" is your saved history: the sealed file that holds your past exports.',
       'Run "snappy-export help <command>" for its options. Add --verbose to see short codes for bug reports.',

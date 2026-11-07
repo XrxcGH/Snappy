@@ -15,6 +15,7 @@ import { keepCommand } from "./commands/keep.ts";
 import { ledgerCommand } from "./commands/ledger.ts";
 import { memoriesCommand } from "./commands/memories.ts";
 import { CliError } from "./errors.ts";
+import { INSIGHT_COMMANDS } from "./insight-commands.ts";
 import { createRealIo } from "./io.ts";
 import type { Io } from "./io.ts";
 
@@ -28,6 +29,8 @@ const COMMANDS: Record<string, Command> = {
   unkeep: (args, io) => keepCommand("unkeep", args, io),
   ledger: ledgerCommand,
   demo: demoCommand,
+  // The insight commands carry their own name, so adding one is a line in insight-commands.ts.
+  ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, c.run])),
 };
 
 /**
