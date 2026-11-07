@@ -8,7 +8,30 @@
  */
 import { terminal } from "../copy.ts";
 
-export type CommandId = "help" | "demo-run" | "inspect" | "analyze-preview" | "analyze-save" | "memories-preview" | "memories-rescue" | "ledger-status";
+export type CommandId =
+  | "help"
+  | "demo-run"
+  | "inspect"
+  | "analyze-preview"
+  | "analyze-save"
+  | "memories-preview"
+  | "memories-rescue"
+  | "ledger-status"
+  // The insight commands, one per tool page: each is shown in its plainest form, which reads the export and writes nothing.
+  | "check"
+  | "storage"
+  | "backup"
+  | "replies"
+  | "habits"
+  | "closest"
+  | "safety"
+  | "anniversaries"
+  | "on-this-day"
+  | "blocked"
+  | "friend-count"
+  | "rescue-manifest"
+  | "privacy"
+  | "remind";
 
 /** A place in a command that the person fills: their export files, or the folder for saved files. */
 export interface Slot {
@@ -69,6 +92,21 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   "memories-preview": entry("memories-preview", ["memories", exportSlot(), "--dry-run"]),
   "memories-rescue": entry("memories-rescue", ["memories", exportSlot(), "--out", outSlot], { effect: "folder" }),
   "ledger-status": entry("ledger-status", ["ledger", "status"], { needsPassphrase: true }),
+  check: entry("check", ["check", exportSlot()]),
+  storage: entry("storage", ["storage", exportSlot()]),
+  backup: entry("backup", ["backup", exportSlot()]),
+  replies: entry("replies", ["replies", exportSlot()]),
+  habits: entry("habits", ["habits", exportSlot()]),
+  closest: entry("closest", ["closest", exportSlot()]),
+  safety: entry("safety", ["safety"]),
+  anniversaries: entry("anniversaries", ["anniversaries", exportSlot()]),
+  "on-this-day": entry("on-this-day", ["on-this-day", exportSlot()]),
+  blocked: entry("blocked", ["blocked", exportSlot()]),
+  // --no-save keeps it from opening the saved history, so it needs no passphrase.
+  "friend-count": entry("friend-count", ["friend-count", exportSlot(), "--no-save"]),
+  "rescue-manifest": entry("rescue-manifest", ["rescue", exportSlot()]),
+  privacy: entry("privacy", ["privacy"]),
+  remind: entry("remind", ["remind"]),
 };
 
 export const COMMAND_IDS = Object.keys(COMMANDS) as CommandId[];

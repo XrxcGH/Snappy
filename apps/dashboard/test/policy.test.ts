@@ -22,6 +22,12 @@ describe("checkArgv: what runs", () => {
       ["memories", "/in/a.zip", "--dry-run"],
       ["memories", "/in/a.zip", "/in/b.zip", "--out", "/out/memories", "--layout", "year"],
       ["ledger", "status"],
+      ["check", "/in/a.zip", "/in/b.zip", "--friend-count", "120", "--json"],
+      ["storage", "/in/a.zip"],
+      ["friend-count", "/in/a.zip", "--no-save"],
+      ["safety"],
+      ["privacy"],
+      ["remind"],
     ]) {
       expect(reason(argv), argv.join(" ")).toBe(true);
     }
@@ -49,6 +55,15 @@ describe("checkArgv: the network and the person's own disk", () => {
         expect(reason([command, flag, "/in/a"]), `${command} ${flag}`).toBe("blocked-flag");
       }
     }
+  });
+
+  it("keeps the insight commands to reading and printing: no file out, nothing from the person's disk", () => {
+    expect(reason(["backup", "/in/a.zip", "--out", "/out/b.json"])).toBe("unknown-flag");
+    expect(reason(["remind", "--out", "/out/r.ics"])).toBe("unknown-flag");
+    expect(reason(["rescue", "/in/a.zip", "--folder", "/out/x"])).toBe("unknown-flag");
+    expect(reason(["friend-count", "/in/a.zip", "--ledger", "/in/x"])).toBe("blocked-flag");
+    expect(reason(["privacy", "/in/a.zip"])).toBe("extra-argument");
+    expect(reason(["check", "/etc/passwd"])).toBe("outside-folders");
   });
 
   it("does not accept unknown flags, short flags or a value on a flag that takes none", () => {

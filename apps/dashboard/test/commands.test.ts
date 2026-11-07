@@ -21,6 +21,17 @@ describe("what Copy shows", () => {
     expect(displayText(COMMANDS["ledger-status"])).toBe("npm run snappy-export -- ledger status");
   });
 
+  it("shows each insight command in its plainest form, and only the ones that read an export ask for files", () => {
+    expect(displayText(COMMANDS.check)).toBe('npm run snappy-export -- check "<your export folder>"');
+    expect(displayText(COMMANDS["friend-count"])).toBe('npm run snappy-export -- friend-count "<your export folder>" --no-save');
+    expect(displayText(COMMANDS.safety)).toBe("npm run snappy-export -- safety");
+    for (const id of ["safety", "privacy", "remind"] as const) expect(COMMANDS[id].needsFile, id).toBe(false);
+    for (const id of ["check", "storage", "backup", "replies", "habits", "closest", "anniversaries", "on-this-day", "blocked", "friend-count", "rescue-manifest"] as const) expect(COMMANDS[id].needsFile, id).toBe(true);
+    for (const id of ["check", "storage", "backup", "replies", "habits", "closest", "safety", "anniversaries", "on-this-day", "blocked", "friend-count", "rescue-manifest", "privacy", "remind"] as const) {
+      expect(COMMANDS[id]).toMatchObject({ needsPassphrase: false, effect: "none", network: false });
+    }
+  });
+
   it("quotes a word that holds a quote or a dollar sign so the pasted text still means the same", () => {
     const spec: CommandSpec = { ...COMMANDS.inspect, argv: ["inspect", { slot: "export", example: 'my "data" $HOME' }] };
     expect(displayText(spec)).toBe('npm run snappy-export -- inspect "my \\"data\\" \\$HOME"');

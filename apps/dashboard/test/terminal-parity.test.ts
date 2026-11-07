@@ -12,6 +12,7 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 import { syntheticExportParts, syntheticExportZip } from "@snappy-export/core";
 import { LATER, NOW, makeIo, run, tempDir } from "../../cli/test/helpers.ts";
+import { COMMANDS, COMMAND_IDS, bindArgv } from "../src/terminal/commands.ts";
 import { runInHelper } from "./helper-harness.ts";
 
 const PASS = "a long shared passphrase";
@@ -177,6 +178,17 @@ describe("the app and the command line agree", () => {
     }
     // One sealed blob now exists on the app side, and the passphrase appears in no output.
     expect(store).not.toBeNull();
+  });
+
+  it("every insight command in the catalog, in the form the app shows it", async () => {
+    const ids = COMMAND_IDS.filter((id) => !["help", "demo-run", "inspect", "analyze-preview", "analyze-save", "memories-preview", "memories-rescue", "ledger-status"].includes(id));
+    expect(ids).toHaveLength(14);
+    for (const id of ids) {
+      const r = await bothWays(bindArgv(COMMANDS[id], { export: ["later.zip"] }), pair);
+      expect(r.app.out, id).toBe(r.cli.out);
+      expect(r.app.code, id).toBe(r.cli.code);
+      expect(r.app.out.length, id).toBeGreaterThan(40);
+    }
   });
 
   it("an unknown command and a command that fails give the same message and code", async () => {

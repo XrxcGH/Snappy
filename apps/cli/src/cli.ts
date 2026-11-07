@@ -16,6 +16,7 @@ import { LEDGER_OPTIONS, ledgerCommand } from "./commands/ledger.ts";
 import { MEMORIES_OPTIONS, memoriesCommand } from "./commands/memories.ts";
 import { CliError } from "./errors.ts";
 import { INSIGHT_COMMANDS } from "./insight-commands.ts";
+import { COMMON_OPTIONS, FRIEND_COUNT_OPTIONS } from "./insights-input.ts";
 import type { Io } from "./io.ts";
 
 type Command = (args: string[], io: Io) => Promise<number>;
@@ -41,6 +42,11 @@ export const COMMAND_OPTIONS: Readonly<Record<string, OptionSpec>> = {
   unkeep: KEEP_OPTIONS,
   ledger: LEDGER_OPTIONS,
   demo: DEMO_OPTIONS,
+  // The insight commands: the options all of them share, plus the two the app's command catalog passes.
+  // Each command's other options are declared beside it, and the app does not run them.
+  ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, COMMON_OPTIONS])),
+  check: { ...COMMON_OPTIONS, ...FRIEND_COUNT_OPTIONS },
+  "friend-count": { ...COMMON_OPTIONS, "no-save": { type: "boolean" } },
 };
 
 /** The names that run a command (help and version are answered before this table). */
