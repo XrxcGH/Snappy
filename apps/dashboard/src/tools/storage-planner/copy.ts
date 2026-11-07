@@ -79,6 +79,7 @@ export const copy = {
   partsHeader: "ZIP parts",
   unitBatch: (n: number) => `Batch ${n}`,
   unitYears: (first: string, last: string) => `${first} to ${last}`,
+  unitBatchYears: (span: string, many: boolean) => `${many ? "Years" : "Year"} ${span}`,
   unitParts: (count: number, list: string) => `${count === 1 ? "Part" : "Parts"} ${list}`,
   moreBatchesLine: (n: number) => `${countOf(n, "more batch", "more batches")} follow.`,
 

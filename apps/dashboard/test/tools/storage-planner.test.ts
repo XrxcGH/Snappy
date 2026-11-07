@@ -208,9 +208,9 @@ describe("the page", () => {
     expect(text(root, ".section p")).toContain(copy.batchesLine(3, "1 GB"));
     expect(rowsOf(batches).map((r) => r.slice(0, 2))).toEqual([["Batch 1", "2 Memories"], ["Batch 2", "1 Memory"], ["Batch 3", "1 Memory"]]);
     // A batch never passes 1 GB, so the third photo of 2026 starts the second batch.
-    expect(rowsOf(batches)[0]).toEqual(["Batch 1", "2 Memories", "800 MB", "2026", "Part 1"]);
-    expect(rowsOf(batches)[1]).toEqual(["Batch 2", "1 Memory", "400 MB", "2026", "Part 2"]);
-    expect(rowsOf(batches)[2]).toEqual(["Batch 3", "1 Memory", "700 MB", "2025", "Part 2"]);
+    expect(rowsOf(batches)[0]).toEqual(["Batch 1", "2 Memories", "800 MB", "Year 2026", "Part 1"]);
+    expect(rowsOf(batches)[1]).toEqual(["Batch 2", "1 Memory", "400 MB", "Year 2026", "Part 2"]);
+    expect(rowsOf(batches)[2]).toEqual(["Batch 3", "1 Memory", "700 MB", "Year 2025", "Part 2"]);
   });
 
   it("lists only the first steps and batches when there are many, and says that more follow", async () => {

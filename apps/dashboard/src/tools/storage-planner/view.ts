@@ -42,6 +42,12 @@ function yearSpan(first: number | null, last: number | null): string {
   return first === last ? yearName(first) : copy.unitYears(yearName(first), yearInline(last));
 }
 
+/** The batch table's years cell: at phone width the column name is not repeated, so it says "Years 2026 to 2022". */
+function batchYears(first: number | null, last: number | null): string {
+  if (first === null && last === null) return copy.noDateLine;
+  return copy.unitBatchYears(yearSpan(first, last), first !== last);
+}
+
 function goalSection({ plan }: StoragePlannerResult): HTMLElement {
   const { totals, fit } = plan;
   const used = formatBytes(totals.knownBytes);
@@ -117,7 +123,7 @@ function batchSection(plan: Plan): HTMLElement {
         copy.unitBatch(b.index),
         countCell(b.items),
         formatBytes(b.bytes),
-        yearSpan(b.firstYear, b.lastYear),
+        batchYears(b.firstYear, b.lastYear),
         b.parts.length > 0 ? copy.unitParts(b.parts.length, b.parts.join(", ")) : copy.noFileLine,
       ]),
     ),
