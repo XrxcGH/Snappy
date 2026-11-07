@@ -312,11 +312,47 @@ describe("stopping", () => {
     await tick();
     controller.stop("inspect");
     expect(started[0]?.canceled).toBe(1);
-    expect(controller.state("inspect")).toEqual({ kind: "running" });
+    // Shown at once, before the runner reports.
+    expect(controller.state("inspect")).toEqual({ kind: "stopping" });
     started[0]?.finish({ end: "terminated", code: 130, ms: 3000 });
     await tick();
     expect(controller.state("inspect")).toMatchObject({ kind: "finished", result: { end: "terminated" } });
     expect(controller.exitLabel("inspect")).toBe("Stopped");
+  });
+
+  it("shows Stopping until the runner reports, and Close, Run and a second Stop do nothing meanwhile", async () => {
+    const { controller, started, announced } = setup();
+    controller.request("inspect");
+    await tick();
+    controller.stop("inspect");
+    expect(controller.state("inspect")).toEqual({ kind: "stopping" });
+    expect(controller.busy()).toBe("inspect");
+    expect(announced.filter(([m]) => m === terminal.stoppingAnnounce)).toHaveLength(1);
+    controller.stop("inspect");
+    controller.close("inspect");
+    controller.request("inspect");
+    expect(started).toHaveLength(1);
+    expect(started[0]?.canceled).toBe(1);
+    expect(controller.state("inspect")).toEqual({ kind: "stopping" });
+    started[0]?.finish({ end: "canceled", code: 130, ms: 5 });
+    await tick();
+    expect(controller.state("inspect")).toMatchObject({ kind: "finished", result: { end: "canceled" } });
+    expect(controller.busy()).toBeNull();
+  });
+
+  it("answers a passphrase question that is open when Stop is pressed, and a late question after it", async () => {
+    const { controller, started } = setup();
+    controller.request("ledger-status");
+    await tick();
+    const run = started[0] as Started;
+    const first = run.hooks.askSecret("Passphrase for your saved history: ");
+    controller.stop("ledger-status");
+    expect(await first).toBeNull();
+    expect(controller.state("ledger-status")).toEqual({ kind: "stopping" });
+    expect(await run.hooks.askSecret("Again: ")).toBeNull();
+    expect(controller.state("ledger-status")).toEqual({ kind: "stopping" });
+    run.finish({ end: "canceled", code: 130, ms: 5 });
+    await tick();
   });
 
   it("does nothing for a block that is not running, and Close does not interrupt a Run", async () => {

@@ -122,6 +122,15 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
         if (moved && (fresh || previous === "confirming" || previous.startsWith("asking"))) focusIn(stop);
         return;
       }
+      case "stopping": {
+        // Stop was pressed. The button stays, still focusable, but says it is done and does nothing more.
+        const hadFocus = focusIsHere();
+        const stop = button({ label: terminal.stopButton, icon: "close", variant: "secondary", ariaLabel: terminal.stopFor(spec.title), key: `${options.key}:stop`, onclick: () => controller.stop(id) });
+        stop.setAttribute("aria-disabled", "true");
+        root.replaceChildren(logView().element, h("div", { class: "command-toolbar" }, h("p", { class: "command-status" }, terminal.stoppingStatus), stop));
+        if (moved && hadFocus) focusIn(stop);
+        return;
+      }
       case "asking": {
         const form = secretPrompt({
           question: state.question,

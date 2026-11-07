@@ -47,7 +47,7 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
     const why = reason();
     hint.textContent = why;
     const state = controller.state(id).kind;
-    const working = state === "running" || state === "asking" || state === "confirming";
+    const working = state === "running" || state === "stopping" || state === "asking" || state === "confirming";
     const blocked = why !== "" || working;
     if (blocked) run.setAttribute("aria-disabled", "true");
     else run.removeAttribute("aria-disabled");

@@ -7,6 +7,7 @@
  *   idle -> needs-file                    Run without export files: say so, do nothing
  *   idle -> confirming -> running         a command that writes asks first, every time, never remembered
  *   idle -> running -> asking -> running  a passphrase question, answered in a masked field
+ *   running -> stopping -> finished       Stop shows at once; the helper may take a moment to end
  *   running -> finished                   with how it ended and how long it took
  *   idle -> unavailable                   this browser has no worker, or the command needs a terminal
  *
@@ -25,6 +26,8 @@ export type PanelState =
   | { kind: "needs-file" }
   | { kind: "confirming"; effect: "store" | "folder" }
   | { kind: "running" }
+  /** Stop was pressed: the helper has been asked to end and has not yet. Stop does nothing more here. */
+  | { kind: "stopping" }
   | { kind: "asking"; question: string }
   | { kind: "finished"; result: RunResult }
   | { kind: "unavailable"; reason: "no-worker" | "network" };
@@ -171,8 +174,8 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
           },
           askSecret: (question) =>
             new Promise<string | null>((resolve) => {
-              // A question from a Run that was reset is answered for them: canceled.
-              if (!current()) return resolve(null);
+              // A question from a Run that was reset or is being stopped is answered for them: canceled.
+              if (!current() || e.state.kind === "stopping") return resolve(null);
               e.pendingQuestion = question;
               e.answer = resolve;
               set(id, { kind: "asking", question });
@@ -233,7 +236,7 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
       const state = entry(id).state;
       // One Run at a time for the whole page, and no second press on a block that is already working.
       if (active !== null) return;
-      if (state.kind === "running" || state.kind === "asking" || state.kind === "confirming") return;
+      if (state.kind === "running" || state.kind === "stopping" || state.kind === "asking" || state.kind === "confirming") return;
       if (spec.network) return set(id, { kind: "unavailable", reason: "network" });
       if (!deps.workerAvailable()) return set(id, { kind: "unavailable", reason: "no-worker" });
       if (spec.needsFile && deps.getFiles().length === 0) {
@@ -258,6 +261,9 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
       // A question nobody will answer is answered for them: canceled.
       const answer = e.answer;
       e.answer = null;
+      e.pendingQuestion = null;
+      // Shown at once, before the helper ends, so a second press is not needed and not possible.
+      set(id, { kind: "stopping" });
       answer?.(null);
       e.handle.cancel();
     },
@@ -275,7 +281,7 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     },
     close(id) {
       const e = entry(id);
-      if (e.state.kind === "running" || e.state.kind === "asking") return;
+      if (e.state.kind === "running" || e.state.kind === "stopping" || e.state.kind === "asking") return;
       e.buffer.clear();
       e.files = [];
       set(id, { kind: "idle" });

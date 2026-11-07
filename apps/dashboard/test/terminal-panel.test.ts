@@ -121,6 +121,36 @@ describe("a Run in progress", () => {
     expect(started[0]?.canceled).toBe(1);
   });
 
+  it("shows Stopping at once when Stop is pressed, keeps Stop focusable but marks it unavailable, and ignores a second press", async () => {
+    focusReset();
+    const { el, controller, started } = await panelFor("inspect");
+    controller.request("inspect");
+    await tick();
+    const stop = el.querySelector("button") as FakeElement;
+    expect(stop.getAttribute("aria-disabled")).toBeNull();
+    expect(el.textContent).toContain(terminal.startedAnnounce);
+    stop.click();
+    // The helper has not ended yet, and the panel already says so.
+    expect(controller.state("inspect")).toEqual({ kind: "stopping" });
+    expect(started[0]?.canceled).toBe(1);
+    expect(el.querySelector(".command-status")?.textContent).toBe(terminal.stoppingStatus);
+    expect(el.textContent).not.toContain(terminal.startedAnnounce);
+    const stopping = el.querySelector("button") as FakeElement;
+    expect(buttons(el)).toEqual([terminal.stopButton]);
+    expect(stopping.getAttribute("aria-disabled")).toBe("true");
+    expect(stopping.hasAttribute("disabled")).toBe(false);
+    expect(FakeElement.lastFocused).toBe(stopping);
+    stopping.click();
+    stopping.click();
+    expect(started[0]?.canceled).toBe(1);
+    // The output still follows while the helper winds down, and the chip appears when it ends.
+    started[0]?.hooks.onOut("last words\n");
+    started[0]?.finish({ end: "canceled", code: 130, ms: 900 });
+    await tick(80);
+    expect(el.querySelector(".command-chip-label")?.textContent).toBe("Stopped");
+    expect(el.querySelector(".command-status")).toBeNull();
+  });
+
   it("asks the passphrase outside the output, focuses the masked field, and goes back to Stop after the answer", async () => {
     focusReset();
     const { el, controller, started } = await panelFor("ledger-status");

@@ -557,6 +557,8 @@ export const terminal = {
   startedAnnounce: "Running",
   askingAnnounce: "Needs your passphrase",
   stoppingAnnounce: "Stopping",
+  /** The line next to a Stop that was pressed, until the helper ends. */
+  stoppingStatus: "Stopping",
   copiedCommandAnnounce: "Command copied.",
   copiedOutputAnnounce: "Output copied.",
   failedAnnounce: "The command could not start.",
