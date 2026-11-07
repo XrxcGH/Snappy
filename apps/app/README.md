@@ -54,6 +54,11 @@ a change to `src-tauri/` or the frontend build, run these by hand on a test buil
    `securitypolicyviolation` and every request. The only requests are the app's own `tauri.localhost` page and
    the `blob:` worker. Make a synthetic zip with `npm run synthetic-zip -w @snappy-export/app -- --out <file> --mb 100`.
 4. Take a window capture of the finished program with synthetic data only. Never use a real export.
+5. For the WebView2 switches, launch the finished program three times on one profile (the default one is fine) and
+   list the sockets of its process tree every 0.3 seconds for 40 seconds (`netstat -ano`, matched to the tree).
+   Expect none. A positive control that shows the sampler works: launch a `dev-hooks` build with
+   `SNAPPY_WEBVIEW_ARGS=--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`, which leaves the sign-in
+   features on.
 
 The finished release program removes the `WEBVIEW2_*` variables, so it cannot be driven this way. The test build
 and the release build are the same code apart from that.
@@ -72,10 +77,13 @@ and the release build are the same code apart from that.
   blocked link.
 - The page keeps the dashboard's `connect-src 'none'`. The default reader uses no IPC. The fallback reader's
   IPC works because Tauri falls back from fetch to `postMessage`; the console shows one blocked-fetch warning.
-- Release builds start WebView2 with its background services off and `msOneAuthWAM` disabled, which removed the
-  connection to Microsoft addresses that the browser process otherwise makes from the second launch on a
-  profile (found on one machine). That depends on the installed WebView2 version still having that feature, so it
-  is not a promise: the Windows WebView2 runtime is a separate Microsoft component that Snappy does not control.
+- Release builds start WebView2 with its background services off and the account sign-in features `msOneAuthWAM`
+  and `msForceOneAuthWAM` disabled, which removed the connection to Microsoft addresses that the browser process
+  otherwise makes from the second launch on a profile (found on one machine). On runtime 156 the first feature
+  was enough; on 157 the second was needed too. That depends on the installed WebView2 version, so it is not a
+  promise: the Windows WebView2 runtime is a separate Microsoft component that Snappy does not control, and
+  nothing in CI can see this change. After a runtime update, repeat the socket check in "Checks that need the
+  built program" (three launches on one profile, watching the browser process for outbound sockets).
   The Privacy page says this in a short note, shown only in the desktop app. The wording lives in
   `apps/dashboard/src/copy.ts` (`privacy.desktop*`) and in `docs/RELEASES.md`; keep the two in step, and say
   nothing there that has not been checked.
