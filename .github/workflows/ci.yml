@@ -1,5 +1,15 @@
 name: CI
 
+# Secrets and pull requests
+#   * This workflow references no secret at all, so a pull request from a fork or from Dependabot has
+#     nothing to read. It uses the `pull_request` trigger (never `pull_request_target`, which would run
+#     the pull request's code with the base repository's token and secrets).
+#   * For those pull requests GitHub also hands the run a read-only token, whatever the file says.
+#   * Every job states `permissions: contents: read`. apps/app/test/workflows.test.ts fails if a secret,
+#     a write permission, an unpinned action or `pull_request_target` appears in any workflow.
+#   * `npm ci --ignore-scripts`: no package install script runs (only esbuild has one; the build and the
+#     tests were run without it).
+
 on:
   push:
     branches: [main]
@@ -8,24 +18,55 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same pull request replaces the run that is still going.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+# Actions are pinned to a full commit SHA (the comment names the release). Dependabot bumps them.
+
 jobs:
   test:
     name: Type check, tests and dashboard build
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - name: Type check
         run: npx tsc --noEmit -p tsconfig.json
       - name: Tests
         run: npm test
       - name: Build the dashboard
         run: npm run build:dashboard
+
+  # The desktop and phone shells must not gain a way to reach the network. This reads Cargo's
+  # dependency tree for every release target (desktop and mobile) and fails if an HTTP client, a TLS
+  # library or similar appears. It needs no system libraries and takes under a minute.
+  no-network-deps:
+    name: Shell has no network dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: Check the Rust dependency tree
+        run: node apps/app/tools/check-no-network-deps.mjs
