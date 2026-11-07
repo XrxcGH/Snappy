@@ -14,6 +14,7 @@ import { descriptor as friendsBackup } from "./friends-backup/index.ts";
 import { descriptor as habits } from "./habits/index.ts";
 import { descriptor as memoriesOnThisDay } from "./memories-on-this-day/index.ts";
 import { descriptor as privacyTuneup } from "./privacy-tuneup/index.ts";
+import { descriptor as reachOutFirst } from "./reach-out-first/index.ts";
 import { descriptor as rescueManifest } from "./rescue-manifest/index.ts";
 import { descriptor as safetyChecklist } from "./safety-checklist/index.ts";
 import { descriptor as storagePlanner } from "./storage-planner/index.ts";
@@ -29,6 +30,7 @@ export const TOOLS: readonly ToolDescriptor[] = [
   anniversaries,
   blockedReview,
   waitingOnReply,
+  reachOutFirst,
   habits,
   storagePlanner,
   memoriesOnThisDay,

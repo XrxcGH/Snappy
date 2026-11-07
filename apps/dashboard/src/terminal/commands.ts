@@ -22,6 +22,7 @@ export type CommandId =
   | "storage"
   | "backup"
   | "replies"
+  | "reach-out"
   | "habits"
   | "closest"
   | "safety"
@@ -96,6 +97,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   storage: entry("storage", ["storage", exportSlot()]),
   backup: entry("backup", ["backup", exportSlot()]),
   replies: entry("replies", ["replies", exportSlot()]),
+  "reach-out": entry("reach-out", ["reach-out", exportSlot()]),
   habits: entry("habits", ["habits", exportSlot()]),
   closest: entry("closest", ["closest", exportSlot()]),
   safety: entry("safety", ["safety"]),
