@@ -577,6 +577,7 @@ export const terminal = {
     "rescue-manifest": "Make a rescue file list",
     privacy: "Show the privacy checklist",
     remind: "Preview an export reminder",
+    since: "Compare with your last export",
     "year-in-review": "Sum up your year",
   },
   runButton: "Run",

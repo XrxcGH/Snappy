@@ -35,6 +35,7 @@ export type CommandId =
   | "rescue-manifest"
   | "privacy"
   | "remind"
+  | "since"
   | "year-in-review";
 
 /** A place in a command that the person fills: their export files, or the folder for saved files. */
@@ -114,6 +115,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   "rescue-manifest": entry("rescue-manifest", ["rescue", exportSlot()]),
   privacy: entry("privacy", ["privacy"]),
   remind: entry("remind", ["remind"]),
+  since: entry("since", ["since", exportSlot()], { needsPassphrase: true }),
   "year-in-review": entry("year-in-review", ["year", exportSlot()]),
 };
 
