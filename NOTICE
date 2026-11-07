@@ -1,0 +1,11 @@
+Snappy
+Copyright 2026 The Snappy contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Snappy is an independent project. It is not affiliated with, endorsed by, or
+sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.
+
+This product bundles third-party software and fonts. Their copyright notices and
+licenses are listed in THIRD-PARTY-NOTICES.md and are distributed with the
+dashboard in apps/dashboard/dist/licenses/.
