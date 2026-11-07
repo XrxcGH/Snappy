@@ -50,7 +50,8 @@ describe("the checklist", () => {
     expect(boxes(root)).toHaveLength(2);
     expect(root.querySelectorAll(".mark-item label").map((l) => l.textContent)).toEqual(ITEMS.map((i) => i.label));
     expect(root.querySelectorAll(".mark-item .caption").map((c) => c.textContent)).toEqual(["Found in Settings."]);
-    expect(root.querySelectorAll(".mark-block .caption").map((c) => c.textContent)).toEqual(["Found in Settings.", tools.markNote]);
+    expect(root.querySelectorAll(".mark-block .caption").map((c) => c.textContent)).toEqual(["Found in Settings."]);
+    expect(root.querySelectorAll(".mark-block .mark-note").map((c) => c.textContent)).toEqual([tools.markNote]);
     expect(tools.markNote).toMatch(/your own word/);
     expect(root.textContent).not.toMatch(/verified|confirmed|checked for you|secure/i);
     for (const b of boxes(root)) expect(b.getAttribute("type")).toBe("checkbox");

@@ -18,6 +18,7 @@ export const copy = {
 
   progressHeading: "Your progress",
   progressLabel: "Safety progress",
+  meterName: "Progress",
   progressText: (done: number, total: number) => (done === total ? `All ${total} marked done` : `${done} of ${total} marked done`),
   reviewLine: "Settings can change. A fresh look every few months may help.",
 

@@ -28,7 +28,7 @@ export const copy = {
   checkHeading: "Check it later",
   saveStep: "Download the manifest and keep it somewhere safe.",
   rescueStep: "Run your Memories rescue to save the files to a folder.",
-  verifyStep: "To check a folder later, run the command below with --verify and --folder.",
+  verifyStep: "Later, add --verify and --folder to the command below to check a folder.",
 
   downloadButton: "Download JSON",
   downloadNote: "The file lists file names, dates and types. It holds no usernames.",

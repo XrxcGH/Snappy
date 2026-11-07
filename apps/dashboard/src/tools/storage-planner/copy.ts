@@ -1,5 +1,5 @@
 /**
- * Memories storage planner: every string this tool shows. Voice rules are in docs/BRAND.md. Keys end in the kind of
+ * Storage planner: every string this tool shows. Voice rules are in docs/BRAND.md. Keys end in the kind of
  * text they are (Heading, Header, Note, Line, Button, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts, sizes and years come in as arguments.
  */
@@ -8,7 +8,7 @@ import { countOf } from "../../format.ts";
 const memoriesOf = (n: number): string => countOf(n, "Memory", "Memories");
 
 export const copy = {
-  title: "Memories storage planner",
+  title: "Storage planner",
   oneLiner: "Plan how to save your Memories.",
   description: "See your Memories by year and type, what fits under your goal, and the order to save them.",
   reads: "Memory dates, types and sizes, and the ZIP part each file is in.",
@@ -27,6 +27,7 @@ export const copy = {
 
   goalHeading: "Your goal",
   meterLabel: "Memories size compared with your goal",
+  meterName: "Size",
   meterText: (used: string, goal: string, percent: string, atLeast: boolean) => `${atLeast ? "At least " : ""}${used} of ${goal} (${percent})`,
   fitsAllLine: "Everything with a known size fits under your goal.",
   fitsPartLine: (fits: number, waits: number) => `Your goal fits ${memoriesOf(fits)}. ${memoriesOf(waits)} would wait for more space.`,

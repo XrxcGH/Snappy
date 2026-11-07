@@ -1,5 +1,5 @@
 /**
- * Memories storage planner: what it computes from the Memories list the page holds, and what its page shows.
+ * Storage planner: what it computes from the Memories list the page holds, and what its page shows.
  * Synthetic data only. Memory ids, links and paths carry canaries that must never reach a result or the page.
  */
 import type { MemoryItem, ParsedExport } from "@snappy-export/core";
@@ -76,7 +76,7 @@ const dataOf = (state: State) => toolData(state);
 
 describe("the tool", () => {
   it("is a Memories tool in the memories color that needs an export and Memories, and shows the storage command", () => {
-    expect(descriptor).toMatchObject({ id: "storage-planner", title: "Memories storage planner", group: "memories", category: "memories", needs: ["export", "memories"] });
+    expect(descriptor).toMatchObject({ id: "storage-planner", title: "Storage planner", group: "memories", category: "memories", needs: ["export", "memories"] });
     expect(descriptor.oneLiner).toBe("Plan how to save your Memories.");
     expect(COMMANDS.storage.argv[0]).toBe("storage");
   });
@@ -152,7 +152,8 @@ describe("the page", () => {
   it("shows the goal against the known size, how much fits and how much waits", async () => {
     const { root } = await renderSettled(view, real(crafted(), 2));
     const p = text(root, ".section p");
-    expect(p).toContain("At least 2.69 GB of 2 GB (134%)");
+    expect(text(root, ".meter-head .meter-name")).toEqual([copy.meterName]);
+    expect(text(root, ".meter-head .meter-text")).toEqual(["At least 2.69 GB of 2 GB (134%)"]);
     expect(p).toContain(copy.fitsPartLine(4, 3));
     expect(text(root, ".facts dt")).toEqual([copy.countedHeader, copy.fitsHeader, copy.waitsHeader]);
     expect(text(root, ".facts dd")).toEqual(["8", "4", "3"]);

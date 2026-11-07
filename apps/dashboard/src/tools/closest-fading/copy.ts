@@ -1,5 +1,5 @@
 /**
- * Closest and fading friends: every string this tool shows. Voice rules are in docs/BRAND.md. Keys end in the
+ * Closest and fading: every string this tool shows. Voice rules are in docs/BRAND.md. Keys end in the
  * kind of text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the
  * key. Nothing here holds an export value: counts and dates come in as arguments, and no function takes a name.
  */
@@ -9,7 +9,7 @@ const have = (n: number): string => (n === 1 ? "has" : "have");
 const them = (n: number): string => (n === 1 ? "it" : "them");
 
 export const copy = {
-  title: "Closest and fading friends",
+  title: "Closest and fading",
   oneLiner: "See your closest friends and who is fading.",
   description: "Rank friends by recent saved chats and Snaps. See who has gone quieter than before.",
   reads: "Counts, dates and directions of your saved chats and Snaps with each friend.",

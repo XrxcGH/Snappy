@@ -1,5 +1,5 @@
 /**
- * Friend count over time: every string this tool shows. Voice rules are in docs/BRAND.md. Keys end in the kind of
+ * Friend count history: every string this tool shows. Voice rules are in docs/BRAND.md. Keys end in the kind of
  * text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts and month names come in as arguments, never a username.
  *
@@ -11,7 +11,7 @@ import { countOf } from "../../format.ts";
 const them = (n: number): string => (n === 1 ? "that friend" : "them");
 
 export const copy = {
-  title: "Friend count over time",
+  title: "Friend count history",
   oneLiner: "See how your friend count has changed.",
   description: "Shows how your friend count grew and shrank, month by month. It also compares the curve with your saved history.",
   reads: "The dates friends were added and removed, and the friend counts in your saved history.",
@@ -29,8 +29,8 @@ export const copy = {
   removedHeader: "Removed by you",
   gainHeader: "Biggest gain",
   dropHeader: "Biggest drop",
-  unitGain: (month: string, n: number) => `${month}, up ${countOf(n, "friend", "friends")}`,
-  unitDrop: (month: string, n: number) => `${month}, down ${countOf(n, "friend", "friends")}`,
+  unitGain: (month: string, n: number) => `${month}, up ${n}`,
+  unitDrop: (month: string, n: number) => `${month}, down ${n}`,
 
   monthsHeading: "Month by month",
   monthsCaption: "Friends added and removed each month",

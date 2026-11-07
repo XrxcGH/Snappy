@@ -2,7 +2,7 @@ import type { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
 import type { PillKind } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
-import { progressBar } from "../../components/progressBar.ts";
+import { meterBlock } from "../../components/meterBlock.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
@@ -49,8 +49,7 @@ function goalSection({ plan }: StoragePlannerResult): HTMLElement {
   const text = copy.meterText(used, goal, formatPercent(fit.fractionOfGoal), totals.isLowerBound);
   return section(
     copy.goalHeading,
-    progressBar({ label: copy.meterLabel, value: fit.fractionOfGoal, valueText: text }),
-    h("p", {}, text),
+    meterBlock({ name: copy.meterName, label: copy.meterLabel, value: fit.fractionOfGoal, valueText: text }),
     h("p", {}, fit.fitsAll ? copy.fitsAllLine : copy.fitsPartLine(fit.items, fit.deferredItems)),
     factList([
       { label: copy.countedHeader, value: formatCount(totals.items), icon: "memories" },

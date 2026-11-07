@@ -1,5 +1,5 @@
 /**
- * Friend count over time: the pure step. It hands the friends list, the removed friends and the saved
+ * Friend count history: the pure step. It hands the friends list, the removed friends and the saved
  * snapshots the dashboard already holds to core's friendCountHistory and returns its result as it is:
  * months, counts and codes, never a username. The login history is not an input.
  */

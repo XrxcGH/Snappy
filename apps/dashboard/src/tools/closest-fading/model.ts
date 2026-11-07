@@ -1,5 +1,5 @@
 /**
- * Closest and fading friends: the pure step. It hands the export the dashboard already holds to core's
+ * Closest and fading: the pure step. It hands the export the dashboard already holds to core's
  * closestFading and returns its result as it is. The result names friends (the two result tables are about
  * people) and holds counts, dates and codes; no note, announcement or title is made from a name.
  *

@@ -1,5 +1,5 @@
 import { section } from "../../components/layout.ts";
-import { progressBar } from "../../components/progressBar.ts";
+import { meterBlock } from "../../components/meterBlock.ts";
 import { tickList } from "../../components/tickList.ts";
 import type { TickItem } from "../../components/tickList.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -27,7 +27,7 @@ export const view = toolView<SafetyChecklistResult, Record<string, never>>({
     // A mark changes the saved or session ticks, which repaints the page, so the progress is read fresh each time.
     const p = safetyProgress(ui.ticks, ui.data.now);
     const text = progressText(p);
-    const progress = h("div", { class: "guided-progress" }, h("p", { class: "summary" }, text), progressBar({ label: copy.progressLabel, value: p.done / p.total, valueText: text }));
+    const progress = meterBlock({ name: copy.meterName, label: copy.progressLabel, value: p.done / p.total, valueText: text });
     return [section(copy.progressHeading, progress, h("p", { class: "caption" }, copy.reviewLine)), section(copy.stepsHeading, list)];
   },
   notes: ({ hasExport }): ToolNote[] => (hasExport ? [] : [{ kind: "info", text: copy.noExportNote }]),

@@ -1,5 +1,5 @@
 /**
- * Friend count over time: what it computes from the friends lists and saved snapshots the page holds, and what its
+ * Friend count history: what it computes from the friends lists and saved snapshots the page holds, and what its
  * page shows. Synthetic data only. Crafted usernames carry a canary that must never reach a note, an announcement or
  * the page: this tool has no table of people, so no username belongs anywhere on it.
  */
@@ -64,7 +64,7 @@ const text = (el: FakeElement, selector: string): string[] => el.querySelectorAl
 
 describe("the tool", () => {
   it("is a Friends tool that needs an export with friends and shows the friend-count command", () => {
-    expect(descriptor).toMatchObject({ id: "friend-count-history", title: "Friend count over time", group: "friends", category: "requests", needs: ["export", "friends"] });
+    expect(descriptor).toMatchObject({ id: "friend-count-history", title: "Friend count history", group: "friends", category: "requests", needs: ["export", "friends"] });
     expect(COMMANDS["friend-count"].argv[0]).toBe("friend-count");
   });
 
@@ -150,8 +150,8 @@ describe("the page", () => {
     const first = (root.querySelectorAll("table")[0] as FakeElement).querySelectorAll("tbody tr")[0] as FakeElement;
     expect([first.querySelector("th")?.textContent, ...text(first, "td")]).toEqual(["January 2025", "3 added", "0 removed", "3 friends"]);
     const summary = text(root, ".fact");
-    expect(summary.join(" ")).toContain("January 2025, up 3 friends");
-    expect(summary.join(" ")).toContain("February 2025, down 1 friend");
+    expect(summary.join(" ")).toContain("January 2025, up 3");
+    expect(summary.join(" ")).toContain("February 2025, down 1");
   });
 
   it("marks a snapshot that differs from the curve with a no pill and one that is close with a yes pill", async () => {

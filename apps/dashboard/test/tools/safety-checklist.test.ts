@@ -77,7 +77,7 @@ async function mark(root: FakeElement, index: number, on: boolean): Promise<void
   box.fire("change");
   await settled(root);
 }
-const progressLine = (root: FakeElement): string | undefined => root.querySelector(".guided-progress .summary")?.textContent;
+const progressLine = (root: FakeElement): string | undefined => root.querySelector(".meter-block .meter-text")?.textContent;
 
 describe("the tool", () => {
   it("is a Checklists tool in the neutral color that needs nothing and shows the safety command", () => {
@@ -151,7 +151,7 @@ describe("the page", () => {
     expect(text(root, ".mark-item label")).toEqual(ITEM_IDS.map((id) => copy.items[id].label));
     expect(text(root, ".mark-item .caption").filter((c) => c.length > 0)).toHaveLength(7);
     // The one honest note, once; never a claim that anything was checked.
-    expect(text(root, ".mark-block .caption").filter((c) => c === tools.markNote)).toHaveLength(1);
+    expect(text(root, ".mark-block .mark-note").filter((c) => c === tools.markNote)).toHaveLength(1);
     expect(root.textContent).not.toMatch(/verified|confirmed|checked for you|secure/i);
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.safety));
     expect(root.querySelectorAll("table")).toHaveLength(0);

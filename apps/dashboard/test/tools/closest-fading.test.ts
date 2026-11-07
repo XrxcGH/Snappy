@@ -1,5 +1,5 @@
 /**
- * Closest and fading friends: what it computes from the export the page holds, and what its page shows.
+ * Closest and fading: what it computes from the export the page holds, and what its page shows.
  * Synthetic data only. Usernames and message-like strings carry canaries that must never reach a note, an
  * announcement or a title, and a username may appear only inside the two result tables.
  */
@@ -94,7 +94,7 @@ const cellsOf = (table: FakeElement): string[][] => table.querySelectorAll("tbod
 
 describe("the tool", () => {
   it("is a Friends tool that needs an export with friends and chats, and shows the closest command", () => {
-    expect(descriptor).toMatchObject({ id: "closest-fading", title: "Closest and fading friends", group: "friends", category: "requests", needs: ["export", "friends", "chats"] });
+    expect(descriptor).toMatchObject({ id: "closest-fading", title: "Closest and fading", group: "friends", category: "requests", needs: ["export", "friends", "chats"] });
     expect(descriptor.oneLiner.length).toBeLessThanOrEqual(56);
     expect(COMMANDS.closest.argv[0]).toBe("closest");
   });

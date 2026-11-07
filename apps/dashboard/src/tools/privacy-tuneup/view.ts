@@ -1,5 +1,5 @@
 import { section, stat, statGrid } from "../../components/layout.ts";
-import { progressBar } from "../../components/progressBar.ts";
+import { meterBlock } from "../../components/meterBlock.ts";
 import { tickList } from "../../components/tickList.ts";
 import type { TickItem } from "../../components/tickList.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -32,8 +32,12 @@ export const view = toolView<PrivacyTuneup, Record<string, never>>({
     return [
       section(
         copy.progressHeading,
-        progressBar({ label: copy.progressLabel, value: applicable > 0 ? done / applicable : 0, valueText: copy.progressText(done, applicable) }),
-        statGrid(stat(copy.doneHeader, copy.unitOf(done, applicable), true), stat(copy.leftHeader, String(applicable - done)), stat(copy.percentHeader, copy.unitPercent(percent))),
+        meterBlock({ name: copy.meterName, label: copy.progressLabel, value: applicable > 0 ? done / applicable : 0, valueText: copy.progressText(done, applicable) }),
+        statGrid(
+          stat(copy.doneHeader, copy.unitOf(done, applicable), { icon: "check", accent: true }),
+          stat(copy.leftHeader, String(applicable - done), { icon: "list" }),
+          stat(copy.percentHeader, copy.unitPercent(percent), { icon: "overview" }),
+        ),
       ),
       section(copy.listHeading, tickList(ui, meta.id, itemsOf(result))),
     ];

@@ -1,5 +1,5 @@
 /**
- * Memories storage planner: the pure step. It hands the Memories list the dashboard already holds to core's
+ * Storage planner: the pure step. It hands the Memories list the dashboard already holds to core's
  * storagePlanner and returns the plan as it is, minus the opaque Memory ids that core lists in each batch: a result
  * here holds counts, sizes, years and ZIP part numbers, never an id, link or path.
  *

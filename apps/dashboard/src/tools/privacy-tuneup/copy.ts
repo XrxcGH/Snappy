@@ -15,6 +15,7 @@ export const copy = {
 
   progressHeading: "Your progress",
   progressLabel: "Settings marked done",
+  meterName: "Progress",
   progressText: (done: number, total: number) => `${done} of ${total} marked done`,
   doneHeader: "Marked done",
   leftHeader: "Left to review",

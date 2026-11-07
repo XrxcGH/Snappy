@@ -40,6 +40,7 @@ export function tickList<P>(ui: ToolUi<P>, toolId: string, items: readonly TickI
         );
       }),
     ),
-    h("p", { class: "caption" }, tools.markNote),
+    // Body text, not a caption: it is the one honest statement about what a mark means, so people should read it easily.
+    h("p", { class: "mark-note" }, tools.markNote),
   );
 }
