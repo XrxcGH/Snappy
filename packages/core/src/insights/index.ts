@@ -13,6 +13,7 @@ export * as friendsBackup from "./friends-backup.ts";
 export * as friendsTable from "./friends-table.ts";
 export * as habits from "./habits.ts";
 export * as lookalikeUsernames from "./lookalike-usernames.ts";
+export * as memoriesGaps from "./memories-gaps.ts";
 export * as memoriesOnThisDay from "./memories-on-this-day.ts";
 export * as privacyTuneup from "./privacy-tuneup.ts";
 export * as reachOutFirst from "./reach-out-first.ts";
