@@ -688,6 +688,11 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .tool-note .icon { margin-top: 0.125rem; }
 .tool-note-info .icon { color: var(--info-fg); }
 .tool-note-warning .icon { color: var(--warning-fg); }
+/* A self-reported checklist: one checkbox row per item, an optional hint under it, one honest note under the list. */
+.tick-block { display: grid; gap: var(--gap-heading); }
+.tick-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap-card); }
+.tick-item { display: grid; gap: var(--space-1); padding: var(--space-3) var(--pad-card); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.tick-item .caption { margin: 0; padding-inline-start: calc(1.5rem + var(--space-3)); }
 
 /* --------------------------------------------------------------- motion --- */
 /* Signature: key bars slide in 8px from the left, each one stagger after the last. Once per view. */

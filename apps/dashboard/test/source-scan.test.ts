@@ -48,7 +48,7 @@ describe("no markup strings", () => {
   });
 
   it("only the DOM helper creates elements from data (views and components use h())", () => {
-    const viewFiles = tsFiles.filter((f) => /[\\/](views|components)[\\/]/.test(f));
+    const viewFiles = tsFiles.filter((f) => /[\\/](views|components|tools)[\\/]/.test(f));
     expect(offenders(/document\.createElement\(/, viewFiles)).toEqual([]);
     expect(offenders(/\.setAttribute\(\s*["'`]href["'`]/, tsFiles, ["src/dom.ts", "src/download.ts", "src/clipboard.ts"])).toEqual([]);
   });

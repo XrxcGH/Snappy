@@ -201,7 +201,7 @@ describe("no command can be shown any other way", () => {
   });
 
   it("has no <pre> with a command in any view or component but the command block", () => {
-    const pres = files.filter((f) => /[\\/](views|components)[\\/]/.test(f) && /h\("pre"/.test(uncommented(f))).map(rel);
+    const pres = files.filter((f) => /[\\/](views|components|tools)[\\/]/.test(f) && /h\("pre"/.test(uncommented(f))).map(rel);
     for (const file of pres) expect(["src/components/commandBlock.ts", "src/views/privacy.ts", "src/views/settings.ts"], file).toContain(file);
   });
 });

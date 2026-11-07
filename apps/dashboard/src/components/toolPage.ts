@@ -12,12 +12,14 @@
  * waiting, the memo (tools/run.ts), the announcements, the empty states and the layout. Everything is
  * text through h(): no innerHTML, no inline style.
  */
+import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { saveTextFile } from "../download.ts";
 import { common, tools } from "../copy.ts";
 import { append, h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { onDispose, region, runInScope, Scope } from "../reactive.ts";
+import { activeWorkspace } from "../reducer.ts";
 import type { CommandId } from "../terminal/commands.ts";
 import { cachedResult, runTool } from "../tools/run.ts";
 import { toolData, toolDeps, unmetNeed } from "../tools/data.ts";
@@ -40,6 +42,10 @@ export interface ToolNote {
 export interface ToolUi<P> {
   readonly data: ToolData;
   readonly params: P;
+  /** For a checklist tool: tick and untick with actions.setTick. Everything else on the page is read-only. */
+  readonly actions: Actions;
+  /** The self-reported ticks right now ("tool-id:item-id"), read fresh on every repaint. */
+  readonly ticks: readonly string[];
   /** Change the tool's parameters. The result is computed again and only the result repaints. */
   set(patch: Partial<P>): void;
 }
@@ -114,6 +120,10 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
 
       const ui: ToolUi<P> = {
         data,
+        actions: ctx.actions,
+        get ticks() {
+          return activeWorkspace(ctx.store.get()).ticks;
+        },
         get params() {
           return params;
         },
