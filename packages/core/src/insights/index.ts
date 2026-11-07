@@ -10,6 +10,7 @@ export * as exportReminder from "./export-reminder.ts";
 export * as friendCountHistory from "./friend-count-history.ts";
 export * as friendsBackup from "./friends-backup.ts";
 export * as habits from "./habits.ts";
+export * as lookalikeUsernames from "./lookalike-usernames.ts";
 export * as memoriesOnThisDay from "./memories-on-this-day.ts";
 export * as privacyTuneup from "./privacy-tuneup.ts";
 export * as reachOutFirst from "./reach-out-first.ts";
