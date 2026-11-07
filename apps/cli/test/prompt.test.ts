@@ -2,6 +2,7 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CliError } from "../src/errors.ts";
+import { FsError } from "../src/ports.ts";
 import { promptHidden, resolvePassphrase } from "../src/prompt.ts";
 import type { SecretInput } from "../src/prompt.ts";
 import { makeIo, tempDir } from "./helpers.ts";
@@ -113,5 +114,18 @@ describe("resolvePassphrase", () => {
   it("reports an unreadable passphrase file without echoing the system message", async () => {
     const missing = join(tempDir("pass"), "nope.txt");
     await expect(resolvePassphrase(makeIo(), { file: missing, creating: false })).rejects.toMatchObject({ code: "not-found" });
+  });
+
+  it("reads the passphrase file through the file system port, not the real disk", async () => {
+    const real = makeIo().fs;
+    const fs = {
+      ...real,
+      readFile: async (path: string) => {
+        if (path === "/virtual/pass.txt") return new TextEncoder().encode("a long enough phrase\nsecond line\n");
+        throw new FsError("ENOENT");
+      },
+    };
+    expect(await resolvePassphrase(makeIo({ fs }), { file: "/virtual/pass.txt", creating: true })).toBe("a long enough phrase");
+    await expect(resolvePassphrase(makeIo({ fs }), { file: "/virtual/none.txt", creating: false })).rejects.toMatchObject({ code: "not-found" });
   });
 });

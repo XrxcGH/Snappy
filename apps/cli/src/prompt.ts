@@ -3,7 +3,6 @@
  * never from an argument (arguments show up in process lists and shell history). It is never
  * written anywhere and never printed.
  */
-import { readFile } from "node:fs/promises";
 import { CliError, fsError } from "./errors.ts";
 import type { Io } from "./io.ts";
 
@@ -101,7 +100,7 @@ export async function resolvePassphrase(io: Io, opts: PassphraseOptions): Promis
   if (opts.file !== undefined) {
     let text: string;
     try {
-      text = decodePassphraseFile(await readFile(opts.file));
+      text = decodePassphraseFile(await io.fs.readFile(opts.file));
     } catch (e) {
       throw fsError(e, "read the passphrase file", opts.file);
     }
