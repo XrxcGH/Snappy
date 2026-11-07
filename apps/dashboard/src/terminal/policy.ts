@@ -14,7 +14,7 @@
  */
 
 /** The insight commands behind the tool pages. They read an export and print; none of them is allowed to write a file here. */
-export const INSIGHT_NAMES = ["check", "storage", "backup", "replies", "reply-speed", "reach-out", "habits", "closest", "safety", "anniversaries", "on-this-day", "blocked", "lookalikes", "friend-count", "rescue", "privacy", "remind"] as const;
+export const INSIGHT_NAMES = ["check", "storage", "backup", "replies", "reply-speed", "reach-out", "habits", "closest", "safety", "anniversaries", "on-this-day", "blocked", "lookalikes", "friend-count", "rescue", "privacy", "remind", "year"] as const;
 
 export const ALLOWED_COMMANDS = ["help", "demo", "inspect", "analyze", "memories", "ledger", ...INSIGHT_NAMES] as const;
 
@@ -81,6 +81,7 @@ export const RULES: Readonly<Record<(typeof ALLOWED_COMMANDS)[number], CommandRu
   rescue: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
   privacy: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "none" },
   remind: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "none" },
+  year: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
 };
 
 /** True when `path` is inside one of the folders, with no ".." part to climb out. */

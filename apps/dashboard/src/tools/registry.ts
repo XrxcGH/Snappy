@@ -21,11 +21,13 @@ import { descriptor as rescueManifest } from "./rescue-manifest/index.ts";
 import { descriptor as safetyChecklist } from "./safety-checklist/index.ts";
 import { descriptor as storagePlanner } from "./storage-planner/index.ts";
 import { descriptor as waitingOnReply } from "./waiting-on-reply/index.ts";
+import { descriptor as yearInReview } from "./year-in-review/index.ts";
 import type { ToolDescriptor, ToolGroupId } from "./types.ts";
 
 export const TOOLS: readonly ToolDescriptor[] = [
   exportCheck,
   exportReminder,
+  yearInReview,
   friendsBackup,
   friendCountHistory,
   closestFading,

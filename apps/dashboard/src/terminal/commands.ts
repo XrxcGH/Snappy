@@ -34,7 +34,8 @@ export type CommandId =
   | "friend-count"
   | "rescue-manifest"
   | "privacy"
-  | "remind";
+  | "remind"
+  | "year-in-review";
 
 /** A place in a command that the person fills: their export files, or the folder for saved files. */
 export interface Slot {
@@ -113,6 +114,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   "rescue-manifest": entry("rescue-manifest", ["rescue", exportSlot()]),
   privacy: entry("privacy", ["privacy"]),
   remind: entry("remind", ["remind"]),
+  "year-in-review": entry("year-in-review", ["year", exportSlot()]),
 };
 
 export const COMMAND_IDS = Object.keys(COMMANDS) as CommandId[];
