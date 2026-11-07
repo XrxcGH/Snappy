@@ -28,6 +28,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
 import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
 import { collectInsightOutputs } from "./insight-outputs.ts";
+import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(CLI, "src");
@@ -448,7 +449,7 @@ let outputs: Record<string, string> = {};
 beforeAll(async () => {
   literals = [...collectLiterals(), ...(await collectCopyModule())];
   outputs = await collectOutputs();
-}, 90_000);
+}, SHARED_HOOK_TIMEOUT);
 
 describe("CLI source text", () => {
   it("has sentence-like text to check", () => {

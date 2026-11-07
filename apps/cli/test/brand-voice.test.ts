@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
 import { collectInsightOutputs } from "./insight-outputs.ts";
+import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
 
 /** Synthetic usernames are data, not copy: they are removed before the wording checks. */
 const USERNAMES = /\b(?:ghost|oneway|dormant|active|newfriend)_\d+\b/g;
@@ -64,7 +65,7 @@ const everything = async (): Promise<Record<string, string>> => cached;
 describe("terminal copy follows the brand guide", () => {
   beforeAll(async () => {
     cached = await collect();
-  }, 60_000);
+  }, SHARED_HOOK_TIMEOUT);
 
   it("uses no exclamation marks and no emoji", async () => {
     for (const [name, text] of Object.entries(await everything())) {
