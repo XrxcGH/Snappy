@@ -671,7 +671,10 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .tool-status-ready { color: var(--text); }
 .tool-status-ready .icon { color: var(--success-fg); }
 
-.tool-back { display: grid; justify-items: start; margin-bottom: calc(var(--gap-heading) * -1); }
+.tool-top { display: grid; gap: var(--gap-heading); min-width: 0; }
+.tool-back { display: grid; justify-items: start; }
+/* A plain link that starts at the column's edge, with a full touch target. */
+.back-link { display: inline-flex; align-items: center; min-height: var(--target-min); color: var(--link); font-weight: 600; }
 /* What the tool reads: a quiet panel in the one column, so it lines up with every block below it. */
 .tool-reads { display: grid; gap: var(--space-1); padding: var(--space-3) var(--pad-card); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .tool-reads p { margin: 0; }

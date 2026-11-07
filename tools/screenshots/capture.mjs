@@ -24,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import { showTheme } from "./theme.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SCREENS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "privacy", "guide", "settings"];
+const SCREENS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", "privacy", "guide", "settings"];
 const PHONE_SCREENS = ["overview", "cleanup", "memories"];
 
 function parseArgs(argv) {

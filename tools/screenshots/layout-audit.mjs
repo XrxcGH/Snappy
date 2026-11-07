@@ -12,7 +12,7 @@
  * Options
  *   --out FILE        also write the report to FILE
  *   --port N          local port for the static server (default 4339)
- *   --routes a,b      only these routes (default: all ten)
+ *   --routes a,b      only these routes (default: all, including the Tools hub and each tool, written tools/<id>)
  *   --widths a,b      only these widths (default 320,360,390,768,1024,1280)
  *   --themes light    only this theme (default light,dark)
  *   --no-fresh        skip the "no export yet" pass (empty states)
@@ -57,6 +57,7 @@
  *   terminal-panel         the open terminal panel (Run pressed on the Export guide's help command): fits the page, panel buttons at touch size,
  *                          output at 4.5:1 on its ground, one exit chip with icon and words on one line, focus back on Run
  *   terminal-csp           while a command ran: a request other than data: or blob:, a security policy violation, or a console error
+ *   tool-nav               a tool page (tools/<id>) keeps Tools marked in the menu, and the menu lists no tool
  *   nav-active             the active menu item has a clear state (3:1) and is bold
  *   nav-icon               menu icons that repeat another meaning (overview, privacy, guide)
  *   header-*               one tidy row, vertical centers, theme toggle (name, 44 px, focus ring, pressed state)
@@ -87,7 +88,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const ALL_ROUTES = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings"];
+// "tools/<id>" is a tool's page: it has its own title, and the menu keeps Tools marked.
+const ALL_ROUTES = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", "tools/export-check", "guide", "privacy", "settings"];
 const ALL_WIDTHS = [320, 360, 390, 768, 1024, 1280];
 const THEMES = ["light", "dark"];
 /** Widths at and below this one are measured in a touch context (a phone). */
@@ -369,9 +371,14 @@ function measurePage(opts) {
     const cur = navLinks.find((a) => a.getAttribute("aria-current") === "page");
     const h1 = document.querySelector("h1");
     facts.h1Text = h1 ? norm(h1.textContent) : "";
-    if (cur && h1 && route !== "start") {
+    if (cur && h1 && route !== "start" && !route.includes("/")) {
       const label = norm(cur.textContent);
       if (label !== norm(h1.textContent)) add("title-vs-menu", h1, 'page title "' + norm(h1.textContent) + '" differs from menu label "' + label + '"');
+    }
+    // A tool's page keeps the one Tools item marked, and the menu never lists a tool.
+    if (route.startsWith("tools/")) {
+      if (!cur || norm(cur.textContent) !== "Tools") add("tool-nav", cur || document.body, 'a tool page should keep "Tools" marked in the menu, not "' + (cur ? norm(cur.textContent) : "nothing") + '"');
+      if (navLinks.some((a) => (a.getAttribute("href") || "").startsWith("#/tools/"))) add("tool-nav", navLinks[0], "the menu lists a tool: only the Tools item belongs there");
     }
     // active item state
     if (cur) {
