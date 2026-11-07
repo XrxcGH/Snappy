@@ -25,7 +25,7 @@ const conf = JSON.parse(read("src-tauri", "tauri.conf.json")) as {
     security: { csp: string; dangerousDisableAssetCspModification?: unknown; assetProtocol?: unknown; dangerousRemoteDomainIpcAccess?: unknown };
     withGlobalTauri?: boolean;
   };
-  bundle: { license: string; createUpdaterArtifacts?: unknown };
+  bundle: { license: string; shortDescription?: string; longDescription?: string; createUpdaterArtifacts?: unknown };
   plugins?: Record<string, unknown>;
 };
 const capability = JSON.parse(read("src-tauri", "capabilities", "main.json")) as { windows: string[]; permissions: string[]; remote?: unknown };
@@ -46,6 +46,16 @@ describe("desktop shell config", () => {
     expect(conf.app.windows.map((w) => w.title)).toEqual(["Snappy"]);
     expect(conf.bundle.license).toBe("Apache-2.0");
     expect(cargo).toMatch(/license = "Apache-2\.0"/);
+  });
+
+  it("makes no unqualified privacy claim in the installer descriptions", () => {
+    // These texts ship in the MSI, deb and rpm. The web engine is Microsoft's or the system's, and it can connect
+    // on its own, so only Snappy's own code may be said to make no connections, and the text points at the details.
+    const text = `${conf.bundle.shortDescription ?? ""} ${conf.bundle.longDescription ?? ""}`;
+    expect(text).not.toMatch(/(?<!Snappy itself )\b(makes?|has|uses?) no (network|internet) (connections?|access|traffic|requests?)/i);
+    expect(conf.bundle.longDescription).toMatch(/Snappy itself makes no network connections/);
+    expect(conf.bundle.longDescription).toMatch(/Network use/);
+    expect(text).not.toMatch(/\b(never|nothing) (leaves|sent|sends)\b|100%|guarantee/i);
   });
 
   it("holds the dashboard's policy: nothing may connect, no remote anything", () => {
