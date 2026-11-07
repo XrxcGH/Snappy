@@ -23,6 +23,8 @@ export interface LogView {
   readonly element: HTMLElement;
   readonly buffer: TerminalBuffer;
   write(chunk: string): void;
+  /** The buffer was written by someone else: draw what changed, soon. */
+  refresh(): void;
   /** Draw what is waiting now. */
   flush(): void;
   clear(): void;
@@ -59,6 +61,10 @@ export function createLogView(options: LogViewOptions): LogView {
     stick = atBottom();
   });
 
+  const schedulePaint = (): void => {
+    if (cancelDraw === undefined) cancelDraw = schedule(flush, DRAW_MS);
+  };
+
   const flush = (): void => {
     cancelDraw?.();
     cancelDraw = undefined;
@@ -84,13 +90,28 @@ export function createLogView(options: LogViewOptions): LogView {
     if (stick) element.scrollTop = element.scrollHeight;
   };
 
+  // A buffer that already holds output (a block shown again after a visit elsewhere) is drawn at once.
+  if (buffer.size > 0 || buffer.lines.length > 1) {
+    buffer.takeChanges();
+    for (const row of buffer.lines) {
+      const fresh = lineElement(row);
+      lineEls.push(fresh);
+      element.appendChild(fresh);
+    }
+    if (buffer.trimmed) {
+      showingTrimmed = true;
+      element.replaceChildren(trimmed, ...lineEls);
+    }
+  }
+
   return {
     element,
     buffer,
     write(chunk) {
       buffer.write(chunk);
-      if (cancelDraw === undefined) cancelDraw = schedule(flush, DRAW_MS);
+      schedulePaint();
     },
+    refresh: schedulePaint,
     flush,
     clear() {
       cancelDraw?.();
@@ -110,20 +131,23 @@ export function createLogView(options: LogViewOptions): LogView {
 }
 
 /**
- * How many characters fit across the output area, measured with a hidden ten-character probe in
- * the area's own font. Clamped to 40 to 100: a narrow screen scrolls sideways instead of wrapping.
+ * How many characters fit across an output area placed in `host`, measured with a hidden probe of ten
+ * characters in the area's own font and the area's own padding. Clamped to 40 to 100: a narrow screen
+ * scrolls sideways instead of wrapping.
  */
 export function measureColumns(host: HTMLElement, fallback = 80): number {
   const probe = h("span", { class: "t-probe", "aria-hidden": "true" }, "0000000000");
-  host.appendChild(probe);
+  const area = h("div", { class: "t-log t-measure", "aria-hidden": "true" }, probe);
+  host.appendChild(area);
   try {
     const char = probe.getBoundingClientRect().width / 10;
-    const width = host.clientWidth;
+    const style = getComputedStyle(area);
+    const width = area.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
     if (!(char > 0) || !(width > 0)) return fallback;
     return Math.max(40, Math.min(100, Math.floor(width / char)));
   } catch {
     return fallback;
   } finally {
-    probe.remove();
+    area.remove();
   }
 }

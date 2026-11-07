@@ -621,6 +621,24 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .ansi-info { color: var(--info-fg); }
 .ansi-slate, .ansi-dim { color: var(--text-muted); }
 .ansi-bold { font-weight: 700; }
+.t-measure { position: absolute; inset-inline: 0; visibility: hidden; max-height: 0; padding-block: 0; overflow: hidden; }
+
+/* The panel under a command: confirmation, passphrase question, output, buttons, and how it ended. */
+.command-panel { position: relative; display: grid; gap: var(--space-3); }
+.command-panel:empty { display: none; }
+.command-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.command-status { margin: 0; color: var(--text-muted); font-size: var(--text-14); }
+.command-chip {
+  display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); justify-self: start; margin: 0; padding: 2px var(--space-3);
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text); font-size: var(--text-14); font-weight: 600;
+}
+.command-chip-detail { font-weight: 500; }
+.command-chip-ok { border-color: var(--success-border); background: var(--success-bg); color: var(--success-fg); }
+.command-chip-warn { border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning-fg); }
+.command-chip-danger { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger-fg); }
+.command-hint { margin: 0; color: var(--text-muted); font-size: var(--text-14); }
+.command-hint:empty { display: none; }
+.command-files { display: grid; gap: var(--space-2); }
 .licenses { display: grid; gap: var(--space-2); }
 .delete, .confirm { display: grid; gap: var(--gap-card); }
 .confirm { padding: var(--pad-card); border: 1px solid var(--danger-border); border-radius: var(--radius-lg); background: var(--surface); }
