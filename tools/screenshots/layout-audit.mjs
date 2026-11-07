@@ -51,7 +51,7 @@
  *   form-row               input and button on one row: same height and center; button not stretched
  *   field-width            text inputs with different widths (one form-field width)
  *   segmented              radio choices stacked vertically, native radios shown, weak selected state
- *   table-*                table header weight, first-column wrapping, cell padding
+ *   table-*                table header weight, first-column wrapping, cell padding, columns off-screen from 768 px up (table-overflow), a scrolling table that is not a named, focusable region (table-region)
  *   code-copy              a command's Copy and Run buttons sit together in the header row above its code, Copy first, content-sized,
  *                          inside the frame; the code scrolls sideways and never runs under them
  *   terminal-panel         the open terminal panel (Run pressed on the Export guide's help command): fits the page, panel buttons at touch size,
@@ -1206,6 +1206,11 @@ function measurePage(opts) {
       if (!vis(wrap)) continue;
       const rad = parseFloat(cs(wrap).borderTopLeftRadius);
       if (rad < 8) add("table-radius", wrap, "table frame radius is " + px(rad) + "; cards are 12 px");
+      // a table wider than its frame (not stacked into cards) must not hide columns: with the sample data it fits from 768 px up, and any table that does scroll is a named, focusable region
+      if (width > 640 && wrap.scrollWidth > wrap.clientWidth + 1) {
+        add("table-overflow", wrap, "table is " + wrap.scrollWidth + " px wide in a " + wrap.clientWidth + " px frame at " + width + "px, so columns are off-screen");
+        if (wrap.getAttribute("tabindex") !== "0" || wrap.getAttribute("role") !== "region" || !wrap.getAttribute("aria-label")) add("table-region", wrap, "a table that scrolls sideways is not a focusable, named region");
+      }
       if (width <= 640) for (const td of wrap.querySelectorAll("td")) { const c = cs(td, "::before").content; if (c && c !== "none" && c !== "normal") { add("table-label", td, "a stacked row repeats its column name before the cell (" + c + ")"); break; } }
     }
     // section headings: a chip on every h2 or on none

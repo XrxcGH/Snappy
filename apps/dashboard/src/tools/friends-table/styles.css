@@ -1,5 +1,10 @@
-/* Friends table: each cell stays on one line, so a narrow page scrolls the table sideways instead of crushing a date over four lines. */
-.tool-friends-table .table thead th, .tool-friends-table .table td { white-space: nowrap; }
+/* Friends table: dates and counts stay on one line, so a narrow page scrolls the table sideways instead of crushing a date over four lines. */
+.tool-friends-table .table td { white-space: nowrap; }
+/* The hints are words, so they may wrap and the long column header may take two lines. With the tighter cells this lets the table fit the column on a wide page. */
+.tool-friends-table .table td.cell-hints { white-space: normal; }
+@media (min-width: 40.01rem) {
+  .tool-friends-table .table th, .tool-friends-table .table td { padding-inline: var(--space-2); }
+}
 /* The table scrolls inside its frame: the grids around it must let it be narrower than its cells. */
 .tool-friends-table .paged, .tool-friends-table .friends-table-host { min-width: 0; }
 /* A long username wraps inside its row instead of widening the table on a phone. */

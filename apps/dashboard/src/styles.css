@@ -593,6 +593,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   /* The first column names the row and never wraps; the pill column fits its pill. */
   .table tbody th { white-space: nowrap; }
   .table td.cell-pill { white-space: nowrap; width: 1%; }
+  /* Real column headers say what a cell holds, so the words a stacked card needs ("Added ", " total") are hidden here. */
+  .table .cell-extra { display: none; }
 }
 @media (max-width: 40rem) {
   /* Each row becomes a card inside the frame: the name, then its cells. The header row is hidden, and a cell does not

@@ -1,5 +1,7 @@
 import { announce } from "../../announce.ts";
 import { button } from "../../components/button.ts";
+import { cellAround, cellNodes, scrollRegion } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
@@ -65,14 +67,21 @@ function hintsCell(r: FriendRow): string {
 }
 
 /** The cells after the username. Each says what it holds, since a phone shows no column names. */
-const cellsOf = (r: FriendRow): string[] => [
-  r.addedAt === null ? copy.noAddedCell : copy.addedCell(formatDate(r.addedAt)),
-  r.lastAt === null ? copy.noLastCell : copy.lastCell(formatDate(r.lastAt)),
-  copy.totalCell(r.total),
-  copy.sentCell(r.sent),
-  copy.receivedCell(r.received),
-  hintsCell(r),
-];
+const cellsOf = (r: FriendRow): TableCell[] => {
+  const added = r.addedAt === null ? null : formatDate(r.addedAt);
+  const last = r.lastAt === null ? null : formatDate(r.lastAt);
+  return [
+    added === null ? copy.noAddedCell : cellAround(copy.addedCell(added), added),
+    last === null ? copy.noLastCell : cellAround(copy.lastCell(last), last),
+    cellAround(copy.totalCell(r.total), formatCount(r.total)),
+    cellAround(copy.sentCell(r.sent), formatCount(r.sent)),
+    cellAround(copy.receivedCell(r.received), formatCount(r.received)),
+    hintsCell(r),
+  ];
+};
+
+/** The hints are the last cell after the username: words, which may wrap where the dates and counts may not. */
+const HINTS_COLUMN = 5;
 
 const HEADERS = [copy.friendHeader, copy.addedHeader, copy.lastHeader, copy.totalHeader, copy.sentHeader, copy.receivedHeader, copy.hintsHeader];
 
@@ -82,22 +91,25 @@ const HEADERS = [copy.friendHeader, copy.addedHeader, copy.lastHeader, copy.tota
  * table cannot draw.
  */
 function friendsTable(rows: readonly FriendRow[]): HTMLElement {
-  return h(
-    "div",
-    { class: "table-wrap" },
+  return scrollRegion(
     h(
-      "table",
-      { class: "table", role: "table" },
-      h("caption", { class: "table-caption" }, copy.tableCaption),
-      h("thead", { role: "rowgroup" }, h("tr", { role: "row" }, ...HEADERS.map((text) => h("th", { scope: "col", role: "columnheader" }, text)))),
+      "div",
+      { class: "table-wrap" },
       h(
-        "tbody",
-        { role: "rowgroup" },
-        ...rows.map((r) =>
-          h("tr", { role: "row" }, h("th", { scope: "row", role: "rowheader" }, usernameText(r.username)), ...cellsOf(r).map((text) => h("td", { role: "cell" }, text))),
+        "table",
+        { class: "table", role: "table" },
+        h("caption", { class: "table-caption" }, copy.tableCaption),
+        h("thead", { role: "rowgroup" }, h("tr", { role: "row" }, ...HEADERS.map((text) => h("th", { scope: "col", role: "columnheader" }, text)))),
+        h(
+          "tbody",
+          { role: "rowgroup" },
+          ...rows.map((r) =>
+            h("tr", { role: "row" }, h("th", { scope: "row", role: "rowheader" }, usernameText(r.username)), ...cellsOf(r).map((cell, i) => h("td", { role: "cell", class: i === HINTS_COLUMN ? "cell-hints" : undefined }, ...cellNodes(cell)))),
+          ),
         ),
       ),
     ),
+    copy.tableCaption,
   );
 }
 
@@ -141,7 +153,9 @@ export const view = toolView<FriendsTableResult, FriendsTableParams>({
   copy,
   params: DEFAULT_PARAMS,
   compute: computeFriendsTable,
-  summary: ({ table }) => copy.doneAnnounce(table.summary.friends, table.summary.quiet, table.summary.waiting),
+  // A filter is announced with its result, so a person who filters hears how many matched (or that none did), not the opening line again.
+  summary: ({ table, rows, filtered }) =>
+    filtered ? (rows.length === 0 ? copy.noMatchLine : copy.matchLine(rows.length, table.summary.friends)) : copy.doneAnnounce(table.summary.friends, table.summary.quiet, table.summary.waiting),
   // Nothing in the table at all. A filter that matches no one is not empty: the controls stay and a line says so.
   isEmpty: ({ table }) => table.summary.friends === 0,
   controls,

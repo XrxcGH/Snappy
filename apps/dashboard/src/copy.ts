@@ -83,6 +83,8 @@ export const common = {
   // Starts with the visible label, so voice control ("click Open profile") still matches.
   openInSnapchatFor: (u: string) => `Open profile: ${u} (opens Snapchat in a new tab)`,
   showMore: (n: number) => `Show ${n} more`,
+  /** The name of a table that scrolls sideways, read by a screen reader when the table takes focus. */
+  scrollTableFor: (caption: string) => `${caption}, scrolls sideways`,
   showing: (shown: string, total: string) => `Showing ${shown} of ${total}`,
   keep: "Keep friend",
   keepFor: (u: string) => `Keep friend ${u}`,
