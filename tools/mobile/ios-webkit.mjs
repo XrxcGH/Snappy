@@ -22,6 +22,7 @@ import { createRequire } from "node:module";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { showTheme } from "../screenshots/theme.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PHONES = ["iPhone SE", "iPhone 13", "iPhone 15", "iPhone 15 Pro Max"];
@@ -88,6 +89,13 @@ async function main() {
         page.on("console", (m) => { if (m.type() === "error") errors.push(`console error: ${m.text()}`); });
         await page.goto(url, { waitUntil: "load" });
         await page.waitForTimeout(400);
+        // Dark is the default whatever the device says, so each pass sets its theme with the header toggle (as a person would),
+        // and the helper checks the page really rendered in that theme before anything is measured or photographed.
+        try {
+          await showTheme(page, scheme);
+        } catch (e) {
+          errors.push(e.message);
+        }
         const { scrollWidth, innerWidth } = await page.evaluate(() => ({
           scrollWidth: document.documentElement.scrollWidth,
           innerWidth: window.innerWidth,
@@ -97,6 +105,23 @@ async function main() {
         if (blocked.length) problems.push(`tried to reach the network: ${blocked.join(", ")}`);
         const shot = path.join(opts.out, `${name.replace(/\s+/g, "-").toLowerCase()}-${scheme}.png`);
         await page.screenshot({ path: shot, fullPage: false });
+        // Then the same checks with the synthetic sample data loaded, so the stat and finding tiles (CSS subgrid) and the
+        // Memories page are exercised on WebKit too, not only the Start page.
+        try {
+          await page.getByRole("button", { name: "Use sample data" }).click();
+          await page.waitForFunction(() => !document.body.innerText.includes("Reading"), null, { timeout: 30000 }).catch(() => {});
+          await page.waitForTimeout(600);
+          for (const id of ["overview", "disappeared", "cleanup", "memories"]) {
+            await page.evaluate((h) => { location.hash = h; }, `#/${id}`);
+            await page.waitForTimeout(350);
+            const w = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
+            if (w.scrollWidth > w.innerWidth) problems.push(`sideways scroll on #/${id} with sample data: page is ${w.scrollWidth}px wide in a ${w.innerWidth}px window`);
+            if (id === "overview") await page.screenshot({ path: shot.replace(/\.png$/, "-overview.png"), fullPage: false });
+          }
+        } catch (e) {
+          problems.push(`sample data pass: ${e.message}`);
+        }
+        if (blocked.length && !problems.some((p) => p.startsWith("tried to reach the network"))) problems.push(`tried to reach the network: ${blocked.join(", ")}`);
         console.log(`${problems.length ? "FAIL" : "ok  "}  ${name}, ${scheme}, ${innerWidth}px${problems.length ? `\n        ${problems.join("\n        ")}` : ""}`);
         if (problems.length) failures++;
         await context.close();
