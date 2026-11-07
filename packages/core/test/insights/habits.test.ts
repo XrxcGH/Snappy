@@ -344,3 +344,111 @@ describe("computeHabits on a synthetic export", () => {
     expect(JSON.stringify(r)).not.toMatch(/active_\d|ghost_\d|ZQCANARY/i);
   });
 });
+
+/** The plain way to compute what the tuned pass computes: an object per bucket, a Set of days, a full sort of the gaps. */
+function referenceHabits(events: readonly HabitEvent[], now: number, offsetMinutes: number) {
+  const offsetMs = offsetMinutes * 60_000;
+  type Counts = { total: number; sent: number; received: number; unknown: number };
+  const empty = (): Counts => ({ total: 0, sent: 0, received: 0, unknown: 0 });
+  const hours = Array.from({ length: 24 }, empty);
+  const weekdays = Array.from({ length: 7 }, empty);
+  const months = new Map<number, Counts>();
+  const days = new Set<number>();
+  const times: number[] = [];
+  const totals = { ...empty(), undated: 0, future: 0 };
+  const bump = (c: Counts, d: "sent" | "received" | "unknown") => {
+    c.total++;
+    c[d]++;
+  };
+  for (const e of events) {
+    const t = e.at;
+    if (typeof t !== "number" || !Number.isFinite(t) || t <= 0 || t > MAX_EVENT_TIME) {
+      totals.undated++;
+      continue;
+    }
+    if (!(t <= now)) {
+      totals.future++;
+      continue;
+    }
+    const d = e.direction === "sent" || e.direction === "received" ? e.direction : "unknown";
+    const shifted = t + offsetMs;
+    const day = Math.floor(shifted / DAY);
+    const dt = new Date(shifted);
+    const monthIndex = dt.getUTCFullYear() * 12 + dt.getUTCMonth();
+    bump(totals, d);
+    bump(hours[Math.floor((((shifted % DAY) + DAY) % DAY) / HOUR)]!, d);
+    bump(weekdays[(((day + 4) % 7) + 7) % 7]!, d);
+    const m = months.get(monthIndex) ?? empty();
+    months.set(monthIndex, m);
+    bump(m, d);
+    days.add(day);
+    times.push(t);
+  }
+  let median: number | null = null;
+  if (times.length >= 2) {
+    const ordered = [...times].sort((a, b) => a - b);
+    const gaps = ordered.slice(1).map((v, i) => v - ordered[i]!).sort((a, b) => a - b);
+    const mid = gaps.length >> 1;
+    median = gaps.length % 2 === 1 ? gaps[mid]! : Math.round((gaps[mid - 1]! + gaps[mid]!) / 2);
+  }
+  return { hours, weekdays, months, activeDays: days.size, totals, median, first: times.length ? Math.min(...times) : null, last: times.length ? Math.max(...times) : null };
+}
+
+describe("computeHabits agrees with the plain way of counting", () => {
+  // A small seeded generator, so a failure is reproducible.
+  const rng = (seed: number) => () => ((seed = (seed * 1_664_525 + 1_013_904_223) >>> 0) / 2 ** 32);
+  const directions = ["sent", "received", "unknown", "mystery", undefined] as const;
+
+  function crafted(next: () => number, count: number): HabitEvent[] {
+    const out: HabitEvent[] = [];
+    for (let i = 0; i < count; i++) {
+      const roll = next();
+      const t =
+        roll < 0.04 ? NaN
+        : roll < 0.08 ? -5
+        : roll < 0.12 ? NOW + Math.floor(next() * 40) * DAY
+        : roll < 0.14 ? MAX_EVENT_TIME + 1
+        : roll < 0.17 ? Math.floor(next() * 3 * HOUR) + 1
+        : roll < 0.2 ? MAX_EVENT_TIME - Math.floor(next() * 5 * HOUR)
+        : roll < 0.4 ? NOW - Math.floor(next() * 3) * HOUR
+        : NOW - Math.floor(next() * 4 * 365 * DAY);
+      out.push({ direction: directions[Math.floor(next() * directions.length)], at: t });
+    }
+    return out;
+  }
+
+  it("gives the same counts, months, days and median gap for many shapes of input and every time zone", () => {
+    const next = rng(7);
+    const offsets = [-720, -300, -210, 0, 60, 330, 345, 525, 840];
+    for (const count of [0, 1, 2, 3, 4, 5, 17, 200, 1500]) {
+      const events = crafted(next, count);
+      for (const offset of offsets) {
+        const got = computeHabits(events, { now: NOW, utcOffsetMinutes: offset });
+        const want = referenceHabits(events, NOW, offset);
+        const label = `${count} events at ${offset}`;
+        expect(got.totals, label).toMatchObject({ ...want.totals, used: want.totals.total, events: count });
+        expect(got.byHour.map(({ hour: _h, ...c }) => c), label).toEqual(want.hours);
+        expect(got.byWeekday.map(({ weekday: _w, ...c }) => c), label).toEqual(want.weekdays);
+        const keys = [...want.months.keys()];
+        expect(got.byMonth.length, label).toBe(keys.length === 0 ? 0 : Math.max(...keys) - Math.min(...keys) + 1);
+        for (const b of got.byMonth) {
+          const [y, m] = b.month.split("-").map(Number) as [number, number];
+          const c = want.months.get(y * 12 + m - 1) ?? { total: 0, sent: 0, received: 0, unknown: 0 };
+          expect({ total: b.total, sent: b.sent, received: b.received, unknown: b.unknown }, `${label} ${b.month}`).toEqual(c);
+        }
+        expect(got.activeDays, label).toBe(want.activeDays);
+        expect(got.medianGapMs, label).toBe(want.median);
+        expect(got.first, label).toBe(want.first);
+        expect(got.last, label).toBe(want.last);
+      }
+    }
+  });
+
+  it("finds the median gap when most gaps are zero", () => {
+    const events = [...Array.from({ length: 9 }, () => sent(NOW - DAY)), sent(NOW - HOUR), sent(NOW - 1000)];
+    // Ten gaps: eight zeros, then two larger. The median is the mean of the two middle values, both zero.
+    expect(computeHabits(events, { now: NOW }).medianGapMs).toBe(0);
+    // Gaps 10, 1 and 29 sort to 1, 10, 29.
+    expect(computeHabits([sent(NOW - 40), sent(NOW - 30), sent(NOW - 29), sent(NOW)], { now: NOW }).medianGapMs).toBe(10);
+  });
+});
