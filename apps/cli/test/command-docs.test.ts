@@ -35,8 +35,8 @@ beforeAll(async () => {
 });
 
 describe("the command list", () => {
-  it("registers the 14 insight commands next to the earlier ones", () => {
-    expect(INSIGHT_COMMANDS).toHaveLength(14);
+  it("registers the 22 insight commands next to the earlier ones", () => {
+    expect(INSIGHT_COMMANDS).toHaveLength(22);
     for (const c of INSIGHT_COMMANDS) expect(COMMAND_NAMES, c.name).toContain(c.name);
     for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "ledger", "demo"]) expect(COMMAND_NAMES, name).toContain(name);
     expect(new Set(COMMAND_NAMES).size, "no name is registered twice").toBe(COMMAND_NAMES.length);
@@ -85,7 +85,7 @@ describe("every registered command is in the README", () => {
   });
 
   it("points the root README at the insight commands, with the right count and real names", () => {
-    const words = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"];
+    const words = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty", "Twenty-one", "Twenty-two"];
     expect(ROOT_README).toContain(`${words[INSIGHT_COMMANDS.length] ?? "?"} more commands`);
     expect(ROOT_README).toContain("apps/cli/README.md");
     const line = ROOT_README.split(/\r?\n/).find((l) => l.includes("more commands")) ?? "";

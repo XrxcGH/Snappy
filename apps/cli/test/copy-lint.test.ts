@@ -434,7 +434,7 @@ async function collectOutputs(): Promise<Record<string, string>> {
   await capture("errors", ["analyze", join(dir, "missing.zip")]);
   await capture("usage", ["analyze", later, "--bogus"]);
   await capture("unknown", ["bogus"]);
-  // The 14 insight commands: their output, options, help and mistakes.
+  // The 22 insight commands: their output, options, help and mistakes.
   for (const [name, text] of Object.entries(await collectInsightOutputs())) outputs[name] = stripPaths(text);
   return outputs;
 }

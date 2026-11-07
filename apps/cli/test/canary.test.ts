@@ -146,7 +146,7 @@ describe("no canary reaches any output", () => {
 });
 
 /**
- * The 14 insight commands, run through the CLI over the canary export (the runs in insight-outputs.ts):
+ * The 22 insight commands, run through the CLI over the canary export (the runs in insight-outputs.ts):
  * nothing they print, in text or JSON, and nothing they write, may carry a canary or a link fragment, and
  * a mistake never names a person.
  */
@@ -191,8 +191,8 @@ describe("no canary reaches an insight command", () => {
   it("the files they write on purpose, from an export that holds download links", async () => {
     const { files } = await insightRuns();
     const names = Object.keys(files);
-    expect(names.length).toBe(8);
-    for (const extension of [".json", ".ics"]) expect(names.some((n) => n.endsWith(extension)), extension).toBe(true);
+    expect(names.length).toBe(11);
+    for (const extension of [".json", ".ics", ".csv"]) expect(names.some((n) => n.endsWith(extension)), extension).toBe(true);
     for (const [path, text] of Object.entries(files)) {
       leaks(text, path);
       noLinks(text, path);
@@ -259,7 +259,7 @@ describe("no canary or zip entry name reaches a three-part rescue", () => {
     // Three real runs over multi-part zips: about 5 s alone, but it passed the default 30 s limit once under a full parallel run.
   }, 120_000);
 
-  it("the 14 insight commands: text, JSON and the files they write, over a three-part export", async () => {
+  it("the 22 insight commands: text, JSON and the files they write, over a three-part export", async () => {
     const runs = await insightRuns();
     // The runs read their own exports, so the entry names inside them are what must stay out.
     const own = entryPieces(runs.entryNames);

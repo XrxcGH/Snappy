@@ -18,9 +18,9 @@ import type { Term } from "../term.ts";
 
 export const REACH_OUT_USAGE = `Usage: snappy-export reach-out <ZIP files or folder...> [options]
 
-Shows who tends to reach out first in each one-to-one chat. A chat is cut into exchanges: a new one
-starts after a long silence, and whoever wrote first started it. It reads who sent each saved chat
-and Snap and when, never message text, photos or videos.
+Shows who tends to reach out first in each one-to-one chat. A new exchange starts after a long
+silence, and whoever wrote first started it. It reads who sent each saved chat and Snap and when,
+never message text, photos or videos.
 
 Options
   --gap-hours <n>       Hours of silence that start a new exchange. Default 6.

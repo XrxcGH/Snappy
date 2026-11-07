@@ -32,7 +32,7 @@ Exit codes: 0 done, 1 could not run, 2 the export has errors (analyze, inspect, 
 
 ## More commands
 
-These fourteen commands read your export and answer one question each. All of them work offline, and none reads message text, photos, videos, locations, or login history. Each one prints text, and takes `--json`, `--verbose`, and `--no-color`. Run `npm run snappy-export -- help <command>` for its options. A command writes a file only when you pass an output option such as `--out`, and never replaces a file unless you add `--force`. The ledger is read only by `friend-count`, and never changed.
+These twenty-two commands read your export and answer one question each. All of them work offline, and none reads message text, photos, videos, locations, or login history. Each one prints text, and takes `--json`, `--verbose`, and `--no-color`. Run `npm run snappy-export -- help <command>` for its options. A command writes a file only when you pass an output option such as `--out`, and never replaces a file unless you add `--force`. The ledger is read only by `friend-count` and `since`, and never changed.
 
 **Your export**
 
@@ -40,6 +40,10 @@ These fourteen commands read your export and answer one question each. All of th
   `npm run snappy-export -- check "mydata*.zip"`
 - `snappy-export remind`: makes a calendar file that reminds you to request your next export. It holds no personal data, and the ZIP files are read only to find your last export date.
   `npm run snappy-export -- remind "mydata*.zip" --out reminder.ics`
+- `snappy-export since`: shows what changed since your last export: friends added, friends who may have left, and how your requests went. It compares with your sealed history or with `--earlier`, and `--out` saves the changes as a CSV file that lists usernames.
+  `npm run snappy-export -- since "mydata*.zip" --earlier "older*.zip"`
+- `snappy-export year`: sums up one year of chats, Snaps, new friends and Memories. It reads dates, directions and types only, so it prints no usernames.
+  `npm run snappy-export -- year "mydata*.zip" --year 2025`
 
 **Friends**
 
@@ -51,15 +55,25 @@ These fourteen commands read your export and answer one question each. All of th
   `npm run snappy-export -- backup "mydata*.zip" --out friends.json`
 - `snappy-export blocked`: lists the people you blocked, ignored, or hid from suggestions, and people who show up in more than one place. `--counts` prints no usernames.
   `npm run snappy-export -- blocked "mydata*.zip" --counts`
+- `snappy-export lookalikes`: finds usernames that look alike, such as two names that differ by a dot or a digit. A pair proves nothing, so it only says a pair may be worth a second look. `--counts` prints no usernames.
+  `npm run snappy-export -- lookalikes "mydata*.zip" --counts`
 - `snappy-export friend-count`: shows how your friend count grew and shrank, month by month, from the dates in your export. With a ledger it also compares the two. `--no-save` skips the ledger.
   `npm run snappy-export -- friend-count "mydata*.zip" --no-save`
+- `snappy-export friends`: lists your friends in one table, with the day you added each one and your last chat or Snap. It can sort and filter, and `--out` saves the table as a CSV file that lists usernames.
+  `npm run snappy-export -- friends "mydata*.zip" --sort last --desc --limit 10`
 
 **Chats**
 
 - `snappy-export replies`: lists friends who may be waiting on a reply from you, friends you may be waiting on, and one-sided chats. It reads who wrote last and when, never message text.
   `npm run snappy-export -- replies "mydata*.zip" --you-days 3`
+- `snappy-export reply-speed`: shows how fast you and your friends reply in one-to-one chats. It reads who wrote and when, never message text. `--out` saves every friend as a CSV file that lists usernames.
+  `npm run snappy-export -- reply-speed "mydata*.zip" --limit 5`
+- `snappy-export reach-out`: shows who tends to reach out first in each one-to-one chat. A new exchange starts after a long silence. It reads who wrote and when, never message text.
+  `npm run snappy-export -- reach-out "mydata*.zip" --gap-hours 6`
 - `snappy-export habits`: shows when you chat and Snap most, by hour, weekday, and month. It reads times and directions only, never names.
   `npm run snappy-export -- habits "mydata*.zip" --utc-offset=-5`
+- `snappy-export calendar`: shows your activity by day, week and month, and which kinds it was. It reads kinds and times only, never names. `--detail` adds a row for every full week.
+  `npm run snappy-export -- calendar "mydata*.zip" --year 2025`
 
 **Memories**
 
@@ -67,6 +81,8 @@ These fourteen commands read your export and answer one question each. All of th
   `npm run snappy-export -- storage "mydata*.zip" --goal-gb 5`
 - `snappy-export on-this-day`: shows the Memories you took on this day in earlier years. It reads the dates in your Memories list only.
   `npm run snappy-export -- on-this-day "mydata*.zip" --date 2026-11-06`
+- `snappy-export gaps`: finds the months with no Memories and the busiest stretch. It reads the dates in your Memories list only, and writes no file.
+  `npm run snappy-export -- gaps "mydata*.zip" --min-gap 3`
 - `snappy-export rescue`: lists the Memories a rescue saves, writes that list as a manifest with `--out`, and later checks a rescue folder against it with `--verify`. It compares names, sizes, and file dates, and never opens a photo or video.
   `npm run snappy-export -- rescue "mydata*.zip" --out manifest.json`
 

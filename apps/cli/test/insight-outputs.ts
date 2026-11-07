@@ -1,5 +1,5 @@
 /**
- * The terminal text of the 14 insight commands, collected once from real runs through the CLI's own
+ * The terminal text of the 22 insight commands, collected once from real runs through the CLI's own
  * dispatch (runCli), on synthetic data only. The copy lint, the brand-voice gate, the plural check
  * and the canary gate read these; nothing here asserts anything itself.
  *
@@ -8,8 +8,9 @@
  */
 import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { syntheticExportZip } from "@snappy-export/core";
 import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
-import { makeIo, run, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { LATER, makeIo, run, tempDir, writeDemoPair, writeSyntheticParts, writeSyntheticZip } from "./helpers.ts";
 import { sharedRuns } from "./shared-runs.ts";
 import { describeZips } from "./verify-memories-output.ts";
 
@@ -189,6 +190,112 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
   await capture("remind json", ["remind", "--json"]);
   written(calendar, calendarParts);
 
+  // reach-out: a damaged ZIP file, the options and every mistake.
+  const damagedDir = join(dir, "damaged");
+  mkdirSync(damagedDir, { recursive: true });
+  const damaged = join(damagedDir, "damaged.zip");
+  const fullZip = syntheticExportZip({ now: LATER, friendCount: 40, memoryCount: 20 });
+  writeFileSync(damaged, fullZip.subarray(0, Math.floor(fullZip.length * 0.6)));
+  await capture("reach-out", ["reach-out", parts]);
+  await capture("reach-out verbose", ["reach-out", parts, "--verbose"]);
+  await capture("reach-out options", ["reach-out", parts, "--gap-hours", "1", "--min-exchanges", "1", "--share", "50", "--limit", "3"]);
+  await capture("reach-out few exchanges", ["reach-out", parts, "--min-exchanges", "100"]);
+  await capture("reach-out error damaged", ["reach-out", damaged]);
+  await capture("reach-out error not found", ["reach-out", join(dir, "missing.zip")]);
+  await capture("reach-out error no input", ["reach-out"]);
+  await capture("reach-out error gap hours", ["reach-out", parts, "--gap-hours", "0"]);
+  await capture("reach-out error share", ["reach-out", parts, "--share", "49"]);
+  await capture("reach-out error min exchanges", ["reach-out", parts, "--min-exchanges", "0"]);
+  await capture("reach-out error number", ["reach-out", parts, "--limit", "x"]);
+  await capture("reach-out error option", ["reach-out", parts, "--bogus"]);
+
+  // reply-speed: the friends table as a CSV file the person asked for.
+  const speedDir = join(dir, "speed");
+  const speedCsv = join(speedDir, "reply-speed.csv");
+  await capture("reply-speed", ["reply-speed", parts]);
+  await capture("reply-speed limit", ["reply-speed", parts, "--limit", "3"]);
+  await capture("reply-speed offset", ["reply-speed", parts, "--utc-offset=-5:30"]);
+  await capture("reply-speed saved", ["reply-speed", parts, "--out", speedCsv]);
+  await capture("reply-speed error exists", ["reply-speed", parts, "--out", speedCsv]);
+  await capture("reply-speed saved again", ["reply-speed", parts, "--out", speedCsv, "--force"]);
+  await capture("reply-speed verbose", ["reply-speed", parts, "--verbose"]);
+  await capture("reply-speed error offset", ["reply-speed", later, "--utc-offset=99"]);
+  await capture("reply-speed error limit", ["reply-speed", later, "--limit=0"]);
+  await capture("reply-speed error csv", ["reply-speed", later, "--out", join(speedDir, "x.txt")]);
+  await capture("reply-speed error option", ["reply-speed", later, "--bogus"]);
+  await capture("reply-speed error no input", ["reply-speed"]);
+  await capture("reply-speed error not found", ["reply-speed", join(dir, "missing.zip")]);
+  written(speedCsv);
+
+  // lookalikes
+  await capture("lookalikes", ["lookalikes", later]);
+  await capture("lookalikes parts", ["lookalikes", parts, "--verbose"]);
+  await capture("lookalikes counts", ["lookalikes", later, "--counts", "--limit", "1"]);
+  await capture("lookalikes error number", ["lookalikes", later, "--limit", "x"]);
+
+  // year
+  await capture("year", ["year", later]);
+  await capture("year options", ["year", parts, "--year", "2025", "--utc-offset=-5:30"]);
+  await capture("year verbose", ["year", parts, "--verbose"]);
+  await capture("year error year", ["year", later, "--year=1900"]);
+  await capture("year error offset", ["year", later, "--utc-offset=99"]);
+
+  // since: the ledger holds both exports, so it compares with the last one saved before.
+  const sinceDir = join(dir, "since");
+  const sinceCsv = join(sinceDir, "changes.csv");
+  await capture("since ledger", ["since", later, "--ledger", ledger]);
+  await capture("since earlier", ["since", later, "--earlier", earlier]);
+  await capture("since counts", ["since", later, "--earlier", earlier, "--counts", "--verbose"]);
+  await capture("since limit", ["since", later, "--earlier", earlier, "--limit", "1"]);
+  await capture("since swapped", ["since", earlier, "--earlier", later]);
+  await capture("since no save", ["since", later, "--no-save"]);
+  await capture("since", ["since", later, "--ledger", join(dir, "no-ledger.sealed")]);
+  await capture("since parts", ["since", parts, "--earlier", earlier, "--verbose"]);
+  await capture("since saved", ["since", later, "--earlier", earlier, "--out", sinceCsv]);
+  await capture("since error exists", ["since", later, "--earlier", earlier, "--out", sinceCsv]);
+  await capture("since error csv", ["since", later, "--earlier", earlier, "--out", join(sinceDir, "x.txt")]);
+  await capture("since offset", ["since", later, "--earlier", earlier, "--utc-offset=-5:30"]);
+  await capture("since error number", ["since", later, "--limit", "x"]);
+  await capture("since error not found", ["since", join(dir, "missing.zip")]);
+  written(sinceCsv);
+
+  // friends
+  const friendsDir = join(dir, "friends");
+  const friendsCsv = join(friendsDir, "friends.csv");
+  await capture("friends", ["friends", parts]);
+  await capture("friends sorted", ["friends", parts, "--sort", "last", "--desc", "--limit", "5"]);
+  await capture("friends quiet", ["friends", parts, "--quiet", "--utc-offset", "5:30"]);
+  await capture("friends waiting", ["friends", parts, "--waiting", "--verbose"]);
+  await capture("friends waiting on them", ["friends", parts, "--waiting-on", "them"]);
+  await capture("friends filtered", ["friends", parts, "--starts-with", "active_1", "--added-from", "2025-01-01"]);
+  await capture("friends saved", ["friends", parts, "--out", friendsCsv]);
+  await capture("friends error exists", ["friends", parts, "--out", friendsCsv]);
+  await capture("friends error csv", ["friends", parts, "--out", join(friendsDir, "friends.txt")]);
+  await capture("friends error sort", ["friends", join(dir, "missing.zip"), "--sort", "x"]);
+  await capture("friends error date", ["friends", parts, "--added-from", "x"]);
+  written(friendsCsv);
+
+  // calendar
+  await capture("calendar", ["calendar", later]);
+  await capture("calendar detail", ["calendar", parts, "--detail", "--utc-offset=-5:30", "--year", "2025", "--limit", "2"]);
+  await capture("calendar verbose", ["calendar", parts, "--verbose"]);
+  await capture("calendar empty year", ["calendar", later, "--year", "2030", "--verbose"]);
+  await capture("calendar error year", ["calendar", later, "--year", "x"]);
+  await capture("calendar error limit", ["calendar", later, "--limit", "0"]);
+  await capture("calendar error offset", ["calendar", later, "--utc-offset=99"]);
+  await capture("calendar error not found", ["calendar", join(dir, "missing.zip")]);
+
+  // gaps: the last run is an export that has no Memories list.
+  const noMemories = writeSyntheticZip(join(dir, "no-memories"), "no-memories.zip", { memoryCount: 0 });
+  await capture("gaps", ["gaps", parts]);
+  await capture("gaps verbose", ["gaps", parts, "--verbose"]);
+  await capture("gaps options", ["gaps", parts, "--min-gap", "1", "--stretch", "6", "--limit", "2"]);
+  await capture("gaps offset", ["gaps", parts, "--utc-offset=-5"]);
+  await capture("gaps error number", ["gaps", parts, "--min-gap", "x"]);
+  await capture("gaps error stretch", ["gaps", parts, "--stretch", "25"]);
+  await capture("gaps error offset", ["gaps", parts, "--utc-offset", "99"]);
+  await capture("gaps no memories", ["gaps", noMemories]);
+
   // JSON of every command, with --verbose and the list variants. Each one is read over the export that holds
   // download links ("<name> json") and over the three-part export that holds entry names ("<name> json parts"),
   // since a leak of either kind would show in only one of them.
@@ -214,6 +321,16 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
       ["rescue", ["rescue", source]],
       ["rescue folder", ["rescue", source, "--folder", folder]],
       ["remind", ["remind", source]],
+      ["reach-out", ["reach-out", source, "--gap-hours", "1", "--min-exchanges", "1", "--share", "50"]],
+      ["reply-speed", ["reply-speed", source, "--utc-offset=-5:30"]],
+      ["lookalikes", ["lookalikes", source]],
+      ["lookalikes counts", ["lookalikes", source, "--counts"]],
+      ["year", ["year", source, "--utc-offset=-5:30"]],
+      ["since", ["since", source, "--earlier", earlier]],
+      ["since swapped", ["since", earlier, "--earlier", source]],
+      ["friends", ["friends", source, "--utc-offset=-5:30"]],
+      ["calendar", ["calendar", source, "--detail", "--utc-offset=-5:30", "--limit", "3"]],
+      ["gaps", ["gaps", source, "--min-gap", "1"]],
     ];
     for (const [name, args] of cases) await capture(`${name} json${label}`, [...args, "--json", "--verbose"]);
   }

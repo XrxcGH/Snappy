@@ -91,15 +91,23 @@ Once your export is in one folder, these commands each answer one question. None
 |---|---|---|
 | `check` | Whether your export is complete enough to use. | The lists and dates. |
 | `remind` | Makes a calendar reminder to request your next export. | At most your last export date. |
+| `since` | What changed since your last export. | The friends and request lists, and your saved history or an earlier export. |
+| `year` | A sum-up of one year of chats, Snaps, new friends and Memories. | Dates, directions and types, never names. |
 | `closest` | Friends you chat and Snap with most, and friends who may be fading. | Who and when, from chats and Snaps. |
 | `anniversaries` | Friendships that reach a whole year soon. | The friends list and its dates. |
 | `backup` | Saves your friends lists as a file, and checks it against a later export. | The friends, blocked, and ignored lists. |
 | `blocked` | People you blocked, ignored, or hid from suggestions. | The same lists. |
+| `lookalikes` | Usernames that look alike, such as names that differ by a dot or a digit. | The usernames in your friends, request and blocked lists. |
 | `friend-count` | How your friend count changed, month by month. | Dates in the friends lists, and your saved history. |
+| `friends` | Your friends in one sortable table. | Friend usernames and dates, and who wrote last and when. |
 | `replies` | Friends who may be waiting on a reply, and one-sided chats. | Who wrote last and when. |
+| `reply-speed` | How fast you and your friends reply. | Who wrote and when. |
+| `reach-out` | Who tends to reach out first. | Who wrote and when. |
 | `habits` | When you chat and Snap most. | Times and directions, never names. |
+| `calendar` | Your activity by day, week and kind. | Kinds and times, never names. |
 | `storage` | A plan for saving your Memories under a storage goal. | Memories dates, types, and sizes. |
 | `on-this-day` | Memories you took on this day in earlier years. | The dates in your Memories list. |
+| `gaps` | Quiet stretches in your Memories. | The dates in your Memories list. |
 | `rescue` | A list of the Memories a rescue saves, and a check of a rescue folder. | File names, sizes, and file dates. It never opens a photo or video. |
 | `safety` | An account safety checklist. | Nothing, or counts of blocked people and requests. |
 | `privacy` | A privacy settings checklist. | Nothing from your export. |
@@ -111,15 +119,23 @@ One example for each, in the same form as above:
 ```powershell
 npm run snappy-export -- check "C:\Users\you\Downloads\mydata*.zip"
 npm run snappy-export -- remind "C:\Users\you\Downloads\mydata*.zip" --out "C:\Users\you\Documents\export-reminder.ics"
+npm run snappy-export -- since "C:\Users\you\Downloads\mydata*.zip" --earlier "C:\Users\you\Downloads\older*.zip"
+npm run snappy-export -- year "C:\Users\you\Downloads\mydata*.zip" --year 2025
 npm run snappy-export -- closest "C:\Users\you\Downloads\mydata*.zip" --window 90
 npm run snappy-export -- anniversaries "C:\Users\you\Downloads\mydata*.zip" --days 60
 npm run snappy-export -- backup "C:\Users\you\Downloads\mydata*.zip" --out "C:\Users\you\Documents\friends.json"
 npm run snappy-export -- blocked "C:\Users\you\Downloads\mydata*.zip" --counts
+npm run snappy-export -- lookalikes "C:\Users\you\Downloads\mydata*.zip" --counts
 npm run snappy-export -- friend-count "C:\Users\you\Downloads\mydata*.zip" --no-save
+npm run snappy-export -- friends "C:\Users\you\Downloads\mydata*.zip" --sort last --desc --limit 10
 npm run snappy-export -- replies "C:\Users\you\Downloads\mydata*.zip"
+npm run snappy-export -- reply-speed "C:\Users\you\Downloads\mydata*.zip" --limit 5
+npm run snappy-export -- reach-out "C:\Users\you\Downloads\mydata*.zip"
 npm run snappy-export -- habits "C:\Users\you\Downloads\mydata*.zip" --utc-offset=-5
+npm run snappy-export -- calendar "C:\Users\you\Downloads\mydata*.zip" --year 2025
 npm run snappy-export -- storage "C:\Users\you\Downloads\mydata*.zip" --goal-gb 5
 npm run snappy-export -- on-this-day "C:\Users\you\Downloads\mydata*.zip" --date 2026-11-06
+npm run snappy-export -- gaps "C:\Users\you\Downloads\mydata*.zip" --min-gap 3
 npm run snappy-export -- rescue "C:\Users\you\Downloads\mydata*.zip" --out "C:\Users\you\Documents\manifest.json"
 npm run snappy-export -- safety --done blocked-list,connected-apps
 npm run snappy-export -- privacy --done search,quick-add

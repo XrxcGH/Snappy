@@ -62,7 +62,7 @@ npm run snappy-export -- demo --run
 | `snappy-export ledger status` | Lists the exports in your history: dates and friend counts, never usernames. |
 | `snappy-export demo` | Writes two invented exports and prints commands to try them. |
 
-Fourteen more commands (`check`, `storage`, `backup`, `closest`, `remind`, and others) are listed in [apps/cli/README.md](apps/cli/README.md#more-commands). Run `snappy-export help` to see them all.
+Twenty-two more commands (`check`, `storage`, `backup`, `closest`, `remind`, `since`, `year`, and others) are listed in [apps/cli/README.md](apps/cli/README.md#more-commands). Run `snappy-export help` to see them all.
 
 Examples:
 

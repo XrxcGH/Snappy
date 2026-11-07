@@ -54,7 +54,7 @@ export async function collectOutputs(): Promise<Record<string, string>> {
   await capture("error help topic", ["help", "bogus"]);
   await capture("error unknown command", ["bogus"]);
   await capture("error wrong passphrase", ["ledger", "status", "--ledger", ledger], { env: { SNAPPY_PASSPHRASE: "not-the-passphrase" } });
-  // The 14 insight commands: their output, options, help and mistakes.
+  // The 22 insight commands: their output, options, help and mistakes.
   Object.assign(outputs, await collectInsightOutputs());
   return outputs;
 }

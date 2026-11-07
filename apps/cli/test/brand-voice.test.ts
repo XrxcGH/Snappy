@@ -59,7 +59,7 @@ async function collect(): Promise<Record<string, string>> {
   const stopped = new AbortController();
   stopped.abort();
   await capture("stopped", ["memories", parts, "--out", join(dir, "stop-out")], { signal: stopped.signal });
-  // The 14 insight commands: their output, options, help and mistakes.
+  // The 22 insight commands: their output, options, help and mistakes.
   Object.assign(outputs, await collectInsightOutputs());
   return outputs;
 }
