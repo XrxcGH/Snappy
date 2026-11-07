@@ -29,7 +29,7 @@ describe("the command", () => {
     for (const heading of ["Who can reach you", "Who can see you", "Your location", "Public", "Ads and data"]) expect(out).toContain(heading);
     expect(out).toContain("To do");
     expect(out).not.toMatch(/\bDone {2,}/);
-    expect(out).toContain("Next\n  Who can contact you (contact-me).");
+    expect(out).toContain("Next\n  Who can contact you.");
     expect(out).toContain("Mark it with --done contact-me.");
     expect(out).toContain("Nothing is marked yet.");
     expect(out).toContain("These marks are what you told Snappy. It cannot see your settings.");
@@ -46,7 +46,13 @@ describe("the command", () => {
     expect(out).toMatch(/Done {5}contact-me/);
     expect(out).toMatch(/Done {5}search/);
     expect(out).toMatch(/To do {4}group-invites/);
-    expect(out).toContain("Next\n  Group chat invites (group-invites).");
+    expect(out).toContain("Next\n  Group chat invites.");
+    // Marks are not saved, so the next command keeps the earlier marks.
+    const marked = ["contact-me", "search", "quick-add"];
+    const inListOrder = IDS.filter((id) => marked.includes(id));
+    expect(out).toContain(`Mark it with --done ${[...inListOrder, "group-invites"].join(",")}.`);
+    expect(out).not.toContain("(group-invites)");
+    expect(out).not.toContain("Mark it with --done group-invites.");
     expect(out).not.toContain("Nothing is marked yet.");
     const again = await runInsight(privacyCommand, []);
     expect(again.out).toContain("0 of 9 settings marked done");

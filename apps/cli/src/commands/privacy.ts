@@ -104,7 +104,11 @@ export function renderPrivacy(raw: Result, term: Term, verbose: boolean): string
   for (const s of result.sections) out.push(...section(term, s.title, itemLines(s.items, idWidth)));
 
   const next = all.find((i) => i.id === result.nextItemId);
-  if (next !== undefined) out.push(...section(term, "Next", [`${next.title} (${next.id}).`, `Mark it with --done ${next.id}.`]));
+  if (next !== undefined) {
+    // Marks are not saved, so the command to run next carries every done id plus the next one.
+    const ids = [...all.filter((i) => i.state === "done" && i.id !== next.id).map((i) => i.id), next.id];
+    out.push(...section(term, "Next", [`${next.title}.`, `Mark it with --done ${ids.join(",")}.`]));
+  }
 
   const notes: NoteLine[] = result.notes.map((n) => ({ severity: n.code === "entries_ignored" ? "warning" : "info", code: n.code, text: noteText(n) }));
   const noteLines = renderNotes(notes, term, { heading: "Notes", verbose });
