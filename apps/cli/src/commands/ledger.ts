@@ -46,15 +46,15 @@ export async function ledgerCommand(args: string[], io: Io): Promise<number> {
   }
 
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
-  const ledgerPath = flags.ledger ?? defaultLedgerPath(io.homedir());
-  if (await isFreshStore(ledgerPath)) {
+  const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
+  if (await isFreshStore(io, ledgerPath)) {
     io.out.write("No ledger yet. Run snappy-export analyze on your export to start one.\n");
     return 0;
   }
 
   const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: false });
-  const ledger = await loadLedger(ledgerPath, passphrase);
-  const allowlist = await loadAllowlist(ledgerPath, passphrase);
+  const ledger = await loadLedger(io, ledgerPath, passphrase);
+  const allowlist = await loadAllowlist(io, ledgerPath, passphrase);
 
   const lines: string[] = [term.bold("Ledger"), `  File: ${ledgerPath}`];
   if (ledger === undefined) {

@@ -48,18 +48,18 @@ export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: I
     throw new CliError("usage", "Usernames have no spaces. Check the names and try again.");
   }
 
-  const ledgerPath = flags.ledger ?? defaultLedgerPath(io.homedir());
-  const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(ledgerPath) });
+  const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
+  const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(io, ledgerPath) });
   // Unlock, change and save under one lock, so a second `keep` running at the same time is not lost.
-  const { current, changed } = await withLedgerLock(ledgerPath, async () => {
-    const { allowlist } = await unlockStore(ledgerPath, passphrase);
+  const { current, changed } = await withLedgerLock(io, ledgerPath, async () => {
+    const { allowlist } = await unlockStore(io, ledgerPath, passphrase);
     const current = new Set(allowlist);
     const changed = names.filter((n) => (mode === "keep" ? !current.has(n) : current.has(n)));
     for (const n of changed) {
       if (mode === "keep") current.add(n);
       else current.delete(n);
     }
-    if (changed.length > 0) await saveAllowlist(ledgerPath, normalizeAllowlist([...current]), passphrase);
+    if (changed.length > 0) await saveAllowlist(io, ledgerPath, normalizeAllowlist([...current]), passphrase);
     return { current, changed };
   });
 

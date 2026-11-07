@@ -2,8 +2,6 @@
  * snappy-export demo: write two SYNTHETIC exports (invented friends, no real data) and show how to try
  * Snappy on them. Nothing here ever touches a real Snapchat export.
  */
-import { mkdir, mkdtemp } from "node:fs/promises";
-import { join } from "node:path";
 import { syntheticExportZip } from "@snappy-export/core";
 import { parseFlags } from "../args.ts";
 import { fsError } from "../errors.ts";
@@ -52,21 +50,21 @@ export async function demoCommand(args: string[], io: Io): Promise<number> {
 
   let dir: string;
   try {
-    if (flags.dir === undefined) dir = await mkdtemp(join(io.tmpdir(), "snappy-demo-"));
+    if (flags.dir === undefined) dir = await io.fs.makeTempDir(io.path.join(io.tmpdir(), "snappy-demo-"));
     else {
       dir = flags.dir;
-      await mkdir(dir, { recursive: true });
+      await io.fs.mkdir(dir, { recursive: true });
     }
   } catch (e) {
     throw fsError(e, "create the demo folder", flags.dir ?? io.tmpdir());
   }
 
-  const earlier = join(dir, "snappy-demo-earlier.zip");
-  const later = join(dir, "snappy-demo-later.zip");
+  const earlier = io.path.join(dir, "snappy-demo-earlier.zip");
+  const later = io.path.join(dir, "snappy-demo-later.zip");
   // The real export shape: empty Memories links, files paired by time, a Snap history.
   const common = { now: DEMO_NOW, friendCount: 60, memoryCount: 40, realisticMemories: true };
-  await atomicWrite(earlier, syntheticExportZip({ ...common, phase: 1 }), { sync: false });
-  await atomicWrite(later, syntheticExportZip({ ...common, phase: 2 }), { sync: false });
+  await atomicWrite(io, earlier, syntheticExportZip({ ...common, phase: 1 }), { sync: false });
+  await atomicWrite(io, later, syntheticExportZip({ ...common, phase: 2 }), { sync: false });
 
   const snappy = commandPrefix(io);
   const analyze = `${snappy} analyze "${later}" --earlier "${earlier}" --no-save`;

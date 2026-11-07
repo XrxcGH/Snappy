@@ -198,16 +198,16 @@ describe("snappy-export memories: --download", () => {
 describe("snappy-export memories: guards", () => {
   it("keeps every output path inside the output folder", () => {
     const root = join(tempDir("mem"), "out");
-    expect(targetInside(root, "2026/2026-01/a.jpg")).toBe(join(root, "2026", "2026-01", "a.jpg"));
+    expect(targetInside(makeIo(), root, "2026/2026-01/a.jpg")).toBe(join(root, "2026", "2026-01", "a.jpg"));
     for (const bad of ["../escape.jpg", "a/../../escape.jpg", "..", "", "C:/Windows/x.jpg", "/etc/passwd", "a\0b.jpg", "a/../.."]) {
-      const target = targetInside(root, bad);
+      const target = targetInside(makeIo(), root, bad);
       expect(target === undefined || relative(root, target).split(/[\\/]/)[0] !== "..", bad).toBe(true);
       if (target !== undefined) expect(target.startsWith(root)).toBe(true);
     }
-    expect(targetInside(root, "../escape.jpg")).toBeUndefined();
-    expect(targetInside(root, "a/../../escape.jpg")).toBeUndefined();
-    expect(targetInside(root, "")).toBeUndefined();
-    expect(targetInside(root, "a\0b.jpg")).toBeUndefined();
+    expect(targetInside(makeIo(), root, "../escape.jpg")).toBeUndefined();
+    expect(targetInside(makeIo(), root, "a/../../escape.jpg")).toBeUndefined();
+    expect(targetInside(makeIo(), root, "")).toBeUndefined();
+    expect(targetInside(makeIo(), root, "a\0b.jpg")).toBeUndefined();
   });
 
   it("names an overlay after its main file, with only a vetted extension", () => {
@@ -223,10 +223,10 @@ describe("snappy-export memories: guards", () => {
     const bytes = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
     const target = join(dir, "a", "b-overlay.png");
     const when = Date.UTC(2021, 2, 4, 5, 6, 7);
-    await placeOverlay(target, bytes, when);
+    await placeOverlay(makeIo(), target, bytes, when);
     expect(new Uint8Array(readFileSync(target))).toEqual(bytes);
     expect(statSync(target).mtimeMs).toBe(when);
-    await placeOverlay(join(dir, "c.png"), bytes, null);
+    await placeOverlay(makeIo(), join(dir, "c.png"), bytes, null);
     expect(new Uint8Array(readFileSync(join(dir, "c.png")))).toEqual(bytes);
   });
 

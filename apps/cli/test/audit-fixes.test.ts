@@ -195,7 +195,7 @@ describe("two commands at once cannot lose each other's changes", () => {
     await run(["keep", "seed", "--ledger", ledger], makeIo({ env }));
     const results = await Promise.all([run(["keep", "alice", "--ledger", ledger], makeIo({ env })), run(["keep", "bob", "--ledger", ledger], makeIo({ env }))]);
     expect(results.map((r) => r.code)).toEqual([0, 0]);
-    expect(await loadAllowlist(ledger, PASS)).toEqual(["alice", "bob", "seed"]);
+    expect(await loadAllowlist(makeIo(), ledger, PASS)).toEqual(["alice", "bob", "seed"]);
     expect(existsSync(`${ledger}.lock`)).toBe(false);
   }, 60_000);
 
@@ -203,17 +203,17 @@ describe("two commands at once cannot lose each other's changes", () => {
     const dir = tempDir("lock");
     const ledger = join(dir, "ledger.sealed");
     writeFileSync(`${ledger}.lock`, "2147483646");
-    expect(await withLedgerLock(ledger, async () => "done")).toBe("done");
+    expect(await withLedgerLock(makeIo(), ledger, async () => "done")).toBe("done");
     expect(existsSync(`${ledger}.lock`)).toBe(false);
 
     writeFileSync(`${ledger}.lock`, String(process.pid));
-    await expect(withLedgerLock(ledger, async () => "never", { waitMs: 200 })).rejects.toMatchObject({ code: "ledger-busy" });
+    await expect(withLedgerLock(makeIo(), ledger, async () => "never", { waitMs: 200 })).rejects.toMatchObject({ code: "ledger-busy" });
     expect(readFileSync(`${ledger}.lock`, "utf8")).toBe(String(process.pid)); // not ours to remove
   });
 
   it("releases the lock when the work fails", async () => {
     const ledger = join(tempDir("lock"), "ledger.sealed");
-    await expect(withLedgerLock(ledger, async () => Promise.reject(new Error("boom")))).rejects.toThrow("boom");
+    await expect(withLedgerLock(makeIo(), ledger, async () => Promise.reject(new Error("boom")))).rejects.toThrow("boom");
     expect(existsSync(`${ledger}.lock`)).toBe(false);
   });
 });
@@ -225,12 +225,12 @@ describe("the Memories writer", () => {
 
   it("says the date was embedded only when the bytes changed", async () => {
     const dir = tempDir("place");
-    expect(await placeMedia(join(dir, "good.jpg"), { bytes: JPEG }, DATE)).toBe("embedded");
+    expect(await placeMedia(makeIo(), join(dir, "good.jpg"), { bytes: JPEG }, DATE)).toBe("embedded");
     // Valid magic bytes, but a header that ends before the scan: core hands back an unchanged copy.
     const truncated = Uint8Array.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 1, 2, 3]);
-    expect(await placeMedia(join(dir, "bad.jpg"), { bytes: truncated }, DATE)).toBe("file-time-only");
+    expect(await placeMedia(makeIo(), join(dir, "bad.jpg"), { bytes: truncated }, DATE)).toBe("file-time-only");
     expect([...readFileSync(join(dir, "bad.jpg"))]).toEqual([...truncated]);
-    expect(await placeMedia(join(dir, "none.jpg"), { bytes: JPEG }, null)).toBe("none");
+    expect(await placeMedia(makeIo(), join(dir, "none.jpg"), { bytes: JPEG }, null)).toBe("none");
   });
 
   it("removes a finished download it could not put in place", async () => {
@@ -239,7 +239,7 @@ describe("the Memories writer", () => {
     writeFileSync(part, JPEG);
     const target = join(dir, "x.jpg");
     mkdirSync(target); // a directory is in the way, so the move fails
-    await expect(placeMedia(target, { partPath: part }, DATE)).rejects.toBeDefined();
+    await expect(placeMedia(makeIo(), target, { partPath: part }, DATE)).rejects.toBeDefined();
     expect(existsSync(part)).toBe(false);
   });
 });

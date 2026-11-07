@@ -11,7 +11,7 @@ import { intOption, parseFlags } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { newestMtime, parseParts, requireFirstPart, resolveZipPaths, withReaders } from "../inputs.ts";
-import { acquireLedgerLock, atomicWrite, defaultLedgerPath, isFreshStore, saveLedger, unlockStore } from "../ledger-store.ts";
+import { atomicWrite, defaultLedgerPath, isFreshStore, saveLedger, unlockStore, withLedgerLock } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS, renderIssues, wrapText } from "../render.ts";
 import type { LabeledIssue } from "../render.ts";
@@ -144,7 +144,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
 
   // Read everything first: a broken export should stop the run before any passphrase is asked.
   const issues: LabeledIssue[] = [];
-  const earlier = [];
+  const earlier: Awaited<ReturnType<typeof readExport>>[] = [];
   for (const [i, paths] of earlierSets.entries()) {
     const read = await readExport(paths, `earlier export ${i + 1}`, io);
     issues.push(...read.issues);
@@ -167,20 +167,13 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
   }
 
   // The ledger: read and updated unless --no-save, in which case it exists only in memory.
-  const ledgerPath = flags.ledger ?? defaultLedgerPath(io.homedir());
-  let ledger: Ledger = emptyLedger();
-  let saved: string[] = [];
-  let passphrase: string | undefined;
-  let release: (() => Promise<void>) | undefined;
-  if (!noSave) {
-    passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(ledgerPath) });
-    // Held from the first read to the save, so another run at the same time cannot lose this one's snapshots.
-    release = await acquireLedgerLock(ledgerPath);
-  }
-  let result: AnalysisResult;
-  try {
+  const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
+  const passphrase = noSave ? undefined : await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(io, ledgerPath) });
+  const update = async (): Promise<AnalysisResult> => {
+    let ledger: Ledger = emptyLedger();
+    let saved: string[] = [];
     if (passphrase !== undefined) {
-      const store = await unlockStore(ledgerPath, passphrase);
+      const store = await unlockStore(io, ledgerPath, passphrase);
       ledger = store.ledger;
       saved = store.allowlist;
     }
@@ -197,7 +190,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
       });
     }
 
-    result = analyzeExport({
+    const analyzed = analyzeExport({
       parsed: current.parsed,
       ledger,
       allowlist: [...new Set([...saved, ...allow])],
@@ -205,11 +198,12 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
       minConfidence: minConfidence as Confidence,
     });
 
-    if (passphrase !== undefined) await saveLedger(ledgerPath, ledger, passphrase);
-  } finally {
-    await release?.();
-  }
-  if (flags.csv !== undefined) await atomicWrite(flags.csv, new TextEncoder().encode(queueToCsv(result)));
+    if (passphrase !== undefined) await saveLedger(io, ledgerPath, ledger, passphrase);
+    return analyzed;
+  };
+  // Held from the first read to the save, so another run at the same time cannot lose this one's snapshots.
+  const result = passphrase === undefined ? await update() : await withLedgerLock(io, ledgerPath, update);
+  if (flags.csv !== undefined) await atomicWrite(io, flags.csv, new TextEncoder().encode(queueToCsv(result)));
 
   const ledgerState = noSave ? "skipped" : "saved";
   if (flags.json) {

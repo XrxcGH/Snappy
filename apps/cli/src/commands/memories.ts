@@ -7,8 +7,6 @@
  * Content-blind: media is opaque bytes. Output names items by number, never by link, title or
  * file name, and the report holds counts and statuses only.
  */
-import { mkdir } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
 import { ZipEntryError, listZipEntries, planMemories, readZipEntry } from "@snappy-export/core";
 import type { MemoriesPlan, PlannedMemory, RandomAccessReader, ZipEntryInfo } from "@snappy-export/core";
 import { intOption, parseFlags } from "../args.ts";
@@ -61,8 +59,6 @@ interface Flags {
   help?: boolean;
 }
 
-/** Largest bundled file Snappy will read into memory in one piece. */
-const MAX_BUNDLED_BYTES = 512 * 1024 * 1024;
 
 const NO_LINKS =
   "This export has no download links, so Snappy did not use the network. It saves the Memories found in your ZIP files.";
@@ -76,12 +72,12 @@ type Status = "extracted" | "downloaded" | "skipped-existing" | "repaired" | "fa
  * What a failure code means and what to do about it, in words that name no file, link or place.
  * Printed once per code (a full disk would otherwise repeat for every remaining item).
  */
-function failureAdvice(code: string): string {
+function failureAdvice(code: string, maxBundledBytes: number): string {
   if (/^http-(401|403|404|410)$/.test(code)) return "The link has expired. Request a new export from Snapchat and run again.";
   if (code.startsWith("http-")) return "Snapchat's server refused or was busy. Wait a while and run again.";
   switch (code) {
     case "too-large":
-      return `A file is over the ${formatBytes(MAX_BUNDLED_BYTES)} limit and was not copied. Take it out of the ZIP file with another tool.`;
+      return `A file is over the ${formatBytes(maxBundledBytes)} limit and was not copied. Take it out of the ZIP file with another tool.`;
     case "missing-file":
       return "A file named in the list is not in these ZIP files. Add every part of your export and run again.";
     case "corrupt":
@@ -153,20 +149,21 @@ async function indexEntries(plan: MemoriesPlan, readers: RandomAccessReader[]): 
 }
 
 /** How many planned files are already in the output folder (a run can be resumed). */
-async function countExisting(entries: PlannedMemory[], outDir: string): Promise<number> {
+async function countExisting(io: Io, entries: PlannedMemory[], outDir: string): Promise<number> {
   let n = 0;
   for (const e of entries) {
-    const target = targetInside(outDir, e.relativePath);
-    if (target !== undefined && (await pathExists(target))) n++;
+    const target = targetInside(io, outDir, e.relativePath);
+    if (target !== undefined && (await pathExists(io, target))) n++;
   }
   return n;
 }
 
 /** Run `work` over `items` with at most `limit` in flight. */
-async function pool<T>(items: T[], limit: number, work: (item: T, index: number) => Promise<void>): Promise<void> {
+async function pool<T>(items: T[], limit: number, work: (item: T, index: number) => Promise<void>, signal?: AbortSignal): Promise<void> {
   let next = 0;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
+    // A stop request lets the item in flight finish and takes no new one.
+    while (next < items.length && signal?.aborted !== true) {
       const index = next++;
       await work(items[index] as T, index);
     }
@@ -227,7 +224,10 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
   if (flags.out === undefined && !dryRun) {
     throw new CliError("usage", "Say where to save the files with --out <folder>, or add --dry-run to see the plan first.");
   }
-  const outDir = flags.out === undefined ? undefined : resolve(flags.out);
+  if (flags.download === true && !io.capabilities.network) {
+    throw new CliError("no-network", "This needs a terminal on your computer. Copy the command to run it there.");
+  }
+  const outDir = flags.out === undefined ? undefined : io.path.resolve(flags.out);
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
 
   const paths = await resolveZipPaths(io, positionals);
@@ -275,7 +275,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     out.push("", ...meterLines(plan, term), "");
 
     if (dryRun || outDir === undefined) {
-      const existing = outDir === undefined ? 0 : await countExisting(plan.entries, outDir);
+      const existing = outDir === undefined ? 0 : await countExisting(io, plan.entries, outDir);
       out.push(
         `Dry run: nothing was written. A real run would copy ${plural(counts.bundled, "file")} from your ZIP files${download ? ` and download ${formatCount(counts.links)} more` : ""}.`,
       );
@@ -290,7 +290,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     io.out.write(out.join("\n") + "\n");
     if (download) io.out.write(DOWNLOAD_NOTICE.join("\n") + "\n\n");
     try {
-      await mkdir(outDir, { recursive: true });
+      await io.fs.mkdir(outDir, { recursive: true });
     } catch (e) {
       throw fsError(e, "create the output folder", flags.out ?? outDir);
     }
@@ -323,8 +323,8 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
       let written = 0;
       for (const [i, o] of sources.entries()) {
         const overlay = overlayTarget(target, i + 1, o.name);
-        if (await pathExists(overlay)) continue;
-        await placeOverlay(overlay, await readZipEntry(o.reader, o.info, { maxBytes: MAX_BUNDLED_BYTES }), entry.item.date);
+        if (await pathExists(io, overlay)) continue;
+        await placeOverlay(io, overlay, await readZipEntry(o.reader, o.info, { maxBytes: io.limits.maxBundledBytes }), entry.item.date);
         written++;
       }
       return written;
@@ -337,8 +337,8 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
       // Overlays were looked up with the main file, but a zip may hold one and not the other.
       if (main === undefined || overlays.some((o) => o === undefined)) return { ...base, status: "failed", reason: "missing-file" };
       const written = await writeOverlays(entry, target, overlays as NonNullable<ReturnType<typeof sourceOf>>[]);
-      const bytes = await readZipEntry(main.reader, main.info, { maxBytes: MAX_BUNDLED_BYTES });
-      return { ...base, status: "extracted", dateStatus: await placeMedia(target, { bytes }, entry.item.date), overlays: written };
+      const bytes = await readZipEntry(main.reader, main.info, { maxBytes: io.limits.maxBundledBytes });
+      return { ...base, status: "extracted", dateStatus: await placeMedia(io, target, { bytes }, entry.item.date), overlays: written };
     };
 
     /**
@@ -349,25 +349,25 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     const resume = async (entry: PlannedMemory, target: string, base: { item: number }): Promise<Outcome> => {
       const overlays = overlaySources(entry);
       const written = inZip(entry) && overlays.every((o) => o !== undefined) ? await writeOverlays(entry, target, overlays as NonNullable<ReturnType<typeof sourceOf>>[]) : 0;
-      const retimed = await fixFileTime(target, entry.item.date);
+      const retimed = await fixFileTime(io, target, entry.item.date);
       return written > 0 || retimed ? { ...base, status: "repaired", overlays: written } : { ...base, status: "skipped-existing" };
     };
 
     const handle = async (entry: PlannedMemory, n: number): Promise<Outcome> => {
       const base = { item: n };
-      const target = targetInside(outDir, entry.relativePath);
+      const target = targetInside(io, outDir, entry.relativePath);
       if (target === undefined) return { ...base, status: "failed", reason: "unsafe-path" };
       try {
-        if (await pathExists(target)) return await resume(entry, target, base);
+        if (await pathExists(io, target)) return await resume(entry, target, base);
         if (inZip(entry)) return await extract(entry, target, base);
         if (entry.item.downloadUrl === undefined) {
           return entry.item.zipPath === undefined ? { ...base, status: "no-file" } : { ...base, status: "failed", reason: "missing-file" };
         }
         if (!download) return { ...base, status: "link-only" };
         const partPath = `${target}.part`;
-        await mkdir(dirname(target), { recursive: true });
+        await io.fs.mkdir(io.path.dirname(target), { recursive: true });
         await downloadToFile(entry.item.downloadUrl, partPath, { transport: io.transport, sleep: io.sleep });
-        return { ...base, status: "downloaded", dateStatus: await placeMedia(target, { partPath }, entry.item.date) };
+        return { ...base, status: "downloaded", dateStatus: await placeMedia(io, target, { partPath }, entry.item.date) };
       } catch (e) {
         // Only fixed codes survive: error text can carry paths, names or links.
         const reason = e instanceof DownloadError || e instanceof ZipEntryError || e instanceof CliError ? e.code : "error";
@@ -375,12 +375,18 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
       }
     };
 
-    await pool(plan.entries, download ? concurrency : 1, async (entry, i) => {
-      outcomes[i] = await handle(entry, i + 1);
-      done++;
-      progress();
-    });
+    await pool(
+      plan.entries,
+      download ? concurrency : 1,
+      async (entry, i) => {
+        outcomes[i] = await handle(entry, i + 1);
+        done++;
+        progress();
+      },
+      io.signal,
+    );
     if (io.interactive) io.out.write("\r\x1b[2K");
+    if (io.signal?.aborted === true) throw new CliError("canceled", "Stopped. Files already saved are kept.", 130);
 
     const tally = (s: Status): number => outcomes.filter((o) => o.status === s).length;
     const failures = outcomes.filter((o) => o.status === "failed");
@@ -411,8 +417,8 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
       failures: failures.map((o) => ({ item: o.item, reason: o.reason })),
       items: outcomes.map((o) => ({ item: o.item, status: o.status, ...(o.reason ? { reason: o.reason } : {}), ...(o.dateStatus ? { dateStatus: o.dateStatus } : {}) })),
     };
-    const reportPath = join(outDir, "memories-report.json");
-    await atomicWrite(reportPath, new TextEncoder().encode(JSON.stringify(report, null, 2) + "\n"), { sync: false });
+    const reportPath = io.path.join(outDir, "memories-report.json");
+    await atomicWrite(io, reportPath, new TextEncoder().encode(JSON.stringify(report, null, 2) + "\n"), { sync: false });
 
     const lines: string[] = [term.bold("Result")];
     lines.push(
@@ -426,7 +432,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     }
     for (const f of failures.slice(0, FAILURES_SHOWN)) lines.push(`  item ${f.item} failed (${f.reason})`);
     if (failures.length > FAILURES_SHOWN) lines.push(`  ${plural(failures.length - FAILURES_SHOWN, "more failure")} ${isAre(failures.length - FAILURES_SHOWN)} listed in the report.`);
-    for (const code of [...new Set(failures.map((f) => f.reason ?? "error"))]) lines.push(`  ${code}: ${failureAdvice(code)}`);
+    for (const code of [...new Set(failures.map((f) => f.reason ?? "error"))]) lines.push(`  ${code}: ${failureAdvice(code, io.limits.maxBundledBytes)}`);
     if (failures.length > 0) lines.push("  Run again to retry. Finished items are skipped.");
     // With --download the links in the export were contacted, so the plain results line would overstate.
     lines.push(`  Report: ${reportPath}`, "", download ? "Only the links in your export, and the secure addresses they forwarded to, were contacted. Nothing else has left this device." : PRIVACY_RESULTS);

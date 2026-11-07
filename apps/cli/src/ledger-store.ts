@@ -6,18 +6,19 @@
  *
  * The allowlist lives in its own sealed file (same passphrase, same format) rather than inside
  * the ledger so core's ledger format stays untouched and "keep" never rewrites snapshot history.
- * Both files are written atomically (temp file in the same folder, then rename) with owner-only
- * permissions where the OS supports them. Passphrases are used for sealing and never stored.
+ * Both files are written atomically (the file system port writes a temp file, then renames) with
+ * owner-only permissions where the OS supports them. Passphrases are used for sealing and never
+ * stored. Everything here reaches the disk through io.fs, io.path and io.lock.
  */
-import { randomUUID } from "node:crypto";
-import { chmod, mkdir, open, readFile, rename, stat, unlink } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
 import { LedgerFormatError, SealError, emptyLedger, normUser, openLedger, openText, sealLedger, sealText } from "@snappy-export/core";
 import type { Ledger } from "@snappy-export/core";
 import { CliError, fsError } from "./errors.ts";
+import type { Io } from "./io.ts";
 
-export function defaultLedgerPath(home: string): string {
-  return join(home, ".snappy", "ledger.sealed");
+type FsIo = Pick<Io, "fs">;
+
+export function defaultLedgerPath(io: Pick<Io, "homedir" | "path">): string {
+  return io.path.join(io.homedir(), ".snappy", "ledger.sealed");
 }
 
 /** ledger.sealed -> ledger.allowlist.sealed; any other name gets ".allowlist" appended. */
@@ -30,125 +31,46 @@ const WRONG_PASSPHRASE = new CliError(
   "Snappy could not unlock your ledger and changed nothing. The passphrase may be wrong, or the file damaged.",
 );
 
+const codeOf = (e: unknown): string | undefined => (typeof e === "object" && e !== null && "code" in e ? String((e as { code: unknown }).code) : undefined);
+
 /**
  * Write bytes so that readers see either the old file or the whole new one, never a partial file.
  * Pass `sync: false` for bulk output (rescued Memories) where per-file durability is not worth the time.
  */
-export async function atomicWrite(path: string, bytes: Uint8Array, opts: { sync?: boolean } = {}): Promise<void> {
-  const dir = dirname(path);
-  const temp = join(dir, `.${basename(path)}.${randomUUID()}.tmp`);
+export async function atomicWrite(io: FsIo, path: string, bytes: Uint8Array, opts: { sync?: boolean } = {}): Promise<void> {
   try {
-    await mkdir(dir, { recursive: true, mode: 0o700 });
-    const handle = await open(temp, "wx", 0o600);
-    try {
-      await handle.writeFile(bytes);
-      if (opts.sync !== false) await handle.sync();
-    } finally {
-      await handle.close();
-    }
-    await renameWithRetry(temp, path);
-    // Best effort: Windows ignores POSIX modes, and the file was created owner-only anyway.
-    await chmod(path, 0o600).catch(() => undefined);
+    await io.fs.writeFileAtomic(path, bytes, { durable: opts.sync !== false });
   } catch (e) {
-    await unlink(temp).catch(() => undefined);
     throw fsError(e, "write", path);
   }
 }
 
-/** Windows briefly locks a file that a virus scanner or indexer is looking at. */
-async function renameWithRetry(from: string, to: string): Promise<void> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      await rename(from, to);
-      return;
-    } catch (e) {
-      const code = (e as NodeJS.ErrnoException).code;
-      if (attempt >= 4 || (code !== "EPERM" && code !== "EBUSY" && code !== "EACCES")) throw e;
-      await new Promise((r) => setTimeout(r, 40 * (attempt + 1)));
-    }
-  }
-}
-
-function processIsGone(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return false;
-  } catch (e) {
-    return (e as NodeJS.ErrnoException).code === "ESRCH";
-  }
-}
-
 /**
- * Take a lock file next to the ledger, so two Snappy commands cannot both read the sealed files,
- * change them, and write: the second change would silently replace the first. Take it after the
- * passphrase is known (never while the person is typing) and hold it from the first read to the
- * last write. A waiting command retries for a few seconds, then stops with a calm message; a lock
- * left behind by a run that is no longer alive is recognized and taken over. (No clock is read:
- * the wait is a count of retries.) Returns the function that releases it.
+ * Run `work` while holding the ledger lock, so two Snappy commands cannot both read the sealed
+ * files, change them, and write: the second change would silently replace the first. Take it
+ * after the passphrase is known (never while the person is typing) and hold it from the first
+ * read to the last write.
  */
-export async function acquireLedgerLock(ledgerPath: string, opts: { waitMs?: number } = {}): Promise<() => Promise<void>> {
-  const lockPath = `${ledgerPath}.lock`;
-  const retries = Math.ceil((opts.waitMs ?? 10_000) / 100);
-  await mkdir(dirname(lockPath), { recursive: true, mode: 0o700 }).catch((e: unknown) => {
-    throw fsError(e, "create the folder for", ledgerPath);
-  });
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const handle = await open(lockPath, "wx", 0o600);
-      await handle.writeFile(String(process.pid));
-      await handle.close();
-      break;
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw fsError(e, "lock", ledgerPath);
-    }
-    let stale = false;
-    try {
-      const owner = Number(await readFile(lockPath, "utf8"));
-      stale = Number.isInteger(owner) && owner > 0 && processIsGone(owner);
-    } catch {
-      continue; // the lock was released between the attempt and the look: try again
-    }
-    if (stale) {
-      await unlink(lockPath).catch(() => undefined);
-      continue;
-    }
-    if (attempt >= retries) {
-      throw new CliError(
-        "ledger-busy",
-        `Another command is using this ledger, so nothing was changed. Wait and try again, or delete "${lockPath}" if none is running.`,
-      );
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-  return () => unlink(lockPath).catch(() => undefined);
-}
-
-/** Run `work` while holding the ledger lock. */
-export async function withLedgerLock<T>(ledgerPath: string, work: () => Promise<T>, opts: { waitMs?: number } = {}): Promise<T> {
-  const release = await acquireLedgerLock(ledgerPath, opts);
-  try {
-    return await work();
-  } finally {
-    await release();
-  }
+export async function withLedgerLock<T>(io: Pick<Io, "lock">, ledgerPath: string, work: () => Promise<T>, opts: { waitMs?: number } = {}): Promise<T> {
+  return io.lock.withLock(ledgerPath, { waitMs: opts.waitMs ?? 10_000 }, work);
 }
 
 /** The file's bytes, or undefined when it does not exist. */
-export async function readIfExists(path: string): Promise<Uint8Array | undefined> {
+export async function readIfExists(io: FsIo, path: string): Promise<Uint8Array | undefined> {
   try {
-    return await readFile(path);
+    return await io.fs.readFile(path);
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    if (codeOf(e) === "ENOENT") return undefined;
     throw fsError(e, "read", path);
   }
 }
 
-export async function fileExists(path: string): Promise<boolean> {
+export async function fileExists(io: FsIo, path: string): Promise<boolean> {
   try {
-    await stat(path);
+    await io.fs.stat(path);
     return true;
   } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
+    if (codeOf(e) === "ENOENT") return false;
     throw fsError(e, "read", path);
   }
 }
@@ -162,8 +84,8 @@ function unsealError(e: unknown): CliError {
 }
 
 /** The sealed ledger, or undefined when none has been saved yet. */
-export async function loadLedger(path: string, passphrase: string): Promise<Ledger | undefined> {
-  const sealed = await readIfExists(path);
+export async function loadLedger(io: FsIo, path: string, passphrase: string): Promise<Ledger | undefined> {
+  const sealed = await readIfExists(io, path);
   if (sealed === undefined) return undefined;
   try {
     return await openLedger(sealed, passphrase);
@@ -172,13 +94,13 @@ export async function loadLedger(path: string, passphrase: string): Promise<Ledg
   }
 }
 
-export async function saveLedger(path: string, ledger: Ledger, passphrase: string): Promise<void> {
-  await atomicWrite(path, await sealLedger(ledger, passphrase));
+export async function saveLedger(io: FsIo, path: string, ledger: Ledger, passphrase: string): Promise<void> {
+  await atomicWrite(io, path, await sealLedger(ledger, passphrase));
 }
 
 /** The saved allowlist (normalized usernames), or undefined when none has been saved yet. */
-export async function loadAllowlist(ledgerPath: string, passphrase: string): Promise<string[] | undefined> {
-  const sealed = await readIfExists(allowlistPathFor(ledgerPath));
+export async function loadAllowlist(io: FsIo, ledgerPath: string, passphrase: string): Promise<string[] | undefined> {
+  const sealed = await readIfExists(io, allowlistPathFor(ledgerPath));
   if (sealed === undefined) return undefined;
   let text: string;
   try {
@@ -196,9 +118,9 @@ export async function loadAllowlist(ledgerPath: string, passphrase: string): Pro
   }
 }
 
-export async function saveAllowlist(ledgerPath: string, allowlist: string[], passphrase: string): Promise<void> {
+export async function saveAllowlist(io: FsIo, ledgerPath: string, allowlist: string[], passphrase: string): Promise<void> {
   const text = JSON.stringify({ allowlist: normalizeAllowlist(allowlist) });
-  await atomicWrite(allowlistPathFor(ledgerPath), await sealText(text, passphrase));
+  await atomicWrite(io, allowlistPathFor(ledgerPath), await sealText(text, passphrase));
 }
 
 /** Normalized, de-duplicated and sorted, so the saved file does not depend on typing order. */
@@ -212,13 +134,13 @@ export interface Unlocked {
 }
 
 /** Open whatever exists; the passphrase must unlock it. A missing ledger is an empty one. */
-export async function unlockStore(ledgerPath: string, passphrase: string): Promise<Unlocked> {
-  const ledger = await loadLedger(ledgerPath, passphrase);
-  const allowlist = await loadAllowlist(ledgerPath, passphrase);
+export async function unlockStore(io: FsIo, ledgerPath: string, passphrase: string): Promise<Unlocked> {
+  const ledger = await loadLedger(io, ledgerPath, passphrase);
+  const allowlist = await loadAllowlist(io, ledgerPath, passphrase);
   return { ledger: ledger ?? emptyLedger(), allowlist: allowlist ?? [] };
 }
 
 /** True when neither file exists, i.e. the passphrase about to be chosen is a new one. */
-export async function isFreshStore(ledgerPath: string): Promise<boolean> {
-  return !(await fileExists(ledgerPath)) && !(await fileExists(allowlistPathFor(ledgerPath)));
+export async function isFreshStore(io: FsIo, ledgerPath: string): Promise<boolean> {
+  return !(await fileExists(io, ledgerPath)) && !(await fileExists(io, allowlistPathFor(ledgerPath)));
 }
