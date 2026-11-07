@@ -50,6 +50,9 @@ export const copy = {
   youStartedHeader: "You started",
   theyStartedHeader: "They started",
   shareHeader: "Share",
+  /** Each cell says what it holds, since a phone shows the table as cards with no column names. */
+  exchangesCell: (n: number): string => countOf(n, "exchange", "exchanges"),
+  shareCell: (percent: string): string => `${percent} of exchanges`,
 
   hintNote: "These are hints. An export can miss messages, so check in the app.",
   invalidNowNote: "Snappy could not read today’s date, so it left the lists empty.",

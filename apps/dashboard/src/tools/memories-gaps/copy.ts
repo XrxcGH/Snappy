@@ -65,6 +65,7 @@ export const copy = {
   busiestMonthCell: "Busiest month",
   stretchCell: (stretch: number): string => `Busiest ${countOf(stretch, "month", "months")}`,
   unitMemories: (n: number): string => countOf(n, "Memory", "Memories"),
+  unitShare: (percent: string): string => `${percent} of dated`,
 
   foundAnnounce: (count: number): string => `${countOf(count, "gap", "gaps")} found in your Memories timeline.`,
   noneAnnounce: (minGap: number): string => `No gaps of ${countOf(minGap, "month", "months")} or more found.`,

@@ -210,8 +210,8 @@ describe("the page", () => {
     ]);
     expect(text(busiest, "thead th")).toEqual([copy.highlightHeader, copy.whenHeader, copy.memoriesHeader, copy.shareHeader]);
     expect(tableRows(busiest)).toEqual([
-      ["Busiest month", "Jun 2022", "3 Memories", "43%"],
-      ["Busiest 3 months", "Apr 2022 to Jun 2022", "4 Memories", "57%"],
+      ["Busiest month", "Jun 2022", "3 Memories", "43% of dated"],
+      ["Busiest 3 months", "Apr 2022 to Jun 2022", "4 Memories", "57% of dated"],
     ]);
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.gaps));
     expect(root.querySelectorAll("table")).toHaveLength(2);
@@ -325,11 +325,11 @@ describe("the controls", () => {
     select.value = "6";
     select.fire("change");
     await settled(r.root);
-    expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)[1]).toEqual(["Busiest 6 months", "Jan 2022 to Jun 2022", "6 Memories", "86%"]);
+    expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)[1]).toEqual(["Busiest 6 months", "Jan 2022 to Jun 2022", "6 Memories", "86% of dated"]);
     select.value = "1";
     select.fire("change");
     await settled(r.root);
-    expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)).toEqual([["Busiest month", "Jun 2022", "3 Memories", "43%"]]);
+    expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)).toEqual([["Busiest month", "Jun 2022", "3 Memories", "43% of dated"]]);
   });
 
   it("recomputes for a UTC offset and names it in a note", async () => {
@@ -340,7 +340,7 @@ describe("the controls", () => {
     await settled(r.root);
     expect(text(r.root, ".tool-notes li")).toContain(copy.offsetNote("UTC+5:30"));
     // 23:00 UTC plus 5:30 is already February.
-    expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)[0]).toEqual(["Busiest month", "Feb 2025", "1 Memory", "50%"]);
+    expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)[0]).toEqual(["Busiest month", "Feb 2025", "1 Memory", "50% of dated"]);
   });
 });
 

@@ -97,7 +97,7 @@ export const copy = {
   /** The column for the listed year. */
   yearColumnHeader: (year: number) => (Number.isFinite(year) ? String(year) : ""),
   unitOfTotal: (percent: string): string => `${percent} of the total`,
-  unitInYear: (year: number, count: string): string => `${count} in ${year}`,
+  unitInYear: (year: number, count: string): string => `${count} counted in ${year}`,
   kindNames: { text: "Text", image: "Image", video: "Video", note: "Note", sticker: "Sticker", other: "Other" },
   otherNote: "Other holds chat media, which may be a photo or a video.",
 

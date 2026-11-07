@@ -155,8 +155,8 @@ describe("the page", () => {
     expect(root.textContent).toContain(copy.methodLine("Nov 6, 2026", 6));
     const tables = root.querySelectorAll("table");
     expect(tables.map(tableNames)).toEqual([[who[0]], [who[1]]]);
-    expect(cellsOf(tables[0] as FakeElement)).toEqual([[who[0], "0", "6", "100%"]]);
-    expect(cellsOf(tables[1] as FakeElement)).toEqual([[who[1], "6", "0", "100%"]]);
+    expect(cellsOf(tables[0] as FakeElement)).toEqual([[who[0], "0 exchanges", "6 exchanges", "100% of exchanges"]]);
+    expect(cellsOf(tables[1] as FakeElement)).toEqual([[who[1], "6 exchanges", "0 exchanges", "100% of exchanges"]]);
     expect(text(tables[0] as FakeElement, "thead th")).toEqual([copy.friendHeader, copy.youStartedHeader, copy.theyStartedHeader, copy.shareHeader]);
     expect(root.textContent).toContain(copy.themRuleLine(5, 70));
     expect(root.textContent).toContain(copy.youRuleLine(5, 70));

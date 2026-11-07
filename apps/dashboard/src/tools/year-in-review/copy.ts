@@ -17,7 +17,7 @@ export const copy = {
   title: "Year in review",
   oneLiner: "Sum up a year of chats, Snaps and Memories.",
   description: "See one year of chats, Snaps, new friends and Memories. Results use dates, directions and media types only.",
-  reads: "The date, direction and kind of each chat and Snap, the date of each friend, and the date and type of each Memory.",
+  reads: "The date, direction and kind of each chat and Snap, friend dates, and Memories dates and types.",
   empty: {
     title: "No dated activity found",
     body: "Snappy found nothing with a usable date to sum up. The export check shows what may be missing.",

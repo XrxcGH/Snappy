@@ -16,7 +16,7 @@ export const copy = {
   title: "Since your last export",
   oneLiner: "See what changed since your last export.",
   description: "Compare this export with the last one in your saved history. See friends added, friends who may have left and how your requests went.",
-  reads: "Friends lists and their dates, the dates and directions of chats and Snaps, Memories dates, and the exports in your saved history.",
+  reads: "Friends lists and dates, the dates and directions of chats and Snaps, Memories dates, and your saved history.",
   empty: {
     title: "Nothing to compare yet",
     body: "No earlier export with a usable date is saved yet. Snappy compares exports kept in your saved history, which needs saving turned on.",

@@ -28,7 +28,7 @@ function nameRows(table: HTMLElement, names: readonly string[]): HTMLElement {
 /** One list: the rule in a line, then a table of the chats (or a line saying none were found). */
 function sideSection(heading: string, caption: string, rule: string, none: string, people: readonly ReachOutPerson[], side: "you" | "them"): HTMLElement {
   const shown = people.slice(0, SHOWN);
-  const rows = shown.map((p) => [p.username, formatCount(p.byYou), formatCount(p.byThem), formatPercent((side === "you" ? p.byYou : p.byThem) / p.exchanges)]);
+  const rows = shown.map((p) => [p.username, copy.exchangesCell(p.byYou), copy.exchangesCell(p.byThem), copy.shareCell(formatPercent((side === "you" ? p.byYou : p.byThem) / p.exchanges))]);
   return section(
     heading,
     h("p", {}, people.length > 0 ? rule : none),

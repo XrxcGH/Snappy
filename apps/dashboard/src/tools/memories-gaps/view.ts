@@ -65,9 +65,6 @@ function noteOf(n: GapNote): ToolNote | null {
   }
 }
 
-/** "43%": a whole percent of the dated Memories. */
-const percent = (n: number): string => `${n}%`;
-
 const monthText = (ym: YearMonth): string => copy.unitMonthYear(ym.month, ym.year);
 
 const whereText = (g: MemoryGap): string => {
@@ -123,11 +120,11 @@ function gapsSection(r: GapsResult): HTMLElement {
 function busiestSection(r: GapsResult): HTMLElement {
   const rows: string[][] = [];
   const month = r.busiestMonth;
-  if (month !== null) rows.push([copy.busiestMonthCell, monthText(month), copy.unitMemories(month.count), percent(Math.round((month.count / r.counts.dated) * 100))]);
+  if (month !== null) rows.push([copy.busiestMonthCell, monthText(month), copy.unitMemories(month.count), copy.unitShare(`${Math.round((month.count / r.counts.dated) * 100)}%`)]);
   const stretch = r.busiestStretch;
   // A one-month stretch is the busiest month again.
   if (stretch !== null && stretch.months > 1) {
-    rows.push([copy.stretchCell(stretch.months), copy.unitSpan(monthText(stretch.from), monthText(stretch.to)), copy.unitMemories(stretch.count), percent(stretch.sharePercent)]);
+    rows.push([copy.stretchCell(stretch.months), copy.unitSpan(monthText(stretch.from), monthText(stretch.to)), copy.unitMemories(stretch.count), copy.unitShare(`${stretch.sharePercent}%`)]);
   }
   return section(copy.busiestHeading, dataTable(copy.busiestCaption, [copy.highlightHeader, copy.whenHeader, copy.memoriesHeader, copy.shareHeader], rows));
 }

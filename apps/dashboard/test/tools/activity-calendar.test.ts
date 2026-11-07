@@ -283,12 +283,12 @@ describe("the page", () => {
     expect(cells(root, ".subheading")).toEqual([copy.allTimeRunsCaption, copy.yearRunsCaption(2026)]);
     expect(cells(tables[3], "thead th")).toEqual([copy.kindHeader, copy.allTimeHeader, copy.shareHeader, "2026"]);
     expect(rowsOf(tables[3])).toEqual([
-      ["Text", "20 counted", "50% of the total", "20 in 2026"],
-      ["Image", "10 counted", "25% of the total", "10 in 2026"],
-      ["Video", "6 counted", "15% of the total", "6 in 2026"],
-      ["Note", "0 counted", "0% of the total", "0 in 2026"],
-      ["Sticker", "0 counted", "0% of the total", "0 in 2026"],
-      ["Other", "4 counted", "10% of the total", "4 in 2026"],
+      ["Text", "20 counted", "50% of the total", "20 counted in 2026"],
+      ["Image", "10 counted", "25% of the total", "10 counted in 2026"],
+      ["Video", "6 counted", "15% of the total", "6 counted in 2026"],
+      ["Note", "0 counted", "0% of the total", "0 counted in 2026"],
+      ["Sticker", "0 counted", "0% of the total", "0 counted in 2026"],
+      ["Other", "4 counted", "10% of the total", "4 counted in 2026"],
     ]);
     expect(rowsOf(tables[4])).toEqual([["2026", "20 text", "10 image", "6 video", "0 note", "0 sticker", "4 other", "40 in all"]]);
     expect(root.textContent).toContain(copy.otherNote);
