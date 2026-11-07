@@ -45,6 +45,8 @@ export interface Actions {
   unkeep(username: string): void;
   toggleChecked(username: string): void;
   clearChecked(): void;
+  /** Tick or untick a self-reported checklist item. Saved only when the person turned saving on; otherwise it lasts this session. */
+  setTick(id: string, on: boolean): void;
   setTheme(theme: Theme): void;
   setExpectedFriendCount(count: number | null): void;
   setCapGiB(gib: number): void;
@@ -80,9 +82,9 @@ export function createActions(store: Store, deps: Deps): Actions {
   async function saveNow(): Promise<void> {
     const pass = passphrase;
     if (pass === null) return;
-    const { ledger, allowlist, checkedOff } = store.get().real;
+    const { ledger, allowlist, checkedOff, ticks } = store.get().real;
     try {
-      const sealed = await sealLedger(packSaved({ ledger, allowlist, checkedOff }), pass);
+      const sealed = await sealLedger(packSaved({ ledger, allowlist, checkedOff, ticks }), pass);
       await deps.vault.write(sealed);
     } catch {
       setVault({ message: { kind: "error", text: vaultMessages.saveFailed } });
@@ -109,7 +111,7 @@ export function createActions(store: Store, deps: Deps): Actions {
     if (state.vault.phase !== "unlocked" || previous.vault.phase !== "unlocked") return;
     const a = state.real;
     const b = previous.real;
-    if (a.ledger !== b.ledger || a.allowlist !== b.allowlist || a.checkedOff !== b.checkedOff) void requestSave();
+    if (a.ledger !== b.ledger || a.allowlist !== b.allowlist || a.checkedOff !== b.checkedOff || a.ticks !== b.ticks) void requestSave();
   });
 
   // ---------------------------------------------------------------- import ---
@@ -236,7 +238,7 @@ export function createActions(store: Store, deps: Deps): Actions {
       }
       const saved = unpackSaved(await openLedger(blob, pass));
       const real = store.get().real;
-      const hadSession = real.ledger.snapshots.length > 0 || real.allowlist.length > 0 || real.checkedOff.length > 0;
+      const hadSession = real.ledger.snapshots.length > 0 || real.allowlist.length > 0 || real.checkedOff.length > 0 || real.ticks.length > 0;
       passphrase = pass;
       store.dispatch({ type: "unlocked", saved, now: deps.clock() });
       // Things added before unlocking now belong to the saved history: write the merged result.
@@ -374,6 +376,7 @@ export function createActions(store: Store, deps: Deps): Actions {
     unkeep: (username) => store.dispatch({ type: "unkeep", username }),
     toggleChecked: (username) => store.dispatch({ type: "toggle-checked", username }),
     clearChecked: () => store.dispatch({ type: "clear-checked" }),
+    setTick: (id, on) => store.dispatch({ type: "tick", id, on }),
     setTheme(theme) {
       store.dispatch({ type: "theme", theme });
       deps.saveTheme(theme);

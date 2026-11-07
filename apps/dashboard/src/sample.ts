@@ -23,5 +23,5 @@ export async function buildSampleWorkspace(onStep: (step: number) => Promise<voi
 
   let ledger = emptyLedger();
   for (const parsed of [earlier, later]) ledger = addSnapshot(ledger, snapshotFromExport(parsed));
-  return { latest: later, ledger, allowlist: [], checkedOff: [], issues: exportHealth(later, { now: SAMPLE_NOW }), now: SAMPLE_NOW };
+  return { latest: later, ledger, allowlist: [], checkedOff: [], ticks: [], issues: exportHealth(later, { now: SAMPLE_NOW }), now: SAMPLE_NOW };
 }

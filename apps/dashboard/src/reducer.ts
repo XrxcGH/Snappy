@@ -24,6 +24,8 @@ export interface Workspace {
   allowlist: string[];
   /** Normalised usernames ticked off in guided removal. */
   checkedOff: string[];
+  /** Self-reported checklist ticks ("tool-id:item-id"). Saved with the history when saving is on; otherwise this session only. */
+  ticks: string[];
   issues: ExportIssue[];
   /** Epoch ms used for age calculations; fixed for sample data. */
   now: number;
@@ -82,7 +84,7 @@ export interface State {
 export const DEFAULT_CAP_GIB = 5;
 
 export function emptyWorkspace(now = 0): Workspace {
-  return { latest: null, ledger: emptyLedger(), allowlist: [], checkedOff: [], issues: [], now };
+  return { latest: null, ledger: emptyLedger(), allowlist: [], checkedOff: [], ticks: [], issues: [], now };
 }
 
 export function initialState(): State {
@@ -115,6 +117,7 @@ export type Action =
   | { type: "unkeep"; username: string }
   | { type: "toggle-checked"; username: string }
   | { type: "clear-checked" }
+  | { type: "tick"; id: string; on: boolean }
   | { type: "vault"; patch: Partial<VaultStatus> }
   | { type: "unlocked"; saved: Saved; now: number }
   | { type: "locked" }
@@ -196,14 +199,22 @@ export function reduce(state: State, action: Action): State {
     case "clear-checked":
       return editActive(state, (ws) => (ws.checkedOff.length === 0 ? ws : { ...ws, checkedOff: [] }));
 
+    // Checklist ticks are the person's own word, not something Snappy checked. The sample never touches the real list.
+    case "tick":
+      return editActive(state, (ws) => {
+        const has = ws.ticks.includes(action.id);
+        if (has === action.on) return ws;
+        return { ...ws, ticks: action.on ? sortedUnique([...ws.ticks, action.id]) : ws.ticks.filter((t) => t !== action.id) };
+      });
+
     case "vault":
       return { ...state, vault: { ...state.vault, ...action.patch } };
 
     case "unlocked": {
-      const merged = mergeSaved(action.saved, { ledger: state.real.ledger, allowlist: state.real.allowlist, checkedOff: state.real.checkedOff });
+      const merged = mergeSaved(action.saved, { ledger: state.real.ledger, allowlist: state.real.allowlist, checkedOff: state.real.checkedOff, ticks: state.real.ticks });
       return {
         ...state,
-        real: { ...state.real, ledger: merged.ledger, allowlist: merged.allowlist, checkedOff: merged.checkedOff, now: action.now },
+        real: { ...state.real, ledger: merged.ledger, allowlist: merged.allowlist, checkedOff: merged.checkedOff, ticks: merged.ticks ?? [], now: action.now },
         vault: { ...state.vault, phase: "unlocked", hasSaved: true, busy: false, message: undefined },
       };
     }
