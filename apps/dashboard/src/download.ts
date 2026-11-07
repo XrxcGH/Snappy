@@ -1,10 +1,10 @@
 /**
- * Save text as a file through a Blob link. Some sandboxes block downloads without any signal,
- * which is why every "Save" button has a "Copy" button beside it.
+ * Save a Blob, or text, as a file through a Blob link. Some sandboxes block downloads without any
+ * signal, which is why every "Save" button has a "Copy" button beside it where text is concerned.
  */
-export function saveTextFile(fileName: string, text: string, mime: string): boolean {
+export function saveBlob(fileName: string, blob: Blob): boolean {
   try {
-    const url = URL.createObjectURL(new Blob([text], { type: `${mime};charset=utf-8` }));
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
@@ -17,4 +17,8 @@ export function saveTextFile(fileName: string, text: string, mime: string): bool
   } catch {
     return false;
   }
+}
+
+export function saveTextFile(fileName: string, text: string, mime: string): boolean {
+  return saveBlob(fileName, new Blob([text], { type: `${mime};charset=utf-8` }));
 }

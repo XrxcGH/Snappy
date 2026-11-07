@@ -14,6 +14,7 @@ import { confirmCard } from "./confirmCard.ts";
 import { icon } from "./icon.ts";
 import type { IconName } from "./icon.ts";
 import { notice } from "./notice.ts";
+import { outFiles } from "./outFiles.ts";
 import { secretPrompt } from "./secretPrompt.ts";
 
 export interface TerminalPanelOptions {
@@ -86,7 +87,7 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
   function rebuild(state: PanelState, previous: string): void {
     // Focus is managed only for a change the person caused, never when a block is first drawn.
     const moved = previous !== "";
-    const fresh = previous === "idle" || previous === "needs-file" || previous === "unavailable" || previous === "finished";
+    const fresh = previous === "idle" || previous === "needs-file" || previous === "unavailable" || previous.startsWith("finished");
     switch (state.kind) {
       case "idle":
       case "needs-file":
@@ -151,7 +152,8 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
           },
         });
         const hadFocus = focusIsHere();
-        root.replaceChildren(view.element, chip(state.result), h("div", { class: "command-toolbar" }, copy, close));
+        const saved = outFiles(session, { id, result: state.result, now: () => Date.now(), key: options.key });
+        root.replaceChildren(...[view.element, chip(state.result), saved, h("div", { class: "command-toolbar" }, copy, close)].filter((n): n is HTMLElement => n !== null));
         // Back to the Run button, unless the person has moved on to something else.
         if (moved && hadFocus) focusRun();
         return;
@@ -161,7 +163,8 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
 
   const draw = (): void => {
     const state = controller.state(id);
-    const key = state.kind === "asking" ? `asking:${state.question}` : state.kind;
+    // A finished Run is drawn again when its files change (Clear files), and a question when it changes.
+    const key = state.kind === "asking" ? `asking:${state.question}` : state.kind === "finished" ? `finished:${controller.files(id).length}` : state.kind;
     if (key !== shown) {
       const previous = shown;
       shown = key;
