@@ -51,7 +51,10 @@ export const copy = {
   yearsCaption: "Memories in each year",
   busiestHeader: "Busiest month",
   months,
-  unitBusiest: (month: number, count: number) => `${months[month - 1]} (${count})`,
+  unitBusiest: (month: number, count: number) => `${months[month - 1]} busiest (${count})`,
+  unitNoBusiest: "No busiest month",
+  unitMemories: (n: number) => countOf(n, "Memory", "Memories"),
+  unitYears: (n: number) => countOf(n, "year", "years"),
 
   topDaysHeading: "Busiest days of the year",
   topDaysCaption: "Busiest days across all years",

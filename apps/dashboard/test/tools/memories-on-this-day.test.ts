@@ -175,21 +175,21 @@ describe("the page", () => {
     expect(day.querySelector("caption")?.textContent).toBe(copy.dayCaption);
     expect(text(day, "thead th")).toEqual([copy.yearHeader, copy.whenHeader, copy.memoriesHeader]);
     expect(tableRows(day)).toEqual([
-      ["2025", "1 year ago", "2"],
-      ["2023", "3 years ago", "1"],
+      ["2025", "1 year ago", "2 Memories"],
+      ["2023", "3 years ago", "1 Memory"],
     ]);
     expect(text(years, "thead th")).toEqual([copy.yearHeader, copy.memoriesHeader, copy.busiestHeader]);
     expect(tableRows(years)).toEqual([
-      ["2025", "2", "Nov (2)"],
-      ["2024", "1", "Nov (1)"],
-      ["2023", "1", "Nov (1)"],
-      ["2022", "2", "Mar (2)"],
+      ["2025", "2 Memories", "Nov busiest (2)"],
+      ["2024", "1 Memory", "Nov busiest (1)"],
+      ["2023", "1 Memory", "Nov busiest (1)"],
+      ["2022", "2 Memories", "Mar busiest (2)"],
     ]);
     expect(text(top, "thead th")).toEqual([copy.dayHeader, copy.memoriesHeader, copy.yearsHeader]);
     expect(tableRows(top)).toEqual([
-      ["Nov 6", "3", "2"],
-      ["Mar 1", "2", "1"],
-      ["Nov 8", "1", "1"],
+      ["Nov 6", "3 Memories", "2 years"],
+      ["Mar 1", "2 Memories", "1 year"],
+      ["Nov 8", "1 Memory", "1 year"],
     ]);
     // The counts in a list of facts: dated, the years they span and what was left out.
     expect(text(root, ".fact dd")).toEqual(["6", "2022 to 2025", "2"]);
@@ -262,7 +262,7 @@ describe("the controls", () => {
     await settled(r.root);
     expect(r.root.querySelector("#otd-date")).toBe(date);
     expect(r.root.textContent).toContain(copy.lookingLine("Mar 1, 2026", false, 0));
-    expect(tableRows(r.root.querySelectorAll("table")[0] as FakeElement)).toEqual([["2022", "4 years ago", "2"]]);
+    expect(tableRows(r.root.querySelectorAll("table")[0] as FakeElement)).toEqual([["2022", "4 years ago", "2 Memories"]]);
     expect(said.at(-1)).toBe(copy.foundAnnounce(2, false));
     // Clearing the field goes back to today.
     date.value = "";

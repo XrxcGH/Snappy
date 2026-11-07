@@ -94,7 +94,7 @@ function daySection(r: OnThisDayResult): HTMLElement {
       : dataTable(
           copy.dayCaption,
           [copy.yearHeader, copy.whenHeader, copy.memoriesHeader],
-          r.years.map((y) => [String(y.year), copy.unitAgo(y.yearsAgo), formatCount(y.count)]),
+          r.years.map((y) => [String(y.year), copy.unitAgo(y.yearsAgo), copy.unitMemories(y.count)]),
         ),
   );
 }
@@ -111,7 +111,7 @@ function yearsSection(r: OnThisDayResult): HTMLElement {
     dataTable(
       copy.yearsCaption,
       [copy.yearHeader, copy.memoriesHeader, copy.busiestHeader],
-      r.byYear.map((y) => [String(y.year), formatCount(y.total), y.busiestMonth === null ? "-" : copy.unitBusiest(y.busiestMonth, y.busiestCount)]),
+      r.byYear.map((y) => [String(y.year), copy.unitMemories(y.total), y.busiestMonth === null ? copy.unitNoBusiest : copy.unitBusiest(y.busiestMonth, y.busiestCount)]),
     ),
   );
 }
@@ -122,7 +122,7 @@ function topDaysSection(r: OnThisDayResult): HTMLElement {
     dataTable(
       copy.topDaysCaption,
       [copy.dayHeader, copy.memoriesHeader, copy.yearsHeader],
-      r.topDays.map((d) => [copy.unitMonthDay(d.month, d.day), formatCount(d.count), formatCount(d.years)]),
+      r.topDays.map((d) => [copy.unitMonthDay(d.month, d.day), copy.unitMemories(d.count), copy.unitYears(d.years)]),
     ),
   );
 }
