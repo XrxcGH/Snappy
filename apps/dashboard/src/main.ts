@@ -34,6 +34,8 @@ function boot(): void {
     spawn: () => spawnBlobChannel<ToWorker, unknown>(terminalWorkerSource),
     vault: browserVault,
     vaultPhase: () => store.get().vault.phase,
+    beforeStoreRun: () => actions.beforeStoreRun(),
+    afterStoreRun: () => actions.afterStoreRun(),
   });
   const ctx: ViewContext = { store, actions, terminal };
 

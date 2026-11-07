@@ -51,6 +51,13 @@ export interface Actions {
   sealWith(passphrase: string): Promise<boolean>;
   lock(): Promise<void>;
   deleteAll(): Promise<boolean>;
+  /**
+   * A command is about to save history (the terminal's analyze). The dashboard's own copy is locked first, so
+   * nothing can write over the file the command writes, and what was saved is remembered.
+   */
+  beforeStoreRun(): Promise<void>;
+  /** The command ended. If it changed the saved history, say so and ask to unlock to see it. */
+  afterStoreRun(): Promise<void>;
   /** Resolves when every queued save has finished. */
   settled(): Promise<void>;
 }
@@ -294,6 +301,36 @@ export function createActions(store: Store, deps: Deps): Actions {
     resetAnalysisCache();
   }
 
+  // ------------------------------------------------------- commands that save ---
+
+  /** The sealed bytes as they were when the last command started, to tell afterwards whether it changed them. */
+  let before: Uint8Array | null = null;
+
+  const readVault = async (): Promise<Uint8Array | null> => {
+    try {
+      return await deps.vault.read();
+    } catch {
+      return null;
+    }
+  };
+
+  async function beforeStoreRun(): Promise<void> {
+    // An open history is locked first: it holds the passphrase and saves on every change, which would write over the command's file.
+    if (store.get().vault.phase === "unlocked") await lock();
+    before = await readVault();
+  }
+
+  async function afterStoreRun(): Promise<void> {
+    const after = await readVault();
+    const previous = before;
+    before = null;
+    if (after === null) return;
+    const changed = previous === null || previous.length !== after.length || previous.some((byte, i) => byte !== after[i]);
+    if (!changed) return;
+    // Whatever was on the page before stays in memory and joins the saved history when it is unlocked.
+    setVault({ hasSaved: true, phase: "locked", message: { kind: "success", text: vaultMessages.historyUpdated } });
+  }
+
   async function deleteAll(): Promise<boolean> {
     // Without a passphrase no save can start, so an edit made while the delete is pending cannot
     // write the sealed data back after it is gone. Saves already running finish first.
@@ -337,6 +374,8 @@ export function createActions(store: Store, deps: Deps): Actions {
     sealWith,
     lock,
     deleteAll,
+    beforeStoreRun,
+    afterStoreRun,
     settled: () => chain,
   };
 }

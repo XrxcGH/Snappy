@@ -285,3 +285,64 @@ describe("sealed storage", () => {
     expect(themes).toEqual(["light"]);
   });
 });
+
+describe("commands that save history", () => {
+  it("locks an open history first, so the dashboard cannot write over what the command writes", async () => {
+    const vault = fakeVault();
+    const { store, actions } = setup(vault);
+    await actions.importZips([zipFile(2)]);
+    expect(await actions.sealWith(PASS)).toBe(true);
+    expect(store.get().vault.phase).toBe("unlocked");
+    const writesBefore = vault.writes;
+
+    await actions.beforeStoreRun();
+    expect(store.get().vault.phase).toBe("locked");
+    expect(store.get().real.ledger.snapshots).toHaveLength(0);
+    // Locked means no passphrase is held, so an edit made now cannot save anything.
+    actions.keep("someone");
+    await actions.settled();
+    expect(vault.writes).toBe(writesBefore);
+  }, 60_000);
+
+  it("tells the person when a command changed the saved history, and asks them to unlock to see it", async () => {
+    const vault = fakeVault();
+    const { store, actions } = setup(vault);
+    await actions.importZips([zipFile(2)]);
+    await actions.sealWith(PASS);
+    await actions.lock();
+    await actions.beforeStoreRun();
+    vault.blob = new Uint8Array([9, 9, 9]); // the command wrote a new file
+    await actions.afterStoreRun();
+    expect(store.get().vault).toMatchObject({ hasSaved: true, phase: "locked", message: { kind: "success", text: "Saved history updated. Unlock to see it." } });
+  }, 60_000);
+
+  it("turns a session-only page into a locked one when a command created the saved history, and keeps what was on screen", async () => {
+    const vault = fakeVault();
+    const { store, actions } = setup(vault);
+    await actions.importZips([zipFile(2)]);
+    expect(store.get().vault.phase).toBe("session");
+    await actions.beforeStoreRun();
+    expect(store.get().vault.phase).toBe("session"); // nothing was open, so nothing is locked
+    vault.blob = new Uint8Array([1, 2, 3]);
+    await actions.afterStoreRun();
+    expect(store.get().vault).toMatchObject({ hasSaved: true, phase: "locked" });
+    // What was added before is still in memory and joins the history when it is unlocked.
+    expect(store.get().real.ledger.snapshots).toHaveLength(1);
+  }, 60_000);
+
+  it("says nothing when the command left the saved history as it was, or the vault cannot be read", async () => {
+    const vault = fakeVault(new Uint8Array([5, 5]));
+    const { store, actions } = setup(vault);
+    await actions.init(null);
+    await actions.beforeStoreRun();
+    await actions.afterStoreRun();
+    expect(store.get().vault.message).toBeUndefined();
+    vault.read = async () => {
+      throw new Error("blocked");
+    };
+    await actions.beforeStoreRun();
+    vault.blob = new Uint8Array([6]);
+    await expect(actions.afterStoreRun()).resolves.toBeUndefined();
+    expect(store.get().vault.message).toBeUndefined();
+  });
+});
