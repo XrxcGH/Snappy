@@ -119,6 +119,61 @@ describe("the helper", () => {
     expect(r.files.some((f) => f.path.endsWith("memories-report.json"))).toBe(false);
   });
 
+  describe("a stop request while the export is still being read", () => {
+    const parts = syntheticExportParts({ now: LATER, friendCount: 30, memoryCount: 120 });
+    /** The parts as lazy files; the stop request arrives with the `at`-th read of any of them. */
+    const withStopAt = (at: number, sendRef: { send?: (to: ToWorker) => void }) => {
+      let reads = 0;
+      return parts.map((p) => {
+        const blob = new Blob([p.bytes as BlobPart]);
+        const slice = blob.slice.bind(blob);
+        blob.slice = (...args: Parameters<Blob["slice"]>) => {
+          if (++reads === at) sendRef.send?.({ type: "cancel" });
+          return slice(...args);
+        };
+        return { name: p.name, blob };
+      });
+    };
+    const names = parts.map((p) => `/in/${p.name}`);
+    const commands: [string, string[]][] = [
+      ["inspect", ["inspect", ...names]],
+      ["memories --dry-run", ["memories", ...names, "--dry-run"]],
+      ["analyze", ["analyze", ...names, "--no-save"]],
+    ];
+    // What a cut-off read looks like to the parser, which must never reach the screen.
+    const FALSE_DIAGNOSES = [/could not read/i, /could not open/i, /No Memories found/, /Export check/, /Request it again/i, /not a valid ZIP/i];
+
+    for (const [label, argv] of commands) {
+      it(`prints no false diagnosis when ${label} is stopped during the read`, async () => {
+        // Early reads: the stop always lands before the export has been read, so the run must end as a stop.
+        for (const at of [2, 3, 4]) {
+          const ref: { send?: (to: ToWorker) => void } = {};
+          const files = withStopAt(at, ref);
+          const r = await runInHelper(argv, { files, now: () => NOW, beforeRun: (s) => (ref.send = s) });
+          expect(r.code, `${label} at read ${at}`).toBe(130);
+          for (const bad of FALSE_DIAGNOSES) expect(r.out, `${label} at read ${at}`).not.toMatch(bad);
+          expect(r.out, `${label} at read ${at}`).toMatch(/Stopped\. Nothing was changed\./);
+          expect(r.exits).toBe(1);
+        }
+        // Later reads: a stop is a stop or arrives too late to matter, and never shows a false diagnosis.
+        for (const at of [6, 9, 14, 25]) {
+          const ref: { send?: (to: ToWorker) => void } = {};
+          const r = await runInHelper(argv, { files: withStopAt(at, ref), now: () => NOW, beforeRun: (s) => (ref.send = s) });
+          if (r.code === 130) for (const bad of FALSE_DIAGNOSES) expect(r.out, `${label} at read ${at}`).not.toMatch(bad);
+          expect(r.exits).toBe(1);
+        }
+      });
+    }
+
+    it("stops the very first read of a multi-part inspect with the calm stop line and nothing else", async () => {
+      const ref: { send?: (to: ToWorker) => void } = {};
+      const files = withStopAt(2, ref);
+      const r = await runInHelper(["inspect", ...names], { files, now: () => NOW, beforeRun: (s) => (ref.send = s) });
+      expect(r.code).toBe(130);
+      expect(r.out.trim()).toBe("Stopped. Nothing was changed.");
+    });
+  });
+
   it("turns a canceled passphrase prompt into a calm stop, and sends the passphrase nowhere it could be read", async () => {
     const asked = await runInHelper(["analyze", "/in/a.zip"], { files: [blobOf("a.zip", later)], answers: [null], now: () => NOW });
     expect(asked.code).toBe(130);

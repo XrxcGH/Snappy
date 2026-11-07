@@ -95,7 +95,7 @@ function issuesFor(parsed: ParsedExport, source: string, io: Io, expectedFriendC
 
 /** Parse one export (its parts merged) and return it with its issues and the date it was made. */
 async function readExport(paths: string[], source: string, io: Io, friendCount?: number) {
-  const parsed = await withReaders(io, paths, parseParts);
+  const parsed = await withReaders(io, paths, (readers) => parseParts(readers, io));
   const issues = issuesFor(parsed, source, io, friendCount);
   let takenAt = parsed.exportedAt;
   if (takenAt === undefined) {

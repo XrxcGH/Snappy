@@ -14,7 +14,7 @@ import type { OptionSpec } from "../args.ts";
 import { CliError, fsError } from "../errors.ts";
 import { formatBytes, formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
 import type { Io } from "../io.ts";
-import { parseParts, requireFirstPart, resolveZipPaths, withReaders } from "../inputs.ts";
+import { parseParts, requireFirstPart, resolveZipPaths, throwIfStopped, withReaders } from "../inputs.ts";
 import { atomicWrite } from "../ledger-store.ts";
 import { DOWNLOAD_NOTICE, DownloadError, downloadToFile } from "../memories-download.ts";
 import { fixFileTime, overlayTarget, pathExists, placeMedia, placeOverlay, targetInside } from "../memories-write.ts";
@@ -237,7 +237,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
   const paths = await resolveZipPaths(io, positionals);
   requireFirstPart(paths);
   return withReaders(io, paths, async (readers) => {
-    const parsed = await parseParts(readers);
+    const parsed = await parseParts(readers, io);
     const now = io.now();
     const plan = planMemories(parsed.memories, { layout, capBytes, now });
     const out: string[] = [];
@@ -251,6 +251,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
 
     // Which planned items have bytes in a zip, which only a link, which neither.
     const index = await indexEntries(plan, readers);
+    throwIfStopped(io);
     const inZip = (e: PlannedMemory): boolean => e.item.zipPath !== undefined && index.has(entryKey(partOf(e), e.item.zipPath));
     const counts = {
       bundled: plan.entries.filter(inZip).length,

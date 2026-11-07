@@ -70,21 +70,34 @@ export function requireFirstPart(paths: string[]): void {
   }
 }
 
-/** Open every path, run `fn`, and always close the handles. */
-export async function withReaders<T>(io: Pick<Io, "fs">, paths: string[], fn: (readers: FileReader[]) => Promise<T>): Promise<T> {
+/**
+ * A stop request ends the command here, before anything is reported. Reads that were cut off look like
+ * damaged files to the parser, which turns them into issues; those must never be shown as findings.
+ */
+export function throwIfStopped(io: Pick<Io, "signal">): void {
+  if (io.signal?.aborted === true) throw new CliError("canceled", "Stopped. Nothing was changed.", 130);
+}
+
+/** Open every path, run `fn`, and always close the handles. A stop request during `fn` ends in a calm stop, not in its result. */
+export async function withReaders<T>(io: Pick<Io, "fs" | "signal">, paths: string[], fn: (readers: FileReader[]) => Promise<T>): Promise<T> {
   const readers: FileReader[] = [];
   try {
     for (const path of paths) readers.push(await openFileReader(io, path));
-    return await fn(readers);
+    const result = await fn(readers);
+    throwIfStopped(io);
+    return result;
   } finally {
     await Promise.all(readers.map((r) => r.close()));
   }
 }
 
 /** Parse the readers as parts of one export, in export order (part 1 first), and merge them. */
-export async function parseParts(readers: FileReader[]): Promise<ParsedExport> {
+export async function parseParts(readers: FileReader[], io: Pick<Io, "signal">): Promise<ParsedExport> {
   const parts: ParsedExport[] = [];
-  for (const [i, reader] of readers.entries()) parts.push(await parseExportFromReader(reader, { part: i + 1 }));
+  for (const [i, reader] of readers.entries()) {
+    parts.push(await parseExportFromReader(reader, { part: i + 1 }));
+    throwIfStopped(io);
+  }
   return parts.length === 1 ? (parts[0] as ParsedExport) : mergeParsedExports(parts);
 }
 
