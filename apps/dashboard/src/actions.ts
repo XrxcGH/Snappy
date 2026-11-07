@@ -1,0 +1,342 @@
+/**
+ * Everything that has side effects: reading files, the clock, the sealed vault. Views call these
+ * and read results from the store. Dependencies are injected so the logic runs under test
+ * without a browser.
+ */
+import { LedgerFormatError, SealError, forgetMediaHandles, openLedger, sealLedger, snapshotFromExport } from "@snappy-export/core";
+import type { ExportIssue, ParsedExport, Snapshot } from "@snappy-export/core";
+import { resetAnalysisCache } from "./analysis.ts";
+import { settings, start, vaultMessages } from "./copy.ts";
+import { isLaterPartsOnly, orderParts } from "./export-parts.ts";
+import { runImport } from "./import-pipeline.ts";
+import type { ImportRunner } from "./import-pipeline.ts";
+import { exportHealth } from "./issues.ts";
+import { estimateStrength } from "./passphrase.ts";
+import { packSaved, unpackSaved } from "./persist-codec.ts";
+import type { CleanupView, Theme, VaultStatus } from "./reducer.ts";
+import { buildSampleWorkspace } from "./sample.ts";
+import type { Store } from "./store.ts";
+import type { VaultStore } from "./vault.ts";
+
+export interface NamedBlob extends Blob {
+  readonly name?: string;
+}
+
+export interface Deps {
+  vault: VaultStore;
+  clock: () => number;
+  /** Lets the page paint between slow steps (progress bars need frames to move). */
+  yieldToUi: () => Promise<void>;
+  saveTheme: (theme: Theme) => void;
+  /** Reads the zip parts. The page passes the background reader; the default reads on the calling thread. */
+  runImport?: ImportRunner;
+}
+
+export type ImportResult = "done" | "failed";
+
+export interface Actions {
+  init(savedTheme: string | null): Promise<void>;
+  importZips(files: readonly NamedBlob[]): Promise<ImportResult>;
+  loadSample(): Promise<ImportResult>;
+  clearSample(): void;
+  keep(username: string): void;
+  unkeep(username: string): void;
+  toggleChecked(username: string): void;
+  clearChecked(): void;
+  setTheme(theme: Theme): void;
+  setExpectedFriendCount(count: number | null): void;
+  setCapGiB(gib: number): void;
+  setCleanupView(patch: Partial<CleanupView>): void;
+  unlock(passphrase: string): Promise<boolean>;
+  sealWith(passphrase: string): Promise<boolean>;
+  lock(): Promise<void>;
+  deleteAll(): Promise<boolean>;
+  /** Resolves when every queued save has finished. */
+  settled(): Promise<void>;
+}
+
+const ZIP_NAME = /\.zip$/i;
+
+/** Clocks drift and zips get edited; a day of slack before an export date counts as "in the future". */
+const FUTURE_SLACK_MS = 24 * 60 * 60 * 1000;
+
+export function createActions(store: Store, deps: Deps): Actions {
+  /** Lives only in this closure: never in state, never written anywhere. */
+  let passphrase: string | null = null;
+
+  const setVault = (patch: Partial<VaultStatus>): void => store.dispatch({ type: "vault", patch });
+
+  // ---------------------------------------------------------------- saving ---
+
+  async function saveNow(): Promise<void> {
+    const pass = passphrase;
+    if (pass === null) return;
+    const { ledger, allowlist, checkedOff } = store.get().real;
+    try {
+      const sealed = await sealLedger(packSaved({ ledger, allowlist, checkedOff }), pass);
+      await deps.vault.write(sealed);
+    } catch {
+      setVault({ message: { kind: "error", text: vaultMessages.saveFailed } });
+    }
+  }
+
+  // Saves are chained so two never overlap, and a save requested while another is still waiting
+  // for its turn is folded into it (saveNow always reads the newest state when it starts).
+  let chain: Promise<void> = Promise.resolve();
+  let queued = false;
+  function requestSave(): Promise<void> {
+    if (!queued) {
+      queued = true;
+      chain = chain.then(() => {
+        queued = false;
+        return saveNow();
+      });
+    }
+    return chain;
+  }
+
+  // Only edits made while unlocked are saved; the unlock and seal steps save explicitly.
+  store.subscribe((state, previous) => {
+    if (state.vault.phase !== "unlocked" || previous.vault.phase !== "unlocked") return;
+    const a = state.real;
+    const b = previous.real;
+    if (a.ledger !== b.ledger || a.allowlist !== b.allowlist || a.checkedOff !== b.checkedOff) void requestSave();
+  });
+
+  // ---------------------------------------------------------------- import ---
+
+  async function importZips(files: readonly NamedBlob[]): Promise<ImportResult> {
+    const zips = files.filter((f) => ZIP_NAME.test(f.name ?? ""));
+    if (zips.length === 0) {
+      store.dispatch({ type: "import-failed", message: start.notZip });
+      return "failed";
+    }
+
+    // Numbered later parts hold photos and videos only. Reading them alone would add an empty
+    // export that could replace a good one, so the person is told where the lists are instead.
+    if (isLaterPartsOnly(zips)) {
+      store.dispatch({ type: "import-failed", message: start.laterPartsOnly });
+      return "failed";
+    }
+
+    // Parts are read in export order (base name, then -2, -3), whatever order they were chosen in.
+    const ordered = orderParts(zips);
+    store.dispatch({ type: "import-started", steps: ordered.length, sample: false });
+    try {
+      await deps.yieldToUi(); // lets "Part 1 of N" paint before the first read
+      // Whichever reader ran (the worker or this page), file locations and links are forgotten before
+      // anything is kept: nothing here opens a file, so nothing needs them.
+      const combined = forgetMediaHandles(
+        await (deps.runImport ?? runImport)(ordered, {
+          yieldToUi: deps.yieldToUi,
+          onProgress: ({ step, fraction }) => store.dispatch({ type: "import-progress", step, fraction }),
+        }),
+      );
+
+      const now = deps.clock();
+      // The export date comes from the newest file time inside the zip, which anyone can set. A
+      // far-future date would sort this export after every later one for good, so it is not trusted.
+      const futureDated = combined.exportedAt !== undefined && combined.exportedAt > now + FUTURE_SLACK_MS;
+      const merged: ParsedExport = futureDated ? { ...combined, exportedAt: undefined } : combined;
+      const issues: ExportIssue[] = exportHealth(merged, { expectedFriendCount: store.get().expectedFriendCount ?? undefined, now });
+
+      // An export with errors is refused outright, as the command-line tool does: its lists may be
+      // cut off, and a cut-off list makes everyone look like they vanished. Nothing is added to the
+      // history and nobody is suggested for removal.
+      if (issues.some((i) => i.severity === "error")) {
+        store.dispatch({ type: "import-failed", message: start.rejected, issues });
+        return "failed";
+      }
+      // A file that is not a .zip was left out. If it was a part of the export, what was read is incomplete.
+      if (zips.length < files.length) issues.push({ severity: "warning", code: "files-skipped-not-zip", message: start.skippedFiles(files.length - zips.length) });
+      const snapshot = snapshotOf(merged, now, issues, futureDated);
+      store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now });
+      return "done";
+    } catch {
+      store.dispatch({ type: "import-failed", message: start.readFailed });
+      return "failed";
+    }
+  }
+
+  /**
+   * A snapshot needs a trustworthy time. Without a generation time the export is dated "now" and
+   * the person is told. An export with no friends, requests or deletions at all would only
+   * teach the ledger that everyone vanished, so it is not added.
+   */
+  function snapshotOf(merged: ParsedExport, now: number, issues: ExportIssue[], futureDated: boolean): Snapshot | null {
+    const f = merged.friends;
+    if (f.friends.length === 0 && f.sentRequests.length === 0 && f.deletedFriends.length === 0) return null;
+    if (merged.exportedAt === undefined) {
+      issues.push(
+        futureDated
+          ? {
+              severity: "warning",
+              code: "export-time-future",
+              message: "The date stored in this export is in the future, so Snappy used today's date for your history instead.",
+            }
+          : {
+              severity: "warning",
+              code: "export-time-unknown",
+              message: "Snappy could not tell when this export was made, so it used today's date for your history. If you add it again later, it may count as a new snapshot.",
+            },
+      );
+    }
+    return snapshotFromExport(merged, { takenAt: merged.exportedAt ?? now });
+  }
+
+  async function loadSample(): Promise<ImportResult> {
+    store.dispatch({ type: "import-started", steps: 3, sample: true });
+    try {
+      const workspace = await buildSampleWorkspace(async (step) => {
+        store.dispatch({ type: "import-step", step });
+        await deps.yieldToUi();
+      });
+      store.dispatch({ type: "sample-loaded", workspace });
+      return "done";
+    } catch {
+      store.dispatch({ type: "import-failed", message: start.readFailed });
+      return "failed";
+    }
+  }
+
+  // ----------------------------------------------------------------- vault ---
+
+  async function init(savedTheme: string | null): Promise<void> {
+    if (savedTheme === "light" || savedTheme === "dark" || savedTheme === "system") store.dispatch({ type: "theme", theme: savedTheme });
+    if (!deps.vault.supported()) {
+      setVault({ supported: false });
+      return;
+    }
+    try {
+      const blob = await deps.vault.read();
+      if (blob) setVault({ hasSaved: true, phase: "locked" });
+    } catch {
+      setVault({ supported: false, message: { kind: "error", text: vaultMessages.storageUnavailable } });
+    }
+  }
+
+  async function unlock(pass: string): Promise<boolean> {
+    if (pass === "") return false;
+    setVault({ busy: true, message: undefined });
+    await deps.yieldToUi();
+    try {
+      const blob = await deps.vault.read();
+      if (!blob) {
+        setVault({ busy: false, hasSaved: false, phase: "session", message: { kind: "error", text: vaultMessages.nothingSaved } });
+        return false;
+      }
+      const saved = unpackSaved(await openLedger(blob, pass));
+      const real = store.get().real;
+      const hadSession = real.ledger.snapshots.length > 0 || real.allowlist.length > 0 || real.checkedOff.length > 0;
+      passphrase = pass;
+      store.dispatch({ type: "unlocked", saved, now: deps.clock() });
+      // Things added before unlocking now belong to the saved history: write the merged result.
+      if (hadSession) await requestSave();
+      return true;
+    } catch (e) {
+      const unreadable = e instanceof LedgerFormatError;
+      const wrong = e instanceof SealError;
+      setVault({ busy: false, message: { kind: "error", text: wrong ? vaultMessages.wrongPassphrase : unreadable ? vaultMessages.unreadable : vaultMessages.storageUnavailable } });
+      return false;
+    }
+  }
+
+  async function sealWith(pass: string): Promise<boolean> {
+    const vault = store.get().vault;
+    if (!vault.supported) {
+      setVault({ message: { kind: "error", text: vaultMessages.storageUnavailable } });
+      return false;
+    }
+    if (vault.phase === "locked") {
+      setVault({ message: { kind: "error", text: vaultMessages.lockedFirst } });
+      return false;
+    }
+    if (!estimateStrength(pass).acceptable) {
+      setVault({ message: { kind: "error", text: settings.tooShort } });
+      return false;
+    }
+
+    // A tab opened before anything was saved still says "session only". Look before writing, so it
+    // cannot replace a history another tab has saved since.
+    if (vault.phase === "session") {
+      try {
+        if (await deps.vault.read()) {
+          setVault({ hasSaved: true, phase: "locked", message: { kind: "error", text: vaultMessages.savedElsewhere } });
+          return false;
+        }
+      } catch {
+        setVault({ message: { kind: "error", text: vaultMessages.storageUnavailable } });
+        return false;
+      }
+    }
+
+    const wasUnlocked = vault.phase === "unlocked";
+    const previous = passphrase;
+    setVault({ busy: true, message: undefined });
+    await deps.yieldToUi();
+    passphrase = pass;
+    try {
+      const sealed = await sealLedger(packSaved(store.get().real), pass);
+      await deps.vault.write(sealed);
+    } catch {
+      passphrase = previous;
+      setVault({ busy: false, message: { kind: "error", text: vaultMessages.saveFailed } });
+      return false;
+    }
+    setVault({ busy: false, hasSaved: true, phase: "unlocked", message: { kind: "success", text: wasUnlocked ? settings.changed : settings.sealed } });
+    return true;
+  }
+
+  async function lock(): Promise<void> {
+    await chain;
+    passphrase = null;
+    store.dispatch({ type: "locked" });
+    resetAnalysisCache();
+  }
+
+  async function deleteAll(): Promise<boolean> {
+    // Without a passphrase no save can start, so an edit made while the delete is pending cannot
+    // write the sealed data back after it is gone. Saves already running finish first.
+    const previous = passphrase;
+    passphrase = null;
+    await chain;
+    try {
+      await deps.vault.clear();
+    } catch {
+      passphrase = previous;
+      if (previous !== null) void requestSave(); // edits made during the attempt were skipped
+      setVault({ message: { kind: "error", text: settings.deleteFailed } });
+      return false;
+    }
+    store.dispatch({ type: "wiped" });
+    resetAnalysisCache();
+    setVault({ message: { kind: "success", text: settings.deleted } });
+    return true;
+  }
+
+  return {
+    init,
+    importZips,
+    loadSample,
+    clearSample() {
+      store.dispatch({ type: "sample-cleared" });
+      resetAnalysisCache();
+    },
+    keep: (username) => store.dispatch({ type: "keep", username }),
+    unkeep: (username) => store.dispatch({ type: "unkeep", username }),
+    toggleChecked: (username) => store.dispatch({ type: "toggle-checked", username }),
+    clearChecked: () => store.dispatch({ type: "clear-checked" }),
+    setTheme(theme) {
+      store.dispatch({ type: "theme", theme });
+      deps.saveTheme(theme);
+    },
+    setExpectedFriendCount: (count) => store.dispatch({ type: "expected-friend-count", count }),
+    setCapGiB: (gib) => store.dispatch({ type: "cap", gib }),
+    setCleanupView: (patch) => store.dispatch({ type: "cleanup-view", patch }),
+    unlock,
+    sealWith,
+    lock,
+    deleteAll,
+    settled: () => chain,
+  };
+}
