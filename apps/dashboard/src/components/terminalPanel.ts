@@ -172,6 +172,8 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
     }
     log?.refresh();
     if (state.kind === "finished") log?.flush();
+    // An output area with nothing in it yet (a command waiting for a passphrase) is not shown as an empty box.
+    if (log) log.element.hidden = controller.transcript(id).size === 0;
   };
 
   draw();
