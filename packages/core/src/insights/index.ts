@@ -2,6 +2,7 @@
  * Everything the "insights" features offer, one namespace per feature so that generic names such as
  * `InsightNote` in two modules never collide. Each is pure: data and a clock value go in, plain results come out.
  */
+export * as activityCalendar from "./activity-calendar.ts";
 export * as anniversaries from "./anniversaries.ts";
 export * as blockedReview from "./blocked-review.ts";
 export * as closestFading from "./closest-fading.ts";
