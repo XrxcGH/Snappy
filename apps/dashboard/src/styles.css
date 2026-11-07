@@ -649,6 +649,43 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .confirm { padding: var(--pad-card); border: 1px solid var(--danger-border); border-radius: var(--radius-lg); background: var(--surface); }
 .notice-details { margin-top: 0; }
 
+/* ---------------------------------------------------------------- tools --- */
+/*
+  The Tools hub is a grid of tiles in groups (the same tile grid as the Overview: five shared rows, all centered), and a
+  tool page is a frame: back link, header, what it reads, then the body. A tool may add its own rules in
+  src/tools/<id>/styles.css; the build appends them after this file, and every selector there starts with .tool-<id>.
+*/
+.tiles-tools { --tile-rows: 5; }
+@media (min-width: 30rem) {
+  .tiles-tools .tile { grid-column: span 3; }
+  .tiles-tools.tiles-n-1 .tile { grid-column: 1 / -1; }
+}
+/* From 40rem a group fills its rows with no hole: one tile alone, two or four in pairs, three across, five as three and two. */
+@media (min-width: 40rem) {
+  .tiles-tools .tile { grid-column: span 2; }
+  .tiles-tools.tiles-n-2 .tile, .tiles-tools.tiles-n-4 .tile { grid-column: span 3; }
+  .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 3; }
+}
+.tool-line { margin: 0; font-size: var(--text-14); color: var(--text-muted); text-wrap: balance; }
+.tool-status { margin: 0; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-14); font-weight: 600; color: var(--text-muted); }
+.tool-status-ready { color: var(--text); }
+.tool-status-ready .icon { color: var(--success-fg); }
+
+.tool-back { display: grid; justify-items: start; margin-bottom: calc(var(--gap-heading) * -1); }
+/* What the tool reads: a quiet panel in the one column, so it lines up with every block below it. */
+.tool-reads { display: grid; gap: var(--space-1); padding: var(--space-3) var(--pad-card); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.tool-reads p { margin: 0; }
+.tool-body, .tool-result { display: grid; gap: var(--gap-section); min-width: 0; }
+.tool-body:empty { display: none; }
+.tool-body:focus-visible { outline: none; }
+.tool-working { display: grid; gap: var(--space-2); }
+.tool-failed { margin: 0; }
+.tool-notes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.tool-note { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2); }
+.tool-note .icon { margin-top: 0.125rem; }
+.tool-note-info .icon { color: var(--info-fg); }
+.tool-note-warning .icon { color: var(--warning-fg); }
+
 /* --------------------------------------------------------------- motion --- */
 /* Signature: key bars slide in 8px from the left, each one stagger after the last. Once per view. */
 .slide-in { animation: bar-in var(--dur-slow) var(--ease) both; animation-delay: calc(var(--i, 0) * var(--bar-stagger)); }

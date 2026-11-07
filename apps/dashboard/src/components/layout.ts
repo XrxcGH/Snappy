@@ -4,15 +4,15 @@ import { h, setVar } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { isFirstPaint } from "../reactive.ts";
 import { chipIcon, scopeClass } from "./category.ts";
-import type { CategoryId, Scope } from "./category.ts";
+import type { Scope } from "./category.ts";
 import { icon, spot as spotIllustration } from "./icon.ts";
 import type { IconName, SpotName } from "./icon.ts";
 
 export interface PageHeaderOptions {
   /** Icon tile shown before the title. Decorative: the title names the page. */
   icon?: IconName;
-  /** Finding area; its color paints the tile and the accent bar under the lead. */
-  category?: CategoryId;
+  /** Finding area (or the neutral scope); its color paints the tile and the accent bar under the lead. */
+  category?: Scope;
 
   /** A small muted line inside the header, after the lead and before the accent bar. */
   note?: string;
@@ -96,7 +96,7 @@ export function emptyState(options: {
   body: string;
   actions?: Child[];
   spot?: SpotName;
-  category?: CategoryId;
+  category?: Scope;
   tint?: boolean;
 }): HTMLElement {
   const classes = ["empty"];

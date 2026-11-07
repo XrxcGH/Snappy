@@ -36,6 +36,8 @@ export const NAV: NavGroup[] = [
     items: [
       { id: "start", icon: "import" },
       { id: "overview", icon: "overview" },
+      // One item for all the tools: a tool's page keeps it marked, so the menu never grows with the tool count.
+      { id: "tools", icon: "tools" },
     ],
   },
   {

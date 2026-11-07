@@ -375,6 +375,7 @@ Easing is `cubic-bezier(0.2, 0, 0, 1)`.
 | `i-calendar` | Dates and date ranges |
 | `i-list` | Lists, what Snappy reads, the menu button |
 | `i-sun`, `i-moon` | The theme toggle: shows the theme it switches to |
+| `i-tools` | Tools |
 | `i-storage` | Storage meter |
 | `i-device` | On this device |
 | `i-shield` | Network status, cannot connect to the internet |

@@ -38,9 +38,9 @@ export function displayUsername(username: string): string {
 }
 
 const PROFILE_LINK = /^https:\/\/www\.snapchat\.com\/add\/[A-Za-z0-9._%-]{1,200}$/;
-const ROUTE_LINK = /^#(?:\/[a-z-]*)?$/;
+const ROUTE_LINK = /^#(?:\/[a-z-]*|\/tools\/[a-z][a-z0-9-]*)?$/;
 
-/** Links the DOM helper accepts: in-page routes and Snapchat profile links, nothing else. */
+/** Links the DOM helper accepts: in-page routes (a tool is #/tools/<id>) and Snapchat profile links, nothing else. */
 export function isAllowedHref(href: string): boolean {
   return ROUTE_LINK.test(href) || href === "#main" || PROFILE_LINK.test(href);
 }

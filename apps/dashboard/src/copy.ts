@@ -45,6 +45,7 @@ export const routes = {
   quiet: { label: "Quiet friends", title: "Quiet friends" },
   cleanup: { label: "Cleanup queue", title: "Cleanup queue" },
   memories: { label: "Memories rescue", title: "Memories rescue" },
+  tools: { label: "Tools", title: "Tools" },
   guide: { label: "Export guide", title: "Export guide" },
   privacy: { label: "Privacy", title: "Privacy" },
   settings: { label: "Settings", title: "Settings" },
@@ -220,6 +221,39 @@ export const overview = {
   healthErrors: (n: number) => countOf(n, "error", "errors"),
   healthWarnings: (n: number) => countOf(n, "warning", "warnings"),
   healthNotes: (n: number) => countOf(n, "note", "notes"),
+};
+
+/** The Tools hub and the frame every tool page shares. A tool's own words are in src/tools/<id>/copy.ts. */
+export const tools = {
+  lead: "Small helpers that read your export on this device.",
+  noExportNote: "Most tools need an export. Add one on the Start page.",
+  groups: { "your-export": "Your export", friends: "Friends", chats: "Chats", memories: "Memories", checklists: "Checklists" },
+  open: "Open",
+  statusReady: "Ready",
+  statusNeeds: { export: "Needs an export", friends: "Needs a friends list", chats: "Needs chat history", memories: "Needs a Memories list" },
+  backLink: "All tools",
+  readsHeading: "What this reads",
+  readsNever: "It never reads message text, media, locations, display names or login history.",
+  workingLabel: "Working on your results",
+  failedNote: "Snappy could not finish this. Reload the page and try again.",
+  notesHeading: "Notes",
+  commandHeading: "Run it as a command",
+  downloadHeading: "Download",
+  downloadSaved: "File saved.",
+  downloadFailedNote: "Snappy could not save the file. Your browser may block downloads.",
+  needs: {
+    exportTitle: "Add your export",
+    exportBody: "This tool reads the export you add to Snappy. Add one to see its results.",
+    exportLedgerBody: "Your saved history holds friends only. Add an export to use this tool.",
+    exportFailedBody: "Your last export was not added. The Start page says why.",
+    friendsTitle: "No friends list found",
+    friendsBody: "Snappy found no friends list in your export. The export check shows what is missing.",
+    chatsTitle: "No chat history found",
+    chatsBody: "Snappy found no chat or Snap history in your export. Request it again with chat history included.",
+    memoriesTitle: "No Memories list found",
+    memoriesBody: "Snappy found no Memories list in your export. Request it again with Memories included.",
+    checkLink: "Open export check",
+  },
 };
 
 export const disappeared = {

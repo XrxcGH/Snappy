@@ -38,7 +38,8 @@ export type IconName =
   | "shield"
   | "minus"
   | "sun"
-  | "moon";
+  | "moon"
+  | "tools";
 
 /** Spot illustrations in the sprite (ids "g-<name>", 160 by 120). Decorative only; colored by --spot-hi and --spot-wash. */
 export type SpotName = "import" | "overview" | "empty" | "memories" | "privacy" | "guide";
