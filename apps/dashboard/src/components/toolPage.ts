@@ -185,7 +185,8 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
 
   return h(
     "div",
-    { class: `view tool ${scopeClass(meta.category)}`, "data-tool": meta.id },
+    // tool-<id> is the one class a tool's own stylesheet may start its selectors with.
+    { class: `view tool tool-${meta.id} ${scopeClass(meta.category)}`, "data-tool": meta.id },
     h("div", { class: "tool-back" }, routeLink("tools", tools.backLink, "quiet")),
     header,
     reads,
