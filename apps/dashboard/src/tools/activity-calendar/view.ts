@@ -165,9 +165,10 @@ function runsSection(v: CalendarView): HTMLElement {
   const cal = v.year?.calendar;
   return section(
     copy.runsHeading,
+    // The line comes first: a small heading straight under the section heading would sit two gaps below it.
+    h("p", {}, copy.runsNote),
     runsTable(copy.allTimeRunsCaption, v.result.streaks),
     cal !== undefined && cal.total > 0 ? runsTable(copy.yearRunsCaption(cal.year), cal.streaks) : null,
-    h("p", { class: "caption" }, copy.runsNote),
   );
 }
 

@@ -1,5 +1,5 @@
 /* Activity calendar: the day grid, the legend and the bar lists. Tokens only; every selector starts with .tool-activity-calendar. */
-.tool-activity-calendar { --cal-cell: 0.875rem; --cal-gap: 0.1875rem; }
+.tool-activity-calendar { --cal-cell: 0.875rem; --cal-gap: 0.25rem; }
 
 .tool-activity-calendar .cal-wrap { display: grid; gap: var(--space-3); min-width: 0; }
 .tool-activity-calendar .cal-scroll { overflow-x: auto; padding: var(--space-4) var(--pad-card); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
