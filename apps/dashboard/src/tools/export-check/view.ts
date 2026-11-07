@@ -7,7 +7,7 @@ import type { NoticeKind } from "../../components/notice.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
-import { formatCount, formatDate } from "../../format.ts";
+import { formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeExportCheck } from "./model.ts";
@@ -103,7 +103,7 @@ function pillOf(s: insights.exportCheck.SectionCheck): PillKind {
 }
 
 function foundSection({ check, partsKnown }: ExportCheckResult): HTMLElement {
-  const rows = check.sections.map((s) => [copy.sections[s.id], copy.statuses[s.status], formatCount(s.count)]);
+  const rows = check.sections.map((s) => [copy.sections[s.id], copy.statuses[s.status], copy.unitItems(s.count)]);
   return section(
     copy.foundHeading,
     partsKnown && check.parts.count > 0 ? h("p", { class: "caption" }, copy.partsLine(check.parts.count)) : null,
@@ -125,7 +125,7 @@ function datesSection(check: ExportCheck): HTMLElement {
       ? dataTable(
           copy.datesCaption,
           [copy.recordsHeader, copy.fromHeader, copy.toHeader, copy.spanHeader],
-          covered.map(([label, c]) => [label, dateCell(c.oldest), dateCell(c.newest), c.spanDays === null ? "-" : copy.span(c.spanDays)]),
+          covered.map(([label, c]) => [label, c.oldest === null ? "-" : copy.unitFrom(dateCell(c.oldest)), c.newest === null ? "-" : copy.unitTo(dateCell(c.newest)), c.spanDays === null ? "-" : copy.span(c.spanDays)]),
         )
       : null,
     h("p", {}, ageLine(check.age)),
