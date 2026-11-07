@@ -4,11 +4,12 @@
  * class, and the icon names in code are exactly the symbols in the sprite.
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { CATEGORY_ICON, categoryOfCandidate, scopeClass } from "../src/components/category.ts";
+import { GROUPS, TOOLS } from "../src/tools/registry.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const read = (...parts: string[]): string => readFileSync(path.join(root, ...parts), "utf8");
@@ -132,6 +133,48 @@ describe("icons", () => {
     const symbols = sprite.slice(sprite.indexOf("</defs>"));
     expect(symbols).not.toMatch(/\sstyle=/i);
     expect(symbols).not.toMatch(/<script|href="http|#[0-9a-fA-F]{6}\b/i);
+  });
+});
+
+describe("tools", () => {
+  const css = read("apps", "dashboard", "src", "styles.css");
+  const iconSource = read("apps", "dashboard", "src", "components", "icon.ts");
+  const sprite = read("brand", "icons", "icons.svg");
+  const toolsDir = path.join(root, "apps", "dashboard", "src", "tools");
+  const sheets = readdirSync(toolsDir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && existsSync(path.join(toolsDir, e.name, "styles.css")))
+    .map((e) => ({ id: e.name, css: readFileSync(path.join(toolsDir, e.name, "styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "") }));
+
+  it("lays the hub's groups out on the shared tile rows, so a group of two, three or five has no hole in its last row", () => {
+    expect(css).toMatch(/\.tiles-tools\s*\{\s*--tile-rows:\s*5/);
+    expect(css).toMatch(/\.tiles-tools\.tiles-n-2 \.tile,\s*\.tiles-tools\.tiles-n-4 \.tile\s*\{\s*grid-column:\s*span 3/);
+    expect(css).toMatch(/\.tiles-tools\.tiles-n-5 \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 3/);
+  });
+
+  it("colors every tool through its group's category, with orange for the Memories group alone", () => {
+    const union = /export type IconName =([^;]+);/.exec(iconSource)?.[1] ?? "";
+    const named = new Set([...union.matchAll(/"([\w-]+)"/g)].map((m) => m[1] as string));
+    expect(TOOLS).toHaveLength(14);
+    for (const tool of TOOLS) {
+      const group = GROUPS.find((g) => g.id === tool.group);
+      expect(tool.category, tool.id).toBe(group?.category);
+      expect(tool.category === "memories", `${tool.id} is orange only in Memories`).toBe(tool.group === "memories");
+      expect([...CATEGORIES, "neutral"], tool.id).toContain(tool.category);
+      expect(css, `.cat-${tool.category}`).toMatch(new RegExp(`\\.cat-${tool.category}\\s*\\{`));
+      expect(named.has(tool.icon), `${tool.id}: icon ${tool.icon} is a named icon`).toBe(true);
+      expect(sprite, `${tool.id}: icon ${tool.icon}`).toContain(`<symbol id="i-${tool.icon}"`);
+    }
+  });
+
+  it("keeps each tool's own stylesheet to its own class, with tokens for color, size and spacing", () => {
+    expect(sheets.length).toBeGreaterThan(0);
+    for (const { id, css: own } of sheets) {
+      expect(own, id).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\b(rgb|rgba|hsl|hsla|oklch)\(|orange|!important|font-size:\s*[\d.]+px/i);
+      for (const decl of own.matchAll(/(?:^|[;{\s])(color|background(?:-color)?|border(?:-color)?|fill|stroke):\s*([^;}]+)/g)) {
+        const value = (decl[2] ?? "").trim();
+        expect(value, `${id}: ${decl[1]}: ${value}`).toMatch(/var\(--|^(none|transparent|currentColor|inherit)$/);
+      }
+    }
   });
 });
 

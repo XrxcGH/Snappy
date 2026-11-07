@@ -9,6 +9,7 @@ import { Scope, runInScope } from "../../src/reactive.ts";
 import { buildSampleWorkspace } from "../../src/sample.ts";
 import { createStore } from "../../src/store.ts";
 import type { Store } from "../../src/store.ts";
+import { TOOLS } from "../../src/tools/registry.ts";
 import type { View } from "../../src/views/context.ts";
 import { FakeElement, installFakeDom } from "../fake-dom.ts";
 import { testTerminal } from "../terminal-fixture.ts";
@@ -62,4 +63,21 @@ export async function renderSettled(view: View, state: State): Promise<Rendered>
   const r = render(view, state);
   await settled(r.root);
   return r;
+}
+
+export interface RenderedToolPage {
+  id: string;
+  state: "sample" | "empty";
+  root: FakeElement;
+}
+
+/** Every registered tool's page, drawn with the sample and with no export, each waited for. The shared lint tests read them. */
+export async function renderToolPages(): Promise<RenderedToolPage[]> {
+  const states = [
+    ["sample", await sampleState()],
+    ["empty", emptyState()],
+  ] as const;
+  const out: RenderedToolPage[] = [];
+  for (const tool of TOOLS) for (const [state, s] of states) out.push({ id: tool.id, state, root: (await renderSettled(tool.view, s)).root });
+  return out;
 }

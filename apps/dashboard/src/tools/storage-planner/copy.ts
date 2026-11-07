@@ -10,7 +10,7 @@ const memoriesOf = (n: number): string => countOf(n, "Memory", "Memories");
 export const copy = {
   title: "Memories storage planner",
   oneLiner: "Plan how to save your Memories.",
-  description: "See how your Memories add up by year and type, what fits under your goal, and the order to save them.",
+  description: "See your Memories by year and type, what fits under your goal, and the order to save them.",
   reads: "Memory dates, types and sizes, and the ZIP part each file is in.",
   empty: {
     title: "No sizes to plan with",

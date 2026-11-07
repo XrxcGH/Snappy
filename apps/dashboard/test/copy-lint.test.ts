@@ -38,12 +38,17 @@ import { Scope, runInScope } from "../src/reactive.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
+import { TOOLS } from "../src/tools/registry.ts";
 import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, FakeText, installFakeDom } from "./fake-dom.ts";
 import type { FakeNode } from "./fake-dom.ts";
+import { renderToolPages } from "./tools/harness.ts";
+import type { RenderedToolPage } from "./tools/harness.ts";
 
 // The license texts come from a virtual module the build provides.
 vi.mock("snappy:licenses", () => ({ licenses: [{ name: "Example", license: "MIT", copyright: "Example authors", text: "License text." }] }));
+// A tool announces its result; the announcement itself is checked in test/tools.
+vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dashboardRoot = path.resolve(here, "..");
@@ -72,7 +77,9 @@ const views: Record<string, View> = {};
 let sampleState: State;
 let emptyState: State;
 let sampleCodes: string[] = [];
-const ALL_VIEWS = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings"] as const;
+const ALL_VIEWS = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings", "tools"] as const;
+/** The fourteen tool pages, each drawn with the sample and with no export once its result has landed. */
+let toolPages: RenderedToolPage[] = [];
 
 beforeAll(async () => {
   installFakeDom();
@@ -80,8 +87,9 @@ beforeAll(async () => {
   sampleCodes = sample.issues.map((i) => i.code);
   sampleState = { ...initialState(), sample };
   emptyState = initialState();
+  toolPages = await renderToolPages();
   const load = async <T>(file: string): Promise<T> => (await import(`../src/views/${file}.ts`)) as T;
-  const [ov, fi, cl, me, gu, pr, se, st] = await Promise.all([
+  const [ov, fi, cl, me, gu, pr, se, st, to] = await Promise.all([
     load<{ overviewView: View }>("overview"),
     load<{ disappearedView: View; requestsView: View; quietView: View }>("findings"),
     load<{ cleanupView: View }>("cleanup"),
@@ -90,8 +98,10 @@ beforeAll(async () => {
     load<{ privacyView: View }>("privacy"),
     load<{ settingsView: View }>("settings"),
     load<{ startView: View }>("start"),
+    load<{ toolsView: View }>("tools"),
   ]);
   Object.assign(views, {
+    tools: to.toolsView,
     overview: ov.overviewView,
     disappeared: fi.disappearedView,
     requests: fi.requestsView,
@@ -130,6 +140,7 @@ function renderAll(): RenderedView[] {
       out.push({ name, state: label, root, entries });
     }
   }
+  for (const page of toolPages) out.push({ name: `tools/${page.id}`, state: page.state, root: page.root, entries: renderedEntries(page.root, `tools/${page.id} (${page.state})`) });
   return out;
 }
 
@@ -197,7 +208,7 @@ describe("rendered views: the words people actually see", () => {
   });
 
   it("renders text for every view in both states", () => {
-    expect(rendered.length).toBe(ALL_VIEWS.length * 2);
+    expect(rendered.length).toBe((ALL_VIEWS.length + TOOLS.length) * 2);
     for (const v of rendered) expect(v.entries.length, `${v.name} (${v.state})`).toBeGreaterThan(2);
   });
 
@@ -312,7 +323,7 @@ function walkFiles(dir: string): string[] {
 }
 
 describe("literals in the views and components", () => {
-  const files = walkFiles(srcDir).filter((f) => (/[\\/](views|components)[\\/].*\.ts$/.test(f) || /[\\/]main\.ts$/.test(f)) && !/[\\/]copy\.ts$/.test(f));
+  const files = walkFiles(srcDir).filter((f) => (/[\\/](views|components|tools)[\\/].*\.ts$/.test(f) || /[\\/]main\.ts$/.test(f)) && !/[\\/]copy\.ts$/.test(f));
 
   it("hold no sentence-like text of their own that breaks the text rules", () => {
     const bad: string[] = [];
@@ -328,6 +339,26 @@ describe("literals in the views and components", () => {
     expect(bad).toEqual([]);
   });
 });
+
+describe("the tools' own words", () => {
+  it("holds the fourteen tools' copy modules, each with strings of several kinds", async () => {
+    const own = await toolCopies();
+    expect(own.map((t) => t.id)).toEqual(TOOLS.map((t) => t.id).sort());
+    for (const t of own) expect(t.entries.length, t.id).toBeGreaterThan(5);
+  });
+
+  for (const rule of RULES) {
+    it(`${rule[0]}: every string in every tool's copy.ts passes`, async () => {
+      const entries = (await toolCopies()).flatMap((t) => t.entries);
+      expect(lint(entries, rule)).toEqual([]);
+    });
+  }
+});
+
+async function toolCopies(): Promise<{ id: string; entries: Entry[] }[]> {
+  const ids = TOOLS.map((t) => t.id).sort();
+  return Promise.all(ids.map(async (id) => ({ id, entries: collectCopy({ [`tool_${id}`]: ((await import(`../src/tools/${id}/copy.ts`)) as { copy: unknown }).copy }) })));
+}
 
 describe("the HTML shell", () => {
   const html = readFileSync(path.join(srcDir, "index.html"), "utf8");

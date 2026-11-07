@@ -16,10 +16,14 @@ import { Scope, runInScope } from "../src/reactive.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
+import { TOOLS } from "../src/tools/registry.ts";
 import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
+import { renderToolPages } from "./tools/harness.ts";
+import type { RenderedToolPage } from "./tools/harness.ts";
 
 vi.mock("snappy:licenses", () => ({ licenses: [{ name: "Example", license: "MIT", copyright: "Example authors", text: "License text." }] }));
+vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src");
 
@@ -46,7 +50,9 @@ function collect(value: unknown, at: string, computed: boolean, out: Entry[] = [
   return out;
 }
 
-const entries = collect(copy, "", false).filter((e) => e.text.trim() !== "");
+/** The fourteen tools keep their words in their own copy.ts, so those are read here too, under "toolcopy.<id>". */
+const toolCopy = await Promise.all(TOOLS.map(async (t) => [t.id, ((await import(`../src/tools/${t.id}/copy.ts`)) as { copy: unknown }).copy] as const));
+const entries = [...collect(copy, "", false), ...toolCopy.flatMap(([id, c]) => collect(c, `toolcopy.${id}`, false))].filter((e) => e.text.trim() !== "");
 
 /** Command lines and similar code: straight quotes and lowercase starts are right here. */
 const CODE_PATHS = new Set<string>();
@@ -56,7 +62,8 @@ const FIXED_LINES = new Set(["brand.nonAffiliation"]);
 const JOINERS = new Set(["common.stepPrefix()"]);
 /** Values that are never shown as written: a word joined to another, a file name, internal kind names. */
 // common.noFigure is a decorative dash that holds a tile's number row when there is nothing to count; it is not a sentence.
-const NOT_SHOWN_AS_WRITTEN = /^(common\.confidenceSuffix|common\.noFigure|start\.dropAlt|cleanup\.csvFile|guide\.tickKinds\[\d+\])$/;
+// A tool's unit… keys are pieces its code joins into a sentence, noValue is a dash that holds an empty table cell, and a file name is a name.
+const NOT_SHOWN_AS_WRITTEN = /^(common\.confidenceSuffix|common\.noFigure|start\.dropAlt|cleanup\.csvFile|guide\.tickKinds\[\d+\]|toolcopy\.[a-z-]+\.(unit\w*|noValue))$/;
 
 const prose = entries.filter((e) => !CODE_PATHS.has(e.path));
 
@@ -175,7 +182,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
 
 describe("words in the source", () => {
-  const files = walk(srcDir).filter((f) => /[\\/](views|components)[\\/].*\.ts$/.test(f) || /(main|app-shell|actions)\.ts$/.test(f));
+  // A tool's copy.ts is where its sentences belong, so it is read above and left out here.
+  const files = walk(srcDir).filter((f) => /[\\/](views|components)[\\/].*\.ts$/.test(f) || (/[\\/]tools[\\/].*\.ts$/.test(f) && !/[\\/]copy\.ts$/.test(f)) || /(main|app-shell|actions)\.ts$/.test(f));
   const stripComments = (s: string): string => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
 
   it("keeps sentence-like text in copy.ts: no readable sentence is written inside a view or component", () => {
@@ -216,13 +224,15 @@ describe("words in the source", () => {
 
 let sampleState: State;
 const views: Record<string, View> = {};
-const VIEW_IDS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings", "start"] as const;
+const VIEW_IDS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings", "start", "tools"] as const;
+let toolPages: RenderedToolPage[] = [];
 
 beforeAll(async () => {
   installFakeDom();
   sampleState = { ...initialState(), sample: await buildSampleWorkspace() };
+  toolPages = await renderToolPages();
   const load = async <T>(file: string): Promise<T> => (await import(`../src/views/${file}.ts`)) as T;
-  const [ov, fi, cl, me, gu, pr, se, st] = await Promise.all([
+  const [ov, fi, cl, me, gu, pr, se, st, to] = await Promise.all([
     load<{ overviewView: View }>("overview"),
     load<{ disappearedView: View; requestsView: View; quietView: View }>("findings"),
     load<{ cleanupView: View }>("cleanup"),
@@ -231,8 +241,10 @@ beforeAll(async () => {
     load<{ privacyView: View }>("privacy"),
     load<{ settingsView: View }>("settings"),
     load<{ startView: View }>("start"),
+    load<{ toolsView: View }>("tools"),
   ]);
   Object.assign(views, {
+    tools: to.toolsView,
     overview: ov.overviewView,
     disappeared: fi.disappearedView,
     requests: fi.requestsView,
@@ -256,11 +268,13 @@ function render(name: string, state: State): FakeElement {
 describe("rendered controls", () => {
   /** Buttons that name a choice rather than an action. */
   const CHOICES = new Set(["Guided removal", "Dark", "Light", "Match device", "Menu"]);
-  const VERBS = new Set(["Add", "Change", "Choose", "Clear", "Copy", "Delete", "Keep", "Lock", "Open", "Review", "Run", "Save", "Seal", "Set", "Show", "Try", "Undo", "Unlock", "Update", "Use", "Cancel", "Switch"]);
+  const VERBS = new Set(["Add", "Change", "Choose", "Clear", "Copy", "Delete", "Download", "Keep", "Lock", "Open", "Review", "Run", "Save", "Seal", "Set", "Show", "Try", "Undo", "Unlock", "Update", "Use", "Cancel", "Switch"]);
 
-  const controls = (state: State): { view: string; text: string }[] =>
-    VIEW_IDS.flatMap((view) => {
-      const el = render(view, state);
+  const controls = (state: State): { view: string; text: string; choice: boolean }[] =>
+    [
+      ...VIEW_IDS.map((view) => ({ view, el: render(view, state) })),
+      ...toolPages.filter((p) => p.state === (state.sample ? "sample" : "empty")).map((p) => ({ view: `tools/${p.id}`, el: p.root })),
+    ].flatMap(({ view, el }) => {
       return [...el.querySelectorAll("button"), ...el.querySelectorAll("a")]
         .filter((c) => c.classList.contains("btn"))
         // An icon-only button (copy username) has no visible words; it must carry an accessible name instead.
@@ -269,7 +283,8 @@ describe("rendered controls", () => {
           if (visible === "") expect((c.getAttribute("aria-label") ?? "").length, `${view}: icon-only button needs a name`).toBeGreaterThan(0);
           return visible !== "";
         })
-        .map((c) => ({ view, text: c.textContent.replace(/\s+/g, " ").trim() }));
+        // On a tool page, a button that holds a pressed state names a choice in a group ("30", "90"), not an action.
+        .map((c) => ({ view, text: c.textContent.replace(/\s+/g, " ").trim(), choice: view.startsWith("tools/") && c.hasAttribute("aria-pressed") }));
     });
 
   it.each([
@@ -278,13 +293,13 @@ describe("rendered controls", () => {
   ])("gives every button a verb and a short noun, in sentence case (%s)", (_name, getState) => {
     const found = controls(getState());
     expect(found.length).toBeGreaterThan(5);
-    for (const { view, text } of found) {
+    for (const { view, text, choice } of found) {
       expect(text.length, `${view}: "${text}" is empty or too long`).toBeGreaterThan(0);
       expect(text.length, `${view}: "${text}" is too long`).toBeLessThanOrEqual(24);
       expect(words(text).length, `${view}: "${text}" has too many words`).toBeLessThanOrEqual(4);
       expect(text, `${view}: "${text}" ends like a sentence`).not.toMatch(/[.!?]$/);
       expect(words(text).slice(1).filter((w) => /^[A-Z][a-z]/.test(w) && !["Memories", "Snapchat", "ZIP", "Snappy"].includes(w)), `${view}: "${text}" is Title Case`).toEqual([]);
-      if (!CHOICES.has(text)) expect(VERBS.has(words(text)[0] ?? ""), `${view}: "${text}" should start with a verb`).toBe(true);
+      if (!CHOICES.has(text) && !choice) expect(VERBS.has(words(text)[0] ?? ""), `${view}: "${text}" should start with a verb`).toBe(true);
     }
   });
 

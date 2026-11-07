@@ -16,11 +16,16 @@ import { Scope, runInScope } from "../src/reactive.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
+import { GROUPS, TOOLS, groupedTools } from "../src/tools/registry.ts";
 import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
+import { renderToolPages } from "./tools/harness.ts";
+import type { RenderedToolPage } from "./tools/harness.ts";
 
 // The license texts come from a virtual module the build provides.
 vi.mock("snappy:licenses", () => ({ licenses: [{ name: "Example", license: "MIT", copyright: "Example authors", text: "License text." }] }));
+// A tool announces its result; the announcement itself is checked in test/tools.
+vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const sprite = readFileSync(path.join(root, "brand", "icons", "icons.svg"), "utf8");
@@ -28,6 +33,7 @@ const symbolIds = new Set([...sprite.matchAll(/<symbol id="([\w-]+)"/g)].map((m)
 
 let sampleState: State;
 let emptyState: State;
+let toolPages: RenderedToolPage[] = [];
 const views: Record<string, View> = {};
 
 beforeAll(async () => {
@@ -35,8 +41,9 @@ beforeAll(async () => {
   const sample = await buildSampleWorkspace();
   sampleState = { ...initialState(), sample };
   emptyState = initialState();
+  toolPages = await renderToolPages();
   const load = async <T>(file: string): Promise<T> => (await import(`../src/views/${file}.ts`)) as T;
-  const [ov, fi, cl, me, gu, pr, se, st] = await Promise.all([
+  const [ov, fi, cl, me, gu, pr, se, st, to] = await Promise.all([
     load<{ overviewView: View }>("overview"),
     load<{ disappearedView: View; requestsView: View; quietView: View }>("findings"),
     load<{ cleanupView: View }>("cleanup"),
@@ -45,8 +52,10 @@ beforeAll(async () => {
     load<{ privacyView: View }>("privacy"),
     load<{ settingsView: View }>("settings"),
     load<{ startView: View }>("start"),
+    load<{ toolsView: View }>("tools"),
   ]);
   Object.assign(views, {
+    tools: to.toolsView,
     overview: ov.overviewView,
     disappeared: fi.disappearedView,
     requests: fi.requestsView,
@@ -71,7 +80,7 @@ const has = (el: FakeElement, cls: string): boolean => el.classList.contains(cls
 const all = (el: FakeElement, selector: string): FakeElement[] => el.querySelectorAll(selector);
 
 const CATEGORY_VIEWS = { disappeared: "disappeared", requests: "requests", quiet: "quiet", cleanup: "cleanup", memories: "memories" } as const;
-const ALL_VIEWS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings", "start"] as const;
+const ALL_VIEWS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings", "start", "tools"] as const;
 
 describe.each([
   ["with sample data", () => sampleState],
@@ -289,5 +298,83 @@ describe("Privacy and Settings", () => {
     const el = render("settings", sampleState);
     expect(all(el, "h2.section-title .chip-icon")).toHaveLength(0);
     expect(all(el, "h2.section-title").length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("Tools hub with the real tools", () => {
+  const sections = (el: FakeElement): { name: string; grid: FakeElement; tiles: FakeElement[] }[] =>
+    all(el, "section.section").map((s) => ({ name: s.querySelector("h2")?.textContent ?? "", grid: s.querySelector(".tiles") as FakeElement, tiles: all(s, "a.tile") }));
+
+  it("shows one tile for every registered tool, in the registry's groups and order", () => {
+    const el = render("tools", sampleState);
+    expect(TOOLS).toHaveLength(14);
+    expect(all(el, "a.tile").map((t) => t.getAttribute("href"))).toEqual(groupedTools().flatMap((g) => g.tools.map((t) => `#/tools/${t.id}`)));
+    expect(sections(el).map((s) => s.tiles.length)).toEqual([2, 5, 2, 3, 2]);
+    expect(GROUPS.map((g) => g.id)).toEqual(["your-export", "friends", "chats", "memories", "checklists"]);
+  });
+
+  it("gives every tile the same five parts, so the grid lines the rows up, and sizes each grid by its count", () => {
+    const el = render("tools", sampleState);
+    for (const tile of all(el, "a.tile")) {
+      expect(tile.childNodes.filter((n) => "tagName" in n).map((n) => `${(n as FakeElement).tagName}.${(n as FakeElement).className.split(" ")[0]}`)).toEqual(["span.chip-icon", "h3.card-title", "p.tool-line", "p.tool-status", "span.tile-action"]);
+    }
+    expect(sections(el).map((s) => s.grid.className)).toEqual(["tiles tiles-tools tiles-n-2", "tiles tiles-tools tiles-n-5", "tiles tiles-tools tiles-n-2", "tiles tiles-tools tiles-n-3", "tiles tiles-tools tiles-n-2"]);
+  });
+
+  it("paints a tile in its tool's own category, with orange for the three Memories tools alone", () => {
+    const el = render("tools", sampleState);
+    const orange = all(el, "a.tile").filter((t) => has(t, "cat-memories")).map((t) => t.getAttribute("href"));
+    expect(orange).toEqual(["#/tools/storage-planner", "#/tools/memories-on-this-day", "#/tools/rescue-manifest"]);
+    for (const tool of TOOLS) {
+      const tile = all(el, "a.tile").find((t) => t.getAttribute("href") === `#/tools/${tool.id}`);
+      expect(tile, tool.id).toBeDefined();
+      expect(has(tile as FakeElement, `cat-${tool.category}`), tool.id).toBe(true);
+    }
+  });
+});
+
+describe("every tool page", () => {
+  it("is drawn for the sample and for no export, for all fourteen tools", () => {
+    expect(toolPages).toHaveLength(TOOLS.length * 2);
+  });
+
+  it("has one h1 with its icon chip, the category scope of its tool, no inline style and no handler attribute", () => {
+    for (const { id, state, root: el } of toolPages) {
+      const where = `${id} (${state})`;
+      const tool = TOOLS.find((t) => t.id === id);
+      expect(has(el, "tool"), where).toBe(true);
+      expect(has(el, `cat-${tool?.category}`), where).toBe(true);
+      const h1s = all(el, "h1");
+      expect(h1s, where).toHaveLength(1);
+      expect(h1s[0]?.getAttribute("id"), where).toBe("page-title");
+      expect(h1s[0]?.getAttribute("tabindex"), where).toBe("-1");
+      expect(all(all(el, "header")[0] as FakeElement, ".chip-icon"), where).toHaveLength(1);
+      expect(all(el, "h2.section-title .chip-icon"), where).toHaveLength(0);
+      for (const node of el.descendants()) {
+        expect(node.hasAttribute("style"), `${where}: ${node.tagName}.${node.className} has a style attribute`).toBe(false);
+        for (const attr of node.attrs.keys()) expect(attr, `${where}: ${node.tagName} handler attribute`).not.toMatch(/^on/i);
+      }
+    }
+  });
+
+  it("draws every graphic as a decorative symbol that exists in the sprite", () => {
+    for (const { id, state, root: el } of toolPages) {
+      const svgs = all(el, "svg");
+      expect(svgs.length, `${id} (${state})`).toBeGreaterThan(0);
+      for (const svg of svgs) {
+        expect(svg.getAttribute("aria-hidden")).toBe("true");
+        expect(svg.getAttribute("focusable")).toBe("false");
+        const href = ((svg.childNodes[0] as FakeElement).getAttribute("href") ?? "").slice(1);
+        expect(symbolIds.has(href), `${id}: symbol ${href}`).toBe(true);
+      }
+    }
+  });
+
+  it("reaches the sample's result or says what is missing, and never leaves the page blank", () => {
+    for (const { id, state, root: el } of toolPages) {
+      const body = all(el, ".tool-result").length + all(el, ".empty").length + all(el, ".tool-failed").length;
+      expect(body, `${id} (${state})`).toBeGreaterThan(0);
+      if (state === "sample") expect(all(el, ".tool-result").length, id).toBe(1);
+    }
   });
 });
