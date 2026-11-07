@@ -307,9 +307,9 @@ describe("Tools hub with the real tools", () => {
 
   it("shows one tile for every registered tool, in the registry's groups and order", () => {
     const el = render("tools", sampleState);
-    expect(TOOLS).toHaveLength(14);
+    expect(TOOLS).toHaveLength(22);
     expect(all(el, "a.tile").map((t) => t.getAttribute("href"))).toEqual(groupedTools().flatMap((g) => g.tools.map((t) => `#/tools/${t.id}`)));
-    expect(sections(el).map((s) => s.tiles.length)).toEqual([2, 5, 2, 3, 2]);
+    expect(sections(el).map((s) => s.tiles.length)).toEqual([4, 7, 5, 4, 2]);
     expect(GROUPS.map((g) => g.id)).toEqual(["your-export", "friends", "chats", "memories", "checklists"]);
   });
 
@@ -318,13 +318,13 @@ describe("Tools hub with the real tools", () => {
     for (const tile of all(el, "a.tile")) {
       expect(tile.childNodes.filter((n) => "tagName" in n).map((n) => `${(n as FakeElement).tagName}.${(n as FakeElement).className.split(" ")[0]}`)).toEqual(["span.chip-icon", "h3.card-title", "p.tool-line", "p.tool-status", "span.tile-action"]);
     }
-    expect(sections(el).map((s) => s.grid.className)).toEqual(["tiles tiles-tools tiles-n-2", "tiles tiles-tools tiles-n-5", "tiles tiles-tools tiles-n-2", "tiles tiles-tools tiles-n-3", "tiles tiles-tools tiles-n-2"]);
+    expect(sections(el).map((s) => s.grid.className)).toEqual(["tiles tiles-tools tiles-n-4", "tiles tiles-tools tiles-n-7", "tiles tiles-tools tiles-n-5", "tiles tiles-tools tiles-n-4", "tiles tiles-tools tiles-n-2"]);
   });
 
-  it("paints a tile in its tool's own category, with orange for the three Memories tools alone", () => {
+  it("paints a tile in its tool's own category, with orange for the four Memories tools alone", () => {
     const el = render("tools", sampleState);
     const orange = all(el, "a.tile").filter((t) => has(t, "cat-memories")).map((t) => t.getAttribute("href"));
-    expect(orange).toEqual(["#/tools/storage-planner", "#/tools/memories-on-this-day", "#/tools/rescue-manifest"]);
+    expect(orange).toEqual(["#/tools/storage-planner", "#/tools/memories-on-this-day", "#/tools/memories-gaps", "#/tools/rescue-manifest"]);
     for (const tool of TOOLS) {
       const tile = all(el, "a.tile").find((t) => t.getAttribute("href") === `#/tools/${tool.id}`);
       expect(tile, tool.id).toBeDefined();
@@ -334,7 +334,7 @@ describe("Tools hub with the real tools", () => {
 });
 
 describe("every tool page", () => {
-  it("is drawn for the sample and for no export, for all fourteen tools", () => {
+  it("is drawn for the sample and for no export, for all twenty-two tools", () => {
     expect(toolPages).toHaveLength(TOOLS.length * 2);
   });
 

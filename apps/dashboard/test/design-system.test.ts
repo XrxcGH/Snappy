@@ -190,7 +190,7 @@ describe("tools", () => {
     .filter((e) => e.isDirectory() && existsSync(path.join(toolsDir, e.name, "styles.css")))
     .map((e) => ({ id: e.name, css: readFileSync(path.join(toolsDir, e.name, "styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "") }));
 
-  it("lays the hub's groups out on the shared tile rows, so a group of two, three or five has no hole in its last row", () => {
+  it("lays the hub's groups out on the shared tile rows, so a group of two, three, five or seven has no hole in its last row", () => {
     expect(css).toMatch(/\.tiles-tools\s*\{\s*--tile-rows:\s*5/);
     expect(css).toMatch(/\.tiles-tools\.tiles-n-2 \.tile,\s*\.tiles-tools\.tiles-n-4 \.tile\s*\{\s*grid-column:\s*span 3/);
     expect(css).toMatch(/\.tiles-tools\.tiles-n-5 \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 3/);
@@ -199,7 +199,7 @@ describe("tools", () => {
   it("colors every tool through its group's category, with orange for the Memories group alone", () => {
     const union = /export type IconName =([^;]+);/.exec(iconSource)?.[1] ?? "";
     const named = new Set([...union.matchAll(/"([\w-]+)"/g)].map((m) => m[1] as string));
-    expect(TOOLS).toHaveLength(14);
+    expect(TOOLS).toHaveLength(22);
     for (const tool of TOOLS) {
       const group = GROUPS.find((g) => g.id === tool.group);
       expect(tool.category, tool.id).toBe(group?.category);

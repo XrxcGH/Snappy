@@ -19,10 +19,10 @@ function render(data: ReturnType<typeof toolData>): Child[] {
   const groups = groupedTools().map(({ group, tools: members }) =>
     section(
       tools.groups[group.id],
-      // The count picks the column spans, so a group of two or five has no hole in its last row.
+      // The count picks the column spans, so a group of two, five or seven has no hole in its last row.
       h(
         "div",
-        { class: `tiles tiles-tools tiles-n-${Math.min(members.length, 6)}` },
+        { class: `tiles tiles-tools tiles-n-${Math.min(members.length, 7)}` },
         ...members.map((tool) => {
           const need = unmetNeed(data, tool.needs);
           return toolTile(tool, need === null ? null : tools.statusNeeds[need], index++);

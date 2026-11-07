@@ -673,11 +673,11 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .tiles-tools .tile { grid-column: span 3; }
   .tiles-tools.tiles-n-1 .tile { grid-column: 1 / -1; }
 }
-/* From 40rem a group fills its rows with no hole: one tile alone, two or four in pairs, three across, five as three and two. */
+/* From 40rem a group fills its rows with no hole: one tile alone, two or four in pairs, three across, five as three and two, seven as three, two and two. */
 @media (min-width: 40rem) {
   .tiles-tools .tile { grid-column: span 2; }
   .tiles-tools.tiles-n-2 .tile, .tiles-tools.tiles-n-4 .tile { grid-column: span 3; }
-  .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 3; }
+  .tiles-tools.tiles-n-7 .tile:nth-child(n+4), .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 3; }
 }
 .tool-line { margin: 0; font-size: var(--text-14); color: var(--text-muted); text-wrap: balance; }
 .tool-status { margin: 0; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-14); font-weight: 600; color: var(--text-muted); }
