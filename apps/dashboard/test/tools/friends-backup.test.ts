@@ -139,7 +139,10 @@ describe("the page", () => {
     expect(text(table, "thead th")).toEqual([copy.listHeader, copy.peopleHeader, copy.datedHeader]);
     expect(text(table, "tbody th")).toEqual(["Friends", "Blocked", "Ignored"]);
     const first = table.querySelectorAll("tbody tr")[0] as FakeElement;
-    expect(Number(first.querySelectorAll("td")[0]?.textContent.replace(/,/g, ""))).toBe(computeFriendsBackup(dataOf(sample)).counts.friends.people);
+    const { friends } = computeFriendsBackup(dataOf(sample)).counts;
+    // At phone width the column names are not repeated, so each cell says what it counts.
+    expect(text(first, "td")).toEqual([copy.unitPeople(friends.people), copy.unitDated(friends.dated)]);
+    expect(Number(first.querySelectorAll("td")[0]?.textContent.replace(/[^0-9]/g, ""))).toBe(friends.people);
     expect(root.textContent).toMatch(/Made [A-Z][a-z]{2} \d{1,2}, \d{4}\./);
     expect(text(root, ".step-list li p")).toEqual([copy.saveStep, copy.keepStep, copy.compareStep]);
     expect(root.textContent).toContain(copy.downloadNote);

@@ -3,7 +3,7 @@
  * text they are (Heading, Header, Note, Step, Line, Button, Announce), because the copy lint reads the kind
  * from the key. Nothing here holds a username: counts and dates come in as arguments.
  */
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 export const copy = {
   title: "Friends backup",
@@ -22,6 +22,8 @@ export const copy = {
   listHeader: "List",
   peopleHeader: "People",
   datedHeader: "With a date",
+  unitPeople: (n: number) => countOf(n, "person", "people"),
+  unitDated: (n: number) => `${formatCount(n)} with a date`,
   lists: { friends: "Friends", blocked: "Blocked", ignored: "Ignored" },
   madeLine: (date: string) => `Made ${date}.`,
   unknownTimeLine: "Snappy could not tell when this backup was made.",

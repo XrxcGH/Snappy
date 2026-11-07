@@ -4,7 +4,7 @@ import { section, stepCards } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
-import { formatCount, formatDate } from "../../format.ts";
+import { formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { backupFileName, computeFriendsBackup, LIST_NAMES } from "./model.ts";
@@ -48,7 +48,7 @@ export const view = toolView<FriendsBackupResult, Record<string, never>>({
       dataTable(
         copy.contentsCaption,
         [copy.listHeader, copy.peopleHeader, copy.datedHeader],
-        LIST_NAMES.map((list) => [copy.lists[list], formatCount(counts[list].people), formatCount(counts[list].dated)]),
+        LIST_NAMES.map((list) => [copy.lists[list], copy.unitPeople(counts[list].people), copy.unitDated(counts[list].dated)]),
       ),
       h("p", {}, backup.takenAt === null ? copy.unknownTimeLine : copy.madeLine(formatDate(backup.takenAt))),
     ),
