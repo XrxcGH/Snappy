@@ -15,7 +15,7 @@
  * stored. Everything here reaches the disk through io.fs, io.path and io.lock.
  */
 import { LedgerFormatError, SealError, emptyLedger, hasSavedLists, normUser, openLedger, openText, packSaved, sealLedger, sortedUnique, unpackSaved } from "@snappy-export/core";
-import type { Saved } from "@snappy-export/core";
+import type { Ledger, Saved } from "@snappy-export/core";
 import { CliError, fsError } from "./errors.ts";
 import type { Io } from "./io.ts";
 
@@ -138,6 +138,12 @@ export async function loadStore(io: FsIo, ledgerPath: string, passphrase: string
 export async function saveStore(io: FsIo, ledgerPath: string, saved: Saved, passphrase: string): Promise<void> {
   const normalized: Saved = { ledger: saved.ledger, allowlist: normalizeAllowlist(saved.allowlist), checkedOff: sortedUnique(saved.checkedOff) };
   await atomicWrite(io, ledgerPath, await sealLedger(packSaved(normalized), passphrase));
+}
+
+/** The saved ledger alone, or undefined when no ledger file has been saved yet. For commands that only read it. */
+export async function loadLedger(io: FsIo, ledgerPath: string, passphrase: string): Promise<Ledger | undefined> {
+  if (!(await fileExists(io, ledgerPath))) return undefined;
+  return (await loadStore(io, ledgerPath, passphrase)).ledger;
 }
 
 /** Normalized, de-duplicated and sorted, so the saved file does not depend on typing order. */

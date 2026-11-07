@@ -15,6 +15,7 @@ import { KEEP_OPTIONS, keepCommand } from "./commands/keep.ts";
 import { LEDGER_OPTIONS, ledgerCommand } from "./commands/ledger.ts";
 import { MEMORIES_OPTIONS, memoriesCommand } from "./commands/memories.ts";
 import { CliError } from "./errors.ts";
+import { INSIGHT_COMMANDS } from "./insight-commands.ts";
 import type { Io } from "./io.ts";
 
 type Command = (args: string[], io: Io) => Promise<number>;
@@ -27,6 +28,8 @@ const COMMANDS: Record<string, Command> = {
   unkeep: (args, io) => keepCommand("unkeep", args, io),
   ledger: ledgerCommand,
   demo: demoCommand,
+  // The insight commands carry their own name, so adding one is a line in insight-commands.ts.
+  ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, c.run])),
 };
 
 /** The options each command accepts, for tools that must agree with the parser (the in-app command catalog). */
@@ -40,8 +43,8 @@ export const COMMAND_OPTIONS: Readonly<Record<string, OptionSpec>> = {
   demo: DEMO_OPTIONS,
 };
 
-/** The names of the commands, plus help and version, which are handled here. */
-export const COMMAND_NAMES: readonly string[] = ["help", "version", ...Object.keys(COMMANDS)];
+/** The names that run a command (help and version are answered before this table). */
+export const COMMAND_NAMES: readonly string[] = Object.keys(COMMANDS);
 
 export interface CliMeta {
   version: string;

@@ -28,7 +28,56 @@ The script runs `node --experimental-strip-types apps/cli/src/main.ts`, so there
 
 Several ZIP files, a folder of ZIP files, or a wildcard such as `"mydata*.zip"` are the parts of one export. Snappy puts them in the order Snapchat numbers them (the name without a number, then `-2`, then `-3`), whatever order you type them in. To compare two exports, give the older one with `--earlier`, or let the ledger remember it between runs.
 
-Exit codes: 0 done, 1 could not run, 2 the export has errors (analyze, inspect), 3 Memories finished with some failed items.
+Exit codes: 0 done, 1 could not run, 2 the export has errors (analyze, inspect, and the commands below), 3 Memories finished with some failed items.
+
+## More commands
+
+These fourteen commands read your export and answer one question each. All of them work offline, and none reads message text, photos, videos, locations, or login history. Each one prints text, and takes `--json`, `--verbose`, and `--no-color`. Run `npm run snappy-export -- help <command>` for its options. A command writes a file only when you pass an output option such as `--out`, and never replaces a file unless you add `--force`. The ledger is read only by `friend-count`, and never changed.
+
+**Your export**
+
+- `snappy-export check`: says whether your export is complete enough to use, and what to do if not. It reads the lists and dates only.
+  `npm run snappy-export -- check "mydata*.zip"`
+- `snappy-export remind`: makes a calendar file that reminds you to request your next export. It holds no personal data, and the ZIP files are read only to find your last export date.
+  `npm run snappy-export -- remind "mydata*.zip" --out reminder.ics`
+
+**Friends**
+
+- `snappy-export closest`: lists the friends you chat and Snap with most lately, and friends who may be fading. It reads who and when from saved chats and Snaps, never message text.
+  `npm run snappy-export -- closest "mydata*.zip" --window 90`
+- `snappy-export anniversaries`: lists friendships that reach a whole year soon. It reads the friends list and its dates only.
+  `npm run snappy-export -- anniversaries "mydata*.zip" --days 60`
+- `snappy-export backup`: saves your friends, blocked, and ignored lists as a small file, and later checks that file against a new export. The file lists usernames, so keep it private.
+  `npm run snappy-export -- backup "mydata*.zip" --out friends.json`
+- `snappy-export blocked`: lists the people you blocked, ignored, or hid from suggestions, and people who show up in more than one place. `--counts` prints no usernames.
+  `npm run snappy-export -- blocked "mydata*.zip" --counts`
+- `snappy-export friend-count`: shows how your friend count grew and shrank, month by month, from the dates in your export. With a ledger it also compares the two. `--no-save` skips the ledger.
+  `npm run snappy-export -- friend-count "mydata*.zip" --no-save`
+
+**Chats**
+
+- `snappy-export replies`: lists friends who may be waiting on a reply from you, friends you may be waiting on, and one-sided chats. It reads who wrote last and when, never message text.
+  `npm run snappy-export -- replies "mydata*.zip" --you-days 3`
+- `snappy-export habits`: shows when you chat and Snap most, by hour, weekday, and month. It reads times and directions only, never names.
+  `npm run snappy-export -- habits "mydata*.zip" --utc-offset=-5`
+
+**Memories**
+
+- `snappy-export storage`: plans how to save your Memories under a storage goal, with sizes, a download order, and batches. It reads dates, types, and sizes only, and writes no file.
+  `npm run snappy-export -- storage "mydata*.zip" --goal-gb 5`
+- `snappy-export on-this-day`: shows the Memories you took on this day in earlier years. It reads the dates in your Memories list only.
+  `npm run snappy-export -- on-this-day "mydata*.zip" --date 2026-11-06`
+- `snappy-export rescue`: lists the Memories a rescue saves, writes that list as a manifest with `--out`, and later checks a rescue folder against it with `--verify`. It compares names, sizes, and file dates, and never opens a photo or video.
+  `npm run snappy-export -- rescue "mydata*.zip" --out manifest.json`
+
+**Checklists**
+
+These are self-reported. Snappy cannot see your settings, so you say what you have done with `--done <id,id,...>`. Nothing is saved between runs: add every done id each time.
+
+- `snappy-export safety`: walks through an account safety checklist. A ZIP file is optional, and adds counts of blocked people and pending requests.
+  `npm run snappy-export -- safety --done blocked-list,connected-apps`
+- `snappy-export privacy`: lists the privacy settings worth a look, with a short hint for each. It reads no export.
+  `npm run snappy-export -- privacy --done search,quick-add`
 
 ## Memories rescue
 

@@ -83,6 +83,50 @@ npm run snappy-export -- inspect "C:\Users\you\Downloads\mydata*.zip" --layout -
 
 If a part is damaged or still downloading, the report says which part (by number) could not be read and describes the others. Run `npm run snappy-export -- help inspect` to see these options again.
 
+## What else Snappy can tell you
+
+Once your export is in one folder, these commands each answer one question. None of them reads message text, photos, videos, locations, or login history, and none sends anything anywhere. A command writes a file only when you ask with an option such as `--out`, and never replaces a file unless you add `--force`.
+
+| Command | What it tells you | What it reads |
+|---|---|---|
+| `check` | Whether your export is complete enough to use. | The lists and dates. |
+| `remind` | Makes a calendar reminder to request your next export. | At most your last export date. |
+| `closest` | Friends you chat and Snap with most, and friends who may be fading. | Who and when, from chats and Snaps. |
+| `anniversaries` | Friendships that reach a whole year soon. | The friends list and its dates. |
+| `backup` | Saves your friends lists as a file, and checks it against a later export. | The friends, blocked, and ignored lists. |
+| `blocked` | People you blocked, ignored, or hid from suggestions. | The same lists. |
+| `friend-count` | How your friend count changed, month by month. | Dates in the friends lists, and your saved history. |
+| `replies` | Friends who may be waiting on a reply, and one-sided chats. | Who wrote last and when. |
+| `habits` | When you chat and Snap most. | Times and directions, never names. |
+| `storage` | A plan for saving your Memories under a storage goal. | Memories dates, types, and sizes. |
+| `on-this-day` | Memories you took on this day in earlier years. | The dates in your Memories list. |
+| `rescue` | A list of the Memories a rescue saves, and a check of a rescue folder. | File names, sizes, and file dates. It never opens a photo or video. |
+| `safety` | An account safety checklist. | Nothing, or counts of blocked people and requests. |
+| `privacy` | A privacy settings checklist. | Nothing from your export. |
+
+The two checklists are self-reported: Snappy cannot see your settings, so you tell it what you have done with `--done <id,id,...>`, and nothing is saved between runs.
+
+One example for each, in the same form as above:
+
+```powershell
+npm run snappy-export -- check "C:\Users\you\Downloads\mydata*.zip"
+npm run snappy-export -- remind "C:\Users\you\Downloads\mydata*.zip" --out "C:\Users\you\Documents\export-reminder.ics"
+npm run snappy-export -- closest "C:\Users\you\Downloads\mydata*.zip" --window 90
+npm run snappy-export -- anniversaries "C:\Users\you\Downloads\mydata*.zip" --days 60
+npm run snappy-export -- backup "C:\Users\you\Downloads\mydata*.zip" --out "C:\Users\you\Documents\friends.json"
+npm run snappy-export -- blocked "C:\Users\you\Downloads\mydata*.zip" --counts
+npm run snappy-export -- friend-count "C:\Users\you\Downloads\mydata*.zip" --no-save
+npm run snappy-export -- replies "C:\Users\you\Downloads\mydata*.zip"
+npm run snappy-export -- habits "C:\Users\you\Downloads\mydata*.zip" --utc-offset=-5
+npm run snappy-export -- storage "C:\Users\you\Downloads\mydata*.zip" --goal-gb 5
+npm run snappy-export -- on-this-day "C:\Users\you\Downloads\mydata*.zip" --date 2026-11-06
+npm run snappy-export -- rescue "C:\Users\you\Downloads\mydata*.zip" --out "C:\Users\you\Documents\manifest.json"
+npm run snappy-export -- safety --done blocked-list,connected-apps
+npm run snappy-export -- privacy --done search,quick-add
+```
+
+Run `npm run snappy-export -- help <command>` to see a command’s options.
+
 ## Your saved history
 
 Snappy keeps a saved history (the “ledger”) of past friend lists, so it can spot people who disappeared between exports. It contains usernames, so Snappy seals it with a passphrase. Use 12 or more characters. If you forget the passphrase, the saved history cannot be recovered.

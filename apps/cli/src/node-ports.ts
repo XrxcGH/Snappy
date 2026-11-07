@@ -160,7 +160,11 @@ async function acquire(name: string, waitMs: number): Promise<() => Promise<void
       await handle.close();
       break;
     } catch (e) {
-      if (codeOf(e) !== "EEXIST") throw fsError(e, "lock", name);
+      // Windows answers EPERM or EBUSY, not EEXIST, while another command is releasing its lock file (it is
+      // "pending delete" for a moment), so those mean "try again" there.
+      const code = codeOf(e);
+      const releasing = process.platform === "win32" && (code === "EPERM" || code === "EBUSY");
+      if (code !== "EEXIST" && !releasing) throw fsError(e, "lock", name);
     }
     let stale = false;
     try {

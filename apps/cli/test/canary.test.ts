@@ -5,11 +5,14 @@
  */
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { CANARIES, buildSyntheticExport, openLedger, serializeLedger, syntheticExportZip } from "@snappy-export/core";
 import type { Transport } from "../src/memories-download.ts";
 import { describeZips } from "./verify-memories-output.ts";
 import { LATER, makeIo, run, tempDir, writeSyntheticParts } from "./helpers.ts";
+import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
+import { insightRuns } from "./insight-outputs.ts";
+import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
 
 const ALL_CANARIES = Object.values(CANARIES).flat();
 const LINK_PIECES = ["demo.snappy.invalid", "uid=demo", "mid=", "/media/", "https://", "http://"];
@@ -143,22 +146,83 @@ describe("no canary reaches any output", () => {
 });
 
 /**
+ * The 14 insight commands, run through the CLI over the canary export (the runs in insight-outputs.ts):
+ * nothing they print, in text or JSON, and nothing they write, may carry a canary or a link fragment, and
+ * a mistake never names a person.
+ */
+describe("no canary reaches an insight command", () => {
+  // The runs are shared with other test files, so on a busy machine this may wait for another worker.
+  beforeAll(async () => {
+    await insightRuns();
+  }, SHARED_HOOK_TIMEOUT);
+
+  const USERNAME = /\b(?:ghost|oneway|dormant|active|newfriend|friend|user)_\d+\b/;
+
+  it("text output, including every mistake", async () => {
+    const { outputs } = await insightRuns();
+    expect(Object.keys(outputs).length).toBeGreaterThan(50);
+    for (const [name, text] of Object.entries(outputs)) {
+      leaks(text, name);
+      noLinks(text, name);
+      if (name.includes(" error ")) expect(text, `${name} names a person`).not.toMatch(USERNAME);
+    }
+  });
+
+  it("JSON output, for every command, over the export with download links and the three-part export", async () => {
+    const { json } = await insightRuns();
+    // A command with no JSON run here would never be checked, so a missing one fails.
+    for (const command of INSIGHT_COMMANDS) {
+      const runs = Object.keys(json).filter((name) => name.startsWith(`${command.name} `) && name.includes(" json"));
+      expect(runs.length, `${command.name} has no JSON run`).toBeGreaterThan(0);
+      if (command.name !== "privacy") {
+        // Both exports, so a leak of a link and a leak of an entry name can each be seen.
+        expect(runs.some((name) => name.endsWith(" json parts")), `${command.name} has no JSON run over the three-part export`).toBe(true);
+        expect(runs.some((name) => name.endsWith(" json")), `${command.name} has no JSON run over the export with links`).toBe(true);
+      }
+    }
+    expect(Object.keys(json).length).toBeGreaterThan(40);
+    for (const [name, text] of Object.entries(json)) {
+      leaks(text, name);
+      noLinks(text, name);
+      expect(() => JSON.parse(text), name).not.toThrow();
+    }
+  });
+
+  it("the files they write on purpose, from an export that holds download links", async () => {
+    const { files } = await insightRuns();
+    const names = Object.keys(files);
+    expect(names.length).toBe(8);
+    for (const extension of [".json", ".ics"]) expect(names.some((n) => n.endsWith(extension)), extension).toBe(true);
+    for (const [path, text] of Object.entries(files)) {
+      leaks(text, path);
+      noLinks(text, path);
+    }
+  });
+});
+
+/**
  * The same gate over the real shape: three zips whose Memories files are named after their
  * identifiers. Nothing printed, reported, named or written may carry a canary or the name of any
  * zip entry (its folder, its file name or the identifier inside it).
  */
 describe("no canary or zip entry name reaches a three-part rescue", () => {
+  /** The entry names to look for (every name but the JSON files' own, which inspect may print), and the identifiers inside them. */
+  function entryPieces(allNames: string[]): { names: string[]; uuids: string[]; pieces: string[] } {
+    const names = allNames.filter((n) => !n.startsWith("json/"));
+    const uuids = [...new Set(names.flatMap((n) => /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/i.exec(n) ?? []))];
+    const pieces = [...new Set([...names, ...names.map((n) => n.slice(n.lastIndexOf("/") + 1))])].filter((p) => p !== "index.html");
+    return { names, uuids, pieces };
+  }
+
   const dir = tempDir("canary-parts");
   const zips = writeSyntheticParts(dir, { memoryCount: 200 });
-  const names = describeZips(zips).names.filter((n) => !n.startsWith("json/"));
-  const uuids = [...new Set(names.flatMap((n) => /[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}/i.exec(n) ?? []))];
-  const pieces = [...new Set([...names, ...names.map((n) => n.slice(n.lastIndexOf("/") + 1))])].filter((p) => p !== "index.html");
+  const { names, uuids, pieces } = entryPieces(describeZips(zips).names);
 
   /** Text a person could see or share: no canary, no entry name, no identifier. */
-  function clean(text: string, label: string): void {
+  function clean(text: string, label: string, own = { uuids, pieces }): void {
     leaks(text, label);
     noLinks(text, label);
-    for (const piece of [...pieces, ...uuids]) expect(text, `${label} leaked an entry name`).not.toContain(piece);
+    for (const piece of [...own.pieces, ...own.uuids]) expect(text, `${label} leaked an entry name`).not.toContain(piece);
   }
 
   it("premise: the zips hold many named entries and Memories files with identifiers", () => {
@@ -194,6 +258,17 @@ describe("no canary or zip entry name reaches a three-part rescue", () => {
     }
     // Three real runs over multi-part zips: about 5 s alone, but it passed the default 30 s limit once under a full parallel run.
   }, 120_000);
+
+  it("the 14 insight commands: text, JSON and the files they write, over a three-part export", async () => {
+    const runs = await insightRuns();
+    // The runs read their own exports, so the entry names inside them are what must stay out.
+    const own = entryPieces(runs.entryNames);
+    expect(own.names.length).toBeGreaterThan(50);
+    expect(own.uuids.length).toBeGreaterThan(30);
+    for (const [name, text] of Object.entries(runs.outputs)) clean(text, name, own);
+    for (const [name, text] of Object.entries(runs.json)) clean(text, name, own);
+    for (const [path, text] of Object.entries(runs.files)) clean(text, path, own);
+  }, SHARED_HOOK_TIMEOUT);
 
   it("analyze and inspect over all three parts", async () => {
     const csv = join(tempDir("canary-parts-csv"), "q.csv");

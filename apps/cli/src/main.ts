@@ -7,9 +7,11 @@
 import { realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import pkg from "../package.json" with { type: "json" };
-import { runCli as runPortableCli } from "./cli.ts";
+import { COMMAND_NAMES, runCli as runPortableCli } from "./cli.ts";
 import type { Io } from "./io.ts";
 import { createRealIo } from "./node-io.ts";
+
+export { COMMAND_NAMES };
 
 /** Run one command line against `io`. Every test drives the CLI through this. */
 export function runCli(argv: string[], io: Io): Promise<number> {

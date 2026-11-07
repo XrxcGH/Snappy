@@ -259,10 +259,12 @@ describe("built file: the commands live in the helper, not on the page", () => {
 
   it("keeps the page under the size limit with the helper inside, and records how much it grew", () => {
     const bytes = Buffer.byteLength(html);
-    // Measured when the helper was added: the page was 488 KB before and about 700 KB after. A jump past
-    // a quarter more than that means something large came in by accident.
-    expect(bytes).toBeLessThan(900_000);
-    expect(Buffer.byteLength(terminalWorker)).toBeLessThan(260_000);
+    // Measured when the helper was added: the page was 488 KB before and about 700 KB after. The fourteen
+    // insight commands came in with the command line afterwards (the help overview lists them, so their code
+    // travels in the helper even though the app does not run them): about 850 KB. A jump past a quarter more
+    // than that means something large came in by accident.
+    expect(bytes).toBeLessThan(1_050_000);
+    expect(Buffer.byteLength(terminalWorker)).toBeLessThan(420_000);
   });
 });
 

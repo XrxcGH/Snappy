@@ -3,13 +3,15 @@
  * in the terminal text goes through the plural helpers, and these tests hold that line for the
  * analysis text and the Memories text with counts of 0, 1 and 2.
  */
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { isAre, hasHave, noun, plural, wasWere } from "../src/format.ts";
 import type { AnalysisResult } from "../src/analysis.ts";
 import { renderAnalysisText } from "../src/render-analysis.ts";
 import { describePairing } from "../src/render.ts";
 import { createTerm } from "../src/term.ts";
 import { makeIo, run, tempDir, writeSyntheticZip } from "./helpers.ts";
+import { collectInsightOutputs } from "./insight-outputs.ts";
+import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
 
 const term = createTerm({ env: {}, isTTY: false, columns: 100 });
 
@@ -77,6 +79,29 @@ describe("Memories pairing text", () => {
       expect(text).toContain("so Snappy skipped it");
       expect(text).toContain("1 overlay file goes with it.");
       expect(text).toContain("1 file in the ZIP files matches no Memory.");
+    }
+  });
+});
+
+/**
+ * The insight commands print their counts through the same helpers. Over every captured run (default
+ * output, options and mistakes) a count of one must not sit next to a plural noun or a plural verb.
+ * The nouns here are the ones those commands count, beyond the list WRONG_ONE holds for analysis text.
+ */
+const WRONG_ONE_INSIGHT = /\b1 (days|entries|dates|usernames|people|years|months|weeks|chats|messages|batches|steps|points|notes|alerts|matches|results|ids|snaps|groups|anniversaries|milestones)\b/;
+
+describe("insight command text", () => {
+  // The runs are shared with other test files, so on a busy machine this may wait for another worker.
+  beforeAll(async () => {
+    await collectInsightOutputs();
+  }, SHARED_HOOK_TIMEOUT);
+
+  it("reads correctly wherever a count is one", async () => {
+    const outputs = await collectInsightOutputs();
+    expect(Object.keys(outputs).length).toBeGreaterThan(50);
+    for (const [name, text] of Object.entries(outputs)) {
+      expect(text, name).not.toMatch(WRONG_ONE);
+      expect(text, name).not.toMatch(WRONG_ONE_INSIGHT);
     }
   });
 });

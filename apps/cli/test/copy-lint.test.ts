@@ -26,6 +26,9 @@ import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
+import { collectInsightOutputs } from "./insight-outputs.ts";
+import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
 
 const CLI = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(CLI, "src");
@@ -431,6 +434,8 @@ async function collectOutputs(): Promise<Record<string, string>> {
   await capture("errors", ["analyze", join(dir, "missing.zip")]);
   await capture("usage", ["analyze", later, "--bogus"]);
   await capture("unknown", ["bogus"]);
+  // The 14 insight commands: their output, options, help and mistakes.
+  for (const [name, text] of Object.entries(await collectInsightOutputs())) outputs[name] = stripPaths(text);
   return outputs;
 }
 
@@ -444,7 +449,7 @@ let outputs: Record<string, string> = {};
 beforeAll(async () => {
   literals = [...collectLiterals(), ...(await collectCopyModule())];
   outputs = await collectOutputs();
-}, 90_000);
+}, SHARED_HOOK_TIMEOUT);
 
 describe("CLI source text", () => {
   it("has sentence-like text to check", () => {
@@ -479,6 +484,15 @@ describe("CLI output", () => {
   it("collects the output of every command", () => {
     expect(Object.keys(outputs).length).toBeGreaterThan(15);
     for (const [name, text] of Object.entries(outputs)) expect(text.length, name).toBeGreaterThan(10);
+  });
+
+  it("includes every insight command: its help, both ways, and a run", () => {
+    for (const c of INSIGHT_COMMANDS) {
+      expect(outputs[`help ${c.name}`], `help ${c.name}`).toBe(stripPaths(c.usage));
+      expect(outputs[`${c.name} --help`], `${c.name} --help`).toBe(stripPaths(c.usage));
+      const runs = Object.keys(outputs).filter((k) => (k === c.name || k.startsWith(`${c.name} `)) && !k.endsWith("--help"));
+      expect(runs.length, `a run of ${c.name}`).toBeGreaterThan(0);
+    }
   });
 
   it("uses American English in every line", () => {
@@ -545,7 +559,7 @@ describe("CLI output", () => {
 /* ------------------------------------------------------------------------------------------ */
 
 /** "snappy" used as the command, or an old package name. The command and package are snappy-export. */
-const STALE = [/\bnpm run (?!snappy-export\b)[\w:.-]*snappy[\w:.-]*/g, /\bsnappy (?:inspect|analyze|memories|keep|unkeep|ledger|demo|help)\b/g, /\bsnappy-cli\b/gi, /\bsnappy_export\b/g, /\bnpx snappy\b/g];
+const STALE = [/\bnpm run (?!snappy-export\b)[\w:.-]*snappy[\w:.-]*/g, new RegExp(`\\bsnappy (?:inspect|analyze|memories|keep|unkeep|ledger|demo|help|${INSIGHT_COMMANDS.map((c) => c.name).join("|")})\\b`, "g"), /\bsnappy-cli\b/gi, /\bsnappy_export\b/g, /\bnpx snappy\b/g];
 const stale = (text: string): string[] => STALE.flatMap((re) => [...text.matchAll(re)].map((m) => m[0]));
 
 describe("stale names", () => {
