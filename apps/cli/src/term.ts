@@ -3,7 +3,6 @@
  * NO_COLOR, --no-color, TERM=dumb and non-TTY output, and nothing is ever conveyed by color alone
  * (confidence is three bars plus a word, issues carry a text label).
  */
-import { stripVTControlCharacters } from "node:util";
 import type { Confidence } from "@snappy-export/core";
 import { wrapText } from "./render.ts";
 
@@ -81,7 +80,16 @@ function supportsTruecolor(env: TermOptions["env"]): boolean {
   return v === "truecolor" || v === "24bit";
 }
 
-const textWidth = (s: string): number => Array.from(stripVTControlCharacters(s)).length;
+/**
+ * Escape sequences, as node:util stripVTControlCharacters matches them (the ansi-regex pattern), so
+ * a width is measured the same in Node and in a browser worker.
+ */
+const ANSI_PATTERN =
+  /[\u001B\u009B][[\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\d/#&.:=?%@~_]+)*|[a-zA-Z\d]+(?:;[-a-zA-Z\d/#&.:=?%@~_]*)*)?(?:\u0007|\u001B\\|\u009C))|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-ntqry=><~]))/g;
+
+export const stripAnsi = (s: string): string => s.replace(ANSI_PATTERN, "");
+
+const textWidth = (s: string): number => Array.from(stripAnsi(s)).length;
 
 /** Control characters (ESC, BEL, DEL, C1) and characters that reorder or hide text. */
 const UNPRINTABLE = /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
