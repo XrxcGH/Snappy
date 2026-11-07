@@ -43,6 +43,9 @@ function chipFor(spec: CommandSpec, result: RunResult): { tone: Tone; icon: Icon
   return { tone: "danger", icon: "warning" };
 }
 
+/** A line of output that sends the person to an option Run refuses (it needs the network). */
+const NETWORK_HINT = /--download/;
+
 const seconds = (ms: number): string => (Math.max(0, ms) / 1000).toFixed(1);
 
 /**
@@ -162,7 +165,9 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
         });
         const hadFocus = focusIsHere();
         const saved = outFiles(session, { id, result: state.result, now: () => Date.now(), key: options.key });
-        root.replaceChildren(...[view.element, chip(state.result), saved, h("div", { class: "command-toolbar" }, copy, close)].filter((n): n is HTMLElement => n !== null));
+        // The output may tell the person to add --download. Run never downloads, so say where that works.
+        const download = NETWORK_HINT.test(view.plainText()) ? h("p", { class: "command-hint" }, terminal.downloadNote) : null;
+        root.replaceChildren(...[view.element, chip(state.result), download, saved, h("div", { class: "command-toolbar" }, copy, close)].filter((n): n is HTMLElement => n !== null));
         // Back to the Run button, unless the person has moved on to something else.
         if (moved && hadFocus) focusRun();
         return;

@@ -229,6 +229,23 @@ describe("a finished Run", () => {
     expect((failed.el.querySelector(".command-chip") as FakeElement).textContent).not.toContain("Exit code");
   });
 
+  it("says where --download works when the output tells the person to add it, and only then", async () => {
+    const withHint = await panelFor("memories-rescue");
+    withHint.controller.request("memories-rescue");
+    withHint.controller.approve("memories-rescue");
+    await tick();
+    withHint.started[0]?.hooks.onOut("384 items are only links. Run again with --download to get them.");
+    withHint.started[0]?.finish({ end: "done", code: 0, ms: 5 });
+    await tick(80);
+    const notes = withHint.el.querySelectorAll(".command-hint").map((n) => n.textContent);
+    expect(notes).toContain(terminal.downloadNote);
+    // The note sits under the exit chip, not in the output.
+    expect(withHint.el.querySelector(".t-log")?.textContent).not.toContain(terminal.downloadNote);
+
+    const without = await finished({ end: "done", code: 0, ms: 5 }, "memories-rescue");
+    expect(without.el.querySelectorAll(".command-hint").map((n) => n.textContent)).not.toContain(terminal.downloadNote);
+  });
+
   it("leaves focus alone when the person has moved on to something else", async () => {
     focusReset();
     const s = await panelFor("inspect");

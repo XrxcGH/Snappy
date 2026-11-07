@@ -544,6 +544,8 @@ export const terminal = {
   busyHint: "Another command is running.",
   noWorkerNote: "This browser cannot run commands here.",
   networkNote: "Needs a terminal on your computer.",
+  /** Under output that suggests --download, which Run cannot do (it has no network). */
+  downloadNote: "Downloads need a terminal on your computer.",
   notZipNote: "Choose .zip files from your export.",
   /** The confirmation before a command that writes. */
   confirmFolderTitle: "Save to a virtual folder?",
