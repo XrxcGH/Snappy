@@ -168,6 +168,23 @@ describe("no canary reaches an insight command", () => {
     }
   });
 
+  /**
+   * These runs promise totals only: no row names a person. A shared name pattern for every kind of synthetic friend
+   * (the generator's families), so a username added to any of their text or JSON fails here, not only in the command's own file.
+   */
+  it("aggregate-only runs never name a synthetic friend, in text or JSON", async () => {
+    const { outputs, json } = await insightRuns();
+    const ANY_FRIEND = /\b(?:ghost|oneway|dormant|active|newfriend|exfriend|removed|blocked|ignored|pending|suggest|snapper|friend|user)_\d+\b/i;
+    const aggregateOnly = (name: string): boolean => /^(?:year|calendar|gaps)(?: |$)/.test(name) || /^(?:lookalikes|since|blocked) counts(?: |$)/.test(name);
+    const runs = Object.entries({ ...outputs, ...json }).filter(([name]) => aggregateOnly(name));
+    // Every command in the family must have both a text and a JSON run here, so one that loses its run fails loudly.
+    for (const command of ["year", "calendar", "gaps"]) {
+      expect(runs.some(([name]) => name === command), `${command} has no text run`).toBe(true);
+      expect(runs.some(([name]) => name.startsWith(`${command} json`)), `${command} has no JSON run`).toBe(true);
+    }
+    for (const [name, text] of runs) expect(text, `${name} names a friend`).not.toMatch(ANY_FRIEND);
+  });
+
   it("JSON output, for every command, over the export with download links and the three-part export", async () => {
     const { json } = await insightRuns();
     // A command with no JSON run here would never be checked, so a missing one fails.
