@@ -104,9 +104,22 @@ describe("the command", () => {
   });
 
   it("uses the offset to decide which calendar day the last export fell on", async () => {
-    const { out } = await runInsight(remindCommand, ["--last-export", "2026-10-31", "--utc-offset=-300"]);
+    const { out } = await runInsight(remindCommand, ["--last-export", "2026-10-31", "--utc-offset=-5"]);
     expect(out).toContain("Last export    Oct 31, 2026, from the date you gave");
     expect(out).toContain("Request your next export on Jan 31, 2027.");
+  });
+
+  it("reads --utc-offset as hours, the same as habits and on-this-day", async () => {
+    const hours = await runInsight(remindCommand, ["--last-export", "2026-10-31", "--utc-offset=-5", "--json"]);
+    const half = await runInsight(remindCommand, ["--last-export", "2026-10-31", "--utc-offset=5:30", "--json"]);
+    expect(hours.code).toBe(0);
+    expect(half.code).toBe(0);
+    // -5 is five hours west, not five minutes: the old minutes reading would have ended in a 0 offset.
+    const noon = Date.UTC(2026, 9, 31, 12) + 5 * 3_600_000;
+    expect((JSON.parse(hours.out) as { lastExportAt: string }).lastExportAt).toBe(new Date(noon).toISOString());
+    const helpRow = remindCommand.usage.split(/\r?\n/).find((l) => l.includes("--utc-offset"));
+    expect(helpRow).toContain("<hours>");
+    expect(helpRow).not.toMatch(/minutes|<min>/);
   });
 
   it("prints JSON with the calendar text and no export data", async () => {
@@ -254,8 +267,9 @@ describe("mistakes", () => {
       [["--time", "9"], "--time must be a 24-hour time such as 09:30"],
       [["--length", "30"], "--length needs --time"],
       [["--time", "09:00", "--length", "0"], "--length must be a whole number from 1 to 1440"],
-      [["--utc-offset=900"], "--utc-offset must be a whole number of minutes from -840 to 840"],
-      [["--utc-offset=abc"], "--utc-offset must be a whole number of minutes from -840 to 840"],
+      [["--utc-offset=15"], "--utc-offset must be hours from UTC, such as 2, -5 or 5:30, from -12 to 14."],
+      [["--utc-offset=-300"], "--utc-offset must be hours from UTC, such as 2, -5 or 5:30, from -12 to 14."],
+      [["--utc-offset=abc"], "--utc-offset must be hours from UTC, such as 2, -5 or 5:30, from -12 to 14."],
       [["--force"], "--force needs --out"],
       [["--last-export", "2026-11-01", join(dir, "a.zip")], "Give ZIP files or --last-export, not both."],
       [["--bogus"], 'Snappy does not know the option --bogus for remind. Run "snappy-export help remind"'],

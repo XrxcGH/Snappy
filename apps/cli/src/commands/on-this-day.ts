@@ -8,7 +8,7 @@ import { intOption } from "../args.ts";
 import { CliError } from "../errors.ts";
 import { formatCount, formatDate, noun, plural, isAre, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
-import { insightTerm, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
+import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
 import type { Io } from "../io.ts";
 import { finish, jsonText, renderNotes } from "../render-insights.ts";
@@ -21,14 +21,14 @@ Shows the Memories you took on this day in earlier years, or around it. It reads
 your Memories list only, never photos or videos, and it writes no file.
 
 Options
-  --date <date>      A day such as 2026-11-06. Default: today.
-  --window <days>    Also look this many days either side, from 0 to 31.
-  --year <year>      Show one year of Memories by month instead.
-  --by-year          Show how many Memories each year holds instead.
-  --offset <hours>   Hours from UTC, such as +1 or +5:30. West: --offset=-5.
-  --json             Print JSON instead of text.
-  --verbose          Add a short code to each note, for bug reports.
-  --no-color         Plain text.
+  --date <date>         A day such as 2026-11-06. Default: today.
+  --window <days>       Also look this many days either side, from 0 to 31.
+  --year <year>         Show one year of Memories by month instead.
+  --by-year             Show how many Memories each year holds instead.
+  --utc-offset <hours>  Hours from UTC, such as 2 or 5:30. Write -5 as --utc-offset=-5.
+  --json                Print JSON instead of text.
+  --verbose             Add a short code to each note, for bug reports.
+  --no-color            Plain text.
 
 Exit codes: 0 done, 1 could not run, 2 the export has no usable Memories list.
 `;
@@ -38,6 +38,7 @@ interface Flags extends CommonFlags {
   window?: string;
   year?: string;
   "by-year"?: boolean;
+  "utc-offset"?: string;
   offset?: string;
 }
 
@@ -219,7 +220,7 @@ export function renderOnThisDay(report: OnThisDayReport, term: Term, verbose: bo
         : view.kind === "year"
           ? yearLines(term, view.result)
           : yearsLines(term, view.result);
-  const out: string[] = [term.bold(HEADING[view.kind]), `  Dates use ${offsetLabel(report.utcOffsetMinutes)}.`, ""];
+  const out: string[] = [term.bold(HEADING[view.kind]), `  Dates use ${offsetLabel(report.utcOffsetMinutes)}.${report.utcOffsetMinutes === 0 ? " Use --utc-offset to change this." : ""}`, ""];
   out.push(...body.map((l) => (l === "" ? l : `  ${l}`)), "");
 
   const notes: NoteLine[] = [...report.problems.map(problemLine), ...notesOf(view).map((n) => ({ severity: "info" as const, code: n.code, text: noteText(n) }))];
@@ -237,16 +238,6 @@ function parseDate(raw: string): insights.memoriesOnThisDay.CivilDate {
   const d = new Date(Date.UTC(year, month - 1, day));
   if (year < 1970 || year > 2200 || d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) throw bad;
   return { year, month, day };
-}
-
-/** Hours from UTC as minutes: "-5", "+5:30", "0". */
-function parseOffset(raw: string): number {
-  const m = /^([+-])?(\d{1,2})(?::([0-5]\d))?$/.exec(raw.trim());
-  const bad = new CliError("usage", "--offset must be hours from UTC such as +1 or +5:30, or =-5 for west, up to 14.");
-  if (!m) throw bad;
-  const minutes = Number(m[2]) * 60 + Number(m[3] ?? 0);
-  if (minutes > 14 * 60) throw bad;
-  return m[1] === "-" ? -minutes : minutes;
 }
 
 /** The result without ids, so the JSON holds counts and calendar numbers only. */
@@ -282,6 +273,7 @@ export async function runOnThisDay(args: string[], io: Io): Promise<number> {
     window: { type: "string" },
     year: { type: "string" },
     "by-year": { type: "boolean" },
+    "utc-offset": { type: "string" },
     offset: { type: "string" },
   });
   if (flags.help) {
@@ -295,7 +287,11 @@ export async function runOnThisDay(args: string[], io: Io): Promise<number> {
   const windowDays = intOption("--window", flags.window, 0, 31) ?? 0;
   const year = intOption("--year", flags.year, 1970, 2200);
   const byYear = flags["by-year"] === true;
-  const offset = flags.offset === undefined ? 0 : parseOffset(flags.offset);
+  // --offset is the older name for --utc-offset and still works.
+  if (flags["utc-offset"] !== undefined && flags.offset !== undefined) throw new CliError("usage", "Use --utc-offset or --offset, not both.");
+  const offsetFlag = flags["utc-offset"] !== undefined ? "--utc-offset" : "--offset";
+  const offsetValue = flags["utc-offset"] ?? flags.offset;
+  const offset = offsetValue === undefined ? 0 : parseUtcOffsetHours(offsetValue, offsetFlag);
   const days = target !== undefined || flags.window !== undefined;
   if ((year !== undefined ? 1 : 0) + (byYear ? 1 : 0) + (days ? 1 : 0) > 1) {
     throw new CliError("usage", "Choose one view: a day, --year or --by-year.");

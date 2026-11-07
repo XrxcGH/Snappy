@@ -5,10 +5,9 @@
  */
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { CliError } from "../errors.ts";
 import { formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
-import { insightTerm, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
+import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
 import type { Io } from "../io.ts";
 import { finish, jsonText, renderNotes, section } from "../render-insights.ts";
@@ -44,27 +43,10 @@ type Habits = insights.habits.HabitsResult;
 /** Months listed by default. */
 const DEFAULT_MONTHS = 12;
 const MAX_MONTHS = 1200;
-const MAX_OFFSET_HOURS = 14;
-const MIN_OFFSET_HOURS = -12;
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 const BAR_WIDTH = 20;
-
-/**
- * Minutes east of UTC, read from values such as 2, +2, -5, 5:30 or -3:30. The typed value is never echoed, so a
- * mistake cannot print anything odd. Returns undefined when the option was not given.
- */
-function parseUtcOffset(raw: string | undefined): number | undefined {
-  if (raw === undefined) return undefined;
-  const bad = new CliError("usage", `--utc-offset must be hours from UTC, such as 2, -5 or 5:30, from ${MIN_OFFSET_HOURS} to ${MAX_OFFSET_HOURS}.`);
-  const m = /^([+-]?)(\d{1,2})(?::([0-5]\d))?$/.exec(raw.trim());
-  if (!m) throw bad;
-  const minutes = Number(m[2]) * 60 + Number(m[3] ?? "0");
-  const signed = m[1] === "-" ? -minutes : minutes;
-  if (signed < MIN_OFFSET_HOURS * 60 || signed > MAX_OFFSET_HOURS * 60) throw bad;
-  return signed;
-}
 
 /** "UTC", "UTC+2:00", "UTC-5:30". */
 function offsetLabel(minutes: number): string {
@@ -227,7 +209,7 @@ export async function runHabits(args: string[], io: Io): Promise<number> {
   }
   const term = insightTerm(flags, io);
   // Check every option before reading anything.
-  const utcOffsetMinutes = parseUtcOffset(flags["utc-offset"]);
+  const utcOffsetMinutes = flags["utc-offset"] === undefined ? undefined : parseUtcOffsetHours(flags["utc-offset"]);
   const months = intOption("--months", flags.months, 1, MAX_MONTHS) ?? DEFAULT_MONTHS;
 
   const input = await loadInsightInput(positionals, io);

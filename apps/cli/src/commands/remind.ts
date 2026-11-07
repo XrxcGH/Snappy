@@ -9,7 +9,7 @@ import { intOption } from "../args.ts";
 import { CliError } from "../errors.ts";
 import { formatDate, plural } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
-import { insightTerm, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
+import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
 import { checkOutputPath, saveInsightFile } from "../insights-output.ts";
 import type { Io } from "../io.ts";
@@ -28,7 +28,7 @@ Options
   --time <time>         Make a timed event, in 24-hour time. Default is all day.
   --length <minutes>    Length of a timed event. Default 30.
   --alarm <days>        Add an alert this many days before. 0 is the same day.
-  --utc-offset <min>    Minutes east of UTC, written as --utc-offset=-300.
+  --utc-offset <hours>  Hours from UTC, such as 2 or 5:30. Write -5 as --utc-offset=-5.
   --out <file>          Save the calendar file. The name must end in .ics.
   --force               Replace the file if it already exists.
   --json                Print JSON instead of text.
@@ -185,15 +185,6 @@ function parseLastExport(raw: string | undefined, offsetMinutes: number): number
   return noon - offsetMinutes * 60_000;
 }
 
-function parseOffset(raw: string | undefined): number {
-  if (raw === undefined) return 0;
-  const n = Number(raw);
-  if (!/^[+-]?\d+$/.test(raw.trim()) || n < -insights.exportReminder.MAX_OFFSET_MINUTES || n > insights.exportReminder.MAX_OFFSET_MINUTES) {
-    throw new CliError("usage", `--utc-offset must be a whole number of minutes from -${insights.exportReminder.MAX_OFFSET_MINUTES} to ${insights.exportReminder.MAX_OFFSET_MINUTES}.`);
-  }
-  return n;
-}
-
 function parseTime(raw: string | undefined): { hour: number; minute: number } | undefined {
   if (raw === undefined) return undefined;
   const m = /^(\d{1,2}):(\d{2})$/.exec(raw.trim());
@@ -214,7 +205,7 @@ export async function runRemind(args: string[], io: Io): Promise<number> {
   const term = insightTerm(flags, io);
 
   // Check every option and the output name before anything is read.
-  const offset = parseOffset(flags["utc-offset"]);
+  const offset = flags["utc-offset"] === undefined ? 0 : parseUtcOffsetHours(flags["utc-offset"]);
   const given = parseLastExport(flags["last-export"], offset);
   const months = intOption("--months", flags.months, 1, insights.exportReminder.MAX_INTERVAL_MONTHS);
   const clockTime = parseTime(flags.time);

@@ -106,6 +106,17 @@ describe("the command", () => {
     expect(offsetLabel(840)).toBe("UTC+14");
   });
 
+  it("takes --utc-offset like habits and remind, and says how to change the UTC default", async () => {
+    const west = await runInsight(onThisDayCommand, [parts, "--utc-offset=-5", "--by-year"]);
+    expect(west.out).toContain("Dates use UTC-5.");
+    expect(west.out).not.toContain("to change this");
+    const india = await runInsight(onThisDayCommand, [parts, "--utc-offset", "5:30", "--json"]);
+    expect((JSON.parse(india.out) as { utcOffsetMinutes: number }).utcOffsetMinutes).toBe(330);
+    const utc = await runInsight(onThisDayCommand, [parts, "--by-year"]);
+    expect(utc.out).toContain("Dates use UTC. Use --utc-offset to change this.");
+    expect(onThisDayCommand.usage).toContain("--utc-offset <hours>");
+  });
+
   it("prints JSON with counts and calendar numbers only, no ids", async () => {
     const day = await runInsight(onThisDayCommand, [parts, "--date", "2026-10-15", "--json"]);
     expect(day.code).toBe(0);
@@ -194,7 +205,10 @@ describe("mistakes", () => {
       [["--year", "1800"], "--year must be a whole number from 1970 to 2200"],
       [["--offset", "15"], "--offset must be hours from UTC"],
       [["--offset", "5:75"], "--offset must be hours from UTC"],
-      [["--offset", "east"], "--offset must be hours from UTC"],
+      [["--offset", "east"], "--offset must be hours from UTC, such as 2, -5 or 5:30, from -12 to 14."],
+      [["--utc-offset=-13"], "--utc-offset must be hours from UTC, such as 2, -5 or 5:30, from -12 to 14."],
+      [["--utc-offset", "99"], "--utc-offset must be hours from UTC, such as 2, -5 or 5:30, from -12 to 14."],
+      [["--utc-offset", "2", "--offset", "3"], "Use --utc-offset or --offset, not both."],
       [["--year", "2025", "--by-year"], "Choose one view"],
       [["--year", "2025", "--date", "2026-01-01"], "Choose one view"],
       [["--by-year", "--window", "3"], "Choose one view"],

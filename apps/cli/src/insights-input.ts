@@ -52,6 +52,25 @@ export const LEDGER_OPTIONS: OptionSpec = {
   "passphrase-file": { type: "string" },
 };
 
+/** Hours from UTC that every command with a time zone option accepts. */
+export const MIN_UTC_OFFSET_HOURS = -12;
+export const MAX_UTC_OFFSET_HOURS = 14;
+
+/**
+ * Minutes east of UTC, read from hours such as 2, +2, -5, 5:30 or -3:30. One reading for every
+ * command, so the same flag means the same thing everywhere. The typed value is never echoed.
+ * `flag` is the name the person typed, so the message names that flag.
+ */
+export function parseUtcOffsetHours(raw: string, flag = "--utc-offset"): number {
+  const bad = new CliError("usage", `${flag} must be hours from UTC, such as 2, -5 or 5:30, from ${MIN_UTC_OFFSET_HOURS} to ${MAX_UTC_OFFSET_HOURS}.`);
+  const m = /^([+-]?)(\d{1,2})(?::([0-5]\d))?$/.exec(raw.trim());
+  if (!m) throw bad;
+  const minutes = Number(m[2]) * 60 + Number(m[3] ?? "0");
+  const signed = m[1] === "-" ? -minutes : minutes;
+  if (signed < MIN_UTC_OFFSET_HOURS * 60 || signed > MAX_UTC_OFFSET_HOURS * 60) throw bad;
+  return signed;
+}
+
 /** parseFlags with the common options added. `extra` holds the command's own options. */
 export function parseInsightArgs<T>(command: string, args: string[], extra: OptionSpec = {}): Parsed<T & CommonFlags> {
   return parseFlags<T & CommonFlags>(command, args, { ...COMMON_OPTIONS, ...extra });
