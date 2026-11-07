@@ -56,7 +56,17 @@ describe("no markup strings", () => {
 
 describe("content-blind and offline", () => {
   it("has no network APIs, shared or service workers, window.open or importScripts", () => {
-    expect(offenders(/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|window\.open|serviceWorker|RTCPeerConnection/)).toEqual([]);
+    // The one file that names them is the command helper's scrubber, which removes them (see below).
+    expect(offenders(/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|window\.open|serviceWorker|RTCPeerConnection/, tsFiles, ["src/terminal/scrub.ts"])).toEqual([]);
+  });
+
+  it("names those APIs in the scrubber only inside its two string lists, never as a call or an access", () => {
+    const scrub = stripComments(read(path.join(srcDir, "terminal", "scrub.ts")));
+    const outsideLists = scrub.replace(/export const SCRUBBED_(GLOBALS|NAVIGATOR): readonly string\[\] = \[[\s\S]*?\];/g, "");
+    expect(outsideLists).not.toMatch(/fetch|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|indexedDB|caches/);
+    const listed = [...scrub.matchAll(/^\s*"([A-Za-z]+)",$/gm)].map((m) => m[1]);
+    expect(listed).toEqual(expect.arrayContaining(["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "importScripts", "Worker", "SharedWorker", "indexedDB", "caches"]));
+    expect(scrub).toContain("\"sendBeacon\"");
   });
 
   it("starts a worker in one place only, and only from a blob: URL made from the page's own code", () => {
@@ -72,7 +82,26 @@ describe("content-blind and offline", () => {
   });
 
   it("touches browser storage only in vault.ts", () => {
-    expect(offenders(/\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|document\.cookie|\bcaches\b/, tsFiles, ["src/vault.ts"])).toEqual([]);
+    // The command helper's scrubber lists indexedDB and caches as names to remove; it never uses them.
+    expect(offenders(/\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|document\.cookie|\bcaches\b/, tsFiles, ["src/vault.ts", "src/terminal/scrub.ts"])).toEqual([]);
+  });
+
+  it("keeps the in-app terminal's code where it belongs", () => {
+    const terminal = tsFiles.filter((f) => rel(f).startsWith("src/terminal/"));
+    expect(terminal.length).toBeGreaterThan(8);
+    // Only one door into the command line's code, and the stubs that replace its downloader.
+    expect(offenders(/from\s+"(?:\.\.\/)+cli\/|apps\/cli/, tsFiles, ["src/terminal/cli-api.ts", "src/terminal/stubs/memories-download.stub.ts"])).toEqual([]);
+    expect(offenders(/import\(\s*"(?:\.\.\/)+cli\//, tsFiles, ["src/terminal/stubs/memories-download.stub.ts"])).toEqual([]);
+    // The page never carries the commands: nothing that runs on the page imports the door.
+    const helperSide = ["cli-api.ts", "worker.ts", "worker-io.ts", "vfs.ts", "web-lock.ts"].map((n) => `src/terminal/${n}`);
+    const pageSide = tsFiles.filter((f) => !helperSide.includes(rel(f)) && !rel(f).startsWith("src/terminal/stubs/"));
+    expect(offenders(/from\s+"\.\/cli-api\.ts"|from\s+"\.\.\/terminal\/cli-api\.ts"|from\s+"\.\/terminal\/cli-api\.ts"/, pageSide)).toEqual([]);
+    // The helper's own code never reaches for a window, storage or the network.
+    for (const name of ["worker.ts", "worker-io.ts", "vfs.ts", "web-lock.ts", "policy.ts", "protocol.ts", "input-names.ts", "cli-api.ts"]) {
+      expect(stripComments(read(path.join(srcDir, "terminal", name))), name).not.toMatch(/\bdocument\b|\bwindow\b|\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|\bfetch\b|\bXMLHttpRequest\b/);
+    }
+    // Nothing under terminal/ keeps anything: no storage of any kind, so no history of commands.
+    expect(offenders(/\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|document\.cookie|\bcaches\b|\bbrowserVault\b/, terminal, ["src/terminal/scrub.ts"])).toEqual([]);
   });
 
   it("wraps every storage access in try/catch", () => {

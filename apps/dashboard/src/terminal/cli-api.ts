@@ -5,6 +5,11 @@
  * only code that runs inside the worker imports this file: the page itself never carries the
  * commands (a build check keeps it that way).
  */
+import pkg from "../../../cli/package.json" with { type: "json" };
+
+/** The version the commands report, from the command line's own package. */
+export const CLI_VERSION: string = pkg.version;
+
 export { COMMAND_OPTIONS, runCli } from "../../../cli/src/cli.ts";
 export { CliError } from "../../../cli/src/errors.ts";
 export { FsError } from "../../../cli/src/ports.ts";
