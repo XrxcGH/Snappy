@@ -83,7 +83,10 @@
  *   wide-measure           running text, notices and fields wider than the 36 rem measure (plus 2 px)
  *   wide-columns           cards that are siblings in one grid with different widths where their spans are alike
  *   wide-orphan            a grid of cards whose last row holds one lone card that does not span the row
- *   wide-empty-card        a card whose right third is empty (its content ends before the last third of its width)
+ *   wide-empty-card        a card (a people card too, unless it takes a whole row) whose right third is empty
+ *   wide-steps             the Start page's three step cards: numbers, titles and bodies start at one top each, no dead gap under a title
+ *                          (wide-columns also covers the Tools hub: one tile width across all its groups; and Export health: its notes
+ *                          and its two parts side by side; wide-orphan also covers a lone last note)
  *
  * Playwright is not a dependency of this repository (see tools/mobile/ios-webkit.mjs).
  */
@@ -503,6 +506,8 @@ function measurePage(opts) {
     if (el.matches("a[href], button, input, select, textarea, summary, p, li, h1, h2, h3, dd, dt, label")) {
       for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
         const as = cs(a);
+        // an element with display: contents has no box, so its overflow clips nothing
+        if (as.display === "contents") continue;
         if (as.overflowX !== "visible" || as.overflowY !== "visible") {
           const ar = R(a);
           const scroll = as.overflowX === "auto" || as.overflowX === "scroll";
@@ -775,7 +780,9 @@ function measurePage(opts) {
         if (spread(bottoms) > 1) add("tile-rows", lead, "tiles in one row end at different heights: " + bottoms.map(px).join(", "));
         const rowLeft = Math.min(...rowCards.map((c) => R(c).left));
         const rowRight = Math.max(...rowCards.map((c) => R(c).right));
-        if (Math.abs(rowLeft - pr.left) > 2 || Math.abs(rowRight - pr.right) > 2) add("tile-rows", lead, "a row of tiles does not fill the grid (" + px(rowLeft) + " to " + px(rowRight) + " in " + px(pr.left) + " to " + px(pr.right) + "): a hole beside the last tile");
+        // On a wide screen every tile of the Tools hub is one width (wide-columns checks that), so a group of two or five ends short by design.
+        const hubShort = WIDE && parent.matches(".tiles-tools") && rowRight <= pr.right + 2;
+        if (!hubShort && (Math.abs(rowLeft - pr.left) > 2 || Math.abs(rowRight - pr.right) > 2)) add("tile-rows", lead, "a row of tiles does not fill the grid (" + px(rowLeft) + " to " + px(rowRight) + " in " + px(pr.left) + " to " + px(pr.right) + "): a hole beside the last tile");
         // titles: the same number of lines in every tile of a row, and one line at desktop widths
         const lineCounts = rowCards.map((c) => { const t = part.title(c); return t ? lineRects(t).length : 0; });
         if (spread(lineCounts) > 0) add("tile-title-lines", lead, "tile titles in one row take different numbers of lines: " + rowCards.map((c, i) => textOf(part.title(c) || c).slice(0, 22) + " " + lineCounts[i]).join(", "));
@@ -1301,9 +1308,52 @@ function measurePage(opts) {
       const lefts = [...new Set(kids.map((k) => Math.round(R(k).left)))];
       if (lefts.length > 2) add("wide-columns", c, "a column flow has " + lefts.length + " columns, expected 2");
     }
+    // the three steps of the Start page: their titles start at one top and so do their bodies (no field floats in the middle of a card)
+    const stepCardsEl = [...view.querySelectorAll("div.step-list > .step-card")].filter((c) => vis(c));
+    if (stepCardsEl.length > 1) {
+      const tops = (sel) => stepCardsEl.map((c) => c.querySelector(sel)).filter(Boolean).map((e) => R(e).top);
+      for (const [sel, what] of [[".step-content", "bodies"], [".step-num", "numbers"], ["h2", "titles"]]) {
+        const t = tops(sel);
+        if (t.length > 1 && Math.max(...t) - Math.min(...t) > 1.5) add("wide-steps", stepCardsEl[0], "the " + what + " of the step cards start at different heights: " + t.map(px).join(", "));
+      }
+      // the first line of each body sits directly under the shared title row: no dead gap above a body that is taller than the others' titles
+      const gaps = stepCardsEl.map((c) => { const t = c.querySelector("h2"); const b = c.querySelector(".step-content"); return t && b ? R(b).top - R(t).bottom : 0; });
+      if (Math.max(...gaps) > 3 * rem) add("wide-steps", stepCardsEl[0], "a step body starts " + px(Math.max(...gaps)) + " below its title: a dead gap");
+    }
+    // the Tools hub: one tile width on the whole page, in every group
+    const hubTiles = [...view.querySelectorAll(".tiles-tools .tile")].filter((t) => vis(t));
+    if (hubTiles.length > 1) {
+      const ws = hubTiles.map((t) => R(t).width);
+      if (Math.max(...ws) - Math.min(...ws) > 1.5) add("wide-columns", hubTiles[0], "tiles of the Tools hub differ in width across groups: " + [...new Set(ws.map((w) => Math.round(w)))].map(px).join(", "));
+    }
+    // the notes of Export health: a grid with no lone note in its last row, no note running past its column, and no card half empty
+    for (const g of view.querySelectorAll(".health-notes")) {
+      if (!vis(g)) continue;
+      const cols = cs(g).gridTemplateColumns.split(" ").length;
+      const notes = [...g.querySelectorAll(".notice")].filter((n) => vis(n));
+      if (notes.length < 2) continue;
+      const rows = [];
+      for (const n of notes.sort((a, b) => R(a).top - R(b).top || R(a).left - R(b).left)) {
+        const row = rows.find((r2) => Math.abs(r2.top - R(n).top) < 4);
+        if (row) row.items.push(n); else rows.push({ top: R(n).top, items: [n] });
+      }
+      if (cols > 1 && rows.length >= 2 && rows[rows.length - 1].items.length === 1) add("wide-orphan", rows[rows.length - 1].items[0], "the last row of the " + notes.length + " notes holds one lone note");
+      const ws = notes.map((n) => R(n).width);
+      if (Math.max(...ws) - Math.min(...ws) > 1.5) add("wide-columns", notes[0], "notes of one grid differ in width: " + ws.map(px).join(", "));
+    }
+    // the Export health card: its two parts side by side, neither leaving the card half empty beside the other
+    for (const body of view.querySelectorAll(".details-body")) {
+      const left = body.querySelector(":scope > .health-notes");
+      const right = body.querySelector(":scope > .subsection");
+      if (!left || !right || !vis(left) || !vis(right)) continue;
+      if (Math.abs(R(left).top - R(right).top) > 20) add("wide-columns", left, "the two parts of Export health do not start on one row (" + px(R(left).top) + " and " + px(R(right).top) + ")");
+      if (Math.abs(R(left).width - R(right).width) > 1.5) add("wide-columns", left, "the two parts of Export health differ in width: " + px(R(left).width) + " and " + px(R(right).width));
+    }
     // no card is empty on its right third: its content reaches into the last third of its width
-    for (const card of view.querySelectorAll(".card, .step-card, .empty, .tool-reads, .confirm")) {
-      if (!vis(card) || card.closest(".tile, .candidate, .guided-row, table") || card.matches(".tile, .candidate, .guided-row, .fact, .step-card-compact")) continue;
+    // (people cards count too, unless one takes a whole row on its own: that is the last card of an odd list)
+    for (const card of view.querySelectorAll(".card, .step-card, .empty, .tool-reads, .confirm, .candidate, .guided-row")) {
+      if (!vis(card) || card.closest(".tile, table") || card.parentElement?.closest(".candidate, .guided-row") || card.matches(".tile, .fact, .step-card-compact")) continue;
+      if (card.matches(".candidate, .guided-row") && card.parentElement && R(card).width > R(card.parentElement).width * 0.8) continue;
       const cr = R(card);
       const st = cs(card);
       const innerRight = cr.right - parseFloat(st.paddingRight) - parseFloat(st.borderRightWidth);
