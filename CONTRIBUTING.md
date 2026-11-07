@@ -48,6 +48,21 @@ The dashboard runs the command line's commands inside the page: every command sh
 - **Stop is a stop.** A command that reads the export calls `throwIfStopped(io)` (`apps/cli/src/inputs.ts`) after each load step, because cut-off reads look like damaged files to the parser. `worker.test.ts` stops a read part way and fails on any false diagnosis.
 - **Saved history is one file.** The dashboard and the command line read and write the same sealed file (`packages/core/src/ledger/saved.ts`). Change that format in core, and both follow.
 
+## Adding a dashboard tool
+
+The Tools page lists small helpers that read the export on the page. Each tool is one folder, `apps/dashboard/src/tools/<id>/`, and a tool is added by creating its own files and nothing else. `<id>` is lowercase words joined by hyphens, such as `waiting-on-reply`; the page is `#/tools/<id>`.
+
+- `copy.ts` exports `copy`: `title` (up to 4 words), `oneLiner` (one sentence for the tile, 56 characters or fewer with its period), `description` (one or two short sentences), `reads` (one sentence on what the tool reads; the page adds that message text, media, locations, display names and login history are never read), an optional `empty` ({ title, body }) and every other string the page shows. Key names say the kind of text, because the copy lint reads it from the key: `…Heading`, `…Header`, `…Note`, `…Step`, `…Line`, `…Button`. A piece that code joins into a sentence is a `unit…` key.
+- `model.ts` has the pure step, `compute…(data: ToolData, params?) => Result`. It reads `data.parsed` (friends, chats, Memories, dates), `data.ledger`, `data.now` and `data.capGiB` by reference, uses `insights` from core, and returns a small plain result. No DOM, no sentences, no clock.
+- `view.ts` exports `meta` ({ id, group, category, icon, needs }) and `view = toolView({ meta, copy, compute, summary, render, … })` from `components/toolPage.ts`. The frame draws the back link, title, description, what it reads, the empty states for each missing need, the working line, the announcement, notes and the optional command block and download button. The tool supplies `render(result, ui)` (sections, tables and lists from `components/`), optional `notes`, `controls` with `params` (recomputed on `ui.set`), `isEmpty`, `command` (an id from the catalog in `terminal/commands.ts`, which already has one for every insight command) and `download` (built only when the button is pressed, through the existing download helper). A checklist uses `tickList` and `ui.actions.setTick`: a tick is the person’s own word, saved only with the saved history and otherwise kept for the session.
+- `index.ts` exports `descriptor = { ...meta, title: copy.title, oneLiner: copy.oneLiner, view }`.
+- `styles.css` is optional. Every selector starts with `.tool-<id>` (the page root has that class), and values come from tokens.
+- `apps/dashboard/test/tools/<id>.test.ts` tests the model and the page with the helpers in `test/tools/harness.ts`. `test/tools/contract.test.ts` also checks every folder on its own: the copy lint, the tile and title sizes, the page frame, the empty states, usernames only in result tables, and the styles.
+
+Usernames appear only in result tables and lists, with the shared components and their safe text handling, never in a note, an error, an announcement, an aria label or a document title. Every tool works with the built-in sample data.
+
+Do not edit `registry.ts`, `router.ts`, `app-shell.ts`, `copy.ts`, `styles.css`, the command catalog or a test that more than one tool shares. A later step adds the tool to `registry.ts` (one import and one line), and runs the tests with `SNAPPY_CHECK_WIRING=1` to prove no folder was left out. Commit one tool with its tests as one commit.
+
 ## Making a change
 
 - Add tests for what you add. Privacy tests use "canary" strings that must never appear in any output; extend them when you add an output.
