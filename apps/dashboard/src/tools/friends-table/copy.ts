@@ -35,6 +35,7 @@ export const copy = {
   showLabel: "Show",
   startsLabel: "Username starts with",
   applyButton: "Show matches",
+  clearButton: "Clear filters",
   // Keyed by the ids in model.ts, so this file holds words only.
   sortLabels: {
     "username-asc": "Username, A to Z",

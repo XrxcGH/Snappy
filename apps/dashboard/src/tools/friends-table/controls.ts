@@ -42,8 +42,10 @@ export function controls(ui: ToolUi<FriendsTableParams>): HTMLElement {
     (value) => {
       const chosen = SHOW_FILTERS.find((v): v is ShowFilter => v === value);
       if (chosen !== undefined) ui.set({ show: chosen });
+      syncClear();
     },
   );
+  const showSelect = show.querySelector("select") as HTMLSelectElement;
 
   const input = h("input", {
     id: "friends-table-starts",
@@ -56,8 +58,25 @@ export function controls(ui: ToolUi<FriendsTableParams>): HTMLElement {
     value: ui.params.prefix,
     "data-key": "friends-table-starts",
   });
+  // Clear filters resets the two filters (not the order) and sits out of sight until one is on, so there is always a way back from "no friends match".
+  const clear = button({
+    label: copy.clearButton,
+    variant: "quiet",
+    key: "friends-table-clear",
+    onclick: () => {
+      input.value = "";
+      showSelect.value = "all";
+      ui.set({ show: "all", prefix: "" });
+      syncClear();
+    },
+  });
+  const syncClear = (): void => {
+    if (ui.params.show === "all" && ui.params.prefix === "") clear.setAttribute("hidden", "");
+    else clear.removeAttribute("hidden");
+  };
   const apply = (): void => {
     if (input.value.trim() !== ui.params.prefix) ui.set({ prefix: input.value.trim() });
+    syncClear();
   };
   const form = h(
     "form",
@@ -66,7 +85,7 @@ export function controls(ui: ToolUi<FriendsTableParams>): HTMLElement {
       "div",
       { class: "field" },
       h("label", { class: "label", for: "friends-table-starts" }, copy.startsLabel),
-      h("div", { class: "field-row" }, input, button({ label: copy.applyButton, type: "submit", key: "friends-table-apply" })),
+      h("div", { class: "field-row" }, input, button({ label: copy.applyButton, type: "submit", key: "friends-table-apply" }), clear),
     ),
   );
   form.addEventListener("submit", (event) => {
@@ -74,5 +93,6 @@ export function controls(ui: ToolUi<FriendsTableParams>): HTMLElement {
     apply();
   });
 
+  syncClear();
   return h("div", { class: "controls", role: "group", "aria-label": copy.controlsLabel }, sort, show, form);
 }

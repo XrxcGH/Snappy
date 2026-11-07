@@ -167,6 +167,31 @@ describe("waiting, announcing and remembering", () => {
     expect(said).toEqual([]);
   });
 
+  it("announces a result a control asks for again, even when it is held, but not a return to the page", async () => {
+    let step = 1;
+    const r = await renderSettled(
+      view({
+        controls: (ui) => {
+          const input = h("input", { class: "input", type: "text", "data-key": "step" });
+          input.addEventListener("input", () => ui.set({ step }));
+          return h("div", { class: "tool-controls" }, input);
+        },
+      }),
+      sample,
+    );
+    const input = r.root.querySelector("input") as FakeElement;
+    step = 2;
+    input.fire("input");
+    await settled(r.root);
+    expect(said).toHaveLength(2);
+    said.length = 0;
+    // Back to a value that was computed already: the held result is drawn at once, and still said.
+    step = 1;
+    input.fire("input");
+    await settled(r.root);
+    expect(said).toHaveLength(1);
+  });
+
   it("paints nothing and announces nothing for a page that was left before the result arrived", async () => {
     const r = render(view(), sample);
     r.scope.dispose();

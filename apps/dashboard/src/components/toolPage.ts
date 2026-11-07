@@ -129,7 +129,7 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
         },
         set(patch) {
           params = { ...params, ...patch };
-          settle();
+          settle(true);
         },
       };
       const host = h("div", { class: "tool-result", "aria-busy": "true" });
@@ -161,11 +161,12 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
         return out;
       };
 
-      function settle(): void {
+      /** `changed` is true when a control caused this: a held result is then announced too, since the person asked for it and would otherwise hear nothing. */
+      function settle(changed: boolean): void {
         const key = JSON.stringify(params);
         const hit = cachedResult<R>(meta.id, data, key);
         if (hit) {
-          paint(hit.result, false);
+          paint(hit.result, changed);
           return;
         }
         const mine = ++turn;
@@ -186,7 +187,7 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
         );
       }
 
-      settle();
+      settle(false);
       const controls = o.controls?.(ui);
       return [...(controls === undefined ? [] : Array.isArray(controls) ? controls : [controls]), host];
     },

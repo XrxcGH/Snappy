@@ -268,7 +268,7 @@ describe("the page", () => {
     expect(root.querySelector("label[for=friends-table-sort]")?.textContent).toBe(copy.sortLabel);
     expect(root.querySelector("label[for=friends-table-show]")?.textContent).toBe(copy.showLabel);
     expect(root.querySelector("label[for=friends-table-starts]")?.textContent).toBe(copy.startsLabel);
-    expect(text(root, "form button")).toEqual([copy.applyButton]);
+    expect(text(root, "form button")).toEqual([copy.applyButton, copy.clearButton]);
     expect(root.querySelector("input#friends-table-starts")?.getAttribute("maxlength")).toBe("64");
     expect(root.querySelector("input#friends-table-starts")?.getAttribute("spellcheck")).toBe("false");
     // The chosen option is marked in the page itself.
@@ -380,6 +380,73 @@ describe("the page", () => {
     // A friend with no chats, in a short history: not judged quiet, and the note says so.
     const short = await renderSettled(view, real([friend("zq.one", day(2020, 1, 1)), friend("zq.two", day(2020, 1, 1))], [ev("zq.one", "sent", 3)]));
     expect(text(short.root, ".tool-notes li")).toContain(copy.quietShortNote(1));
+  });
+
+  it("announces what a filter found, including a held result and a filter that matches no one, and never a name", async () => {
+    const r = await renderSettled(view, crafted());
+    const submit = (value: string): void => {
+      (r.root.querySelector("input#friends-table-starts") as FakeElement).value = value;
+      (r.root.querySelector("form") as FakeElement).fire("submit");
+    };
+    said.length = 0;
+    submit("ZQ.B");
+    await settled(r.root);
+    expect(said).toEqual([copy.matchLine(1, 6)]);
+    said.length = 0;
+    submit("nobody");
+    await settled(r.root);
+    expect(said).toEqual([copy.noMatchLine]);
+    // The same filter again is held, and still said, since the person asked for it.
+    said.length = 0;
+    submit("ZQ.B");
+    await settled(r.root);
+    expect(said).toEqual([copy.matchLine(1, 6)]);
+    said.length = 0;
+    submit("");
+    await settled(r.root);
+    expect(said).toEqual([copy.doneAnnounce(6, 2, 2)]);
+    for (const line of said) for (const name of Object.values(NAMES)) expect(line).not.toContain(name);
+  });
+
+  it("offers Clear filters only while a filter is on, and it resets both filters and the controls", async () => {
+    const r = await renderSettled(view, crafted());
+    const clear = (): FakeElement => r.root.querySelectorAll("button").find((b) => b.textContent === copy.clearButton) as FakeElement;
+    expect(clear().hasAttribute("hidden")).toBe(true);
+    const input = r.root.querySelector("input#friends-table-starts") as FakeElement;
+    input.value = "nobody";
+    (r.root.querySelector("form") as FakeElement).fire("submit");
+    await settled(r.root);
+    expect(clear().hasAttribute("hidden")).toBe(false);
+    expect(text(r.root, ".tool-result p")).toContain(copy.noMatchLine);
+    said.length = 0;
+    clear().click();
+    await settled(r.root);
+    expect(input.value).toBe("");
+    expect(rowNames(r.root)).toHaveLength(6);
+    expect(clear().hasAttribute("hidden")).toBe(true);
+    expect(said).toEqual([copy.doneAnnounce(6, 2, 2)]);
+    // A "Show" filter counts too, and Clear puts the select back.
+    const show = r.root.querySelector("select#friends-table-show") as FakeElement;
+    show.value = "quiet";
+    show.fire("change");
+    await settled(r.root);
+    expect(clear().hasAttribute("hidden")).toBe(false);
+    clear().click();
+    await settled(r.root);
+    expect(show.value).toBe("all");
+    expect(rowNames(r.root)).toHaveLength(6);
+  });
+
+  it("marks the value in each cell so a wide table can show the value alone, with the full words still in the text", async () => {
+    const r = await renderSettled(view, crafted());
+    const row = r.root.querySelectorAll("tbody tr").find((tr) => tr.textContent.includes(NAMES.ann)) as FakeElement;
+    const cells = row.querySelectorAll("td");
+    // Added, Last, Total, Sent and Received carry words around a value; the hints do not.
+    for (const i of [0, 1, 2, 3, 4]) expect(cells[i]?.querySelectorAll(".cell-extra").length, `cell ${i}`).toBeGreaterThan(0);
+    expect(cells[5]?.querySelectorAll(".cell-extra")).toHaveLength(0);
+    expect(cells[0]?.textContent).toBe(copy.addedCell("Feb 29, 2024"));
+    expect(cells[2]?.textContent).toBe(copy.totalCell(2));
+    expect(cells[2]?.querySelector(".cell-extra")?.textContent).toBe(" total");
   });
 
   it("announces the counts politely once, and without a name", async () => {
