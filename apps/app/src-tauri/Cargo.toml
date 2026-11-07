@@ -1,0 +1,41 @@
+[package]
+name = "snappy"
+version = "0.1.0"
+description = "Snappy: organize your own Snapchat data export, on your device."
+authors = ["Snappy contributors"]
+license = "Apache-2.0"
+edition = "2021"
+rust-version = "1.77"
+publish = false
+
+[lib]
+name = "snappy_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+# Deliberately small: the shell and the native file dialog (shown from Rust). No file-system, http,
+# shell, opener, updater or telemetry plugin. Do not add one. serde is only for the three commands.
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+
+# Windows only: switch off SmartScreen and autofill on the live WebView2 controller (see lib.rs).
+# Both are already dependencies of the system-webview layer; neither has any network code.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+windows-core = "0.62"
+
+[features]
+# Test builds only: keeps the WEBVIEW2_* environment variables (a debugging port for Playwright, a
+# scratch profile) that release builds remove. Never enabled by the release workflow.
+dev-hooks = []
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

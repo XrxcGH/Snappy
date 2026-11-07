@@ -1,0 +1,61 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Snappy",
+  "version": "0.1.0",
+  "identifier": "com.snappy.export",
+  "build": {
+    "frontendDist": "../frontend",
+    "beforeBuildCommand": "node scripts/build-frontend.mjs",
+    "beforeDevCommand": "node scripts/build-frontend.mjs"
+  },
+  "app": {
+    "withGlobalTauri": false,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Snappy",
+        "width": 1180,
+        "height": 820,
+        "minWidth": 420,
+        "minHeight": 560,
+        "resizable": true,
+        "dragDropEnabled": false,
+        "create": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,msEdgeUpdateNotifications,msOneAuthWAM --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-pings --disable-client-side-phishing-detection"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; font-src data:; img-src data:; connect-src 'none'; worker-src blob:; form-action 'none'; base-uri 'none'; frame-src 'none'; object-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "Snappy contributors",
+    "copyright": "Copyright 2026 Snappy contributors. Licensed under the Apache License 2.0.",
+    "license": "Apache-2.0",
+    "licenseFile": "../../../LICENSE",
+    "category": "Utility",
+    "shortDescription": "Organize your own Snapchat data export, on your device.",
+    "longDescription": "Snappy reads the Snapchat Download My Data export that you already have, on your own device. It keeps a friend ledger, a cleanup queue and a Memories rescue. It uses friend usernames and dates only, makes no network connections and needs no account access.",
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "English"
+        ],
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}
