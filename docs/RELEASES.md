@@ -8,7 +8,7 @@ Snappy is an app you install on your own computer or phone. It reads your Snapch
 
 Installers are published on the **Releases** page of the Snappy repository on GitHub, and nowhere else. Each release is built by a public GitHub Actions workflow from a version tag (for example `v0.2.0`) that points at a commit already on the `main` branch. The workflow builds every platform, signs what it can, writes a checksum for every file, and attaches them to a draft release. A maintainer tests the files, edits the notes, and publishes the release by hand.
 
-Snappy does not update itself and never checks for updates. To update, download the newer installer from the Releases page and run it. Export a sealed backup before you update, uninstall or switch devices, because the app's storage stays on one device and an uninstall can remove it.
+Snappy does not update itself and never checks for updates. To update, download the newer installer from the Releases page and run it. The app's storage stays on one device and an uninstall can remove it, and Snappy cannot export saved history, so keep your original Snapchat export: you can add it again.
 
 Each release's notes list the files that are attached (and say in bold when one is missing), say whether each one is signed, and say which platforms the maintainers tested by hand.
 
@@ -26,7 +26,7 @@ The status column says what has been done for each row. "Not yet built" means th
 
 There is no iOS app. There is no ARM build for Windows or Linux.
 
-The Android file name says how it was signed. `release-signed` means it was signed with the project's release key. `debug-signed` means it was signed with a throwaway key made during that build. A `debug-signed` build installs and runs, but Android will not install one build over another, so you have to uninstall first, which deletes the app's data. Export a sealed backup before you do.
+The Android file name says how it was signed. `release-signed` means it was signed with the project's release key. `debug-signed` means it was signed with a throwaway key made during that build. A `debug-signed` build installs and runs, but Android will not install one build over another, so you have to uninstall first, which deletes the app's data. Keep your original Snapchat export first, because you can add it again.
 
 ## Check your download
 
