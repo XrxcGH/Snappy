@@ -1,7 +1,7 @@
 /**
  * Layout audit for the built dashboard. It MEASURES the real rendered page (getBoundingClientRect,
  * computed styles, text ranges) instead of guessing, for every route, in light and dark, at widths
- * 320, 360, 390, 768, 1024 and 1280, and prints every violation. Exit code 1 if there is any.
+ * 320, 360, 390, 768, 1024 and 1280, and then the wide pass at 1440, 1600, 1920 and 2560 (1280 and up is the wide layout), and prints every violation. Exit code 1 if there is any.
  *
  * Everything is made from Snappy's built-in SYNTHETIC sample data ("Use sample data"). The page
  * is served on 127.0.0.1 only and the browser refuses any other network request.
@@ -13,7 +13,7 @@
  *   --out FILE        also write the report to FILE
  *   --port N          local port for the static server (default 4339)
  *   --routes a,b      only these routes (default: all, including the Tools hub and each tool, written tools/<id>)
- *   --widths a,b      only these widths (default 320,360,390,768,1024,1280)
+ *   --widths a,b      only these widths (default 320,360,390,768,1024,1280,1440,1600,1920,2560; 3440 for an ultra-wide window)
  *   --themes light    only this theme (default light,dark)
  *   --no-fresh        skip the "no export yet" pass (empty states)
  *   --quiet           print only the summary
@@ -77,6 +77,13 @@
  *   orange-scope           an orange color outside the Memories rescue area (orange is a secondary color: that area and
  *                          small illustration highlights only), or orange too close to the warning gold
  *   numerals               numeral style not decided for stat values (reported as info)
+ *   wide-shell             (1280 and up) the shell is centered with left and right margins within 2 px of each other, never wider than 100 rem,
+ *                          and the content area is the wide width (60 rem, 77 rem from 1600)
+ *   wide-sidebar           the sidebar sits beside the content, never over it, and stays sticky
+ *   wide-measure           running text, notices and fields wider than the 36 rem measure (plus 2 px)
+ *   wide-columns           cards that are siblings in one grid with different widths where their spans are alike
+ *   wide-orphan            a grid of cards whose last row holds one lone card that does not span the row
+ *   wide-empty-card        a card whose right third is empty (its content ends before the last third of its width)
  *
  * Playwright is not a dependency of this repository (see tools/mobile/ios-webkit.mjs).
  */
@@ -98,7 +105,9 @@ const TOOL_ROUTES = [
   "safety-checklist", "privacy-tuneup",
 ].map((id) => `tools/${id}`);
 const ALL_ROUTES = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", ...TOOL_ROUTES, "guide", "privacy", "settings"];
-const ALL_WIDTHS = [320, 360, 390, 768, 1024, 1280];
+const ALL_WIDTHS = [320, 360, 390, 768, 1024, 1280, 1440, 1600, 1920, 2560];
+/** From this width the wide layout applies (--bp-wide, 80rem); the checks named wide-* run here and above. */
+const WIDE_MIN = 1280;
 const THEMES = ["light", "dark"];
 /** Widths at and below this one are measured in a touch context (a phone). */
 const TOUCH_MAX = 430;
@@ -167,6 +176,8 @@ function measurePage(opts) {
   const vw = document.documentElement.clientWidth;
   const vh = window.innerHeight;
   const main = document.querySelector("main") || document.body;
+  /** From 1280 the wide layout applies (80rem, --bp-wide). */
+  const WIDE = width >= 1280;
 
   const norm = (s) => (s || "").replace(/\s+/g, " ").trim();
   const textOf = (el) => norm(el.innerText || el.textContent || el.getAttribute("aria-label") || el.getAttribute("title") || "").slice(0, 44);
@@ -335,6 +346,8 @@ function measurePage(opts) {
   const isStack = (kids) => kids.every((k, i) => i === 0 || R(k).top >= R(kids[i - 1]).bottom - 1);
   const BLOCK_SEL = "p, ul, ol, dl, table, pre, form, details, section, header, h1, h2, h3, h4, fieldset, .notice, .notice-group, .card, .step-card, .stats, .cards, .table-wrap, .code-wrap, .code, .banner, .empty, .actions, [role=note], [class*=meter], .view";
   const HEADING_SEL = "h1, h2, h3, h4";
+  /** Running text and the blocks that hold it: they keep the measure on a wide screen. */
+  const TEXT_BLOCK = "p, ul:not(.card):not(.hbars):not(.review-list):not(.rows):not(.mark-list), ol:not(.step-list), .notice, .tool-reads, .caption, .summary, [role=note]";
   const chrome = (el) => {
     const s = cs(el);
     const bg = toRGBA(s.backgroundColor);
@@ -648,11 +661,17 @@ function measurePage(opts) {
     const shrink = ((cstyle.display === "flex" || cstyle.display === "grid") && !/^(normal|stretch)$/.test(cstyle.alignItems) && cstyle.flexDirection !== "row") || (cstyle.display === "grid" && !/^(normal|stretch)$/.test(cstyle.justifyItems)) || cstyle.textAlign === "center";
     // right and left edges of the content blocks that stack in this column
     const blocks = kids.filter((k) => k.matches(BLOCK_SEL) && !k.matches(".actions, .sr-only"));
-    if (blocks.length >= 2 && !shrink) {
-      const rights = blocks.map((k) => R(k).right);
-      const lefts = blocks.map((k) => R(k).left);
+    // On a wide screen running text keeps the measure while tables, tiles, cards and code use the whole width, so the two
+    // kinds are compared among themselves; headings and headers take the width of what they head.
+    const groups = WIDE
+      ? [blocks.filter((k) => k.matches(TEXT_BLOCK)), blocks.filter((k) => !k.matches(TEXT_BLOCK) && !k.matches(HEADING_SEL + ", header, .page-header, .section-title, .page-title-row"))]
+      : [blocks];
+    for (const group of groups) {
+      if (group.length < 2 || shrink) continue;
+      const rights = group.map((k) => R(k).right);
+      const lefts = group.map((k) => R(k).left);
       if (Math.max(...rights) - Math.min(...rights) > 2 || Math.max(...lefts) - Math.min(...lefts) > 2) {
-        const list = blocks.map((k) => selOf(k) + " [" + textOf(k).slice(0, 16) + "] " + Math.round(R(k).left) + "-" + Math.round(R(k).right)).join("; ");
+        const list = group.map((k) => selOf(k) + " [" + textOf(k).slice(0, 16) + "] " + Math.round(R(k).left) + "-" + Math.round(R(k).right)).join("; ");
         add("block-edges", c, "sibling blocks do not share edges (left spread " + px(Math.max(...lefts) - Math.min(...lefts)) + ", right spread " + px(Math.max(...rights) - Math.min(...rights)) + "): " + list);
       }
     }
@@ -1211,6 +1230,92 @@ function measurePage(opts) {
     }
   }
 
+  /* ---- 16. the wide layout (1280 and up) ---- */
+  if (WIDE) {
+    const rem = rootPx;
+    const measure = 36 * rem + 2;
+    const layout = document.querySelector(".layout");
+    const content = document.querySelector(".content");
+    if (layout) {
+      const lr = R(layout);
+      const left = lr.left;
+      const right = vw - lr.right;
+      // the shell is centered: equal margins, and never wider than 100 rem (96 rem is the cap)
+      if (Math.abs(left - right) > 2) add("wide-shell", layout, "the shell is not centered: " + px(left) + " on the left and " + px(right) + " on the right");
+      if (lr.width > 100 * rem + 1) add("wide-shell", layout, "the shell is " + px(lr.width) + " wide, more than 100 rem");
+      const wantContent = (vw >= 100 * rem ? 77 : 60) * rem;
+      if (view && Math.abs(R(view).width - wantContent) > 2) add("wide-shell", view, "the content area is " + px(R(view).width) + " wide, expected " + px(wantContent) + " at this width");
+      for (const el of [document.querySelector(".site-header-inner"), document.querySelector(".site-footer-inner")]) {
+        if (el && Math.abs(R(el).left - left) > 2 && Math.abs(R(el).left - lr.left) > 2) add("wide-shell", el, "header or footer row starts at " + px(R(el).left) + " but the shell starts at " + px(left));
+      }
+    }
+    // the sidebar sits beside the content, never over it, and stays in view while the page scrolls
+    if (nav && content && vis(nav)) {
+      const nr = R(nav);
+      const cr = R(content);
+      if (nr.right > cr.left + 0.5) add("wide-sidebar", nav, "the sidebar ends at " + px(nr.right) + " but the content starts at " + px(cr.left) + ": they overlap");
+      if (cs(nav).position !== "sticky") add("wide-sidebar", nav, "the sidebar is " + cs(nav).position + ", not sticky");
+    }
+    // running text, notices and fields keep the 36 rem measure
+    const texts = [...view.querySelectorAll("p, li, dd, .notice, .tool-reads, input.input, select.input, .select-wrap")].concat([...document.querySelectorAll(".site-footer p")]);
+    for (const el of texts) {
+      if (!vis(el) || isSrOnly(el) || el.closest("table, .table-wrap, .tile, nav, pre, .t-log, .stat") || el.matches(".input-narrow") || (el.tagName === "LABEL" && el.matches(".check"))) continue;
+      if (el.matches("select.input") && el.closest(".select-wrap")) continue;
+      // rows of people (a name on the left, its dates on the right) and the notes of a grid are laid out, not running text; their words are checked as paragraphs
+      if (el.matches(".review-row, .reply-row, .step-card, .mark-item, .candidate, .guided-row") || (el.matches(".notice") && el.closest(".stack, .notice-group"))) continue;
+      if (el.matches("p, li, dd") && [...el.children].some((c) => c.matches("p, ul, ol, div"))) continue;
+      const w = R(el).width;
+      if (w > measure) add("wide-measure", el, "is " + px(w) + " wide (" + (Math.round((w / rem) * 10) / 10) + " rem); text blocks, notices and fields keep the 36 rem measure");
+    }
+    // cards that are siblings in one grid: equal widths for equal spans; no row of the grid ends with one lone card
+    const CARD = ".card, .step-card, .tile, .candidate, .guided-row, .fact, .license";
+    const spans = (el) => cs(el).gridColumnStart + "/" + cs(el).gridColumnEnd;
+    for (const g of [view, ...view.querySelectorAll("*")]) {
+      if (!vis(g) || g.closest("svg")) continue;
+      const gs = cs(g);
+      const kids = [...g.children].filter((c) => vis(c) && c.matches(CARD));
+      if (kids.length < 2) continue;
+      if (gs.display === "grid" && gs.gridTemplateColumns.split(" ").length > 1) {
+        const bySpan = new Map();
+        for (const k of kids) (bySpan.get(spans(k)) || bySpan.set(spans(k), []).get(spans(k))).push(k);
+        for (const [span, list] of bySpan) {
+          const ws = list.map((k) => R(k).width);
+          if (Math.max(...ws) - Math.min(...ws) > 1.5) add("wide-columns", list[0], "cards with the same span (" + span + ") differ in width: " + ws.map(px).join(", "));
+        }
+        const rows = [];
+        for (const k of kids.sort((a, b) => R(a).top - R(b).top || R(a).left - R(b).left)) {
+          const row = rows.find((r2) => Math.abs(r2.top - R(k).top) < 4);
+          if (row) row.items.push(k); else rows.push({ top: R(k).top, items: [k] });
+        }
+        const last = rows[rows.length - 1];
+        // a numbered run of steps flows down its columns (1, 2, 3 | 4, 5), so its second column may be shorter by design
+        if (!g.matches("ol.step-list") && rows.length >= 2 && last.items.length === 1 && R(last.items[0]).width < R(g).width * 0.9) add("wide-orphan", last.items[0], "the last row of a grid of " + kids.length + " cards holds one lone card (" + px(R(last.items[0]).width) + " of " + px(R(g).width) + "); let it span the row or share the row");
+      }
+    }
+    // the two columns of a balanced flow, and a numbered run of steps, are equal
+    for (const c of view.querySelectorAll(".cols, ol.step-list")) {
+      if (!vis(c)) continue;
+      const kids = [...c.children].filter((k) => vis(k));
+      const ws = kids.map((k) => R(k).width);
+      if (ws.length > 1 && Math.max(...ws) - Math.min(...ws) > 1.5) add("wide-columns", c, "the blocks of one column flow differ in width: " + ws.map(px).join(", "));
+      const lefts = [...new Set(kids.map((k) => Math.round(R(k).left)))];
+      if (lefts.length > 2) add("wide-columns", c, "a column flow has " + lefts.length + " columns, expected 2");
+    }
+    // no card is empty on its right third: its content reaches into the last third of its width
+    for (const card of view.querySelectorAll(".card, .step-card, .empty, .tool-reads, .confirm")) {
+      if (!vis(card) || card.closest(".tile, .candidate, .guided-row, table") || card.matches(".tile, .candidate, .guided-row, .fact, .step-card-compact")) continue;
+      const cr = R(card);
+      const st = cs(card);
+      const innerRight = cr.right - parseFloat(st.paddingRight) - parseFloat(st.borderRightWidth);
+      const innerLeft = cr.left + parseFloat(st.paddingLeft) + parseFloat(st.borderLeftWidth);
+      let reach = innerLeft;
+      for (const l of lineRects(card)) reach = Math.max(reach, l.right);
+      for (const e of card.querySelectorAll("svg, button, a.btn, input, select, .dropzone, .pill, .actions, .code, .table-wrap, .meter, .progress")) if (vis(e) && !e.closest(".sr-only")) reach = Math.max(reach, R(e).right);
+      const free = (innerRight - reach) / Math.max(1, innerRight - innerLeft);
+      if (free > 0.34) add("wide-empty-card", card, "the right " + Math.round(free * 100) + "% of the card (" + px(innerRight - reach) + " of " + px(innerRight - innerLeft) + ") is empty");
+    }
+  }
+
   /* ---- 14. inline probes for the four notice kinds (clone one real notice) ---- */
   if (opts.probeNotices) {
     const template = main.querySelector(".notice");
@@ -1429,8 +1534,11 @@ async function confirmPass(page, { theme, width, touch, results }) {
       for (const b of [danger, cancel]) { const q = R(b); if (q.right > r.right - 1 || q.left < r.left + 1) out.push({ sel: "button", detail: "a confirmation button runs past the panel edge" }); }
     }
     if (cancel && document.activeElement !== cancel) out.push({ sel: "button", detail: "focus is not on Cancel (the safe choice) after the confirmation opens; it is on " + (document.activeElement ? document.activeElement.tagName.toLowerCase() + " " + (document.activeElement.innerText || "").trim().slice(0, 20) : "nothing") });
-    if (view) {
-      const vr = R(view);
+    // On a wide screen the confirmation lives in one column of the page (a balanced two-column flow), so it shares that column's edges.
+    const column = box.closest(".cols > *");
+    const frame = column && document.documentElement.clientWidth >= 1280 ? column : view;
+    if (frame) {
+      const vr = R(frame);
       if (Math.abs(r.left - vr.left) > 2 || Math.abs(r.right - vr.right) > 2) out.push({ sel: ".confirm", detail: "the panel spans " + px(r.left) + " to " + px(r.right) + " but the content column spans " + px(vr.left) + " to " + px(vr.right) });
     }
     if (r.right > vw + 1 || r.left < -1) out.push({ sel: ".confirm", detail: "the panel runs past the window edge" });
@@ -1702,7 +1810,7 @@ async function main() {
         }
         await context.close();
         if (opts.fresh) {
-          const fw = k.widths.filter((w) => w === 390 || w === 1280 || (k.touch ? false : w === k.widths[0]));
+          const fw = k.widths.filter((w) => w === 390 || w === 1280 || w === 1600 || w === 1920 || w === 2560 || (k.touch ? false : w === k.widths[0]));
           if (fw.length) {
             const f = await openPage(browser, url, k.ctx, theme, { sample: false });
             for (const width of fw) {
