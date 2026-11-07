@@ -1,6 +1,6 @@
 /**
  * Source gates for the CLI, in the spirit of core's boundary test: only the Memories downloader
- * may touch the network, only the Io adapter may read process state or the clock, nothing may
+ * may touch the network, only the Io adapter (node-io.ts) may read process state or the clock, nothing may
  * log directly, and no off-brand color or hard-coded token value may creep in.
  */
 import { readFileSync, readdirSync } from "node:fs";
@@ -45,12 +45,12 @@ describe("source scan", () => {
     expect(offenders(files, /\bconsole\./)).toEqual([]);
   });
 
-  it("reads the clock only in the Io adapter", () => {
-    expect(offenders(without(["io.ts"]), /Date\.now\(|new Date\(\)|performance\.now\(|process\.hrtime/)).toEqual([]);
+  it("reads the clock only in the Io adapter (node-io.ts)", () => {
+    expect(offenders(without(["node-io.ts"]), /Date\.now\(|new Date\(\)|performance\.now\(|process\.hrtime/)).toEqual([]);
   });
 
-  it("touches process streams and the environment only in io.ts and main.ts", () => {
-    expect(offenders(without(["io.ts", "main.ts"]), /process\.(stdout|stderr|stdin|env|argv|exit)\b/)).toEqual([]);
+  it("touches process streams and the environment only in node-io.ts and main.ts", () => {
+    expect(offenders(without(["node-io.ts", "main.ts"]), /process\.(stdout|stderr|stdin|env|argv|exit)\b/)).toEqual([]);
   });
 
   it("accepts the passphrase only through the environment, a file or a prompt, never an argument", () => {

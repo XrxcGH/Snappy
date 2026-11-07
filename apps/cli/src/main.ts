@@ -15,7 +15,7 @@ import { keepCommand } from "./commands/keep.ts";
 import { ledgerCommand } from "./commands/ledger.ts";
 import { memoriesCommand } from "./commands/memories.ts";
 import { CliError } from "./errors.ts";
-import { createRealIo } from "./io.ts";
+import { createRealIo } from "./node-io.ts";
 import type { Io } from "./io.ts";
 
 type Command = (args: string[], io: Io) => Promise<number>;

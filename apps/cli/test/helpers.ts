@@ -2,6 +2,7 @@
  * Test helpers: an injected Io that captures output, temp folders, and synthetic exports.
  * Everything here uses SYNTHETIC data only.
  */
+import { randomUUID } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,6 +10,8 @@ import { afterAll } from "vitest";
 import { CliError } from "../src/errors.ts";
 import type { Io } from "../src/io.ts";
 import type { Transport } from "../src/memories-download.ts";
+import { createNodePorts } from "../src/node-io.ts";
+import type { FsPort, Limits } from "../src/ports.ts";
 import { runCli } from "../src/main.ts";
 import { syntheticExportParts, syntheticExportZip } from "@snappy-export/core";
 import type { SyntheticExportOptions } from "@snappy-export/core";
@@ -34,6 +37,12 @@ export interface TestIoOptions {
   now?: () => number;
   transport?: Transport;
   sleep?: (ms: number) => Promise<void>;
+  /** Replaces the real file system, for tests of other adapters. */
+  fs?: FsPort;
+  limits?: Limits;
+  /** Defaults to true, like the command line. */
+  network?: boolean;
+  signal?: AbortSignal;
 }
 
 export function makeIo(opts: TestIoOptions = {}): TestIo {
@@ -50,6 +59,12 @@ export function makeIo(opts: TestIoOptions = {}): TestIo {
     now: opts.now ?? (() => NOW),
     homedir: () => opts.home ?? join(tmpdir(), "snappy-cli-no-home"),
     tmpdir: () => tmpdir(),
+    randomId: () => randomUUID(),
+    ...createNodePorts(),
+    ...(opts.fs === undefined ? {} : { fs: opts.fs }),
+    limits: opts.limits ?? { maxBundledBytes: 512 * 1024 * 1024 },
+    capabilities: { network: opts.network ?? true },
+    signal: opts.signal,
     askSecret: async (question) => {
       asked.push(question);
       const next = answers.shift();
