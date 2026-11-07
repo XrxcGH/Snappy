@@ -9,7 +9,7 @@ Snappy is the dashboard from this repository in its own window: the cleanup queu
 This is an early test build, version `0.1.0-beta.1`. Expect rough edges, and please report them.
 
 - It is **unsigned**. Windows warns you before it runs the installer (see below).
-- It **does not update itself**. To get a newer beta, download the newer installer and run it. Export a sealed backup first if you saved a history.
+- It **does not update itself**. To get a newer beta, download the newer installer and run it. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
 - It has **no telemetry** and no account. Snappy itself sends nothing over a network.
 - It installs **for your user only**. It does not need administrator rights.
 - It is the 64-bit Windows build only. It needs Windows 10 or 11 and Microsoft’s WebView2 runtime, which Windows 11 includes. If the runtime is missing, the installer downloads it from Microsoft.
@@ -42,7 +42,7 @@ Snappy writes nothing next to your export and nothing in your Documents folder. 
 
 ## Remove Snappy and everything it stored
 
-1. If you saved a history and want to keep it, export a sealed backup first. Then, in Snappy, open Settings and choose **Delete data**.
+1. The beta cannot export or back up a saved history, and deleting it cannot be undone. Keep your original Snapchat export, which you can add again. Then, in Snappy, open Settings and choose **Delete data**. The tick box to delete application data in the uninstaller (step 4) removes your saved history for good too.
 2. Close Snappy.
 3. Open Windows Settings, then Apps, then Installed apps, find **Snappy** and choose **Uninstall**. You can also run `uninstall.exe` from the install folder. This removes the program, both shortcuts and the Apps and features entry. A silent uninstall (the `/S` option) did exactly that in the maintainers’ test, and it left the data in step 5 in place.
 4. The uninstaller that Tauri builds has a tick box to delete the application data. The maintainers could not drive that window in their test, so it is **not verified** that the box removes the folder in step 5. Check it yourself.
@@ -64,7 +64,7 @@ Never send your export, or any file from it, to anyone, including the people who
 ## What to try first
 
 1. Open **Start**. Choose **Use sample data** to look around with made-up friends. Nothing about the sample is saved.
-2. Choose **Add export** and pick every ZIP part of your export at once. The Export guide page says what to select when you request one.
+2. On Start, choose **Choose ZIP files** (or drop the ZIP files on the page) and pick every ZIP part of your export at once. The Export guide page says what to select when you request one.
 3. Open **Overview** and read the export health notes before the results.
 4. Open **Tools**. Pick one or two, such as the export check, and read what each says it reads.
 5. On the **Export guide** page, press **Run** on `demo --run`, then choose your export and press **Run** on `inspect`. Read the output before you share any of it.

@@ -32,7 +32,7 @@ Request your data in Snapchat under Settings, then My Data. Select JSON files an
 
 ### 3. Use the app
 
-Open Snappy and choose Add export on the Start page, or choose “Use sample data” to look around with made-up friends first. The Tools page lists the helpers: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: saved with your history if you turned saving on, and kept until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
+Open Snappy and choose Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the helpers: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: saved with your history if you turned saving on, and kept until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
 
 ### 4. Use the command line
 
