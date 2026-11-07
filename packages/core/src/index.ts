@@ -27,6 +27,7 @@ export {
   ZipEntryError,
 } from "./export/zip-reader.ts";
 export type { RandomAccessReader, ZipEntryInfo, ZipListing, ZipEntryErrorCode } from "./export/zip-reader.ts";
+export { crc32 } from "./export/crc32.ts";
 
 // streaming, content-blind JSON projection (bounded memory; message text is never decoded)
 export { inflateSource, projectConversations, projectShapes, projectSections, projectArrayRecords, JsonStreamError } from "./export/json-stream.ts";
@@ -62,6 +63,8 @@ export {
   LedgerFormatError,
 } from "./ledger/ledger.ts";
 export { sealLedger, openLedger, sealText, openText, SealError } from "./ledger/seal.ts";
+export { CHECKED_OFF_ID, KEEP_LIST_ID, hasSavedLists, mergeSaved, packSaved, sortedUnique, unpackSaved } from "./ledger/saved.ts";
+export type { Saved } from "./ledger/saved.ts";
 export { findGhosts } from "./ledger/detect-ghost.ts";
 export { findOneWay } from "./ledger/detect-oneway.ts";
 export { findDormant } from "./ledger/detect-dormant.ts";
