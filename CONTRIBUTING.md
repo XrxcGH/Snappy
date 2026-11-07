@@ -44,6 +44,8 @@ The dashboard runs the command line's commands inside the page: every command sh
 - **Same output both ways.** `terminal-parity.test.ts` runs the commands through the helper and through the command line on the same synthetic export and requires the same text and exit codes. Extend it when you add a command.
 - **Passphrases.** A passphrase is asked in a masked field outside the output, passed to the command once, and never echoed, logged or stored. The tests run a distinctive canary phrase through the whole path.
 - **Output is text.** Command output is drawn with `h()` as text in spans with classes from a closed list (`terminal/ansi.ts`). Never use `innerHTML`, never set a style attribute: the page's policy forbids both.
+- **Lock and Delete data clear the commands too.** The command blocks live outside the dashboard's store. `createActions` takes `onWipe`, which `main.ts` points at `session.reset()`: it stops a Run, empties every transcript and saved file, and drops the picked export files. A new place that holds results on the page needs to be cleared there.
+- **Stop is a stop.** A command that reads the export calls `throwIfStopped(io)` (`apps/cli/src/inputs.ts`) after each load step, because cut-off reads look like damaged files to the parser. `worker.test.ts` stops a read part way and fails on any false diagnosis.
 - **Saved history is one file.** The dashboard and the command line read and write the same sealed file (`packages/core/src/ledger/saved.ts`). Change that format in core, and both follow.
 
 ## Making a change
