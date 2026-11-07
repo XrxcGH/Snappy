@@ -465,13 +465,13 @@ export const privacy = {
   sealHeading: "Saved data",
   sealBody: [
     "By default Snappy keeps your results in memory only. Closing the tab clears them.",
-    "With a passphrase, Snappy saves your friend history and keep list in this browser, encrypted.",
+    "With a passphrase, Snappy saves your friend history, keep list, and checklist marks in this browser, encrypted.",
     "Snappy never stores your passphrase. If you forget it, the saved data cannot be recovered.",
     "A passphrase typed into a command here is kept in memory only until the page closes.",
   ],
   sealTech: "The passphrase becomes a key with PBKDF2 (600,000 rounds). The data is sealed with AES-256-GCM.",
   keepHeading: "What the saved data holds",
-  keepBody: "Usernames, dates, your keep list, and your guided-removal checkmarks. Nothing else from your export.",
+  keepBody: "Usernames, dates, your keep list, your guided-removal checkmarks, and your checklist marks. Nothing else from your export.",
   themeNote,
 };
 
@@ -502,7 +502,7 @@ export const settings = {
   deleteBody: "Removes the sealed history and clears the screen. This cannot be undone.",
   deleteButton: "Delete data",
   deleteConfirmTitle: "Delete saved data?",
-  deleteConfirmBody: "This deletes your history, keep list, and checkmarks, and cannot be undone. Your export files are not touched.",
+  deleteConfirmBody: "This deletes your history, keep list, checkmarks, and checklist marks, and cannot be undone. Your export files are not touched.",
   deleteConfirm: "Delete data",
   deleteCancel: "Cancel",
   deleted: "Saved data deleted.",

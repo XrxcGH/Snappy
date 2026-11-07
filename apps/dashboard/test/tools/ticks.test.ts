@@ -6,6 +6,7 @@
 import { openLedger, syntheticExportZip } from "@snappy-export/core";
 import { describe, expect, it } from "vitest";
 import { createActions } from "../../src/actions.ts";
+import { privacy, settings } from "../../src/copy.ts";
 import { unpackSaved } from "../../src/persist-codec.ts";
 import { initialState } from "../../src/reducer.ts";
 import { createStore } from "../../src/store.ts";
@@ -114,5 +115,13 @@ describe("ticks with saving on", () => {
     expect(await actions.deleteAll()).toBe(true);
     expect(store.get().real.ticks).toEqual([]);
     expect(vault.blob).toBeNull();
+  });
+});
+
+describe("what the copy says the sealed history holds", () => {
+  it("names the checklist marks wherever it lists what is saved or deleted", () => {
+    expect(privacy.sealBody.join(" ")).toMatch(/checklist marks/);
+    expect(privacy.keepBody).toMatch(/checklist marks/);
+    expect(settings.deleteConfirmBody).toMatch(/checklist marks/);
   });
 });
