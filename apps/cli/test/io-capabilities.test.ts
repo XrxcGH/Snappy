@@ -5,6 +5,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { CliError, fsError } from "../src/errors.ts";
 import type { FsPort } from "../src/ports.ts";
 import { makeIo, run, tempDir, writeSyntheticParts } from "./helpers.ts";
 
@@ -32,6 +33,14 @@ describe("a size limit set by the host", () => {
     const result = await run(["memories", dir, "--out", out, "--no-color"], makeIo({ limits: { maxBundledBytes: 1 } }));
     expect(result.code).toBe(3);
     expect(result.out.replace(/\s+/g, " ")).toContain("over the 1 B limit");
+  });
+});
+
+describe("a stop request inside a file call", () => {
+  it("is not turned into a file error by the code that wraps file calls", () => {
+    const stopped = new CliError("canceled", "Stopped. Nothing was changed.", 130);
+    expect(fsError(stopped, "open", "/in/a.zip")).toBe(stopped);
+    expect(fsError({ code: "ENOENT" }, "open", "/in/a.zip").code).toBe("not-found");
   });
 });
 

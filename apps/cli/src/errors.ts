@@ -17,6 +17,8 @@ export class CliError extends Error {
 
 /** Translate a filesystem failure into a CliError without echoing the system message. */
 export function fsError(e: unknown, action: string, path: string): CliError {
+  // A calm error that is already one (a stop request, say) passes through unchanged.
+  if (e instanceof CliError) return e;
   const code = typeof e === "object" && e !== null && "code" in e ? String((e as { code: unknown }).code) : "";
   switch (code) {
     case "ENOENT":
