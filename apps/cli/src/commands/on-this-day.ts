@@ -192,13 +192,16 @@ function yearsLines(term: Term, r: insights.memoriesOnThisDay.HeatmapResult): st
       if (n > (y.months[best] ?? 0)) best = i;
     });
     const top = y.months[best] ?? 0;
-    return [String(y.year), formatCount(y.total), top > 0 ? `${MONTHS[best]}, ${formatCount(top)}` : "-"];
+    return [String(y.year), formatCount(y.total), top > 0 ? (MONTHS[best] ?? "-") : "-", top > 0 ? formatCount(top) : "-"];
   });
   const { shown, more } = capped(rows, "year", "years");
   return [
     `${term.violet(mem(r.total))} in ${plural(r.years.length, "year")}.`,
     "",
-    ...term.table([{ header: "Year" }, { header: "Memories", align: "right" }, { header: "Busiest month", align: "right" }], shown),
+    ...term.table(
+      [{ header: "Year" }, { header: "Memories", align: "right" }, { header: "Busiest month" }, { header: "In that month", align: "right" }],
+      shown,
+    ),
     ...more,
   ];
 }

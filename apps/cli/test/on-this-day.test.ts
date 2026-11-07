@@ -91,6 +91,9 @@ describe("the command", () => {
     expect(out).toContain("Memories by year");
     expect(out).toContain("400 Memories in 5 years.");
     expect(out).toContain("Busiest month");
+    expect(out).toContain("In that month");
+    // A month and its count are separate columns, so no row reads like "Oct, 20" (a day of the month).
+    expect(out).not.toMatch(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec), \d/);
     expectBrandSafe(out, "by-year");
   });
 
