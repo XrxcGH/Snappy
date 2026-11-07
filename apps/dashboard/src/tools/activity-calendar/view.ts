@@ -1,5 +1,6 @@
 import { insights } from "@snappy-export/core";
-import { dataTable } from "../../components/dataTable.ts";
+import { cellAround, dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section, subsection } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
@@ -79,6 +80,25 @@ function barList(rows: readonly { name: string; count: number }[]): HTMLElement 
   return h("ul", { class: "card hbars" }, ...rows.map((r) => barRow(r.name, r.count, max)));
 }
 
+/**
+ * A grid wider than its frame starts scrolled to the end, so the latest weeks show first (the year's start is one drag away), and a line says
+ * it scrolls. Once the frame has a width the first measure sets the scroll, then watching stops; a later resize only updates the line.
+ */
+function showLatestWeeks(scroller: HTMLElement, hint: HTMLElement): void {
+  if (typeof ResizeObserver === "undefined") return;
+  let placed = false;
+  new ResizeObserver(() => {
+    if (scroller.clientWidth === 0) return;
+    const wider = scroller.scrollWidth > scroller.clientWidth + 1;
+    if (!placed) {
+      placed = true;
+      scroller.scrollLeft = scroller.scrollWidth;
+    }
+    if (wider) hint.removeAttribute("hidden");
+    else hint.setAttribute("hidden", "");
+  }).observe(scroller);
+}
+
 /** The year's days as a grid of squares, weeks in columns, with month names above and a legend below. Decorative: the tables hold the same counts. */
 function heatGrid(v: YearView, used: number): HTMLElement {
   const { calendar } = v;
@@ -110,13 +130,10 @@ function heatGrid(v: YearView, used: number): HTMLElement {
     ...[0, 1, 2, 3, 4].map((level) => h("span", { class: `cal-cell lvl-${level}` })),
     h("span", {}, copy.legendMore),
   );
-  return h(
-    "div",
-    { class: "cal-wrap" },
-    h("div", { class: "cal-scroll", role: "img", tabindex: "0", "aria-label": copy.gridFor(calendar.year, used, calendar.activeDays) }, board),
-    legend,
-    h("p", { class: "caption" }, copy.gridNote),
-  );
+  const scroller = h("div", { class: "cal-scroll", role: "img", tabindex: "0", "aria-label": copy.gridFor(calendar.year, used, calendar.activeDays) }, board);
+  const scrollHint = h("p", { class: "caption", hidden: true }, copy.scrollNote);
+  showLatestWeeks(scroller, scrollHint);
+  return h("div", { class: "cal-wrap" }, scroller, legend, h("p", { class: "caption" }, copy.gridNote), scrollHint);
 }
 
 function yearSection(v: CalendarView): HTMLElement | null {
@@ -149,8 +166,8 @@ function monthsSection(v: CalendarView): HTMLElement | null {
   );
 }
 
-function runRow(name: string, run: Run): string[] {
-  return run === null ? [name, copy.unitNoRun, copy.noValue, copy.noValue] : [name, copy.unitDays(run.days), copy.unitFrom(dayText(run.start)), copy.unitTo(dayText(run.end))];
+function runRow(name: string, run: Run): TableCell[] {
+  return run === null ? [name, copy.unitNoRun, copy.noValue, copy.noValue] : [name, copy.unitDays(run.days), cellAround(copy.unitFrom(dayText(run.start)), dayText(run.start)), cellAround(copy.unitTo(dayText(run.end)), dayText(run.end))];
 }
 
 /** A run table under its own small heading, so the all-time table and the year's can be told apart. */
@@ -178,8 +195,13 @@ function kindsSection(v: CalendarView): HTMLElement {
   const showYear = cal !== undefined && cal.total > 0;
   const headers = [copy.kindHeader, copy.allTimeHeader, copy.shareHeader, ...(showYear ? [copy.yearColumnHeader(cal.year)] : [])];
   const rows = insights.activityCalendar.KIND_ORDER.map((kind) => {
-    const row = [copy.kindNames[kind], copy.unitCounted(formatCount(mix[kind])), copy.unitOfTotal(formatPercent(mix.total > 0 ? mix[kind] / mix.total : 0))];
-    if (showYear) row.push(copy.unitInYear(cal.year, formatCount((cal.mix as Mix)[kind])));
+    const count = formatCount(mix[kind]);
+    const share = formatPercent(mix.total > 0 ? mix[kind] / mix.total : 0);
+    const row: TableCell[] = [copy.kindNames[kind], cellAround(copy.unitCounted(count), count), cellAround(copy.unitOfTotal(share), share)];
+    if (showYear) {
+      const inYear = formatCount((cal.mix as Mix)[kind]);
+      row.push(cellAround(copy.unitInYear(cal.year, inYear), inYear));
+    }
     return row;
   });
   return section(copy.kindsHeading, dataTable(copy.kindsCaption, headers, rows), h("p", { class: "caption" }, copy.otherNote));
@@ -189,7 +211,11 @@ function kindsByYearSection(v: CalendarView): HTMLElement | null {
   if (v.yearsShown.length === 0) return null;
   const kinds = insights.activityCalendar.KIND_ORDER;
   const headers = [copy.yearHeader, ...kinds.map((k) => copy.kindNames[k]), copy.totalHeader];
-  const rows = v.yearsShown.map((m) => [String(m.year), ...kinds.map((k) => copy.unitKindCount(formatCount(m[k]), copy.kindNames[k].toLowerCase())), copy.unitInAll(formatCount(m.total))]);
+  const rows = v.yearsShown.map((m): TableCell[] => [
+    String(m.year),
+    ...kinds.map((k) => cellAround(copy.unitKindCount(formatCount(m[k]), copy.kindNames[k].toLowerCase()), formatCount(m[k]))),
+    cellAround(copy.unitInAll(formatCount(m.total)), formatCount(m.total)),
+  ]);
   return section(
     copy.kindsByYearHeading,
     dataTable(copy.kindsByYearCaption, headers, rows),

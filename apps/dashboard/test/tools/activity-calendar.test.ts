@@ -514,3 +514,45 @@ describe("the copy", () => {
     expect(copy.gridFor(2026, 40, 4)).toBe("Daily activity in 2026: 40 chats and Snaps on 4 days. The tables below hold the same counts.");
   });
 });
+
+describe("a grid wider than its frame", () => {
+  it("starts scrolled to the latest weeks and says it scrolls, and says nothing when it fits", async () => {
+    const watchers: (() => void)[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(cb: () => void) {
+          watchers.push(cb);
+        }
+        observe(): void {}
+        disconnect(): void {}
+      },
+    );
+    try {
+      const r = await renderSettled(view, withChats(many(10, MON_MAR_2, "TEXT", DAY)));
+      const scroll = r.root.querySelector(".cal-scroll") as FakeElement & { scrollLeft?: number };
+      const hint = r.root.querySelectorAll("p.caption").find((p) => p.textContent === copy.scrollNote) as FakeElement;
+      expect(hint.hasAttribute("hidden")).toBe(true);
+      const measure = (scrollWidth: number, clientWidth: number): void => {
+        Object.defineProperty(scroll, "scrollWidth", { value: scrollWidth, configurable: true });
+        Object.defineProperty(scroll, "clientWidth", { value: clientWidth, configurable: true });
+        for (const cb of watchers) cb();
+      };
+      // Not laid out yet: nothing happens.
+      measure(890, 0);
+      expect(scroll.scrollLeft ?? 0).toBe(0);
+      expect(hint.hasAttribute("hidden")).toBe(true);
+      measure(890, 574);
+      expect(scroll.scrollLeft).toBe(890);
+      expect(hint.hasAttribute("hidden")).toBe(false);
+      // The person scrolls back to January; a later resize does not pull the grid away again.
+      scroll.scrollLeft = 0;
+      measure(890, 560);
+      expect(scroll.scrollLeft).toBe(0);
+      measure(574, 574);
+      expect(hint.hasAttribute("hidden")).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
