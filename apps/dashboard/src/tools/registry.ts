@@ -11,6 +11,7 @@ import { descriptor as exportCheck } from "./export-check/index.ts";
 import { descriptor as exportReminder } from "./export-reminder/index.ts";
 import { descriptor as friendCountHistory } from "./friend-count-history/index.ts";
 import { descriptor as friendsBackup } from "./friends-backup/index.ts";
+import { descriptor as friendsTable } from "./friends-table/index.ts";
 import { descriptor as habits } from "./habits/index.ts";
 import { descriptor as lookalikeUsernames } from "./lookalike-usernames/index.ts";
 import { descriptor as memoriesOnThisDay } from "./memories-on-this-day/index.ts";
@@ -31,6 +32,7 @@ export const TOOLS: readonly ToolDescriptor[] = [
   sinceLastExport,
   yearInReview,
   friendsBackup,
+  friendsTable,
   friendCountHistory,
   closestFading,
   anniversaries,

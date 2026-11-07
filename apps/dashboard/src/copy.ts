@@ -574,6 +574,7 @@ export const terminal = {
     blocked: "Review blocked and ignored",
     lookalikes: "Find lookalike usernames",
     "friend-count": "Chart your friend count",
+    friends: "Make a friends table",
     "rescue-manifest": "Make a rescue file list",
     privacy: "Show the privacy checklist",
     remind: "Preview an export reminder",

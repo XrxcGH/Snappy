@@ -32,6 +32,7 @@ export type CommandId =
   | "blocked"
   | "lookalikes"
   | "friend-count"
+  | "friends"
   | "rescue-manifest"
   | "privacy"
   | "remind"
@@ -112,6 +113,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   lookalikes: entry("lookalikes", ["lookalikes", exportSlot()]),
   // --no-save keeps it from opening the saved history, so it needs no passphrase.
   "friend-count": entry("friend-count", ["friend-count", exportSlot(), "--no-save"]),
+  friends: entry("friends", ["friends", exportSlot()]),
   "rescue-manifest": entry("rescue-manifest", ["rescue", exportSlot()]),
   privacy: entry("privacy", ["privacy"]),
   remind: entry("remind", ["remind"]),

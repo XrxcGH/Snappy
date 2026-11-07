@@ -1,0 +1,6 @@
+/* Friends table: each cell stays on one line, so a narrow page scrolls the table sideways instead of crushing a date over four lines. */
+.tool-friends-table .table thead th, .tool-friends-table .table td { white-space: nowrap; }
+/* The table scrolls inside its frame: the grids around it must let it be narrower than its cells. */
+.tool-friends-table .paged, .tool-friends-table .friends-table-host { min-width: 0; }
+/* A long username wraps inside its row instead of widening the table on a phone. */
+.tool-friends-table .table tbody th code { overflow-wrap: anywhere; }
