@@ -33,6 +33,19 @@ The layout:
 - `brand/` and `docs/BRAND.md`: logo, tokens and the writing rules.
 - `docs/`: the brand guide and the export guide.
 
+## The command runner
+
+The dashboard runs the command line's commands inside the page: every command shown in the app has a Copy button and a Run button. Run starts a Web Worker (a helper), gives the command a virtual file system and no network, and draws the output in a panel. A few rules keep that safe and keep the two tools alike.
+
+- **Ports, not Node.** Nothing the commands import may reach for `node:` modules, `process` or `Buffer`. Files, paths and the saved-history lock come through `io.fs`, `io.path` and `io.lock` (`apps/cli/src/ports.ts`). `node-ports.ts`, `node-io.ts` and `main.ts` are the only Node files. `apps/cli/test/portable.test.ts` walks the imports from `cli.ts` and fails on a slip. The one exception is `memories-download.ts`, which the dashboard build replaces with a stub that can only refuse.
+- **No network in the app.** `--download` and `--concurrency` are refused, in the page and again in the helper (`apps/dashboard/src/terminal/policy.ts`). The page's security policy keeps `connect-src 'none'`.
+- **One command catalog.** Every command the app shows is an entry in `apps/dashboard/src/terminal/commands.ts`: its words are written in code, never parsed from text. A new command needs an entry, a title in `copy.ts`, and a line in the catalog test that checks its flags against the command line's own option table.
+- **Every command is a command block.** Use `commandBlock` from `components/commandBlock.ts`; never write a `<pre>` with a command by hand. `command-blocks.test.ts` renders every page and fails when a command has no Copy and Run, or is not in the catalog.
+- **Same output both ways.** `terminal-parity.test.ts` runs the commands through the helper and through the command line on the same synthetic export and requires the same text and exit codes. Extend it when you add a command.
+- **Passphrases.** A passphrase is asked in a masked field outside the output, passed to the command once, and never echoed, logged or stored. The tests run a distinctive canary phrase through the whole path.
+- **Output is text.** Command output is drawn with `h()` as text in spans with classes from a closed list (`terminal/ansi.ts`). Never use `innerHTML`, never set a style attribute: the page's policy forbids both.
+- **Saved history is one file.** The dashboard and the command line read and write the same sealed file (`packages/core/src/ledger/saved.ts`). Change that format in core, and both follow.
+
 ## Making a change
 
 - Add tests for what you add. Privacy tests use "canary" strings that must never appear in any output; extend them when you add an output.

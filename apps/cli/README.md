@@ -55,6 +55,12 @@ An older command line kept the keep list in a second file, `ledger.allowlist.sea
 
 The passphrase comes from `--passphrase-file <path>`, then the `SNAPPY_PASSPHRASE` environment variable, then a hidden prompt (asked twice when the ledger is new). It is never accepted as an argument and never written anywhere. `analyze --no-save` neither reads nor writes the ledger and asks for nothing.
 
+## Running the commands in the dashboard
+
+The dashboard runs these same commands in the page: each command it shows has Copy and Run buttons, and Run starts a Web Worker with a virtual file system (`/in` for the files you pick, `/out` for saved files, `/tmp`, and `/app` for the saved history). There is no server, no child process and no network. `memories --download` and `--concurrency` are refused there, and a command that writes asks first.
+
+To make that possible the commands do not import Node. Everything they touch comes through the `Io` object: `io.fs`, `io.path` and `io.lock` (types in `src/ports.ts`), a random id, a size limit and a stop signal. `src/cli.ts` is the portable entry (`runCli(argv, io, { version })`); `src/main.ts`, `src/node-io.ts` and `src/node-ports.ts` are the Node side. A test walks the imports from `cli.ts` and fails if any of them reaches for `node:`.
+
 ## Terminal output
 
 Color is off for `NO_COLOR`, `--no-color`, `TERM=dumb` and output that is not a terminal. `SNAPPY_ASCII=1` swaps the block characters for plain ones. `--verbose` adds a short code to errors and notes, for bug reports. `SNAPPY_DEBUG=1` also adds code locations to an unexpected error (never its message).
