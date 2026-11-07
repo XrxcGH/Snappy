@@ -275,7 +275,10 @@ export function checkExport(input: ExportCheckInput): ExportCheck {
   const coverage = { chats: chats.done(), snaps: snaps.done(), memories: memories.done() };
 
   // ---- sections
-  const mediaCount = parsed.bundledMedia?.length ?? 0;
+  // A front end that forgot the file list after pairing (forgetMediaHandles) still holds the pairing counts. Pairing is
+  // only made when the zip directories listed media files, so its counts say the same thing: how many were found.
+  const pairing = parsed.memoriesPairing;
+  const mediaCount = parsed.bundledMedia?.length ?? (pairing === undefined ? 0 : pairing.mainFiles + pairing.overlays);
   const sections: SectionCheck[] = [
     { id: "friends", need: "required", status: friendsStatus(), count: distinctFriends.size },
     { id: "chat_history", need: "recommended", status: sectionStatus(coverage.chats.count, listed.chat_history, brokenFile.chat_history), count: coverage.chats.count },

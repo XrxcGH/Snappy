@@ -2,6 +2,7 @@
  * Export check, the reference tool: what it computes from the export the page holds, and what its page shows.
  * Synthetic data only. Usernames and issue messages carry canaries that must never reach a result or the page.
  */
+import { forgetMediaHandles } from "@snappy-export/core";
 import type { ExportIssue, ParsedExport } from "@snappy-export/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
@@ -68,6 +69,20 @@ describe("computeExportCheck", () => {
     expect(json).not.toContain("ZQCANARY");
     for (const name of new Set(names)) expect(json, name).not.toContain(name);
     expect(json).not.toMatch(/https?:|\.zip|\.json|memories\//i);
+  });
+
+  it("says the same about Memories files for a real import, which has forgotten its file list, as for the sample", () => {
+    const parsed = base.latest as ParsedExport;
+    expect(parsed.bundledMedia?.length).toBeGreaterThan(0);
+    const forgotten = forgetMediaHandles(parsed);
+    expect(forgotten.bundledMedia).toBeUndefined();
+    const kept = computeExportCheck(dataOf(real({}, { parts: 3 }))).check;
+    const real_ = computeExportCheck(dataOf(real({ bundledMedia: undefined, memories: forgotten.memories }, { parts: 3 }))).check;
+    expect(real_.sections.find((s) => s.id === "memories_files")).toMatchObject({ status: "present" });
+    expect(real_.sections).toEqual(kept.sections);
+    expect(real_.notes.map((n) => n.code)).toEqual(kept.notes.map((n) => n.code));
+    expect(real_.notes.map((n) => n.code)).not.toContain("memories-files-not-found");
+    expect(real_.status).toBe(kept.status);
   });
 
   it("says how many parts it read when the import knew, so a lone part with Memories and no files may be a short export", () => {

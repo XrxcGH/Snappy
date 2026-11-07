@@ -159,6 +159,21 @@ describe("parts", () => {
     expect(codes(run(good({ bundledMedia: undefined }), { partCount: 3 }))).not.toContain("more-parts-may-exist");
   });
 
+  it("counts Memories files from the pairing when the file list was forgotten, and says nothing false about them", () => {
+    const pairing = { items: 2, mainFiles: 5, paired: 2, unmatchedItems: 0, unmatchedFiles: 3, overlays: 2, ambiguous: 0, method: "utc-time" as const, offsetHours: 0 };
+    const forgotten = good({ bundledMedia: undefined, memoriesPairing: pairing });
+    const r = run(forgotten, { partCount: 1 });
+    expect(section(r, "memories_files")).toMatchObject({ status: "present", count: 7 });
+    expect(codes(r)).not.toContain("memories-files-not-found");
+    expect(codes(r)).not.toContain("more-parts-may-exist");
+    expect(r.status).toBe("ready");
+    // The same export with the list kept says the same.
+    const kept = run(good(), { partCount: 1 });
+    expect(section(kept, "memories_files")?.status).toBe(section(r, "memories_files")?.status);
+    // No pairing means the zip directories listed no media files, as before.
+    expect(section(run(good({ bundledMedia: undefined }), { partCount: 1 }), "memories_files")).toMatchObject({ status: "missing", count: 0 });
+  });
+
   it("does not hint at more parts when the part count was only guessed", () => {
     const guessed = checkExport({ parsed: good({ bundledMedia: undefined }), now: NOW });
     expect(guessed.parts.count).toBe(1);
