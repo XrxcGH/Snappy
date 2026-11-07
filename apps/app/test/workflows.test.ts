@@ -89,7 +89,13 @@ function problems(file: string, text: string): string[] {
       if (!/^ {4}environment:\s*release\s*$/m.test(joined)) out.push(`${file}: signing job ${job.name} is not behind the release environment`);
       if (!/^ {4}permissions:\s*\{\}\s*$/m.test(joined)) out.push(`${file}: signing job ${job.name} should have permissions: {}`);
       if (!/needs\.verify\.outputs\.official == 'true'/.test(joined)) out.push(`${file}: signing job ${job.name} does not require an official run`);
+      // The build artifact is untrusted. Names or contents taken from it must never reach the environment
+      // that later steps (and their secrets) run under. A file name can hold newlines and so add variables.
+      const firstSecret = joined.search(/\$\{\{[^}]*\bsecrets\b/);
+      const beforeSecrets = firstSecret < 0 ? joined : joined.slice(0, firstSecret);
+      if (!/Check the files from the build/.test(beforeSecrets)) out.push(`${file}: signing job ${job.name} does not check the build artifact before it reads a secret`);
     }
+    if (isRelease && mayHoldSecrets && /GITHUB_(ENV|PATH)/.test(joined)) out.push(`${file}: job ${job.name} writes to GITHUB_ENV or GITHUB_PATH`);
     if (isRelease && job.name === "release") {
       if (!/needs\.verify\.outputs\.official == 'true'/.test(joined)) out.push(`${file}: release job does not require an official run`);
       if (/actions\/checkout|npm|cargo/.test(joined)) out.push(`${file}: release job runs repository or build code`);
@@ -176,6 +182,28 @@ describe("the checker itself catches the mistakes it is for", () => {
   it("catches npm ci without --ignore-scripts and a secret in another workflow", () => {
     expect(problems("ci.yml", workflow("ci.yml").replace("- run: npm ci --ignore-scripts", "- run: npm ci")).join("\n")).toMatch(/npm ci without --ignore-scripts/);
     expect(problems("desktop-smoke.yml", workflow("desktop-smoke.yml").replace("    steps:\n", "    env:\n      X: ${{ secrets.FOO }}\n    steps:\n")).join("\n")).toMatch(/references a secret/);
+  });
+
+  it("catches a signing job that puts a value from the build artifact into GITHUB_ENV", () => {
+    const bad = good.replace('codesign --verify --deep --strict --verbose=2 "$APP_PATH"\n', 'codesign --verify --deep --strict --verbose=2 "$APP_PATH"\n          echo "APP_PATH=$app" >> "$GITHUB_ENV"\n');
+    expect(bad).not.toBe(good);
+    expect(problems("release.yml", bad).join("\n")).toMatch(/job sign-macos writes to GITHUB_ENV or GITHUB_PATH/);
+    const bad2 = good.replace('mv "$DMG_PATH" "out/$DMG_NAME"', 'echo "DMG_PATH=$x" >> "$GITHUB_PATH"');
+    expect(problems("release.yml", bad2).join("\n")).toMatch(/job sign-macos writes to GITHUB_ENV or GITHUB_PATH/);
+  });
+
+  it("catches a signing job whose artifact check was removed", () => {
+    const bad = good.replace("Check the files from the build and unpack the app (no secrets in this step)", "Unpack the app");
+    expect(problems("release.yml", bad).join("\n")).toMatch(/signing job sign-macos does not check the build artifact/);
+  });
+
+  it("uses fixed names for the macOS app and disk image, and only a checked .dmg name travels on", () => {
+    const mac = code(split(good).jobs.find((j) => j.name === "sign-macos")!.lines).join("\n");
+    expect(mac).toMatch(/APP_PATH: work\/Snappy\.app/);
+    expect(mac).toMatch(/DMG_PATH: out\/Snappy\.dmg/);
+    expect(mac).toMatch(/safe='\^\[A-Za-z0-9\._-\]\+\$'/);
+    expect(mac).toMatch(/tar -tf/);
+    expect(mac).not.toMatch(/find work .*-name '\*\.app'/);
   });
 
   it("ignores a comment that only talks about the rules", () => {
