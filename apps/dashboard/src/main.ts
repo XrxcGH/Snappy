@@ -28,6 +28,8 @@ function boot(): void {
     yieldToUi: () => new Promise((resolve) => setTimeout(resolve, 20)),
     saveTheme: writeThemePreference,
     runImport: browserImport,
+    // Lock and Delete data clear the command output and the picked export files too.
+    onWipe: () => terminal.reset(),
   });
   // The command blocks: each Run starts its own helper, from the same blob: rule as the background reader.
   const terminal = createTerminalSession({

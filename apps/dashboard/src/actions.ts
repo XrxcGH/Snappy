@@ -30,6 +30,8 @@ export interface Deps {
   saveTheme: (theme: Theme) => void;
   /** Reads the zip parts. The page passes the background reader; the default reads on the calling thread. */
   runImport?: ImportRunner;
+  /** Everything held on screen was forgotten (Lock or Delete data): the command output and picked files go too. */
+  onWipe?: () => void;
 }
 
 export type ImportResult = "done" | "failed";
@@ -294,11 +296,18 @@ export function createActions(store: Store, deps: Deps): Actions {
     return true;
   }
 
-  async function lock(): Promise<void> {
+  /** Close the history: forget the passphrase and every result held in memory. */
+  async function closeHistory(): Promise<void> {
     await chain;
     passphrase = null;
     store.dispatch({ type: "locked" });
     resetAnalysisCache();
+  }
+
+  /** The person pressed Lock: the screen is cleared, and so is the command output, with its files. */
+  async function lock(): Promise<void> {
+    await closeHistory();
+    deps.onWipe?.();
   }
 
   // ------------------------------------------------------- commands that save ---
@@ -316,7 +325,8 @@ export function createActions(store: Store, deps: Deps): Actions {
 
   async function beforeStoreRun(): Promise<void> {
     // An open history is locked first: it holds the passphrase and saves on every change, which would write over the command's file.
-    if (store.get().vault.phase === "unlocked") await lock();
+    // Not lock(): the command that is starting must keep its own output.
+    if (store.get().vault.phase === "unlocked") await closeHistory();
     before = await readVault();
   }
 
@@ -347,6 +357,7 @@ export function createActions(store: Store, deps: Deps): Actions {
     }
     store.dispatch({ type: "wiped" });
     resetAnalysisCache();
+    deps.onWipe?.();
     setVault({ message: { kind: "success", text: settings.deleted } });
     return true;
   }

@@ -28,6 +28,11 @@ export interface TerminalSession {
   supported: boolean;
   /** Where the width of the output area comes from: the block that is about to run says so. */
   columnsFrom(source: () => number): void;
+  /**
+   * Forget everything the commands showed or were given: stop a Run, clear every transcript and saved file,
+   * and drop the picked export files. The dashboard calls this when it locks or deletes its data.
+   */
+  reset(): void;
 }
 
 export interface SessionOptions {
@@ -97,6 +102,10 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     outCap,
     columnsFrom(next) {
       source = next;
+    },
+    reset() {
+      controller.reset();
+      picked.clear();
     },
     get supported() {
       return !spawnFailed;

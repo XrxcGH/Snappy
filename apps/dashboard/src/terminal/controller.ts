@@ -71,6 +71,11 @@ export interface TerminalController {
   close(id: CommandId): void;
   /** Forget the files the last Run saved, and keep the transcript. */
   clearFiles(id: CommandId): void;
+  /**
+   * Forget everything on the page: stop a Run that is working, clear every transcript and every saved
+   * file, and put every block back to its start. For Lock and Delete data.
+   */
+  reset(): void;
   /** What the last Run's chip says. */
   exitLabel(id: CommandId): string | null;
 }
@@ -85,6 +90,8 @@ interface Entry {
   answer: ((value: string | null) => void) | null;
   /** The pending question, kept only to write it into the transcript. */
   pendingQuestion: string | null;
+  /** Goes up on every reset. A Run that began before a reset is stale: it may no longer show anything. */
+  epoch: number;
 }
 
 /** The words for how a command ended. Each command's exit codes come from its own usage text. */
@@ -114,7 +121,7 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
   const entry = (id: CommandId): Entry => {
     let e = entries.get(id);
     if (e === undefined) {
-      e = { state: { kind: "idle" }, buffer: new TerminalBuffer(), files: [], listeners: new Set(), handle: null, answer: null, pendingQuestion: null };
+      e = { state: { kind: "idle" }, buffer: new TerminalBuffer(), files: [], listeners: new Set(), handle: null, answer: null, pendingQuestion: null, epoch: 0 };
       entries.set(id, e);
     }
     return e;
@@ -135,6 +142,8 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
   async function start(id: CommandId): Promise<void> {
     const spec = COMMANDS[id];
     const e = entry(id);
+    const epoch = e.epoch;
+    const current = (): boolean => e.epoch === epoch;
     // This Run replaces the last one: new transcript, no old files.
     e.buffer.clear();
     e.files = [];
@@ -150,21 +159,27 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     try {
       // A command that saves history locks the dashboard's own copy first, so the two cannot write over each other.
       if (spec.effect === "store") await deps.beforeStoreRun();
+      // Reset while the history was being locked: this Run never starts.
+      if (!current()) throw new Error("reset");
       const handle = deps.runner.run(
         { spec, argv: bindArgv(spec, { export: names }), files, columns: deps.columns() },
         {
           onOut: (text) => {
+            if (!current()) return;
             e.buffer.write(text);
             notify(id);
           },
           askSecret: (question) =>
             new Promise<string | null>((resolve) => {
+              // A question from a Run that was reset is answered for them: canceled.
+              if (!current()) return resolve(null);
               e.pendingQuestion = question;
               e.answer = resolve;
               set(id, { kind: "asking", question });
               deps.announce(terminal.askingAnnounce);
             }),
           onFiles: (saved) => {
+            if (!current()) return;
             e.files = saved;
             notify(id);
           },
@@ -187,6 +202,8 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     }
     const missing = result.end === "failed" && !deps.workerAvailable();
     setActive(null);
+    // The page was reset while this Run was working: nothing it made may come back on screen.
+    if (!current()) return;
     if (missing) {
       set(id, { kind: "unavailable", reason: "no-worker" });
       deps.announce(terminal.noWorkerNote, true);
@@ -266,6 +283,20 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     clearFiles(id) {
       entry(id).files = [];
       notify(id);
+    },
+    reset() {
+      for (const [id, e] of entries) {
+        e.epoch++;
+        // A Run that is working is stopped, and a question nobody will answer is answered: canceled.
+        const answer = e.answer;
+        e.answer = null;
+        e.pendingQuestion = null;
+        answer?.(null);
+        e.handle?.cancel();
+        e.buffer.clear();
+        e.files = [];
+        set(id, { kind: "idle" });
+      }
     },
     exitLabel(id) {
       const state = entry(id).state;

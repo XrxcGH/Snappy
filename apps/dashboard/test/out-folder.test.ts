@@ -80,7 +80,7 @@ describe("the files list in the panel", () => {
       afterStoreRun: async () => undefined,
       workerAvailable: () => true,
     });
-    const session: TerminalSession = { controller, picked: createPickedFiles(), outCap: 1 << 20, supported: true, columnsFrom: () => undefined };
+    const session: TerminalSession = { controller, picked: createPickedFiles(), outCap: 1 << 20, supported: true, columnsFrom: () => undefined, reset: () => controller.reset() };
     return { controller, session };
   }
 
