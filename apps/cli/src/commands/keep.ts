@@ -1,0 +1,76 @@
+/**
+ * snappy-export keep / unkeep: manage the sealed allowlist, the friends who never appear in the
+ * cleanup queue. Output is counts only; usernames the user typed are not echoed back.
+ */
+import { MAX_USERNAME_LENGTH, normUser } from "@snappy-export/core";
+import { parseFlags } from "../args.ts";
+import { CliError } from "../errors.ts";
+import type { Io } from "../io.ts";
+import { defaultLedgerPath, isFreshStore, normalizeAllowlist, saveAllowlist, unlockStore, withLedgerLock } from "../ledger-store.ts";
+import { resolvePassphrase } from "../prompt.ts";
+import { PRIVACY_RESULTS } from "../render.ts";
+import { plural } from "../format.ts";
+
+export const KEEP_USAGE = `Usage: snappy-export keep <username...> [options]
+       snappy-export unkeep <username...> [options]
+
+keep adds friends to your allowlist: they never appear in the cleanup queue.
+unkeep takes them off again. The allowlist is sealed with your passphrase, in a file next to
+your ledger (ledger.allowlist.sealed).
+
+Options
+  --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
+  --passphrase-file <path>  Read the passphrase from the first line of this file.
+                            Otherwise SNAPPY_PASSPHRASE, otherwise a hidden prompt.
+`;
+
+interface Flags {
+  ledger?: string;
+  "passphrase-file"?: string;
+  help?: boolean;
+}
+
+export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: Io): Promise<number> {
+  const { values: flags, positionals } = parseFlags<Flags>(mode, args, {
+    ledger: { type: "string" },
+    "passphrase-file": { type: "string" },
+    help: { type: "boolean", short: "h" },
+  });
+  if (flags.help) {
+    io.out.write(KEEP_USAGE);
+    return 0;
+  }
+  const names = [...new Set(positionals.map(normUser).filter((n) => n !== ""))];
+  if (names.length === 0) {
+    throw new CliError("usage", `Name at least one friend, for example: snappy ${mode} sam_01 alex.k`);
+  }
+  if (names.some((n) => /\s/.test(n) || n.length > MAX_USERNAME_LENGTH)) {
+    throw new CliError("usage", "Usernames have no spaces. Check the names and try again.");
+  }
+
+  const ledgerPath = flags.ledger ?? defaultLedgerPath(io.homedir());
+  const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(ledgerPath) });
+  // Unlock, change and save under one lock, so a second `keep` running at the same time is not lost.
+  const { current, changed } = await withLedgerLock(ledgerPath, async () => {
+    const { allowlist } = await unlockStore(ledgerPath, passphrase);
+    const current = new Set(allowlist);
+    const changed = names.filter((n) => (mode === "keep" ? !current.has(n) : current.has(n)));
+    for (const n of changed) {
+      if (mode === "keep") current.add(n);
+      else current.delete(n);
+    }
+    if (changed.length > 0) await saveAllowlist(ledgerPath, normalizeAllowlist([...current]), passphrase);
+    return { current, changed };
+  });
+
+  const total = current.size;
+  const skipped = names.length - changed.length;
+  if (mode === "keep") {
+    io.out.write(`${plural(changed.length, "friend")} added to your allowlist${skipped > 0 ? ` (${skipped} already there)` : ""}. ${plural(total, "friend")} in total.\n`);
+    io.out.write("They will not appear in the cleanup queue. Allowlist sealed with your passphrase.\n");
+  } else {
+    io.out.write(`${plural(changed.length, "friend")} taken off your allowlist${skipped > 0 ? ` (${skipped} were not on it)` : ""}. ${plural(total, "friend")} left.\n`);
+  }
+  io.out.write(`${PRIVACY_RESULTS}\n`);
+  return 0;
+}
