@@ -11,6 +11,7 @@ import type { Transport } from "../src/memories-download.ts";
 import { allowlistPathFor } from "../src/ledger-store.ts";
 import { describeZips } from "./verify-memories-output.ts";
 import { LATER, makeIo, run, tempDir, writeSyntheticParts } from "./helpers.ts";
+import { insightRuns } from "./insight-outputs.ts";
 
 const ALL_CANARIES = Object.values(CANARIES).flat();
 const LINK_PIECES = ["demo.snappy.invalid", "uid=demo", "mid=", "/media/", "https://", "http://"];
@@ -141,6 +142,44 @@ describe("no canary reaches any output", () => {
     expect(err).toMatch(/\n\s+at /); // frames only
     leaks(out + err, "debug output");
     expect(err).not.toContain("boom");
+  });
+});
+
+/**
+ * The 14 insight commands, run through the CLI over the canary export (the runs in insight-outputs.ts):
+ * nothing they print, in text or JSON, and nothing they write, may carry a canary or a link fragment, and
+ * a mistake never names a person.
+ */
+describe("no canary reaches an insight command", () => {
+  const USERNAME = /\b(?:ghost|oneway|dormant|active|newfriend|friend|user)_\d+\b/;
+
+  it("text output, including every mistake", async () => {
+    const { outputs } = await insightRuns();
+    expect(Object.keys(outputs).length).toBeGreaterThan(50);
+    for (const [name, text] of Object.entries(outputs)) {
+      leaks(text, name);
+      noLinks(text, name);
+      if (name.includes(" error ")) expect(text, `${name} names a person`).not.toMatch(USERNAME);
+    }
+  });
+
+  it("JSON output", async () => {
+    const { json } = await insightRuns();
+    expect(Object.keys(json).sort()).toEqual(["blocked json", "privacy json", "remind json"]);
+    for (const [name, text] of Object.entries(json)) {
+      leaks(text, name);
+      noLinks(text, name);
+      expect(() => JSON.parse(text), name).not.toThrow();
+    }
+  });
+
+  it("the files they write on purpose", async () => {
+    const { files } = await insightRuns();
+    expect(Object.keys(files).length).toBe(4);
+    for (const [path, text] of Object.entries(files)) {
+      leaks(text, path);
+      noLinks(text, path);
+    }
   });
 });
 

@@ -5,6 +5,7 @@
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { collectInsightOutputs } from "./insight-outputs.ts";
 
 /** Synthetic usernames are data, not copy: they are removed before the wording checks. */
 const USERNAMES = /\b(?:ghost|oneway|dormant|active|newfriend)_\d+\b/g;
@@ -52,6 +53,8 @@ async function collect(): Promise<Record<string, string>> {
   await capture("errors", ["analyze", join(dir, "missing.zip")]);
   await capture("usage", ["analyze", later, "--bogus"]);
   await capture("unknown", ["bogus"]);
+  // The 14 insight commands: their output, options, help and mistakes.
+  Object.assign(outputs, await collectInsightOutputs());
   return outputs;
 }
 
