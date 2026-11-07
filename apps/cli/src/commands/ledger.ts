@@ -7,7 +7,7 @@ import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import { formatDate, plural } from "../format.ts";
 import type { Io } from "../io.ts";
-import { allowlistPathFor, defaultLedgerPath, isFreshStore, loadAllowlist, loadLedger } from "../ledger-store.ts";
+import { defaultLedgerPath, isFreshStore, loadStore } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS } from "../render.ts";
 import { createTerm } from "../term.ts";
@@ -57,11 +57,11 @@ export async function ledgerCommand(args: string[], io: Io): Promise<number> {
   }
 
   const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: false });
-  const ledger = await loadLedger(io, ledgerPath, passphrase);
-  const allowlist = await loadAllowlist(io, ledgerPath, passphrase);
+  // Real snapshots only: the keep list and the checkmarks are kept apart from them.
+  const { ledger, allowlist } = await loadStore(io, ledgerPath, passphrase);
 
   const lines: string[] = [term.bold("Ledger"), `  File: ${ledgerPath}`];
-  if (ledger === undefined) {
+  if (ledger.snapshots.length === 0) {
     lines.push("  No exports saved yet.");
   } else {
     lines.push(`  ${plural(ledger.snapshots.length, "export")} in your history.`, "");
@@ -76,9 +76,7 @@ export async function ledgerCommand(args: string[], io: Io): Promise<number> {
   }
   lines.push("", term.bold("Keep list"));
   lines.push(
-    allowlist === undefined
-      ? "  Empty. Use snappy-export keep to add friends."
-      : `  ${plural(allowlist.length, "friend")} on your keep list. File: ${allowlistPathFor(ledgerPath)}`,
+    allowlist.length === 0 ? "  Empty. Use snappy-export keep to add friends." : `  ${plural(allowlist.length, "friend")} on your keep list.`,
   );
   lines.push("", PRIVACY_RESULTS);
   io.out.write(lines.join("\n") + "\n");

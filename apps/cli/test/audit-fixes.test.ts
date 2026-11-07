@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { buildSyntheticExport } from "@snappy-export/core";
 import { parseFlags } from "../src/args.ts";
 import { resolveZipPaths } from "../src/inputs.ts";
-import { loadAllowlist, withLedgerLock } from "../src/ledger-store.ts";
+import { loadStore, withLedgerLock } from "../src/ledger-store.ts";
 import { DownloadError, downloadToFile, isFollowable } from "../src/memories-download.ts";
 import type { Transport } from "../src/memories-download.ts";
 import { placeMedia } from "../src/memories-write.ts";
@@ -195,7 +195,7 @@ describe("two commands at once cannot lose each other's changes", () => {
     await run(["keep", "seed", "--ledger", ledger], makeIo({ env }));
     const results = await Promise.all([run(["keep", "alice", "--ledger", ledger], makeIo({ env })), run(["keep", "bob", "--ledger", ledger], makeIo({ env }))]);
     expect(results.map((r) => r.code)).toEqual([0, 0]);
-    expect(await loadAllowlist(makeIo(), ledger, PASS)).toEqual(["alice", "bob", "seed"]);
+    expect((await loadStore(makeIo(), ledger, PASS)).allowlist).toEqual(["alice", "bob", "seed"]);
     expect(existsSync(`${ledger}.lock`)).toBe(false);
   }, 60_000);
 

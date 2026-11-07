@@ -4,7 +4,7 @@
  * here is a count, a code, a date or a username.
  */
 import { addSnapshot, emptyLedger, normUser, snapshotFromExport, validateExport } from "@snappy-export/core";
-import type { Confidence, Ledger, ParsedExport } from "@snappy-export/core";
+import type { Confidence, Ledger, ParsedExport, Saved } from "@snappy-export/core";
 import { analyzeExport } from "../analysis.ts";
 import type { AnalysisResult } from "../analysis.ts";
 import { intOption, parseFlags } from "../args.ts";
@@ -12,7 +12,7 @@ import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { newestMtime, parseParts, requireFirstPart, resolveZipPaths, withReaders } from "../inputs.ts";
-import { atomicWrite, defaultLedgerPath, isFreshStore, saveLedger, unlockStore, withLedgerLock } from "../ledger-store.ts";
+import { atomicWrite, defaultLedgerPath, isFreshStore, loadStore, saveStore, withLedgerLock } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS, renderIssues, wrapText } from "../render.ts";
 import type { LabeledIssue } from "../render.ts";
@@ -174,13 +174,9 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
   const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
   const passphrase = noSave ? undefined : await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(io, ledgerPath) });
   const update = async (): Promise<AnalysisResult> => {
-    let ledger: Ledger = emptyLedger();
-    let saved: string[] = [];
-    if (passphrase !== undefined) {
-      const store = await unlockStore(io, ledgerPath, passphrase);
-      ledger = store.ledger;
-      saved = store.allowlist;
-    }
+    let store: Saved = { ledger: emptyLedger(), allowlist: [], checkedOff: [] };
+    if (passphrase !== undefined) store = await loadStore(io, ledgerPath, passphrase);
+    let ledger: Ledger = store.ledger;
     for (const e of earlier) ledger = addSnapshot(ledger, snapshotFromExport(e.parsed, { takenAt: e.takenAt }));
     const snapshot = snapshotFromExport(current.parsed, { takenAt: current.takenAt });
     const newestOther = Math.max(0, ...ledger.snapshots.filter((s) => s.id !== snapshot.id).map((s) => s.takenAt));
@@ -197,12 +193,13 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
     const analyzed = analyzeExport({
       parsed: current.parsed,
       ledger,
-      allowlist: [...new Set([...saved, ...allow])],
+      allowlist: [...new Set([...store.allowlist, ...allow])],
       now: io.now(),
       minConfidence: minConfidence as Confidence,
     });
 
-    if (passphrase !== undefined) await saveLedger(io, ledgerPath, ledger, passphrase);
+    // The keep list and the checkmarks are saved as they were: analyze changes only the snapshots.
+    if (passphrase !== undefined) await saveStore(io, ledgerPath, { ...store, ledger }, passphrase);
     return analyzed;
   };
   // Held from the first read to the save, so another run at the same time cannot lose this one's snapshots.

@@ -1,17 +1,21 @@
 /**
- * The sealed ledger and its companion allowlist on disk.
+ * The sealed saved history on disk: one file, the same one the dashboard keeps.
  *
- *   <home>/.snappy/ledger.sealed             friend-list snapshots, sealed with the passphrase
- *   <home>/.snappy/ledger.allowlist.sealed   {"allowlist": ["username", ...]}, sealed the same way
+ *   <home>/.snappy/ledger.sealed   friend-list snapshots, the keep list and the guided-removal
+ *                                  checkmarks, sealed with the passphrase (core's saved.ts format)
  *
- * The allowlist lives in its own sealed file (same passphrase, same format) rather than inside
- * the ledger so core's ledger format stays untouched and "keep" never rewrites snapshot history.
- * Both files are written atomically (the file system port writes a temp file, then renames) with
+ * The keep list and the checkmarks travel inside the ledger as reserved pseudo-snapshots, so the
+ * dashboard and the command line read and write the very same bytes. An older command line kept
+ * the keep list in a second file, ledger.allowlist.sealed. That file is still read once, when the
+ * ledger does not carry the lists yet, and is never deleted or rewritten; after the first save the
+ * ledger carries the lists and the older file is ignored (so unkeep cannot bring a name back).
+ *
+ * The file is written atomically (the file system port writes a temp file, then renames) with
  * owner-only permissions where the OS supports them. Passphrases are used for sealing and never
  * stored. Everything here reaches the disk through io.fs, io.path and io.lock.
  */
-import { LedgerFormatError, SealError, emptyLedger, normUser, openLedger, openText, sealLedger, sealText } from "@snappy-export/core";
-import type { Ledger } from "@snappy-export/core";
+import { LedgerFormatError, SealError, emptyLedger, hasSavedLists, normUser, openLedger, openText, packSaved, sealLedger, sortedUnique, unpackSaved } from "@snappy-export/core";
+import type { Saved } from "@snappy-export/core";
 import { CliError, fsError } from "./errors.ts";
 import type { Io } from "./io.ts";
 
@@ -21,7 +25,10 @@ export function defaultLedgerPath(io: Pick<Io, "homedir" | "path">): string {
   return io.path.join(io.homedir(), ".snappy", "ledger.sealed");
 }
 
-/** ledger.sealed -> ledger.allowlist.sealed; any other name gets ".allowlist" appended. */
+/**
+ * Where an older command line kept the keep list: ledger.sealed -> ledger.allowlist.sealed; any
+ * other name gets ".allowlist" appended. Read only, for the one-time migration.
+ */
 export function allowlistPathFor(ledgerPath: string): string {
   return ledgerPath.endsWith(".sealed") ? `${ledgerPath.slice(0, -".sealed".length)}.allowlist.sealed` : `${ledgerPath}.allowlist`;
 }
@@ -47,9 +54,9 @@ export async function atomicWrite(io: FsIo, path: string, bytes: Uint8Array, opt
 
 /**
  * Run `work` while holding the ledger lock, so two Snappy commands cannot both read the sealed
- * files, change them, and write: the second change would silently replace the first. Take it
- * after the passphrase is known (never while the person is typing) and hold it from the first
- * read to the last write.
+ * file, change it, and write: the second change would silently replace the first. Take it after
+ * the passphrase is known (never while the person is typing) and hold it from the first read to
+ * the last write.
  */
 export async function withLedgerLock<T>(io: Pick<Io, "lock">, ledgerPath: string, work: () => Promise<T>, opts: { waitMs?: number } = {}): Promise<T> {
   return io.lock.withLock(ledgerPath, { waitMs: opts.waitMs ?? 10_000 }, work);
@@ -83,23 +90,8 @@ function unsealError(e: unknown): CliError {
   throw e;
 }
 
-/** The sealed ledger, or undefined when none has been saved yet. */
-export async function loadLedger(io: FsIo, path: string, passphrase: string): Promise<Ledger | undefined> {
-  const sealed = await readIfExists(io, path);
-  if (sealed === undefined) return undefined;
-  try {
-    return await openLedger(sealed, passphrase);
-  } catch (e) {
-    throw unsealError(e);
-  }
-}
-
-export async function saveLedger(io: FsIo, path: string, ledger: Ledger, passphrase: string): Promise<void> {
-  await atomicWrite(io, path, await sealLedger(ledger, passphrase));
-}
-
-/** The saved allowlist (normalized usernames), or undefined when none has been saved yet. */
-export async function loadAllowlist(io: FsIo, ledgerPath: string, passphrase: string): Promise<string[] | undefined> {
+/** The keep list an older command line saved in its own file, or undefined when there is none. */
+async function loadLegacyAllowlist(io: FsIo, ledgerPath: string, passphrase: string): Promise<string[] | undefined> {
   const sealed = await readIfExists(io, allowlistPathFor(ledgerPath));
   if (sealed === undefined) return undefined;
   let text: string;
@@ -118,9 +110,34 @@ export async function loadAllowlist(io: FsIo, ledgerPath: string, passphrase: st
   }
 }
 
-export async function saveAllowlist(io: FsIo, ledgerPath: string, allowlist: string[], passphrase: string): Promise<void> {
-  const text = JSON.stringify({ allowlist: normalizeAllowlist(allowlist) });
-  await atomicWrite(io, allowlistPathFor(ledgerPath), await sealText(text, passphrase));
+/**
+ * Everything saved: the ledger, the keep list and the checkmarks. Nothing saved yet is an empty
+ * Saved. The passphrase must unlock what exists.
+ */
+export async function loadStore(io: FsIo, ledgerPath: string, passphrase: string): Promise<Saved> {
+  const sealed = await readIfExists(io, ledgerPath);
+  let saved: Saved = { ledger: emptyLedger(), allowlist: [], checkedOff: [] };
+  let hasLists = false;
+  if (sealed !== undefined) {
+    try {
+      const packed = await openLedger(sealed, passphrase);
+      hasLists = hasSavedLists(packed);
+      saved = unpackSaved(packed);
+    } catch (e) {
+      throw unsealError(e);
+    }
+  }
+  // An older ledger has no lists yet: take the keep list from the older companion file, once.
+  if (!hasLists) {
+    const legacy = await loadLegacyAllowlist(io, ledgerPath, passphrase);
+    if (legacy !== undefined) saved = { ...saved, allowlist: sortedUnique([...saved.allowlist, ...legacy]) };
+  }
+  return saved;
+}
+
+export async function saveStore(io: FsIo, ledgerPath: string, saved: Saved, passphrase: string): Promise<void> {
+  const normalized: Saved = { ledger: saved.ledger, allowlist: normalizeAllowlist(saved.allowlist), checkedOff: sortedUnique(saved.checkedOff) };
+  await atomicWrite(io, ledgerPath, await sealLedger(packSaved(normalized), passphrase));
 }
 
 /** Normalized, de-duplicated and sorted, so the saved file does not depend on typing order. */
@@ -128,19 +145,7 @@ export function normalizeAllowlist(names: string[]): string[] {
   return [...new Set(names.map(normUser).filter((n) => n !== ""))].sort();
 }
 
-export interface Unlocked {
-  ledger: Ledger;
-  allowlist: string[];
-}
-
-/** Open whatever exists; the passphrase must unlock it. A missing ledger is an empty one. */
-export async function unlockStore(io: FsIo, ledgerPath: string, passphrase: string): Promise<Unlocked> {
-  const ledger = await loadLedger(io, ledgerPath, passphrase);
-  const allowlist = await loadAllowlist(io, ledgerPath, passphrase);
-  return { ledger: ledger ?? emptyLedger(), allowlist: allowlist ?? [] };
-}
-
-/** True when neither file exists, i.e. the passphrase about to be chosen is a new one. */
+/** True when nothing is saved yet, i.e. the passphrase about to be chosen is a new one. */
 export async function isFreshStore(io: FsIo, ledgerPath: string): Promise<boolean> {
   return !(await fileExists(io, ledgerPath)) && !(await fileExists(io, allowlistPathFor(ledgerPath)));
 }

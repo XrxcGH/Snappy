@@ -8,7 +8,6 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CANARIES, buildSyntheticExport, openLedger, serializeLedger, syntheticExportZip } from "@snappy-export/core";
 import type { Transport } from "../src/memories-download.ts";
-import { allowlistPathFor } from "../src/ledger-store.ts";
 import { describeZips } from "./verify-memories-output.ts";
 import { LATER, makeIo, run, tempDir, writeSyntheticParts } from "./helpers.ts";
 
@@ -66,7 +65,7 @@ describe("no canary reaches any output", () => {
     expect(() => JSON.parse(json.out)).not.toThrow();
   });
 
-  it("analyze: the sealed ledger and allowlist hold usernames only, even once decrypted", async () => {
+  it("analyze: the sealed ledger, with its keep list inside, holds usernames only, even once decrypted", async () => {
     const { dir, zip, earlier } = setup();
     const ledger = join(dir, "ledger.sealed");
     const env = { SNAPPY_PASSPHRASE: PASS };
@@ -79,8 +78,7 @@ describe("no canary reaches any output", () => {
     leaks(sealed.toString("latin1"), "sealed ledger bytes");
     const plain = serializeLedger(await openLedger(sealed, PASS));
     leaks(plain, "ledger plaintext");
-    leaks(readFileSync(allowlistPathFor(ledger)).toString("latin1"), "sealed allowlist bytes");
-    expect(readdirSync(dir).sort()).toEqual(["earlier.zip", "export.zip", "ledger.allowlist.sealed", "ledger.sealed"]);
+    expect(readdirSync(dir).sort()).toEqual(["earlier.zip", "export.zip", "ledger.sealed"]);
   });
 
   it("inspect: default and --show-keys", async () => {

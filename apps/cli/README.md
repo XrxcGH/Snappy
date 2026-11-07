@@ -46,11 +46,12 @@ The folder `apps/cli/test/verify-memories-output.ts` has an independent checker 
 ## Where things are stored
 
 ```
-~/.snappy/ledger.sealed             past friend lists, sealed with your passphrase
-~/.snappy/ledger.allowlist.sealed   {"allowlist": ["username", ...]}, sealed the same way
+~/.snappy/ledger.sealed   past friend lists and your keep list, sealed with your passphrase
 ```
 
-Both files use core’s format (PBKDF2 to AES-256-GCM) and are written atomically: a temp file in the same folder, then a rename, with owner-only permissions where the OS supports them. The keep list has its own file so that `keep` never rewrites your saved history. Pass `--ledger <path>` to use another location; the keep list file sits next to it.
+One file holds everything. It uses core’s format (PBKDF2 to AES-256-GCM) and is written atomically: a temp file in the same folder, then a rename, with owner-only permissions where the OS supports them. The keep list and the guided-removal checkmarks ride inside it, so the dashboard and the command line read and write the very same file. Pass `--ledger <path>` to use another location.
+
+An older command line kept the keep list in a second file, `ledger.allowlist.sealed`. If your ledger does not carry the keep list yet, Snappy reads that file once, saves the list in the ledger the next time something is saved, and then ignores it. It never deletes or rewrites the older file. A Snappy build from before this change reads the new file as having two extra snapshots, so keep using the newer build on a ledger the newer build has written.
 
 The passphrase comes from `--passphrase-file <path>`, then the `SNAPPY_PASSPHRASE` environment variable, then a hidden prompt (asked twice when the ledger is new). It is never accepted as an argument and never written anywhere. `analyze --no-save` neither reads nor writes the ledger and asks for nothing.
 

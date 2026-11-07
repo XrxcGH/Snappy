@@ -7,7 +7,7 @@ import { parseFlags } from "../args.ts";
 import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
-import { defaultLedgerPath, isFreshStore, normalizeAllowlist, saveAllowlist, unlockStore, withLedgerLock } from "../ledger-store.ts";
+import { defaultLedgerPath, isFreshStore, loadStore, normalizeAllowlist, saveStore, withLedgerLock } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS } from "../render.ts";
 import { plural } from "../format.ts";
@@ -16,7 +16,7 @@ export const KEEP_USAGE = `Usage: snappy-export keep <username...> [options]
        snappy-export unkeep <username...> [options]
 
 keep adds friends to your keep list, so they never appear in the cleanup queue.
-unkeep takes them off. The keep list is sealed in ledger.allowlist.sealed, next to your ledger.
+unkeep takes them off. The keep list is saved inside your sealed ledger file.
 
 Options
   --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
@@ -56,14 +56,15 @@ export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: I
   const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(io, ledgerPath) });
   // Unlock, change and save under one lock, so a second `keep` running at the same time is not lost.
   const { current, changed } = await withLedgerLock(io, ledgerPath, async () => {
-    const { allowlist } = await unlockStore(io, ledgerPath, passphrase);
-    const current = new Set(allowlist);
+    const store = await loadStore(io, ledgerPath, passphrase);
+    const current = new Set(store.allowlist);
     const changed = names.filter((n) => (mode === "keep" ? !current.has(n) : current.has(n)));
     for (const n of changed) {
       if (mode === "keep") current.add(n);
       else current.delete(n);
     }
-    if (changed.length > 0) await saveAllowlist(io, ledgerPath, normalizeAllowlist([...current]), passphrase);
+    // Only the keep list changes: the snapshots and the checkmarks are saved as they were.
+    if (changed.length > 0) await saveStore(io, ledgerPath, { ...store, allowlist: normalizeAllowlist([...current]) }, passphrase);
     return { current, changed };
   });
 
