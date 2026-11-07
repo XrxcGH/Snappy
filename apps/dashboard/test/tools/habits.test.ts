@@ -180,14 +180,14 @@ describe("the page", () => {
     const { root } = await renderSettled(view, withChats(crafted()));
     const [busiest, direction] = root.querySelectorAll("table") as [FakeElement, FakeElement];
     expect(rowsOf(busiest)).toEqual([
-      [copy.hourPattern, "9 pm", "57%", "-"],
-      [copy.weekdayPattern, "Friday", "57%", "-"],
-      [copy.monthPattern, "Mar 2026", "57%", "-"],
+      [copy.hourPattern, "Busiest: 9 pm", "57% in the busiest hour", copy.unitNoQuietest],
+      [copy.weekdayPattern, "Busiest: Friday", "57% in the busiest day", copy.unitNoQuietest],
+      [copy.monthPattern, "Busiest: Mar 2026", "57% in the busiest month", copy.unitNoQuietest],
     ]);
     expect(rowsOf(direction)).toEqual([
-      [copy.sentRow, "20", "57%"],
-      [copy.receivedRow, "15", "43%"],
-      [copy.unknownRow, "0", "0%"],
+      [copy.sentRow, "20 counted", "57% of the total"],
+      [copy.receivedRow, "15 counted", "43% of the total"],
+      [copy.unknownRow, "0 counted", "0% of the total"],
     ]);
     expect(root.textContent).toContain(copy.sentLine(57));
     const hours = root.querySelectorAll(".hbars")[0] as FakeElement;
@@ -206,7 +206,7 @@ describe("the page", () => {
   it("marks a tied busiest time as tied, and a clear quietest month by name", async () => {
     const { root } = await renderSettled(view, withChats([...many(20, FRIDAY), ...many(5, SATURDAY), ...many(20, MONDAY)]));
     const busiest = root.querySelectorAll("table")[0] as FakeElement;
-    expect(rowsOf(busiest).find((r) => r[0] === copy.monthPattern)).toEqual([copy.monthPattern, copy.unitTied("Mar 2026"), "44%", "Apr 2026"]);
+    expect(rowsOf(busiest).find((r) => r[0] === copy.monthPattern)).toEqual([copy.monthPattern, copy.unitBusiestAt(copy.unitTied("Mar 2026")), "44% in the busiest month", copy.unitQuietestAt("Apr 2026")]);
   });
 
   it("lists the latest 12 months and says how many there are", async () => {
@@ -240,7 +240,7 @@ describe("the page", () => {
     await settled(r.root);
     expect(r.root.querySelector("select")).toBe(select);
     const busiest = r.root.querySelectorAll("table")[0] as FakeElement;
-    expect(rowsOf(busiest)[0]?.[1]).toBe("11 pm");
+    expect(rowsOf(busiest)[0]?.[1]).toBe("Busiest: 11 pm");
     // Each result is announced as it lands, and the control is not rebuilt.
     expect(said).toHaveLength(2);
   });

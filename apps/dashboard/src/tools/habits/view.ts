@@ -49,9 +49,15 @@ function monthText(key: string | number | null): string {
 const hourText = (key: number | string | null): string => (typeof key === "number" ? copy.unitHour(key) || copy.noValue : copy.noValue);
 const weekdayText = (key: number | string | null): string => (typeof key === "number" ? (copy.weekdays[key] ?? copy.noValue) : copy.noValue);
 
-function peakRow(pattern: string, peak: Peak, text: (key: number | string | null) => string): string[] {
+function peakRow(pattern: string, noun: string, peak: Peak, text: (key: number | string | null) => string): string[] {
   const busiest = text(peak.busiest);
-  return [pattern, peak.tied ? copy.unitTied(busiest) : busiest, formatPercent(peak.share), text(peak.quietest)];
+  const quietest = text(peak.quietest);
+  return [
+    pattern,
+    copy.unitBusiestAt(peak.tied ? copy.unitTied(busiest) : busiest),
+    copy.unitPeakShare(formatPercent(peak.share), noun),
+    quietest === copy.noValue ? copy.unitNoQuietest : copy.unitQuietestAt(quietest),
+  ];
 }
 
 /** One row of a bar list: the name, a bar as long as its share of the largest count, and the count. */
@@ -80,16 +86,16 @@ function glance({ result }: HabitsView): HTMLElement {
 
 function busiest(v: HabitsView): HTMLElement {
   const rows: string[][] = [];
-  if (v.hour) rows.push(peakRow(copy.hourPattern, v.hour, hourText));
-  if (v.weekday) rows.push(peakRow(copy.weekdayPattern, v.weekday, weekdayText));
-  if (v.month) rows.push(peakRow(copy.monthPattern, v.month, monthText));
+  if (v.hour) rows.push(peakRow(copy.hourPattern, copy.unitHourNoun, v.hour, hourText));
+  if (v.weekday) rows.push(peakRow(copy.weekdayPattern, copy.unitWeekdayNoun, v.weekday, weekdayText));
+  if (v.month) rows.push(peakRow(copy.monthPattern, copy.unitMonthNoun, v.month, monthText));
   return section(copy.busiestHeading, dataTable(copy.busiestCaption, [copy.patternHeader, copy.busiestHeader, copy.shareHeader, copy.quietestHeader], rows));
 }
 
 function direction({ result }: HabitsView): HTMLElement {
   const { totals } = result;
   const used = totals.used;
-  const row = (name: string, n: number): string[] => [name, formatCount(n), formatPercent(used > 0 ? n / used : 0)];
+  const row = (name: string, n: number): string[] => [name, copy.unitCounted(formatCount(n)), copy.unitOfTotal(formatPercent(used > 0 ? n / used : 0))];
   return section(
     copy.directionHeading,
     dataTable(copy.directionCaption, [copy.directionHeader, copy.countHeader, copy.shareHeader], [row(copy.sentRow, totals.sent), row(copy.receivedRow, totals.received), row(copy.unknownRow, totals.unknown)]),
