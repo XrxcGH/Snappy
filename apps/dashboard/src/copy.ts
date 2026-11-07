@@ -564,6 +564,7 @@ export const terminal = {
     storage: "Plan your Memories storage",
     backup: "Preview your friends backup",
     replies: "Find chats waiting on a reply",
+    "reply-speed": "See how fast you reply",
     "reach-out": "Find who reaches out first",
     habits: "See your busiest chat hours",
     closest: "Find your closest friends",
