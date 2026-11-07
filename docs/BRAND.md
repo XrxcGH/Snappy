@@ -314,9 +314,25 @@ Sizes run from 12 to 60 px. Line height uses three tokens: tight (1.1), snug (1.
 
 **Spacing.** A 4 px grid: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96 px. Dashboard content column 36rem (576 px), about 75 characters of running text: every block in a view (paragraph, list, table, code, notice, card, form) fills that one column. The sidebar, column, header and footer share one centered width.
 
-**Breakpoints.** 480, 768, 1024 and 1280 px. Design for phones first.
+**Breakpoints.** 480, 768, 1024, 1280 and 1600 px. Design for phones first. The last two are the wide layout, below.
 
 **Touch targets.** 44 px minimum on touch devices, 36 px with a mouse.
+
+### Wide screens
+
+From 1280 px (`--bp-wide`, 80rem) the shell and the content area widen; from 1600 px (`--bp-xwide`, 100rem) they widen once more. Below 1280 px nothing changes: a phone, a tablet and a narrow window keep the single column above, pixel for pixel.
+
+| Token | Value | Meaning |
+|---|---|---|
+| `--col` | 36rem | The measure: running text, notices and fields never get wider than this, at any screen size |
+| `--col-wide` | 60rem | Content area beside the 16rem sidebar from 1280 px; the shell is 79rem |
+| `--col-xwide` | 77rem | The same from 1600 px; the shell is 96rem and stops growing there, centered, with equal margins |
+
+- **Columns, not stretch.** A wide screen adds columns; it never stretches a paragraph. Cards that are siblings sit in equal columns: the Start steps three across, the Overview findings five across, counts three or six across, the Tools hub three across (four from 1600 px for a group of four), lists of people two across, facts as small cards, the licenses two across. A block that holds running text is a card in a column, never a wide card with an empty right third. Two cards that cannot fill a row between them do not leave one alone: the last odd card spans the row, or the group is split three and two.
+- **Use the width where it helps.** Tables, tiles, bars, the command blocks and the terminal panel use the full content width.
+- **Independent sections flow in two balanced columns** (`columns()` in `components/layout.ts`, CSS columns): Privacy, Settings, the Memories file notes, the Habits bar lists. The document order is the reading order, so the keyboard order is unchanged. Nothing is reordered with CSS.
+- **Page parts.** An empty state is a full-width card with its illustration and words together in the middle. A tool page puts its "what this reads" card beside the title. The notes about saving and the sample-data card on Start are bands: the words at the measure on the left, the one action on the right.
+- **Keep checking.** `tools/screenshots/layout-audit.mjs` measures every route at 1280, 1440, 1600, 1920 and 2560 px in both themes, with and without data: no horizontal overflow, equal columns, no lone last card, text within the measure, equal margins, and a sidebar that never covers the content.
 
 **Radius**
 

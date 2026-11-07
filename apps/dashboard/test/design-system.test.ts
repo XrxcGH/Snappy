@@ -103,6 +103,51 @@ describe("stylesheet", () => {
     expect(css).toMatch(/\.tiles-findings \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 3/);
   });
 
+  it("defines the wide-screen breakpoints and widths, and keeps the narrow layout as it was", () => {
+    // The shell and content widths come from tokens; a media query cannot read them, so the literals must agree.
+    expect(css).toMatch(/--bp-wide:\s*80rem/);
+    expect(css).toMatch(/--bp-xwide:\s*100rem/);
+    expect(css).toMatch(/--col:\s*36rem/);
+    expect(css).toMatch(/--col-wide:\s*60rem/);
+    expect(css).toMatch(/--col-xwide:\s*77rem/);
+    // Below the wide breakpoint the content area is the one 36rem column; the wide widths apply from 80rem and 100rem.
+    expect(css).toMatch(/--content-w:\s*var\(--col\);/);
+    expect(css).toMatch(/@media \(min-width: 80rem\)\s*\{\s*:root\s*\{\s*--content-w:\s*var\(--col-wide\)/);
+    expect(css).toMatch(/@media \(min-width: 100rem\)\s*\{\s*:root\s*\{\s*--content-w:\s*var\(--col-xwide\)/);
+    expect(css).toMatch(/\.view\s*\{[^}]*max-width:\s*var\(--content-w\)/);
+    // The shell is 16rem of sidebar, the content area and two gutters, so the 79rem and 96rem shells follow from the tokens.
+    expect(css).toMatch(/--shell-max:\s*calc\(16rem \+ var\(--content-w\) \+ 2 \* var\(--gutter\)\)/);
+    // Running text keeps the measure on a wide screen.
+    expect(css).toMatch(/\.view :is\(p,[^)]*\)\s*\{\s*max-width:\s*var\(--col\)/);
+    // The brand guide names the breakpoints.
+    const brand = read("docs", "BRAND.md");
+    for (const token of ["--bp-wide", "--bp-xwide", "--col-wide", "--col-xwide"]) expect(brand, token).toContain(token);
+  });
+
+  it("puts every wide-layout rule inside a min-width media query of 80rem or more, so nothing below 80rem changes", () => {
+    const start = css.indexOf("/* ------------------------------------------------------------ wide layout --- */");
+    const end = css.indexOf("/* --------------------------------------------------------------- motion --- */");
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    const section = css.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, "");
+    let rest = "";
+    let depth = 0;
+    for (let i = 0; i < section.length; i++) {
+      const ch = section[i] as string;
+      if (depth === 0 && ch === "{") {
+        const prelude = rest.trim();
+        rest = "";
+        const min = /^@media \(min-width: (\d+)rem\)$/.exec(prelude);
+        expect(min !== null && Number(min[1]) >= 80, `a rule outside a wide media query: ${prelude}`).toBe(true);
+        depth = 1;
+      } else if (depth > 0 && ch === "{") depth++;
+      else if (depth > 0 && ch === "}") {
+        depth--;
+      } else if (depth === 0) rest += ch;
+    }
+    expect(rest.trim()).toBe("");
+  });
+
   it("has a rule for every g-* class the spot illustrations use", () => {
     const classes = new Set<string>();
     for (const m of sprite.matchAll(/class="(g-[\w-]+)"/g)) classes.add(m[1] as string);
