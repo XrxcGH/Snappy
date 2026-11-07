@@ -4,3 +4,4 @@ dist/
 .snappy/
 out/
 .DS_Store
+*.tsbuildinfo
