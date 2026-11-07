@@ -3,11 +3,13 @@
  * mydata~<digits>.zip, mydata~<digits>-2.zip, mydata~<digits>-3.zip and so on; the first part holds
  * the JSON files. Windows shells do not expand wildcards for programs, so they are expanded here.
  */
-import { readdir } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
 import { CliError, fsError } from "./errors.ts";
+import type { Io } from "./io.ts";
 
 const hasWildcard = (name: string): boolean => /[*?]/.test(name);
+
+/** The last segment of a path written with either kind of separator. */
+const lastSegment = (path: string): string => path.split(/[\\/]/).pop() ?? "";
 
 function wildcardToRegExp(pattern: string): RegExp {
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
@@ -18,26 +20,26 @@ function wildcardToRegExp(pattern: string): RegExp {
  * Replace every argument that has a wildcard in its file name ("mydata*.zip") with the .zip files
  * it matches. Other arguments pass through unchanged. A pattern that matches nothing is an error.
  */
-export async function expandWildcards(args: string[]): Promise<string[]> {
+export async function expandWildcards(io: Pick<Io, "fs" | "path">, args: string[]): Promise<string[]> {
   const out: string[] = [];
   for (const arg of args) {
-    if (!hasWildcard(basename(arg))) {
+    if (!hasWildcard(io.path.basename(arg))) {
       out.push(arg);
       continue;
     }
-    const folder = resolve(dirname(arg));
+    const folder = io.path.resolve(io.path.dirname(arg));
     let names: string[];
     try {
-      names = (await readdir(folder, { withFileTypes: true })).filter((d) => d.isFile()).map((d) => d.name);
+      names = (await io.fs.readDir(folder)).filter((d) => d.isFile).map((d) => d.name);
     } catch (e) {
-      throw fsError(e, "read the folder", dirname(arg));
+      throw fsError(e, "read the folder", io.path.dirname(arg));
     }
-    const pattern = wildcardToRegExp(basename(arg));
+    const pattern = wildcardToRegExp(io.path.basename(arg));
     const matches = names.filter((n) => pattern.test(n) && n.toLowerCase().endsWith(".zip") && !n.startsWith("._"));
     if (matches.length === 0) {
       throw new CliError("no-zips", `No .zip files match "${arg}". Check the folder and name, and put quotes around paths with spaces.`);
     }
-    out.push(...matches.map((n) => join(folder, n)));
+    out.push(...matches.map((n) => io.path.join(folder, n)));
   }
   return out;
 }
@@ -54,7 +56,7 @@ function partOf(path: string): { base: string; part: number } {
  * zip named any other way is never refused on a guess.
  */
 export function isLaterPartsOnly(paths: string[]): boolean {
-  return paths.length > 0 && paths.every((p) => /^mydata~\d+-\d+\.zip$/i.test(basename(p)));
+  return paths.length > 0 && paths.every((p) => /^mydata~\d+-\d+\.zip$/i.test(lastSegment(p)));
 }
 
 /** Order zips the way Snapchat numbers them: the base name first, then -2, -3 and so on. */

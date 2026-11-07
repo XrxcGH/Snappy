@@ -77,12 +77,12 @@ function issuesFor(parsed: ParsedExport, source: string, io: Io, expectedFriendC
 
 /** Parse one export (its parts merged) and return it with its issues and the date it was made. */
 async function readExport(paths: string[], source: string, io: Io, friendCount?: number) {
-  const parsed = await withReaders(paths, parseParts);
+  const parsed = await withReaders(io, paths, parseParts);
   const issues = issuesFor(parsed, source, io, friendCount);
   let takenAt = parsed.exportedAt;
   if (takenAt === undefined) {
     // No date inside the export: the file's own date is the next best "when was this true".
-    takenAt = (await newestMtime(paths)) ?? io.now();
+    takenAt = (await newestMtime(io, paths)) ?? io.now();
     issues.push({
       severity: "warning",
       code: "export-time-from-file",
@@ -137,10 +137,10 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
   const noSave = flags["no-save"] === true;
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
 
-  const currentPaths = await resolveZipPaths(positionals);
+  const currentPaths = await resolveZipPaths(io, positionals);
   requireFirstPart(currentPaths);
   const earlierSets: string[][] = [];
-  for (const value of flags.earlier ?? []) earlierSets.push(await resolveZipPaths([value]));
+  for (const value of flags.earlier ?? []) earlierSets.push(await resolveZipPaths(io, [value]));
 
   // Read everything first: a broken export should stop the run before any passphrase is asked.
   const issues: LabeledIssue[] = [];

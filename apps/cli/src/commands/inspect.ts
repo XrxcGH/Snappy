@@ -55,8 +55,8 @@ export async function inspectCommand(args: string[], io: Io): Promise<number> {
     throw new CliError("usage", 'The option --checks-only needs at least one check: --layout, --memory-links, or --mtime-check. Run "snappy-export help inspect" to see what each one does.');
   }
 
-  const paths = await resolveZipPaths(positionals);
-  const report = await withReaders(paths, (readers) =>
+  const paths = await resolveZipPaths(io, positionals);
+  const report = await withReaders(io, paths, (readers) =>
     inspectExport(readers, {
       showKeys: flags["show-keys"] === true,
       layout: flags.layout === true,

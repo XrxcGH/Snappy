@@ -59,9 +59,9 @@ describe("memories rescue of a three-part export", () => {
   });
 
   it("numbers the parts in export order, even though a folder listing puts -2 first", async () => {
-    const paths = await resolveZipPaths([dir]);
+    const paths = await resolveZipPaths(makeIo(), [dir]);
     expect(paths.map((p) => p.split(/[\\/]/).pop())).toEqual(zips.map((p) => p.split(/[\\/]/).pop()));
-    const parsed = await withReaders(paths, parseParts);
+    const parsed = await withReaders(makeIo(), paths, parseParts);
     expect(new Set(parsed.bundledMedia?.map((f) => f.part))).toEqual(new Set([2, 3]));
     expect(new Set(parsed.memories.flatMap((m) => (m.partIndex === undefined ? [] : [m.partIndex])))).toEqual(new Set([2, 3]));
   });

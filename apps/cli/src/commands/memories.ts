@@ -230,9 +230,9 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
   const outDir = flags.out === undefined ? undefined : resolve(flags.out);
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
 
-  const paths = await resolveZipPaths(positionals);
+  const paths = await resolveZipPaths(io, positionals);
   requireFirstPart(paths);
-  return withReaders(paths, async (readers) => {
+  return withReaders(io, paths, async (readers) => {
     const parsed = await parseParts(readers);
     const now = io.now();
     const plan = planMemories(parsed.memories, { layout, capBytes, now });

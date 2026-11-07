@@ -278,8 +278,8 @@ describe("calm errors for odd arguments", () => {
     const dir = tempDir("parts");
     const good = writeSyntheticZip(dir, "Export.zip");
     writeFileSync(join(dir, "._Export.zip"), "AppleDouble junk");
-    expect(await resolveZipPaths([dir])).toEqual([good]);
-    await expect(resolveZipPaths([""])).rejects.toMatchObject({ code: "no-input" });
+    expect(await resolveZipPaths(makeIo(), [dir])).toEqual([good]);
+    await expect(resolveZipPaths(makeIo(), [""])).rejects.toMatchObject({ code: "no-input" });
     const r = await run(["analyze", dir, "--no-save"]);
     expect(r.code).toBe(0);
   });
