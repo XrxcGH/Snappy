@@ -21,7 +21,7 @@
         "resizable": true,
         "dragDropEnabled": false,
         "create": false,
-        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,msEdgeUpdateNotifications,msOneAuthWAM --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-pings --disable-client-side-phishing-detection"
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,msEdgeUpdateNotifications,msOneAuthWAM,msForceOneAuthWAM,msOneAuthWAMOnWCOS --disable-background-networking --disable-component-update --disable-sync --disable-domain-reliability --no-pings --disable-client-side-phishing-detection"
       }
     ],
     "security": {

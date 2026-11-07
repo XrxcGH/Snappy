@@ -220,6 +220,10 @@ describe("WebView2 hardening", () => {
     const features = args.filter((a) => a.startsWith("--disable-features="));
     expect(features).toHaveLength(1);
     expect(features[0]).toMatch(/msWebOOUI,msPdfOOUI,msSmartScreenProtection/);
+    // The Microsoft account sign-in component that made a background connection. On WebView2 156 switching off msOneAuthWAM was
+    // enough; on 157 it was not until msForceOneAuthWAM was switched off too (tried on one computer). A newer runtime may need more.
+    const off = (features[0] ?? "").replace("--disable-features=", "").split(",");
+    for (const name of ["msOneAuthWAM", "msForceOneAuthWAM"]) expect(off).toContain(name);
     expect(args.join(" ")).not.toMatch(/remote-debugging|--proxy|--user-data-dir|--enable-/);
   });
 
