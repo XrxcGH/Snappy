@@ -5,12 +5,13 @@
  * left alone on its own line. Rendered in the small fake DOM, with the same router the page uses.
  * Synthetic sample data only.
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createActions } from "../src/actions.ts";
 import { buildShell, followTheme } from "../src/app-shell.ts";
 import type { Shell } from "../src/app-shell.ts";
 import { brand, routes, shell as shellCopy } from "../src/copy.ts";
 import type { RouteId } from "../src/copy.ts";
+import { setPlatform } from "../src/platform.ts";
 import { initialState } from "../src/reducer.ts";
 import type { State } from "../src/reducer.ts";
 import { buildSampleWorkspace } from "../src/sample.ts";
@@ -307,5 +308,32 @@ describe("one page, no repeats", () => {
       }
       expect(alone).toEqual([]);
     });
+  });
+});
+
+describe("beta label in the footer", () => {
+  afterEach(() => setPlatform({}));
+  const footerOf = (page: Page): string => (page.root.querySelector("footer.site-footer") as FakeElement).textContent;
+
+  it.each(ROUTE_IDS)("%s: the web build shows no beta line", (id) => {
+    const page = openPage({ ...initialState(), sample });
+    page.go(id);
+    expect(footerOf(page)).toContain(brand.nonAffiliation);
+    expect(footerOf(page)).not.toMatch(/beta|version/i);
+  });
+
+  it.each(ROUTE_IDS)("%s: an installed beta names its version once, under the legal line", (id) => {
+    setPlatform({ desktop: "windows", release: { version: "0.1.0-beta.1", beta: true } });
+    const page = openPage({ ...initialState(), sample });
+    page.go(id);
+    const lines = page.root.querySelectorAll("footer.site-footer .caption").map((p) => p.textContent);
+    expect(lines).toEqual([brand.nonAffiliation, "Beta version 0.1.0-beta.1"]);
+    expect(lines[1]).toBe(shellCopy.betaLine("0.1.0-beta.1"));
+  });
+
+  it("shows no beta line for a final release", () => {
+    setPlatform({ desktop: "windows", release: { version: "1.0.0", beta: false } });
+    const page = openPage();
+    expect(page.root.querySelectorAll("footer.site-footer .caption")).toHaveLength(1);
   });
 });

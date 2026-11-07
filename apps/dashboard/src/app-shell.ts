@@ -13,6 +13,7 @@ import { announce } from "./announce.ts";
 import { brand, routes, shell } from "./copy.ts";
 import type { RouteId } from "./copy.ts";
 import { h } from "./dom.ts";
+import { platform } from "./platform.ts";
 import { region } from "./reactive.ts";
 import type { Theme } from "./reducer.ts";
 import type { Store } from "./store.ts";
@@ -59,6 +60,12 @@ export const NAV: NavGroup[] = [
     ],
   },
 ];
+
+/** The footer's second line, in an installed beta only: the build's version, so a bug report can name it. Nothing in the web build. */
+const betaLine = (): HTMLElement | null => {
+  const release = platform().release;
+  return release?.beta ? h("p", { class: "caption" }, shell.betaLine(release.version)) : null;
+};
 
 /** Put the chosen theme on the page. "Match device" removes the attribute, so the device decides. */
 export function applyTheme(theme: Theme): void {
@@ -170,7 +177,7 @@ export function buildShell(root: HTMLElement, ctx: ViewContext): Shell {
     ),
     h("div", { class: "layout" }, nav, h("div", { class: "content" }, main)),
     // The legal line appears once on every page, here. No page repeats it. It starts at the content column.
-    h("footer", { class: "site-footer" }, h("div", { class: "site-footer-inner" }, h("p", { class: "caption" }, brand.nonAffiliation))),
+    h("footer", { class: "site-footer" }, h("div", { class: "site-footer-inner" }, h("p", { class: "caption" }, brand.nonAffiliation), betaLine())),
   );
 
   return {

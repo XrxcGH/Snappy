@@ -19,6 +19,11 @@ export interface Platform {
   desktop?: "windows" | "other";
   /** False hides the "Open in Snapchat" buttons. The default is to show them. */
   profileLinks?: boolean;
+  /**
+   * Set by an installed app that is a pre-release: its own version (it names the build in a bug report) and
+   * whether it is a beta. The footer and Settings show them. The web build leaves this empty and shows neither.
+   */
+  release?: { version: string; beta: boolean };
 }
 
 let current: Platform = {};

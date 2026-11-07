@@ -3,7 +3,9 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { platform, setPlatform } from "../../dashboard/src/platform.ts";
-import { desktopKind, desktopPlatform } from "../src/desktop-platform.ts";
+import { readFileSync } from "node:fs";
+import { desktopKind, desktopPlatform, releaseOf } from "../src/desktop-platform.ts";
+import pkg from "../package.json" with { type: "json" };
 
 afterEach(() => setPlatform(desktopPlatform));
 
@@ -24,5 +26,23 @@ describe("desktop platform", () => {
     expect(desktopPlatform.profileLinks).toBe(false);
     expect(desktopPlatform.pickZips).toBeUndefined();
     expect(desktopPlatform.runImport).toBeUndefined();
+  });
+
+  it("calls a pre-release a beta and names its version, so the footer and Settings can show it", () => {
+    expect(releaseOf("0.1.0-beta.1")).toEqual({ version: "0.1.0-beta.1", beta: true });
+    expect(releaseOf("0.1.0-beta")).toEqual({ version: "0.1.0-beta", beta: true });
+    expect(releaseOf("0.1.0")).toEqual({ version: "0.1.0", beta: false });
+    expect(releaseOf("0.1.0-rc.1").beta).toBe(false);
+    expect(desktopPlatform.release).toEqual(releaseOf(pkg.version));
+  });
+
+  it("has the same version in package.json, tauri.conf.json and Cargo.toml (and Cargo.lock)", () => {
+    const conf = JSON.parse(readFileSync(new URL("../src-tauri/tauri.conf.json", import.meta.url), "utf8")) as { version: string };
+    const cargo = readFileSync(new URL("../src-tauri/Cargo.toml", import.meta.url), "utf8");
+    const crate = /^version = "([^"]+)"/m.exec(cargo)?.[1];
+    const lock = readFileSync(new URL("../src-tauri/Cargo.lock", import.meta.url), "utf8");
+    const locked = /\[\[package\]\]\r?\nname = "snappy"\r?\nversion = "([^"]+)"/.exec(lock)?.[1];
+    expect([conf.version, crate, locked]).toEqual([pkg.version, pkg.version, pkg.version]);
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+(-beta\.\d+)?$/);
   });
 });

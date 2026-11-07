@@ -66,6 +66,8 @@ export const shell = {
   sealedOn: "Sealed history on",
   lockNow: "Lock now",
   lockedShort: "Locked.",
+  /** Shown in the footer of an installed beta only, so a bug report can name the build. */
+  betaLine: (version: string) => `Beta version ${version}`,
   navFindings: "Findings",
   navMore: "More",
   themeToLight: "Switch to light theme",

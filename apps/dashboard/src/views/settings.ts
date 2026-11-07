@@ -8,6 +8,7 @@ import { button } from "../components/button.ts";
 import { icon } from "../components/icon.ts";
 import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
+import { platform } from "../platform.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
 import { region } from "../reactive.ts";
 import type { View, ViewContext } from "./context.ts";
@@ -141,7 +142,7 @@ function aboutSection(): HTMLElement {
   return section(
     settings.aboutHeading,
     h("p", {}, settings.aboutBody),
-    h("p", { class: "caption" }, settings.versionLabel(brand.version)),
+    h("p", { class: "caption" }, settings.versionLabel(platform().release?.version ?? brand.version)),
     subsection(
       settings.licensesHeading,
       h("p", {}, settings.licensesBody),
