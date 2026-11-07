@@ -32,14 +32,8 @@ export const copy = {
     memories_list: "Memories list",
     memories_files: "Memories files",
   },
-  /** The same names inside a sentence. */
-  sectionsInline: {
-    friends: "friends list",
-    chat_history: "chat history",
-    snap_history: "Snap history",
-    memories_list: "Memories list",
-    memories_files: "Memories files",
-  },
+  /** The same names inside a sentence. A piece that code joins into a sentence is a "unit" key, so the lint lets it start in lowercase. */
+  unitSection: (id: string): string => ({ friends: "friends list", chat_history: "chat history", snap_history: "Snap history", memories_list: "Memories list", memories_files: "Memories files" })[id] ?? "list",
   statuses: { present: "Found", empty: "Empty", missing: "Not found", unreadable: "Unreadable" },
 
   datesHeading: "Dates covered",
@@ -50,7 +44,7 @@ export const copy = {
   spanHeader: "Span",
   records: { chats: "Chats", snaps: "Snaps", memories: "Memories" },
   span: (days: number) => countOf(days, "day", "days"),
-  ago: (days: number) => (days === 0 ? "today" : `${countOf(days, "day", "days")} ago`),
+  unitAgo: (days: number) => (days === 0 ? "today" : `${countOf(days, "day", "days")} ago`),
   madeLine: (date: string, ago: string) => `Made ${date}, ${ago}.`,
   madeOnlyLine: (date: string) => `Made ${date}.`,
   activityLine: (date: string) => `No export date found. The newest activity is from ${date}.`,

@@ -231,7 +231,7 @@ export const tools = {
   open: "Open",
   statusReady: "Ready",
   statusNeeds: { export: "Needs an export", friends: "Needs a friends list", chats: "Needs chat history", memories: "Needs a Memories list" },
-  backLink: "All tools",
+  backLink: "Back to tools",
   readsHeading: "What this reads",
   readsNever: "It never reads message text, media, locations, display names or login history.",
   workingLabel: "Working on your results",

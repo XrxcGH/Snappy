@@ -13,8 +13,6 @@ import { copy } from "./copy.ts";
 import { computeExportCheck } from "./model.ts";
 import type { ExportCheck, ExportCheckResult } from "./model.ts";
 
-type SectionId = insights.exportCheck.SectionId;
-
 export const meta: ToolMeta = { id: "export-check", group: "your-export", category: "cleanup", icon: "check", needs: ["export"] };
 
 const VERDICT: Record<insights.exportCheck.CheckStatus, { text: string; kind: NoticeKind }> = {
@@ -25,7 +23,7 @@ const VERDICT: Record<insights.exportCheck.CheckStatus, { text: string; kind: No
 };
 
 const num = (v: insights.exportCheck.ParamValue | undefined): number => (typeof v === "number" ? v : 0);
-const sectionName = (v: insights.exportCheck.ParamValue | undefined): string => copy.sectionsInline[v as SectionId] ?? "list";
+const sectionName = (v: insights.exportCheck.ParamValue | undefined): string => copy.unitSection(String(v));
 
 /** The sentence for one note. Hedged: Snappy infers from what is in the files. */
 function noteText(n: insights.exportCheck.CheckNote): string {
@@ -96,7 +94,7 @@ function ageLine(age: insights.exportCheck.ExportAge): string {
   if (age.at === null) return copy.unknownDateLine;
   const when = formatDate(age.at);
   if (age.basis === "newest-activity") return copy.activityLine(when);
-  return age.ageDays === null ? copy.madeOnlyLine(when) : copy.madeLine(when, copy.ago(age.ageDays));
+  return age.ageDays === null ? copy.madeOnlyLine(when) : copy.madeLine(when, copy.unitAgo(age.ageDays));
 }
 
 /** A section that is there counts as yes; a missing optional one is optional; anything else is a no. */

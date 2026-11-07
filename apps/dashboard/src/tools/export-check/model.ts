@@ -18,7 +18,7 @@ export interface ExportCheckResult {
 
 export function computeExportCheck(data: ToolData): ExportCheckResult {
   const { parsed } = data;
-  if (parsed === null) throw new Error("The export check needs an export.");
+  if (parsed === null) throw new Error("needs an export");
   const check = insights.exportCheck.checkExport({
     parsed,
     now: data.now,
