@@ -128,6 +128,29 @@ describe("banner", () => {
   });
 });
 
+describe("banner on a narrow screen", () => {
+  const widest = (lines: string[]): number => Math.max(...lines.map((l) => Array.from(stripVTControlCharacters(l)).length));
+
+  it("keeps the mark in one piece and puts the tagline under it, wrapped to the width", () => {
+    for (const columns of [24, 30, 40, 64]) {
+      const lines = color({ columns }).banner().map((l) => stripVTControlCharacters(l));
+      expect(widest(lines), `at ${columns}`).toBeLessThanOrEqual(columns);
+      // The five bars stay the first five lines, and the wordmark stays beside the spine.
+      expect(lines[2]).toContain("Snappy");
+      expect(lines.slice(0, 5).join(" ")).not.toContain("Tidy");
+      expect(lines.slice(5).join(" ")).toBe("Tidy your friend list and rescue your Memories.");
+    }
+  });
+
+  it("keeps the tagline beside the mark when there is room for it", () => {
+    for (const columns of [65, 80, 120]) {
+      const lines = color({ columns }).banner().map((l) => stripVTControlCharacters(l));
+      expect(lines).toHaveLength(5);
+      expect(lines[3]).toContain("Tidy your friend list and rescue your Memories.");
+    }
+  });
+});
+
 describe("format", () => {
   it("formats dates, sizes and counts in American English", () => {
     expect(formatDate(Date.UTC(2026, 10, 6, 23, 59))).toBe("Nov 6, 2026");
