@@ -89,7 +89,15 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 // "tools/<id>" is a tool's page: it has its own title, and the menu keeps Tools marked.
-const ALL_ROUTES = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", "tools/export-check", "guide", "privacy", "settings"];
+// The hub and then every tool, in the hub's order. apps/dashboard/test/tools/contract.test.ts keeps the tool folders and the registry equal.
+const TOOL_ROUTES = [
+  "export-check", "export-reminder",
+  "friends-backup", "friend-count-history", "closest-fading", "anniversaries", "blocked-review",
+  "waiting-on-reply", "habits",
+  "storage-planner", "memories-on-this-day", "rescue-manifest",
+  "safety-checklist", "privacy-tuneup",
+].map((id) => `tools/${id}`);
+const ALL_ROUTES = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", ...TOOL_ROUTES, "guide", "privacy", "settings"];
 const ALL_WIDTHS = [320, 360, 390, 768, 1024, 1280];
 const THEMES = ["light", "dark"];
 /** Widths at and below this one are measured in a touch context (a phone). */

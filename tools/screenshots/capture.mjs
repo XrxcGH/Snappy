@@ -24,8 +24,8 @@ import { fileURLToPath } from "node:url";
 import { showTheme } from "./theme.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SCREENS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", "privacy", "guide", "settings"];
-const PHONE_SCREENS = ["overview", "cleanup", "memories"];
+const SCREENS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "tools", "tools/waiting-on-reply", "tools/storage-planner", "privacy", "guide", "settings"];
+const PHONE_SCREENS = ["overview", "cleanup", "memories", "tools", "tools/waiting-on-reply"];
 
 function parseArgs(argv) {
   const out = { out: path.join(root, "docs", "images"), port: 4318, only: undefined };
@@ -51,6 +51,10 @@ const portOpen = (port) => new Promise((resolve) => {
   s.once("error", () => resolve(false));
 });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** A tool page is "tools/<id>"; its picture is "tools-<id>-light.png". */
+const fileId = (id) => id.replace("/", "-");
+/** A tool computes after its page has painted, so a picture waits until nothing on the page is busy. */
+const settle = (page) => page.waitForFunction(() => document.querySelector("[aria-busy]") === null, null, { timeout: 15000 }).catch(() => {});
 
 async function openWithSample(browser, url, contextOptions) {
   const context = await browser.newContext({ ...contextOptions, serviceWorkers: "block", reducedMotion: "reduce" });
@@ -83,8 +87,9 @@ async function main() {
       for (const id of screens) {
         await page.evaluate((h) => { location.hash = h; }, `#/${id}`);
         await page.mouse.move(0, 0);
+        await settle(page);
         await page.waitForTimeout(350);
-        const file = path.join(opts.out, `${id}-${scheme}.png`);
+        const file = path.join(opts.out, `${fileId(id)}-${scheme}.png`);
         await page.screenshot({ path: file, fullPage: false });
         console.log("wrote", path.relative(root, file));
       }
@@ -95,8 +100,9 @@ async function main() {
     for (const id of PHONE_SCREENS.filter((s) => screens.includes(s))) {
       await phone.page.evaluate((h) => { location.hash = h; }, `#/${id}`);
       await phone.page.mouse.move(0, 0);
+      await settle(phone.page);
       await phone.page.waitForTimeout(350);
-      const file = path.join(opts.out, `${id}-phone.png`);
+      const file = path.join(opts.out, `${fileId(id)}-phone.png`);
       await phone.page.screenshot({ path: file, fullPage: false });
       console.log("wrote", path.relative(root, file));
     }
