@@ -10,6 +10,8 @@ import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
 import { makeIo, run, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { sharedRuns } from "./shared-runs.ts";
+import { describeZips } from "./verify-memories-output.ts";
 
 const PASSPHRASE = "insight-outputs-passphrase";
 
@@ -33,13 +35,15 @@ export interface InsightOutputs {
   json: Record<string, string>;
   /** Files the runs wrote on purpose (a backup, a manifest, a calendar file), by path. */
   files: Record<string, string>;
+  /** Every entry name inside the zips the runs read (the three-part export and the single export), so a gate can look for any of them in the output. */
+  entryNames: string[];
 }
 
 export async function collectInsightRuns(): Promise<InsightOutputs> {
   const dir = tempDir("insights");
   const { earlier, later } = writeDemoPair(dir, { bundleMedia: true });
   const parts = join(dir, "parts");
-  writeSyntheticParts(parts);
+  const partZips = writeSyntheticParts(parts);
   const env = { SNAPPY_PASSPHRASE: PASSPHRASE };
   const ledger = join(dir, "ledger.sealed");
   const outputs: Record<string, string> = {};
@@ -78,11 +82,14 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
   const backupDir = join(dir, "backup");
   const backup = join(backupDir, "bk.json");
   await capture("backup", ["backup", parts]);
-  await capture("backup saved", ["backup", parts, "--out", backup]);
-  await capture("backup compare", ["backup", parts, "--compare", backup]);
-  await capture("backup error exists", ["backup", parts, "--out", backup]);
+  // The saved file comes from the export that holds download links, so a link leaking into it can be seen.
+  await capture("backup saved", ["backup", later, "--out", backup]);
+  await capture("backup saved parts", ["backup", parts, "--out", join(backupDir, "bk-parts.json"), "--list"]);
+  await capture("backup compare", ["backup", later, "--compare", backup]);
+  await capture("backup compare other export", ["backup", parts, "--compare", backup, "--friend-count", "300"]);
+  await capture("backup error exists", ["backup", later, "--out", backup]);
   await capture("backup error not a backup", ["backup", parts, "--compare", ledger]);
-  written(backup);
+  written(backup, join(backupDir, "bk-parts.json"));
 
   // replies
   await capture("replies", ["replies", later]);
@@ -94,6 +101,7 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
   // habits
   await capture("habits", ["habits", later]);
   await capture("habits detail", ["habits", parts, "--detail", "--utc-offset=-5:30"]);
+  await capture("remind offset", ["remind", "--last-export", "2026-10-31", "--utc-offset=-5"]);
   await capture("habits months", ["habits", parts, "--months", "2", "--verbose"]);
   await capture("habits error offset", ["habits", later, "--utc-offset=99"]);
 
@@ -120,10 +128,10 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
   await capture("on-this-day date", ["on-this-day", parts, "--date", "2026-10-15"]);
   await capture("on-this-day window", ["on-this-day", parts, "--date", "2026-10-15", "--window", "5"]);
   await capture("on-this-day year", ["on-this-day", parts, "--year", "2025"]);
-  await capture("on-this-day by year", ["on-this-day", parts, "--by-year", "--offset", "+5:30"]);
+  await capture("on-this-day by year", ["on-this-day", parts, "--by-year", "--utc-offset", "5:30"]);
   await capture("on-this-day", ["on-this-day", parts]);
   await capture("on-this-day error date", ["on-this-day", parts, "--date", "x"]);
-  await capture("on-this-day error offset", ["on-this-day", parts, "--offset", "99"]);
+  await capture("on-this-day error offset", ["on-this-day", parts, "--utc-offset", "99"]);
   await capture("on-this-day error year and by-year", ["on-this-day", parts, "--year", "2025", "--by-year"]);
   await capture("on-this-day error not found", ["on-this-day", join(dir, "missing.zip")]);
 
@@ -145,6 +153,8 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
   const rescueDir = join(dir, "rescue");
   const manifest = join(rescueDir, "manifest.json");
   const manifest2 = join(rescueDir, "manifest2.json");
+  const manifest3 = join(rescueDir, "manifest3.json");
+  const manifestParts = join(rescueDir, "manifest-parts.json");
   const folder = join(rescueDir, "saved");
   await capture("rescue", ["rescue", later]);
   await capture("rescue parts", ["rescue", parts, "--verbose"]);
@@ -170,21 +180,62 @@ export async function collectInsightRuns(): Promise<InsightOutputs> {
 
   // remind
   const calendar = join(dir, "reminders", "r.ics");
+  const calendarParts = join(dir, "reminders", "r-parts.ics");
   await capture("remind", ["remind"]);
-  await capture("remind saved", ["remind", parts, "--time", "09:30", "--alarm", "1", "--out", calendar]);
+  await capture("remind saved", ["remind", later, "--time", "09:30", "--alarm", "1", "--out", calendar]);
+  await capture("remind saved parts", ["remind", parts, "--out", calendarParts]);
   await capture("remind last export", ["remind", "--last-export", "2020-01-01", "--verbose"]);
   await capture("remind error months", ["remind", "--months", "0"]);
   await capture("remind json", ["remind", "--json"]);
-  written(calendar);
+  written(calendar, calendarParts);
 
-  return { outputs, json, files };
+  // JSON of every command, with --verbose and the list variants. Each one is read over the export that holds
+  // download links ("<name> json") and over the three-part export that holds entry names ("<name> json parts"),
+  // since a leak of either kind would show in only one of them.
+  const sources: Array<[string, string]> = [["", later], [" parts", parts]];
+  for (const [label, source] of sources) {
+    const cases: Array<[string, string[]]> = [
+      ["check", ["check", source, "--friend-count", "300"]],
+      ["storage", ["storage", source, "--goal-gb", "0.00003", "--oldest-first"]],
+      ["backup", ["backup", source]],
+      ["backup list", ["backup", source, "--list"]],
+      ["backup compare", ["backup", source, "--compare", backup, "--list"]],
+      ["replies", ["replies", source, "--you-days", "0", "--them-days", "0"]],
+      ["habits", ["habits", source, "--detail", "--utc-offset=-5:30"]],
+      ["closest", ["closest", source]],
+      ["safety", ["safety", source, "--done", "blocked-list"]],
+      ["anniversaries", ["anniversaries", source, "--days", "366"]],
+      ["on-this-day", ["on-this-day", source]],
+      ["on-this-day days", ["on-this-day", source, "--date", "2026-10-15", "--window", "5"]],
+      ["on-this-day by year", ["on-this-day", source, "--by-year"]],
+      ["blocked", ["blocked", source]],
+      ["blocked counts", ["blocked", source, "--counts"]],
+      ["friend-count", ["friend-count", source, "--no-save"]],
+      ["rescue", ["rescue", source]],
+      ["rescue folder", ["rescue", source, "--folder", folder]],
+      ["remind", ["remind", source]],
+    ];
+    for (const [name, args] of cases) await capture(`${name} json${label}`, [...args, "--json", "--verbose"]);
+  }
+  await capture("friend-count ledger json", ["friend-count", later, "--ledger", ledger, "--json", "--verbose"]);
+  await capture("rescue verify json", ["rescue", "--verify", manifest, "--folder", folder, "--list", "--json", "--verbose"]);
+  await capture("rescue saved json", ["rescue", later, "--out", manifest3, "--json"]);
+  await capture("rescue saved parts", ["rescue", parts, "--out", manifestParts]);
+  await capture("privacy done json", ["privacy", "--done", "search,quick-add", "--json"]);
+  written(manifest3, manifestParts);
+
+  return { outputs, json, files, entryNames: describeZips([later, ...partZips]).names };
 }
 
 let cached: Promise<InsightOutputs> | undefined;
 
-/** The runs, made once per test file. */
+/**
+ * The runs, made once. Test files run in separate workers, and five of them need these runs, so the first
+ * one to ask makes them and the others take its result from the shared folder that global-setup.ts provides.
+ * Without that folder (the file run on its own with another runner) each file makes its own.
+ */
 export function insightRuns(): Promise<InsightOutputs> {
-  cached ??= collectInsightRuns();
+  cached ??= sharedRuns("insight-runs", collectInsightRuns);
   return cached;
 }
 
