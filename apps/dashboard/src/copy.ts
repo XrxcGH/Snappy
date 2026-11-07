@@ -572,6 +572,7 @@ export const terminal = {
     anniversaries: "Find friendship anniversaries",
     "on-this-day": "Find Memories from this day",
     blocked: "Review blocked and ignored",
+    lookalikes: "Find lookalike usernames",
     "friend-count": "Chart your friend count",
     "rescue-manifest": "Make a rescue file list",
     privacy: "Show the privacy checklist",

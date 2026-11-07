@@ -30,6 +30,7 @@ export type CommandId =
   | "anniversaries"
   | "on-this-day"
   | "blocked"
+  | "lookalikes"
   | "friend-count"
   | "rescue-manifest"
   | "privacy"
@@ -106,6 +107,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   anniversaries: entry("anniversaries", ["anniversaries", exportSlot()]),
   "on-this-day": entry("on-this-day", ["on-this-day", exportSlot()]),
   blocked: entry("blocked", ["blocked", exportSlot()]),
+  lookalikes: entry("lookalikes", ["lookalikes", exportSlot()]),
   // --no-save keeps it from opening the saved history, so it needs no passphrase.
   "friend-count": entry("friend-count", ["friend-count", exportSlot(), "--no-save"]),
   "rescue-manifest": entry("rescue-manifest", ["rescue", exportSlot()]),
