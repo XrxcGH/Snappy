@@ -7,6 +7,7 @@
  * This module imports no command code, so the page never carries the commands themselves.
  */
 import { terminal } from "../copy.ts";
+import { platform } from "../platform.ts";
 
 export type CommandId =
   | "help"
@@ -67,10 +68,16 @@ export interface CommandSpec {
 }
 
 /**
- * What Copy shows in front of every command. The npm script is the form that works in a fresh
- * clone of the repository; one constant, so a later switch to a bare snappy-export is one line.
+ * What Copy shows in front of every command on the web page. The npm script is the form that works in a fresh
+ * clone of the repository.
  */
 export const CLI_PREFIX = "npm run snappy-export --";
+
+/** What the desktop app shows instead: the plain command name. It has no repository and no npm, and Run does not read this text. */
+export const DESKTOP_CLI_PREFIX = "snappy-export";
+
+/** The prefix for the platform the page runs on, read at the moment of use. */
+export const cliPrefix = (): string => (platform().desktop === undefined ? CLI_PREFIX : DESKTOP_CLI_PREFIX);
 
 const EXPORT_EXAMPLE = "<your export folder>";
 const OUT_EXAMPLE = "<folder for rescued Memories>";
@@ -133,7 +140,7 @@ const quoted = (token: string): string => (/[\s<>"'|&;$`\\*?]/.test(token) ? `"$
 /** The text Copy puts on the clipboard and the block shows: the prefix, then the words with their examples. */
 export function displayText(spec: CommandSpec): string {
   const words = spec.argv.map((a) => (typeof a === "string" ? a : a.example)).map(quoted);
-  return [CLI_PREFIX, ...words].join(" ");
+  return [cliPrefix(), ...words].join(" ");
 }
 
 export interface Binding {

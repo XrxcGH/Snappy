@@ -13,6 +13,15 @@
  */
 import type { CandidateCategory, Confidence } from "@snappy-export/core";
 import { countOf } from "./format.ts";
+import { platform } from "./platform.ts";
+
+/**
+ * Wording that differs inside the desktop app, where there is no browser, tab or page to speak of. The web
+ * text is written first and never changes: `desktop` is chosen only when the shell has set platform().desktop,
+ * at the moment the text is read (so a getter below, never a constant). test/desktop-copy.test.ts lists every
+ * string that differs and lints the desktop wording like the rest.
+ */
+const onDesktop = (web: string, desktop: string): string => (platform().desktop === undefined ? web : desktop);
 
 export const brand = {
   name: "Snappy",
@@ -29,6 +38,7 @@ export const brand = {
  * lives: one setting in this browser, kept apart from your history (which is sealed and encrypted).
  */
 export const themeNote = "Your theme choice is remembered in this browser, apart from your history.";
+const desktopThemeNote = "Your theme choice is remembered on this device, apart from your history.";
 
 export interface RouteCopy {
   /** Nav label. One line in the sidebar and the phone menu. */
@@ -137,7 +147,9 @@ export const protection: Record<string, string> = {
 
 export const start = {
   promiseLead: "Sort your Snapchat friend list and Memories from your own data export.",
-  trustChips: ["Stays on this device", "Reads names and dates only", "Works without internet"] as const,
+  get trustChips(): readonly [string, string, string] {
+    return ["Stays on this device", "Reads names and dates only", onDesktop("Works without internet", "Works offline")];
+  },
   exportHeading: "Get your export from Snapchat",
   exportBody: "In Snapchat, open Settings, then My Data, and request your data. Snapchat emails you a link.",
   exportPoints: [
@@ -174,7 +186,12 @@ export const start = {
   exportTimeFuture: "This export’s date is in the future, so Snappy used today’s date instead.",
   exportTimeUnknown: "Snappy could not tell when this export was made, so it used today’s date.",
   sampleHeading: "Try sample data",
-  sampleBody: "Builds two made-up exports in your browser so you can see every screen. The sample is never saved.",
+  get sampleBody(): string {
+    return onDesktop(
+      "Builds two made-up exports in your browser so you can see every screen. The sample is never saved.",
+      "Builds two made-up exports in this window so you can see every screen. The sample is never saved.",
+    );
+  },
   sampleButton: "Use sample data",
   sampleLoaded: "Sample data loaded. Opening your overview.",
   unlockHeading: "Unlock your saved history",
@@ -184,7 +201,12 @@ export const start = {
   unlockedAnnounce: "Saved data unlocked.",
   unlockSkip: "You can add an export without unlocking. Snappy merges it with your history when you unlock.",
   sessionOnlyTitle: "Results not saved",
-  sessionOnlyBody: "Closing this tab clears your results. To keep your history, seal it with a passphrase in Settings.",
+  get sessionOnlyBody(): string {
+    return onDesktop(
+      "Closing this tab clears your results. To keep your history, seal it with a passphrase in Settings.",
+      "Closing Snappy clears your results. To keep your history, seal it with a passphrase in Settings.",
+    );
+  },
   sessionOnlyAction: "Set passphrase",
 };
 
@@ -239,14 +261,18 @@ export const tools = {
   readsHeading: "What this reads",
   readsNever: "It never reads message text, media, locations, display names or login history.",
   workingLabel: "Working on your results",
-  failedNote: "Snappy could not finish this. Reload the page and try again.",
+  get failedNote(): string {
+    return onDesktop("Snappy could not finish this. Reload the page and try again.", "Snappy could not finish this. Restart Snappy and try again.");
+  },
   notesHeading: "Notes",
   commandHeading: "Run it as a command",
   downloadHeading: "Download",
   markNote: "Marks are your own word, and Snappy cannot check them. They are saved only if you turned saving on, and otherwise last this session.",
   markAnnounce: (label: string, on: boolean) => `${label}: marked ${on ? "done" : "not done"}.`,
   downloadSaved: "File saved.",
-  downloadFailedNote: "Snappy could not save the file. Your browser may block downloads.",
+  get downloadFailedNote(): string {
+    return onDesktop("Snappy could not save the file. Your browser may block downloads.", "Snappy could not save the file. Try again.");
+  },
   needs: {
     exportTitle: "Add your export",
     exportBody: "This tool reads the export you add to Snappy. Add one to see its results.",
@@ -398,7 +424,12 @@ export const memories = {
   pairingLinksEmpty: "This export has no download links. Snapchat now puts the files inside the ZIP parts.",
   rescueHeading: "Rescue your files",
   rescueBody: "The Snappy command line tool copies your Memories into year and month folders. It restores dates and skips likely duplicates.",
-  rescueCommandLabel: "Copy a command to run in a terminal, in the Snappy folder, and replace its placeholders. Or press Run to try it here.",
+  get rescueCommandLabel(): string {
+    return onDesktop(
+      "Copy a command to run in a terminal, in the Snappy folder, and replace its placeholders. Or press Run to try it here.",
+      "Replace the placeholders, then press Run to try it here. Copy is for the command line tool.",
+    );
+  },
 };
 
 export const guide = {
@@ -427,7 +458,9 @@ export const guide = {
   shapeHeading: "Share the shape, never the contents",
   shapeBody: "Run this if an export will not read. It prints only names and counts.",
   tryHeading: "Try the command line",
-  tryBody: "Press Run to try a command here, or copy it to run in a terminal, in the Snappy folder.",
+  get tryBody(): string {
+    return onDesktop("Press Run to try a command here, or copy it to run in a terminal, in the Snappy folder.", "Press Run to try a command here. Copy is for the separate command line tool.");
+  },
   storingHeading: "Saved history",
   storingBody: "Snappy can keep past friend lists to spot who disappeared. They hold usernames, so seal them with a passphrase.",
   addLink: "Add export",
@@ -460,7 +493,12 @@ export const privacy = {
   detailHeader: "Details",
   networkHeading: "Network",
   networkOk: "This page cannot connect to the internet. Its security policy blocks every connection.",
-  networkUnknown: "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",
+  get networkUnknown(): string {
+    return onDesktop(
+      "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",
+      "Snappy could not confirm this page’s security policy. Install Snappy again from a copy you trust.",
+    );
+  },
   workerBody: "Background helpers read exports and run commands. They cannot connect anywhere either.",
   // Shown only inside the desktop app. Each line says what was checked and no more.
   desktopHeading: "In the desktop app",
@@ -474,28 +512,41 @@ export const privacy = {
   policyLabel: "Security policy in this page",
   policyWorker: "Background helpers start under the worker-src blob: rule. If blocked, Snappy reads on the page instead, and Run is unavailable.",
   sealHeading: "Saved data",
-  sealBody: [
-    "By default Snappy keeps your results in memory only. Closing the tab clears them.",
-    "With a passphrase, Snappy saves your friend history, keep list, and checklist marks in this browser, encrypted.",
-    "Snappy never stores your passphrase. If you forget it, the saved data cannot be recovered.",
-    "A passphrase typed into a command here is kept in memory only until the page closes.",
-  ],
+  get sealBody(): readonly string[] {
+    return [
+      onDesktop("By default Snappy keeps your results in memory only. Closing the tab clears them.", "By default Snappy keeps your results in memory only. Closing Snappy clears them."),
+      onDesktop(
+        "With a passphrase, Snappy saves your friend history, keep list, and checklist marks in this browser, encrypted.",
+        "With a passphrase, Snappy saves your friend history, keep list, and checklist marks on this device, encrypted.",
+      ),
+      "Snappy never stores your passphrase. If you forget it, the saved data cannot be recovered.",
+      onDesktop("A passphrase typed into a command here is kept in memory only until the page closes.", "A passphrase typed into a command here is kept in memory only until you close Snappy."),
+    ];
+  },
   sealTech: "The passphrase becomes a key with PBKDF2 (600,000 rounds). The data is sealed with AES-256-GCM.",
   keepHeading: "What the saved data holds",
   keepBody: "Usernames, dates, your keep list, your guided-removal checkmarks, and your checklist marks. Nothing else from your export.",
-  themeNote,
+  get themeNote(): string {
+    return onDesktop(themeNote, desktopThemeNote);
+  },
 };
 
 export const settings = {
   title: routes.settings.title,
   themeHeading: "Theme",
   themes: { dark: "Dark", light: "Light", system: "Match device" },
-  themeNote,
+  get themeNote(): string {
+    return onDesktop(themeNote, desktopThemeNote);
+  },
   storageHeading: "Saved data",
-  storageSession: "Your results are not saved. Closing this tab clears them.",
+  get storageSession(): string {
+    return onDesktop("Your results are not saved. Closing this tab clears them.", "Your results are not saved. Closing Snappy clears them.");
+  },
   storageLocked: "Your saved history is sealed. Unlock it on the Start page.",
   storageUnlocked: "Snappy does not store your passphrase.",
-  storageUnsupported: "This browser does not allow saving. Your results last only while this tab is open.",
+  get storageUnsupported(): string {
+    return onDesktop("This browser does not allow saving. Your results last only while this tab is open.", "Saving is not available here. Your results last only while Snappy is open.");
+  },
   passphraseLabel: "Passphrase",
   confirmLabel: "Repeat passphrase",
   passphraseHelp: "Use 12 or more characters. If you forget it, your saved data cannot be recovered.",
@@ -517,7 +568,9 @@ export const settings = {
   deleteConfirm: "Delete data",
   deleteCancel: "Cancel",
   deleted: "Saved data deleted.",
-  deleteFailed: "Snappy could not delete the saved data. Close other Snappy tabs and try again.",
+  get deleteFailed(): string {
+    return onDesktop("Snappy could not delete the saved data. Close other Snappy tabs and try again.", "Snappy could not delete the saved data. Close other Snappy windows and try again.");
+  },
   aboutHeading: "About",
   aboutBody: "Snappy reads your own Snapchat export on this device to tidy your friends list and rescue your Memories.",
   versionLabel: (v: string) => `Version ${v}`,
@@ -538,11 +591,20 @@ export const passphraseHint = {
 export const vaultMessages = {
   wrongPassphrase: "That passphrase did not open your saved data. Check it and try again.",
   unreadable: "Snappy could not read the saved data. A different version may have saved it.",
-  storageUnavailable: "This browser does not allow saving, so Snappy is in session-only mode.",
-  saveFailed: "Snappy could not save. Your results are on screen, but closing this tab clears them.",
+  get storageUnavailable(): string {
+    return onDesktop("This browser does not allow saving, so Snappy is in session-only mode.", "Saving is not available here, so Snappy is in session-only mode.");
+  },
+  get saveFailed(): string {
+    return onDesktop("Snappy could not save. Your results are on screen, but closing this tab clears them.", "Snappy could not save. Your results are on screen, but closing Snappy clears them.");
+  },
   lockedFirst: "Unlock your saved data first, or delete it in Settings to start over.",
   nothingSaved: "No saved data was found on this device.",
-  savedElsewhere: "Saved data already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
+  get savedElsewhere(): string {
+    return onDesktop(
+      "Saved data already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
+      "Saved data already exists here, maybe from another window. Unlock it first, or delete it in Settings.",
+    );
+  },
   /** After a command changed the saved history while the dashboard was open. */
   historyUpdated: "Saved history updated. Unlock to see it.",
 };
@@ -611,7 +673,9 @@ export const terminal = {
   /** Why Run cannot start yet, or at all. */
   needsFileHint: "Choose your export first.",
   busyHint: "Another command is running.",
-  noWorkerNote: "This browser cannot run commands here.",
+  get noWorkerNote(): string {
+    return onDesktop("This browser cannot run commands here.", "This window cannot run commands here.");
+  },
   networkNote: "Needs a terminal on your computer.",
   /** Under output that suggests --download, which Run cannot do (it has no network). */
   downloadNote: "Downloads need a terminal on your computer.",
@@ -620,7 +684,12 @@ export const terminal = {
   confirmFolderTitle: "Save to a virtual folder?",
   confirmFolderBody: (megabytes: number) => `Files stay in this page until you save them. Up to ${megabytes} MB.`,
   confirmStoreTitle: "Update saved history?",
-  confirmStoreBody: "This changes the saved history in this browser. It locks the dashboard until you unlock it again.",
+  get confirmStoreBody(): string {
+    return onDesktop(
+      "This changes the saved history in this browser. It locks the dashboard until you unlock it again.",
+      "This changes the saved history on this device. It locks the dashboard until you unlock it again.",
+    );
+  },
   /** The passphrase prompt. The question itself comes from the command. */
   secretTitle: "Passphrase needed",
   secretNote: "Kept in memory only. It is never shown or saved.",
