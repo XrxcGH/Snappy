@@ -31,8 +31,22 @@ interface OptionToken {
 
 type Token = OptionToken | { kind: "positional"; value: string } | { kind: "terminator" };
 
-/** A problem with the typed options. The wording follows Node's, which parseFlags sorts into kinds. */
-class OptionProblem extends Error {}
+type ProblemKind = "unknown" | "needs-value" | "no-value" | "ambiguous";
+
+/** A problem with the typed options: its kind and the option as the person typed it. */
+class OptionProblem extends Error {
+  readonly kind: ProblemKind;
+  readonly typed: string;
+
+  constructor(kind: ProblemKind, typed: string) {
+    super(kind);
+    this.kind = kind;
+    this.typed = typed;
+  }
+}
+
+/** The leading "--name" or "-n" of what was typed, which is all a message echoes. Odd text gives "--". */
+const echoed = (typed: string): string => /^--?[\w-]+/.exec(typed)?.[0] ?? "--";
 
 const own = (spec: OptionSpec, name: string): OptionDef | undefined => (Object.hasOwn(spec, name) ? spec[name] : undefined);
 
@@ -117,19 +131,14 @@ function tokenize(args: string[], spec: OptionSpec): Token[] {
 
 function checkUsage(spec: OptionSpec, token: OptionToken): void {
   const def = own(spec, token.name);
-  if (def === undefined) {
-    throw new OptionProblem(
-      `Unknown option '${token.rawName}'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- ${JSON.stringify(token.rawName)}`,
-    );
-  }
-  const names = `${def.short ? `-${def.short}, ` : ""}--${token.name}`;
-  if (def.type === "string" && typeof token.value !== "string") throw new OptionProblem(`Option '${names} <value>' argument missing`);
-  if (def.type === "boolean" && token.value !== undefined) throw new OptionProblem(`Option '${names}' does not take an argument`);
+  if (def === undefined) throw new OptionProblem("unknown", token.rawName);
+  // A known option is echoed by its short name when it has one, else by its long name.
+  const known = def.short ? `-${def.short}` : `--${token.name}`;
+  if (def.type === "string" && typeof token.value !== "string") throw new OptionProblem("needs-value", known);
+  if (def.type === "boolean" && token.value !== undefined) throw new OptionProblem("no-value", known);
   // A separate value that looks like another option is most likely a forgotten value.
   if (token.inlineValue !== true && token.value !== undefined && token.value.length > 1 && token.value[0] === "-") {
-    throw new OptionProblem(
-      `Option '${token.rawName}' argument is ambiguous.\nDid you forget to specify the option argument for '${token.rawName}'?\nTo specify an option argument starting with a dash use ${token.rawName}=-XYZ.`,
-    );
+    throw new OptionProblem("ambiguous", token.rawName);
   }
 }
 
@@ -166,17 +175,15 @@ export function parseFlags<T>(command: string, args: string[], options: OptionSp
     return { values: { ...values } as T, positionals };
   } catch (e) {
     if (!(e instanceof OptionProblem)) throw e;
-    const message = e.message;
-    const named = /'(--?[\w-]+)/.exec(message)?.[1];
-    const problem = /ambiguous/i.test(message)
-      ? `The option ${named ?? "you typed"} needs a value. If it starts with a dash, write ${named ?? "--option"}=value.`
-      : /argument missing/i.test(message)
-      ? `The option ${named ?? "you typed"} needs a value.`
-      : /does not take an argument/i.test(message)
-        ? `The option ${named ?? "you typed"} does not take a value.`
-        : named
-          ? `Snappy does not know the option ${named} for ${command}.`
-          : `Snappy could not read those options for ${command}.`;
+    const named = echoed(e.typed);
+    const problem =
+      e.kind === "ambiguous"
+        ? `The option ${named} needs a value. If it starts with a dash, write ${named}=value.`
+        : e.kind === "needs-value"
+          ? `The option ${named} needs a value.`
+          : e.kind === "no-value"
+            ? `The option ${named} does not take a value.`
+            : `Snappy does not know the option ${named} for ${command}.`;
     throw new CliError("usage", `${problem} Run "snappy-export help ${command}" for the options.`);
   }
 }
