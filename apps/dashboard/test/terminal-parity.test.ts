@@ -182,7 +182,7 @@ describe("the app and the command line agree", () => {
 
   it("every insight command in the catalog, in the form the app shows it", async () => {
     const ids = COMMAND_IDS.filter((id) => !["help", "demo-run", "inspect", "analyze-preview", "analyze-save", "memories-preview", "memories-rescue", "ledger-status"].includes(id));
-    expect(ids).toHaveLength(14);
+    expect(ids).toHaveLength(22);
     for (const id of ids) {
       const r = await bothWays(bindArgv(COMMANDS[id], { export: ["later.zip"] }), pair);
       expect(r.app.out, id).toBe(r.cli.out);

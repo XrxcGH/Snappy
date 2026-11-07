@@ -50,7 +50,7 @@ function collect(value: unknown, at: string, computed: boolean, out: Entry[] = [
   return out;
 }
 
-/** The fourteen tools keep their words in their own copy.ts, so those are read here too, under "toolcopy.<id>". */
+/** The twenty-two tools keep their words in their own copy.ts, so those are read here too, under "toolcopy.<id>". */
 const toolCopy = await Promise.all(TOOLS.map(async (t) => [t.id, ((await import(`../src/tools/${t.id}/copy.ts`)) as { copy: unknown }).copy] as const));
 const entries = [...collect(copy, "", false), ...toolCopy.flatMap(([id, c]) => collect(c, `toolcopy.${id}`, false))].filter((e) => e.text.trim() !== "");
 

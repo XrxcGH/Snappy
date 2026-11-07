@@ -78,7 +78,7 @@ let sampleState: State;
 let emptyState: State;
 let sampleCodes: string[] = [];
 const ALL_VIEWS = ["start", "overview", "disappeared", "requests", "quiet", "cleanup", "memories", "guide", "privacy", "settings", "tools"] as const;
-/** The fourteen tool pages, each drawn with the sample and with no export once its result has landed. */
+/** The twenty-two tool pages, each drawn with the sample and with no export once its result has landed. */
 let toolPages: RenderedToolPage[] = [];
 
 beforeAll(async () => {
@@ -341,7 +341,7 @@ describe("literals in the views and components", () => {
 });
 
 describe("the tools' own words", () => {
-  it("holds the fourteen tools' copy modules, each with strings of several kinds", async () => {
+  it("holds the twenty-two tools' copy modules, each with strings of several kinds", async () => {
     const own = await toolCopies();
     expect(own.map((t) => t.id)).toEqual(TOOLS.map((t) => t.id).sort());
     for (const t of own) expect(t.entries.length, t.id).toBeGreaterThan(5);

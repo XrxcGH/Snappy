@@ -4,7 +4,7 @@ Snappy helps you tidy your Snapchat friends list and rescue your Memories, using
 
 - **Cleanup queue.** Finds disappeared friends (people who may have removed you), unaccepted requests, and quiet friends, each with a confidence level and the evidence behind it. Saved chats and Snaps both count as activity, so a friend you only Snap with is not called quiet.
 - **Memories rescue.** Plans a local backup of your Memories, shows a storage meter against a 5 GB cap that you can change, and restores each file’s exact capture time. In a newer export the files are inside the ZIP files, and Snappy pairs each one with its list entry by that exact time.
-- **Tools.** Fourteen small helpers on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
+- **Tools.** Twenty-two small helpers on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup, a year in review and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
 - **Two ways to use it.** A dashboard you open in your browser, and a command line tool named `snappy-export`.
 
 Snappy only infers. A result means “may have removed you”, never “did”. Removing a friend is always your call, and you do it in Snapchat yourself.

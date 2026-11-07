@@ -44,6 +44,14 @@ No all-caps strings in the interface. Emphasis comes from weight and size, never
 | Quiet friends | Friends with no recent activity |
 | Cleanup queue | The careful list of friends you chose to review and remove |
 | Memories rescue | Memories sorted into year and month folders with dates restored |
+| Year in review | A sum-up of one year of chats, Snaps, new friends and Memories |
+| Since your last export | What changed between your last export and this one |
+| Lookalike usernames | Usernames in your lists that look alike, which may be worth a second look |
+| Friends table | Your friends in one sortable table |
+| Reply speed | How fast you and your friends tend to reply |
+| Who reaches out first | Who tends to start the exchanges in each one-to-one chat |
+| Activity calendar | Your chats and Snaps by day, week and kind |
+| Memories timeline gaps | Months with no Memories, and the busiest stretch |
 
 ### American English
 
