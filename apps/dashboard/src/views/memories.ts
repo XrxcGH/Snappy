@@ -1,13 +1,13 @@
 import { analyze } from "../analysis.ts";
 import type { Analysis } from "../analysis.ts";
 import { announce } from "../announce.ts";
-import { copyText } from "../clipboard.ts";
 import { common, memories, routes } from "../copy.ts";
 import { h, setVar } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatBytes, formatCount, formatMonth, formatPercent, gibToBytes } from "../format.ts";
 import { button, routeLink } from "../components/button.ts";
-import { emptyState, pageHeader, section, slideIn, stat } from "../components/layout.ts";
+import { codeBlock } from "../components/codeBlock.ts";
+import { emptyState, pageHeader, section, slideIn, stat, statGrid, subsection } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pairingFacts } from "../pairing-facts.ts";
 import { parseCapGiB } from "../parse-input.ts";
@@ -16,30 +16,28 @@ import { dataDeps } from "./context.ts";
 import type { View, ViewContext } from "./context.ts";
 
 export const memoriesView: View = (ctx) =>
-  h("div", { class: "view" }, pageHeader(routes.memories.title, memories.lead), h("p", { class: "caption muted" }, memories.noMediaNote), region(ctx.store, dataDeps, (s) => render(ctx, analyze(s), s.capGiB)));
+  h("div", { class: "view cat-memories" }, pageHeader(routes.memories.title, memories.lead, { icon: "memories", category: "memories" }), region(ctx.store, dataDeps, (s) => render(ctx, analyze(s), s.capGiB)));
 
 function render(ctx: ViewContext, a: Analysis, capGiB: number): Child[] {
   const addExport = routeLink("start", common.addExport, "primary");
-  if (a.source === "none") return [emptyState({ icon: "memories", title: memories.noExportTitle, body: memories.noExportBody, actions: [addExport] })];
-  if (a.source === "ledger") return [emptyState({ icon: "memories", title: memories.ledgerOnlyTitle, body: memories.ledgerOnly, actions: [addExport] })];
+  if (a.source === "none") return [emptyState({ icon: "memories", spot: "import", category: "memories", title: memories.noExportTitle, body: memories.noExportBody, actions: [addExport] })];
+  if (a.source === "ledger") return [emptyState({ icon: "memories", spot: "memories", category: "memories", title: memories.ledgerOnlyTitle, body: memories.ledgerOnly, actions: [addExport] })];
   const plan = a.plan;
-  if (!plan) return [emptyState({ icon: "memories", title: memories.emptyTitle, body: memories.emptyBody, actions: [addExport] })];
+  if (!plan) return [emptyState({ icon: "memories", spot: "memories", category: "memories", title: memories.emptyTitle, body: memories.emptyBody, actions: [addExport] })];
 
   const c = plan.counts;
   return [
     section(
       memories.countsHeading,
-      h(
-        "dl",
-        { class: "stats" },
-        stat(memories.total, formatCount(c.total)),
-        stat(memories.images, formatCount(c.images)),
-        stat(memories.videos, formatCount(c.videos)),
-        stat(memories.unknownType, formatCount(c.unknown)),
-        stat(memories.dated, formatCount(c.withDate)),
-        stat(memories.duplicates, formatCount(plan.duplicates.length)),
+      statGrid(
+        stat(memories.total, formatCount(c.total), { icon: "memories", scope: "memories" }),
+        stat(memories.images, formatCount(c.images), { icon: "photo", scope: "memories" }),
+        stat(memories.videos, formatCount(c.videos), { icon: "video", scope: "memories" }),
+        stat(memories.unknownType, formatCount(c.unknown), { icon: "file", scope: "memories" }),
+        stat(memories.dated, formatCount(c.withDate), { icon: "calendar", scope: "memories" }),
+        stat(memories.duplicates, formatCount(plan.duplicates.length), { icon: "copy", scope: "memories" }),
       ),
-      h("p", { class: "caption muted" }, memories.duplicatesNote),
+      h("p", {}, memories.duplicatesNote),
     ),
     pairingSection(a),
     storageSection(ctx, plan.meter, capGiB),
@@ -53,26 +51,17 @@ function pairingSection(a: Analysis): HTMLElement {
   if (!facts) return section(memories.pairingHeading, notice("info", memories.pairingNone));
   return section(
     memories.pairingHeading,
-    h("p", {}, memories.pairingSummary(facts.listed, facts.have, facts.missing)),
-    h(
-      "dl",
-      { class: "stats" },
-      stat(memories.pairingListed, formatCount(facts.listed)),
-      stat(memories.pairingHave, formatCount(facts.have)),
-      stat(memories.pairingMissing, formatCount(facts.missing)),
+    statGrid(
+      stat(memories.pairingHave, formatCount(facts.have), { icon: "file", scope: "memories" }),
+      stat(memories.pairingMissing, formatCount(facts.missing), { icon: "file-missing", scope: "memories" }),
+      stat(memories.pairingOverlayLabel, formatCount(facts.overlays), { icon: "photo", scope: "memories" }),
     ),
-    facts.overlays > 0 ? h("p", { class: "caption muted" }, memories.pairingOverlays(facts.overlays)) : null,
+    facts.overlays > 0 ? h("p", {}, memories.pairingOverlays) : null,
     facts.linksEmpty ? notice("info", memories.pairingLinksEmpty) : null,
     facts.missing > 0
-      ? h(
-          "div",
-          { class: "stack" },
-          h("h3", { class: "subheading" }, memories.pairingWhyHeading),
-          h("ul", { class: "plain-list" }, ...memories.pairingWhy.map((text) => h("li", {}, text))),
-          h("h3", { class: "subheading" }, memories.pairingTodoHeading),
-          h("p", {}, memories.pairingTodo),
-        )
+      ? subsection(memories.pairingWhyHeading, h("ul", { class: "plain-list" }, ...memories.pairingWhy.map((text) => h("li", {}, text))))
       : null,
+    facts.missing > 0 ? subsection(memories.pairingTodoHeading, h("p", {}, memories.pairingTodo)) : null,
   );
 }
 
@@ -95,9 +84,9 @@ function storageSection(ctx: ViewContext, meter: NonNullable<Analysis["plan"]>["
   return section(
     memories.meterHeading,
     capForm(ctx, capGiB),
-    h("div", { class: "meter-block" }, h("p", { class: "meter-text" }, text), bar),
+    h("div", { class: "meter-block" }, h("p", { class: "meter-head" }, h("span", { class: "meter-name" }, memories.meterName), " ", h("span", { class: "meter-text" }, text)), bar),
     hasSizes ? null : notice("info", memories.noSizes),
-    hasSizes && meter.unknownSizeCount > 0 ? h("p", { class: "caption muted" }, memories.unknownSizes(meter.unknownSizeCount)) : null,
+    hasSizes && meter.unknownSizeCount > 0 ? h("p", {}, memories.unknownSizes(meter.unknownSizeCount)) : null,
     hasSizes ? h("p", {}, meter.fractionOfCap >= 1 ? memories.overCap : meter.projectedCapAt !== null ? memories.projection(formatMonth(meter.projectedCapAt)) : memories.noProjection) : null,
   );
 }
@@ -114,11 +103,15 @@ function capForm(ctx: ViewContext, capGiB: number): HTMLElement {
     "data-key": "cap-input",
   });
   const error = h("p", { class: "field-error", id: "cap-error", role: "alert" });
+  // One row: the label above, then the small input and its button side by side. The help and any
+  // error sit below the row, so the button lines up with the input and not with the help text.
   const form = h(
     "form",
-    { class: "form form-inline", novalidate: true },
-    h("div", { class: "field" }, h("label", { class: "label", for: "cap-input" }, memories.capLabel), h("p", { class: "caption muted", id: "cap-help" }, memories.capHelp), input, error),
-    button({ label: memories.capUpdate, type: "submit", key: "cap-submit" }),
+    { class: "form form-inline cap-form", novalidate: true },
+    h("label", { class: "label", for: "cap-input" }, memories.capLabel),
+    h("div", { class: "field-row" }, input, button({ label: memories.capUpdate, type: "submit", key: "cap-submit" })),
+    h("p", { id: "cap-help" }, memories.capHelp),
+    error,
   );
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -142,18 +135,6 @@ function rescueSection(): HTMLElement {
     memories.rescueHeading,
     h("p", {}, memories.rescueBody),
     h("p", { class: "label" }, memories.rescueCommandLabel),
-    h(
-      "div",
-      { class: "command" },
-      h("pre", { class: "code" }, h("code", {}, memories.rescueCommand)),
-      button({
-        label: common.copy,
-        icon: "copy",
-        key: "copy-command",
-        ariaLabel: memories.copyCommand,
-        onclick: () => void copyText(memories.rescueCommand).then((ok) => announce(ok ? memories.commandCopied : common.copyFailed)),
-      }),
-    ),
-    h("p", { class: "caption muted" }, memories.rescueNetwork),
+    codeBlock(memories.rescueCommand, { key: "copy-command" }),
   );
 }

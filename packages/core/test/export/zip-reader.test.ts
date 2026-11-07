@@ -397,7 +397,7 @@ describe("listZipEntries", () => {
       it(label, async () => {
         const r = await listZipEntries(bytesReader(bytes));
         expect(r.entries).toEqual([]);
-        expect(r.issues).toEqual([{ severity: "error", code: "zip-unreadable", message: "The file could not be read as a zip archive." }]);
+        expect(r.issues).toEqual([{ severity: "error", code: "zip-unreadable", message: "Snappy could not read this file as a ZIP file." }]);
       });
     }
 
@@ -447,7 +447,7 @@ describe("listZipEntries", () => {
       const { reader, reads } = trackingReader(flat);
       const r = await listZipEntries(reader);
       expect(r.entries).toEqual([]);
-      expect(r.issues).toEqual([{ severity: "error", code: "zip-too-many-entries", message: "The archive declares 500001 entries, which is more than the 500000 Snappy will open." }]);
+      expect(r.issues).toEqual([{ severity: "error", code: "zip-too-many-entries", message: "This ZIP file lists 500001 items, more than the 500000 Snappy opens." }]);
       expect(reads.reduce((n, [s, e]) => n + e - s, 0)).toBeLessThan(200); // the end records only
     });
   });
@@ -713,9 +713,9 @@ describe("parseExportFromReader", () => {
     expect(parseExportZip(oversized).issues.map((i) => i.code)).toEqual(["zip-json-too-large", "zip-json-too-large", "zip-json-too-large"]);
     const oversizedResult = await parseExportFromReader(bytesReader(oversized));
     expect(oversizedResult.issues.map((i) => [i.code, i.message])).toEqual([
-      ["zip-entry-unreadable", "friends.json inside the archive could not be decompressed."],
-      ["zip-entry-unreadable", "chat_history.json inside the archive could not be decompressed."],
-      ["zip-entry-unreadable", "memories_history.json inside the archive could not be decompressed."],
+      ["zip-entry-unreadable", "Snappy could not open friends.json inside the ZIP file."],
+      ["zip-entry-unreadable", "Snappy could not open chat_history.json inside the ZIP file."],
+      ["zip-entry-unreadable", "Snappy could not open memories_history.json inside the ZIP file."],
     ]);
   });
 
@@ -768,7 +768,7 @@ describe("parseExportFromReader", () => {
     bad.fill(0xff, chats.data[0], chats.data[0] + 6);
     const parsed = await parseExportFromReader(bytesReader(bad));
     expect(parsed.friends.friends).toHaveLength(2);
-    expect(parsed.issues).toContainEqual({ severity: "error", code: "zip-entry-unreadable", message: "chat_history.json inside the archive could not be decompressed." });
+    expect(parsed.issues).toContainEqual({ severity: "error", code: "zip-entry-unreadable", message: "Snappy could not open chat_history.json inside the ZIP file." });
   });
 
   it("matches the in-memory parse for the same files (zip64 archive)", async () => {

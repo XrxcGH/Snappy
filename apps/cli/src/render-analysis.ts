@@ -2,7 +2,7 @@
 import type { Candidate } from "@snappy-export/core";
 import { CATEGORY, evidenceSummary } from "./analysis.ts";
 import type { AnalysisResult } from "./analysis.ts";
-import { formatCount, formatDate, plural } from "./format.ts";
+import { formatCount, formatDate, noun, plural } from "./format.ts";
 import { PRIVACY_IMPORT, PRIVACY_RESULTS, describePairing, renderIssues, wrapText } from "./render.ts";
 import type { LabeledIssue } from "./render.ts";
 import type { Term } from "./term.ts";
@@ -15,12 +15,14 @@ export interface TextOptions {
   /** "saved" when the ledger was written, "skipped" for --no-save. */
   ledger: "saved" | "skipped";
   csvPath?: string;
+  /** Show the short code under each note (--verbose). Errors show it too. */
+  verbose?: boolean;
 }
 
 export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): string {
   const { term } = opts;
   const { queue, counts } = result;
-  const out: string[] = [...renderIssues(opts.issues, term), ""];
+  const out: string[] = [...renderIssues(opts.issues, term, opts.verbose === true), ""];
 
   out.push(term.bold("Your export"));
   out.push(
@@ -28,17 +30,17 @@ export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): s
   );
   out.push(
     counts.chatEvents > 0
-      ? "  Saved chats and Snaps count as recent activity. Snappy uses only who, when and direction, never message text or media."
-      : "  No chat or Snap history is included, so recent activity cannot protect anyone and quiet friends cannot be found.",
+      ? "  Saved chats and Snaps count as recent activity. Snappy never reads message text or media."
+      : "  This export has no chats or Snaps, so quiet friends cannot be found.",
   );
   if (counts.memories > 0) {
     const memories =
       result.memoriesPairing !== undefined
         ? describePairing(result.memoriesPairing)
-        : `${plural(counts.memories, "Memory", "Memories")} listed. These zips hold no Memories files, so none can be matched yet.`;
+        : `${plural(counts.memories, "Memory", "Memories")} listed. These ZIP files have no Memories files.`;
     for (const line of wrapText(memories, term.columns - 4)) out.push(`  ${line}`);
   }
-  out.push(`  ${plural(result.snapshotCount, "export")} on record${result.latestTakenAt !== undefined ? `, newest from ${formatDate(result.latestTakenAt)}` : ""}.`);
+  out.push(`  ${plural(result.snapshotCount, "export")} in your history${result.latestTakenAt !== undefined ? `, newest from ${formatDate(result.latestTakenAt)}` : ""}.`);
   out.push("");
 
   out.push(term.bold("What changed"));
@@ -46,11 +48,11 @@ export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): s
     const c = result.changes;
     out.push(`  Since your export from ${formatDate(result.previousTakenAt)}:`);
     out.push(
-      `  ${formatCount(c.disappeared.length)} disappeared, ${formatCount(c.removedByUser.length)} removed by you, ${formatCount(c.added.length)} new, ${formatCount(c.requestsAccepted.length)} requests accepted.`,
+      `  ${formatCount(c.disappeared.length)} disappeared, ${formatCount(c.removedByUser.length)} removed by you, ${formatCount(c.added.length)} new, ${plural(c.requestsAccepted.length, "request")} accepted.`,
     );
   } else {
     for (const line of wrapText(
-      "Snappy has one export on record, so it cannot tell who has disappeared yet. Export your data again in a few weeks, with the same settings, and run snappy-export analyze on it. Snappy compares the two.",
+      "Snappy needs two exports to see who disappeared. Request a new one in a few weeks and run analyze.",
       term.columns - 4,
     )) {
       out.push(`  ${line}`);
@@ -68,7 +70,7 @@ export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): s
   } else {
     const shown = opts.limit > 0 ? queue.items.slice(0, opts.limit) : queue.items;
     // The one violet element in this view: the key figure.
-    out.push(`  ${term.violet(formatCount(queue.items.length))} ${queue.items.length === 1 ? "friend" : "friends"} to review, most likely first.`);
+    out.push(`  ${term.violet(formatCount(queue.items.length))} ${noun(queue.items.length, "friend")} to review, most likely first.`);
     out.push("");
     const table = term.table(
       [{ header: "Friend" }, { header: "Type" }, { header: "Confidence" }, { header: "Why", flex: true, wrap: true }],
@@ -77,7 +79,7 @@ export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): s
     for (const line of table) out.push(`  ${line}`);
     if (shown.length < queue.items.length) {
       out.push("");
-      out.push(`  ${plural(queue.items.length - shown.length, "more friend")} not shown. Use --csv or --json for the full list.`);
+      out.push(`  ${formatCount(queue.items.length - shown.length)} more not shown. Use --csv or --json to see all.`);
     }
   }
   out.push("");
@@ -86,14 +88,14 @@ export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): s
   }
   out.push(
     s.protectedCount > 0
-      ? `  ${plural(s.protectedCount, "friend")} protected (recent activity or on your allowlist) and left out of the queue.`
-      : "  No friends are protected right now. Use snappy-export keep to protect friends you never want to remove.",
+      ? `  ${plural(s.protectedCount, "friend")} protected by recent activity or your keep list.`
+      : "  No friends are protected yet. Use snappy-export keep to protect some.",
   );
   out.push("");
 
   if (opts.csvPath !== undefined) out.push(`CSV saved: ${opts.csvPath}`);
-  out.push(opts.ledger === "saved" ? "Ledger sealed with your passphrase." : "The ledger was not read or written, as you asked.");
-  out.push("Confidence is an estimate from your exports, not from anything Snapchat told us. Removing is always your call.");
+  out.push(opts.ledger === "saved" ? "Saved history sealed with your passphrase." : "Your saved history was not read or written, as you asked.");
+  out.push("Confidence is an estimate from your exports, not something Snapchat told Snappy. Removing is always your call.");
   out.push(PRIVACY_IMPORT);
   out.push(PRIVACY_RESULTS);
   return out.join("\n") + "\n";

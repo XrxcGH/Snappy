@@ -52,7 +52,7 @@ describe("Memories paired through the reader", () => {
     expect(merged.issues.find((i) => i.code === "memories-time-offset")).toEqual({
       severity: "info",
       code: "memories-time-offset",
-      message: "The Memories files store their times on a clock 5 hours ahead of UTC; Snappy allowed for that when matching them.",
+      message: "The Memories files keep their times on a clock 5 hours ahead of UTC. Snappy allowed for that.",
     });
   });
 

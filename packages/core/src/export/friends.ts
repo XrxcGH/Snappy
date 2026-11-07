@@ -89,12 +89,12 @@ export function parseFriendsJson(obj: unknown): { friends: ParsedFriends; issues
 
   let sections: [string, unknown][];
   if (Array.isArray(obj)) {
-    issues.push(issue("warning", "friends-top-level-array", "friends.json is a bare list; treating it as the current friends list."));
+    issues.push(issue("warning", "friends-top-level-array", "friends.json looks different from what Snappy expects. Snappy read it as your current friends list."));
     sections = [["Friends", obj]];
   } else if (isRecord(obj)) {
     sections = Object.entries(obj);
   } else {
-    issues.push(issue("warning", "friends-unexpected-shape", "friends.json has an unexpected top-level shape; no friends were read."));
+    issues.push(issue("warning", "friends-unexpected-shape", "friends.json looks different from what Snappy expects, so no friends were read."));
     return { friends, issues };
   }
 
@@ -135,15 +135,15 @@ export function parseFriendsJson(obj: unknown): { friends: ParsedFriends; issues
     issues.push(issue("warning", "friends-invalid-entries", `${entries(dropped)} in friends.json had no usable username and ${dropped === 1 ? "was" : "were"} skipped.`));
   }
   if (recognised === 0) {
-    issues.push(issue("warning", "friends-no-sections", `No known friend sections were found in friends.json (${unknownKeys} unrecognized top-level key${unknownKeys === 1 ? "" : "s"}).`));
+    issues.push(issue("warning", "friends-no-sections", `Snappy found no friend lists in friends.json. The file may use a layout it does not know.`));
   } else if (unknownKeys > 0) {
-    issues.push(issue("info", "friends-unknown-sections", `Ignored ${unknownKeys} unrecognized top-level key${unknownKeys === 1 ? "" : "s"} in friends.json.`));
+    issues.push(issue("info", "friends-unknown-sections", `Snappy skipped ${unknownKeys} ${unknownKeys === 1 ? "section" : "sections"} in friends.json that it does not recognize.`));
   }
   if (guessedDeletedDates > 0) {
-    issues.push(issue("info", "deleted-date-guessed", `${guessedDeletedDates} deleted-friend entr${guessedDeletedDates === 1 ? "y has" : "ies have"} no explicit deletion date; used the created/modified timestamp instead.`));
+    issues.push(issue("info", "deleted-date-guessed", `${guessedDeletedDates} ${guessedDeletedDates === 1 ? "friend you removed has" : "friends you removed have"} no removal date. Snappy used another date from the file.`));
   }
   if (friends.pendingRequests.length > 0) {
-    issues.push(issue("info", "pending-direction-unknown", "The export does not say whether pending requests are incoming or outgoing; treat their direction as unknown."));
+    issues.push(issue("info", "pending-direction-unknown", "The export does not say if pending requests were sent or received, so Snappy treats them as unknown."));
   }
   return { friends, issues };
 }

@@ -6,7 +6,7 @@ For contributors and anyone using the Snappy assets. The design tokens in [`bran
 
 ## 1. Snappy in one page
 
-**Snappy helps you organize your Snapchat world from your own data export.** It builds a tidy, current friend list: who is still a friend, requests nobody answered, quiet friends, a careful clean-up queue and a backup. It sorts Memories into year and month folders with their dates restored, makes duplicates and storage visible, and shows who is waiting on a reply. It runs on your own device, as a command line tool and a local dashboard.
+**Snappy helps you organize your Snapchat world from your own data export.** It builds a tidy, current friend list: who is still a friend, unaccepted requests, quiet friends, a careful clean-up queue and a backup. It sorts Memories into year and month folders with their dates restored, makes duplicates and storage visible, and shows who is waiting on a reply. It runs on your own device, as a command line tool and a local dashboard.
 
 **Personality.** Calm, capable, tidy and a little warm. Quick, never childish, never alarmist. Snappy talks like a careful friend who is good at putting things in order: plain, specific and steady.
 
@@ -14,7 +14,7 @@ For contributors and anyone using the Snappy assets. The design tokens in [`bran
 
 1. **Order first.** Every screen turns a pile into a list: sorted, counted, dated and ready to act on. If a view does not make something tidier, it does not belong.
 2. **Say how sure we are.** Snappy infers from exports. Every result shows its confidence and its evidence, and never states a guess as a fact.
-3. **Quiet by default, one spark.** Ink and bone do the work. Violet appears once per view, as the point of focus.
+3. **Quiet by default, one spark.** Ink and bone do the work. Violet is the main color: it marks where you are and what comes next. Orange is a secondary accent for the Memories rescue area and small illustration highlights. Each finding area has one quiet category color on its own surfaces.
 4. **Speed through clarity.** Few steps, large targets, nothing that slows the eye.
 
 **The trust rule.** Your export stays on this device. Say it plainly where it matters, such as on import and on results. It is a promise to keep, not the headline.
@@ -40,7 +40,7 @@ No all-caps strings in the interface. Emphasis comes from weight and size, never
 | Name | What it is |
 |---|---|
 | Disappeared friends | People who were in an earlier export and are missing from the latest one |
-| Requests no one accepted | Friend requests you sent that were never answered |
+| Unaccepted requests | Friend requests you sent that nobody accepted |
 | Quiet friends | Friends with no recent activity |
 | Cleanup queue | The careful list of friends you chose to review and remove |
 | Memories rescue | Memories sorted into year and month folders with dates restored |
@@ -56,7 +56,7 @@ Use US spelling and conventions everywhere: color, gray, organize, analyze, canc
 | may have removed you | unfriended you, deleted you | Snappy infers; it does not know. |
 | Remove | Delete, unadd, purge | Matches the real effect. |
 | Quiet friends | Dormant, dead, inactive | Neutral, not judgmental. |
-| Requests no one accepted | Failed adds | Nothing failed. |
+| Unaccepted requests | Failed adds | Nothing failed. |
 | Your export | Your data dump | Calm and accurate. |
 | On this device | Locally, client-side | Plain language. |
 
@@ -132,7 +132,7 @@ Ink bars on bone or white; bone bars on ink or in the dark theme. The spine is v
 
 ## 4. Color
 
-Warm ink, cool bone and one violet accent, on top of four clear status colors. Snapchat's yellow is never used.
+Warm ink, cool bone and one violet accent, on top of four clear status colors and a small set of category colors. Violet is the main color; orange is a secondary accent (see Orange below). Snapchat's yellow is never used. The warning status is a muted gold (hue near 52 degrees), well away from orange and from Snapchat's bright yellow.
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
@@ -157,8 +157,10 @@ The brand values behind the theme tokens: ink `#1B1816`, bone `#F2F4F5`, violet 
 
 ### Rules
 
-- **Violet is used once per view.** It marks the point of focus: the active step, the key number, the progress bar or the spine of the logo.
-- **Violet is never body text and never a status color.** Violet text uses `--accent-fg` or `--link`. Text on a violet fill is white in the light theme and ink in the dark theme.
+- **Violet is the one brand accent.** It marks where you are and what to do next: the active nav bar, step numbers, the key progress or storage meter, and the Cleanup category. It is the only color of the logo, the primary buttons, links, focus rings and selection.
+- **Orange is a secondary color, never the main one.** It paints the Memories rescue category and small highlights in the spot illustrations, only through its tokens (see Orange below).
+- **Category colors appear only on their own area's surfaces,** always with the category icon and its label (see Category colors below).
+- **Never use violet or a category color as body text on a plain ground, as a status, or inside a notice.** Violet text uses `--accent-fg` or `--link`. Text on a violet fill is white in the light theme and ink in the dark theme.
 - **Primary buttons are ink in the light theme and bone in the dark theme,** not violet.
 - Place the accent on `--bg`, `--surface` or `--surface-raised`.
 
@@ -169,7 +171,7 @@ Always shown with an icon and a text label. Each has a foreground, a background 
 | Status | Light fg | Light bg | Light border | Dark fg | Dark bg | Dark border |
 |---|---|---|---|---|---|---|
 | Success | `#0B6B43` | `#E2F4EA` | `#2F8F63` | `#6FD9A3` | `#0F2A1E` | `#3FA877` |
-| Warning | `#7A4300` | `#FCEFD6` | `#B26A00` | `#F2B45A` | `#2E2005` | `#C98A1F` |
+| Warning | `#574d00` | `#fbf5cc` | `#8f8000` | `#e6d24a` | `#28250a` | `#b5a21f` |
 | Danger | `#A8112B` | `#FBE5E8` | `#C8334C` | `#FF8FA0` | `#35101A` | `#E5586F` |
 | Info | `#1B4F9E` | `#E3EDFA` | `#2F6FCC` | `#8DB8FF` | `#10223D` | `#4F86E0` |
 
@@ -180,26 +182,99 @@ Confidence is three stacked bars plus a word, the same shape as the logo. The ba
 | Level | Bars | Word | Light fg | Dark fg |
 |---|---|---|---|---|
 | High | Three filled | High | `#0B6B43` | `#6FD9A3` |
-| Medium | Two filled, one outlined | Medium | `#7A4300` | `#F2B45A` |
+| Medium | Two filled, one outlined | Medium | `#574d00` | `#e6d24a` |
 | Low | One filled, two outlined | Low | `#4A5560` | `#B5BEC7` |
 
 The low level uses slate gray with backgrounds `#E8ECEF` (light) and `#22282E` (dark), and borders `#6B7782` and `#7C8791`. Even High is described as likely, never certain.
 
+### Category colors
+
+Each of the five finding areas has one quiet color, so a card, a chip or a page header says at a glance which area it belongs to. Violet is one of them: the Cleanup queue is where the product leads, so it owns the brand accent.
+
+| Area | Hue | Icon |
+|---|---|---|
+| Disappeared friends | Orchid | `i-vanished` |
+| Unaccepted requests | Cyan-teal | `i-one-way` |
+| Quiet friends | Moss | `i-quiet` |
+| Cleanup queue | Violet | `i-queue` |
+| Memories rescue | Orange | `i-memories` |
+
+Each area has four tokens, `--cat-<area>-fg`, `-bg`, `-border` and `-solid`, where `<area>` is `disappeared`, `requests`, `quiet`, `cleanup` or `memories`.
+
+| Token | Role |
+|---|---|
+| `-fg` | Text and glyphs, on a plain ground and on its own `-bg` |
+| `-bg` | Chip, icon tile and tag fill |
+| `-border` | 1 px edge of chips and icon tiles |
+| `-solid` | Bars, accent underlines, nav glyphs and the highlight in spot illustrations |
+
+Light values:
+
+| Area | `-fg` | `-bg` | `-border` | `-solid` |
+|---|---|---|---|---|
+| Disappeared friends | `#A72A97` | `#FAEBF8` | `#CC5CBD` | `#C954BA` |
+| Unaccepted requests | `#08697D` | `#EBF7FA` | `#1498B3` | `#128DA5` |
+| Quiet friends | `#546B0B` | `#F6FAEB` | `#789518` | `#718C17` |
+| Cleanup queue | `#5A3BE8` | `#EFEBFF` | `#7B62FF` | `#6B4DFF` |
+| Memories rescue | `#A33C00` | `#FFE2CF` | `#D2541A` | `#D9531A` |
+
+Dark values:
+
+| Area | `-fg` | `-bg` | `-border` | `-solid` |
+|---|---|---|---|---|
+| Disappeared friends | `#D76AC9` | `#2B1228` | `#A83E99` | `#BA45AB` |
+| Unaccepted requests | `#4AB9CF` | `#12272B` | `#2E7A8A` | `#338899` |
+| Quiet friends | `#AFCD4C` | `#252B12` | `#677A29` | `#819933` |
+| Cleanup queue | `#B3A3FF` | `#1F1838` | `#7C66E8` | `#9B86FF` |
+| Memories rescue | `#FF9A63` | `#3A1A0A` | `#E0612C` | `#FF7A3D` |
+
+The Cleanup values equal `--accent-fg` and `--accent`, and `contrast.mjs` fails if they drift apart. The Memories rescue tokens point at the orange palette: `--cat-memories-<part>` is `var(--orange-<part>)`.
+
+**Orange (secondary)**
+
+Orange is a supporting color with one home. The palette is four tokens per theme, `--orange-fg`, `--orange-bg`, `--orange-border` and `--orange-solid`, with the values in the Memories rescue rows above. Use it for:
+
+- the Memories rescue category: icon tile, tag, key figure, count bars and the nav glyph;
+- one small highlight in a spot illustration (`g-orange`, a pill bar of 12 to 16 units).
+
+Never use orange for the logo, primary buttons, links, focus rings, the selection color, the accent, a status or a notice. Write it only through its tokens, never as a hard-coded value. A test fails if an orange value appears outside the token files, and the layout audit fails if an orange color shows up outside the Memories rescue area.
+
+Orange stays clearly apart from the warning gold. `contrast.mjs` measures the distance in OKLCH and fails below a 45 degree hue gap or a perceptual distance (OKLab, scaled by 100) of 14. Today the hue gap is 52 to 61 degrees and the distance 14.8 to 16.9. Orange also stays at least 6 (same scale) from the danger red, where it is nearest (7.4 to 11.8 today). The warning status and the Memories category always carry their own icon and label, so color is never the only signal.
+
+**When to use them**
+
+- Use a category color only on that area's own surfaces: its icon tile, tag, left bar, underline, key figure and spot illustration. Nav glyphs for the five areas use the area's `-solid`. Orange belongs to Memories rescue alone.
+- Always pair the color with the category icon and its text label. Color is never the only signal.
+- Never use a category color for a status, inside a notice, or as body text on a plain ground.
+- Moss (olive green) belongs to Quiet friends only. It is not the success status, which is a cooler, bluer green, and it never means "OK" or "done". The moon icon and the label tell them apart.
+- Counts that belong to no area, such as friends and snapshots, use the neutral scope: `--surface-sunken` fill, `--text-muted` text and `--border-strong` edge.
+- The five hues keep their distance from the status hues (warning gold, success green, info blue) and from confidence slate. Orange is the one that sits between two statuses: it is measured against the warning gold (above) and it is nearer to danger red (perceptual distance 7 to 12, hue gap 22 to 34 degrees). Where two sit close, the icon and the label tell them apart: danger always shows its warning icon and words, and Memories rescue always shows its own icon and name.
+
+**Violet tints.** A four-step scale of neutral washes for backgrounds and borders. They are not accents.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--tint-violet-1` | `#F6F3FF` | `#181328` | Faint wash: tinted panels, hover on nav |
+| `--tint-violet-2` | `#EFEBFF` | `#1F1838` | Active nav, brand-colored chips, meter tracks. Equals the Cleanup `-bg` |
+| `--tint-violet-3` | `#E2DBFF` | `#2B2252` | Pressed or strong wash. Text only: never a colored glyph or bar on it |
+| `--tint-violet-line` | `#CDC2FF` | `#44397A` | Decorative 1 px line on a tint, never the only edge of a control |
+
 ### Accessibility
 
-Light and dark themes are both supported. All 126 tracked color pairs pass WCAG 2.x AA: 4.5:1 for text, 3:1 for interface components and graphics. Run `node brand/tokens/contrast.mjs` after any token change; it exits with an error if a pair fails.
+Light and dark themes are both supported. All 334 tracked color pairs pass WCAG 2.x AA: 4.5:1 for text, 3:1 for interface components and graphics. That covers every category color (orange included) on every ground and on its own tint, the violet tints, the status colors on plain surfaces, the distance between orange and the warning gold, and a floor on its distance from danger red. Run `node brand/tokens/contrast.mjs` after any token change; it exits with an error if a pair fails or if `tokens.css` and `tokens.json` disagree.
 
 ---
 
 ## 5. Typography
 
-All three families are licensed under the SIL Open Font License 1.1 and self-hosted, because the dashboard blocks network access. Never link a font CDN.
+All families are licensed under the SIL Open Font License 1.1 and self-hosted, because the dashboard blocks network access. Never link a font CDN.
 
 | Role | Family | Weights | Used for |
 |---|---|---|---|
 | Display | Bricolage Grotesque | 600, 700 | Headings, large numbers, wordmark (700) |
 | Body | Atkinson Hyperlegible Next | 400, 500, 600, 700 | Everything you read; designed for legibility |
 | Mono | JetBrains Mono | 400, 500 | Usernames, file names, code, the command line |
+| Digits | Snappy Digits | 400, 500, 600, 700 | The ten digits 0 to 9 in every body and display string, so a zero is always plain. A subset of Bricolage Grotesque. |
 
 Usernames are monospace so that look-alike characters (l, I, 1, O, 0) stay distinct when someone is choosing whom to act on.
 
@@ -230,13 +305,14 @@ Sizes run from 12 to 60 px. Line height uses three tokens: tight (1.1), snug (1.
 - Keep running text to a measure of 65 characters (`--measure`).
 - Size in `rem`, not `px`, so the interface follows the user's font-size setting. Layouts survive 200% zoom.
 - Use tabular numbers in tables and counts.
+- Numerals: Atkinson Hyperlegible Next draws a slashed zero and has no OpenType switch for a plain one (its only features are ccmp, frac, locl, pnum and tnum). So the dashboard embeds **Snappy Digits**, a digits-only family cut from Bricolage Grotesque (U+0030 to U+0039, weights 400 to 700, about 2 KB a file), and lists it FIRST in the `--font-body` and `--font-display` stacks. Every numeral in the interface (body text, dates, counts, tables, buttons, headings) shows a plain zero, and every letter still comes from Atkinson or Bricolage. `tnum` is kept, so tabular numbers line up; digit height and baseline match Atkinson at 14, 16 and 18 px. Usernames and code stay in JetBrains Mono, where the slashed zero keeps 0 and O apart. Regenerate the files with `python -I apps/dashboard/fonts/make-snappy-digits.py`.
 - Headings use balanced wrapping. Never center body paragraphs.
 
 ---
 
 ## 6. Layout, shape, elevation and motion
 
-**Spacing.** A 4 px grid: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96 px. Content maximum width 1120 px (70rem).
+**Spacing.** A 4 px grid: 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96 px. Dashboard content column 36rem (576 px), about 75 characters of running text: every block in a view (paragraph, list, table, code, notice, card, form) fills that one column. The sidebar, column, header and footer share one centered width.
 
 **Breakpoints.** 480, 768, 1024 and 1280 px. Design for phones first.
 
@@ -283,13 +359,26 @@ Easing is `cubic-bezier(0.2, 0, 0, 1)`.
 | Icon | Meaning |
 |---|---|
 | `i-vanished` | Disappeared friends |
-| `i-one-way` | Requests no one accepted |
+| `i-one-way` | Unaccepted requests |
 | `i-quiet` | Quiet friends |
 | `i-queue` | Cleanup queue |
 | `i-memories` | Memories rescue |
 | `i-seal` | Backup |
 | `i-content-blind` | Your export stays on this device |
 | `i-import`, `i-export`, `i-file-zip` | Add your export, save a report, the export file |
+| `i-overview` | Overview |
+| `i-people` | Friends, new friends |
+| `i-snapshots` | Snapshots in your history |
+| `i-guide` | Export guide, About |
+| `i-photo`, `i-video` | Photos, videos |
+| `i-file`, `i-file-missing` | A file of unknown type, a file not included in the export |
+| `i-calendar` | Dates and date ranges |
+| `i-list` | Lists, what Snappy reads, the menu button |
+| `i-sun`, `i-moon` | The theme toggle: shows the theme it switches to |
+| `i-storage` | Storage meter |
+| `i-device` | On this device |
+| `i-shield` | Network status, cannot connect to the internet |
+| `i-minus` | Optional |
 | `i-settings`, `i-search`, `i-check`, `i-close`, `i-warning`, `i-info`, `i-copy`, `i-remove`, `i-chevron-right`, `i-external` | Utility |
 | `conf-high`, `conf-medium`, `conf-low` | Confidence meters, always beside the word |
 
@@ -297,7 +386,9 @@ Easing is `cubic-bezier(0.2, 0, 0, 1)`.
 - Icon-only buttons need an accessible name. Decorative icons are `aria-hidden`.
 - Status and confidence icons always sit next to a text label.
 
-**Imagery.** No photographs of people and no stock photography. Use bar compositions and real interface screenshots built from synthetic sample data.
+**Spot illustrations.** The `g-*` symbols in the same sprite (`g-import`, `g-overview`, `g-empty`, `g-memories`, `g-privacy`, `g-guide`) are small scenes, 160 by 120, built from pill bars (8 tall, radius 4), rounded cards and one highlight element. The highlight takes `--spot-hi` and the backing wash takes `--spot-wash`, so one drawing follows every category and both themes. A few drawings add one small orange pill bar (`g-orange`, from `--orange-solid`) as a secondary highlight. They contain no text and are always decorative (`aria-hidden`). They belong in empty states, not in page headers, so a page's lead has the same width as every paragraph below it.
+
+**Imagery.** No photographs of people and no stock photography. Use bar compositions, the spot illustrations and real interface screenshots built from synthetic sample data.
 
 ---
 
@@ -310,7 +401,7 @@ Plain, specific, calm. Short sentences, active voice, and the next step first. N
 - "Reading your export. 3 of 5 parts done."
 
 **Results.** Lead with the order Snappy found.
-- "214 friends. 6 may have removed you, 9 requests have no answer, 12 are quiet."
+- "214 friends. 6 may have removed you, 9 requests are not accepted, 12 are quiet."
 - "3 friends are waiting on a reply."
 - "Memories sorted into 8 years and 61 months. Dates restored for 4,120 files."
 - "Nothing here has left this device."
@@ -344,7 +435,12 @@ Plain, specific, calm. Short sentences, active voice, and the next step first. N
 | Primary button | Ink fill with bone text in light, bone fill with ink text in dark. Radius 8, height 44 (touch) or 36, label weight 600. Hover uses `--primary-hover`. |
 | Secondary button | Transparent, 1 px `--border-strong`, text `--text`. |
 | Danger button | Outlined with `--danger-border` and `--danger-fg`, with `i-remove`. Filled only inside the confirm dialog. |
-| Accent use | One violet element per view: the step indicator, a key figure, or the progress bar. |
+| Accent use | Violet: active nav bar, step numbers, meters. Category colors: icon tile, tag, left bar and key figure of that area only. |
+| Tile (stat or finding) | Everything is centered: icon tile, title, big number, description and, on a finding, an Open action. Tiles sit in a six-column grid and take their rows from it as a subgrid, so the icon tiles, titles, numbers, descriptions and actions of the tiles in one row share horizontal lines, and every title takes the same number of lines (one at desktop widths). A stat tile ends with a short pill bar in the area's color (gray for counts that belong to no area); a finding tile is one link. The five findings are three across, then two wider ones, so the grid has no hole. Running text stays left-aligned. |
+| Category tag | Small chip with the category icon (16 px) and its label, in the area's `-fg`, `-bg` and `-border`. Used where areas mix, such as cleanup rows. |
+| Step card | `--surface` card with a violet square holding the step number, then the heading and content. The number is decorative; a screen-reader prefix names the step. |
+| Quiet notice | `--surface` with a hairline border, a small status icon, and a 4 px status-colored left border. Body text is always the normal text color. No leading "Note." or "Warning." label: the icon and a hidden label say the kind. Default for info and success. Warnings and errors add a subtle tint. |
+| Empty state | A spot illustration (highlight in the area's color) beside a title, one line of body text and the next action, on a quiet violet-tinted panel. |
 | Input | 1 px `--border-strong`, radius 8, 16 px text, visible label above, error text with an icon below. |
 | Username chip | Monospace 14 px, `--surface-sunken` fill, radius 4, copy button. |
 | Confidence badge | Meter icon and word, tinted with the confidence colors, radius 4. |
@@ -366,7 +462,7 @@ Plain, specific, calm. Short sentences, active voice, and the next step first. N
 | `brand/tokens/tokens.css` | Design tokens as CSS custom properties, with light and dark themes |
 | `brand/tokens/tokens.json` | The same tokens as data |
 | `brand/tokens/contrast.mjs` | WCAG contrast check for every tracked pair |
-| `brand/tokens/palette.svg`, `brand/tokens/palette.png` | A swatch sheet of the palette in both themes |
+| `brand/tokens/palette.svg`, `brand/tokens/palette.png` | A swatch sheet of the brand, status, category (orange included) and confidence colors in both themes |
 | `brand/icons/icons.svg`, `brand/icons/preview.html` | The icon sprite and a preview page |
 | `brand/social-preview.svg`, `brand/social-preview.png` | GitHub repository image, 1280 by 640: lockup, tagline and the independence line |
 | `brand/tools/outline-wordmark.mjs` | Regenerates the outlined wordmark in the wordmark file and both lockups |
@@ -374,9 +470,9 @@ Plain, specific, calm. Short sentences, active voice, and the next step first. N
 
 ### Tokens
 
-Import `tokens.css` once at the root of a page. Light is the default; the dark theme follows the operating system unless the root element sets `data-theme="light"` or `data-theme="dark"`, which always wins. Use the custom properties, never raw hex values, so both themes work. `tokens.json` carries the same values for scripts and tools.
+Import `tokens.css` once at the root of a page. The dashboard ships dark by default. In the tokens, light is the default and the dark theme follows the operating system unless the root element sets `data-theme="light"` or `data-theme="dark"`, which always wins. Use the custom properties, never raw hex values, so both themes work. `tokens.json` carries the same values for scripts and tools.
 
-Fonts are not loaded by `tokens.css`. Bundle the three OFL families as local files.
+Fonts are not loaded by `tokens.css`. Bundle the OFL families as local files: Bricolage Grotesque, Atkinson Hyperlegible Next, JetBrains Mono and the digits-only Snappy Digits. The stacks list Snappy Digits first, so a page that does not define the family simply ignores it.
 
 ### Regenerating the wordmark and the raster assets
 
@@ -394,7 +490,7 @@ Each script's header lists the same steps and its environment variables.
 
 ### Checking contrast
 
-Run `node brand/tokens/contrast.mjs`. It reads `tokens.json`, checks every tracked pair, and exits with an error if any pair falls below WCAG AA.
+Run `node brand/tokens/contrast.mjs`. It reads `tokens.json`, checks every tracked pair, and exits with an error if any pair falls below WCAG AA. It also confirms that the category and tint tokens in `tokens.css` match `tokens.json` in the light, OS-dark and forced-dark blocks.
 
 ### Independence and trademark
 

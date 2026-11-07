@@ -1,5 +1,5 @@
 /**
- * Sample data for "Try with sample data": two made-up exports, 120 days apart, built in the
+ * Sample data for "Use sample data": two made-up exports, 120 days apart, built in the
  * browser from core's synthetic generator. Nothing here comes from a real account.
  */
 import { addSnapshot, bytesReader, emptyLedger, mergeParsedExports, parseExportFromReader, snapshotFromExport, syntheticExportZip } from "@snappy-export/core";

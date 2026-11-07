@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { CANARIES, buildSyntheticExport, syntheticExportZip } from "@snappy-export/core";
 import { buildFixtureZip } from "../../../packages/core/test/export/zip-fixture.ts";
-import { LATER, makeIo, run, tempDir, writeDemoPair } from "./helpers.ts";
+import { LATER, makeIo, run, stripPaths, tempDir, writeDemoPair } from "./helpers.ts";
 
 const enc = (v: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(v));
 const LEFT_OUT = /Left out on purpose: \d+ HTML, \d+ photo\/video\/audio and \d+ other files \(not opened\)\./;
@@ -14,7 +14,7 @@ describe("snappy-export inspect", () => {
     const { code, out, err } = await run(["inspect", later]);
     expect(code).toBe(0);
     expect(err).toBe("");
-    expect(out).toContain("Snappy export structure report (names, types and bucketed counts only; no values)");
+    expect(out).toContain("Snappy export structure report (names, types, and bucketed counts only; no values)");
     expect(out).toContain("key names: known vocabulary only");
     expect(out).not.toContain("Review before sharing");
     expect(out).toContain("friends.json");
@@ -68,7 +68,7 @@ describe("snappy-export inspect", () => {
   });
 
   it("needs an export, and says how to ask for help", async () => {
-    const result = await run(["inspect"], makeIo());
+    const result = await run(["inspect", "--verbose"], makeIo());
     expect(result.code).toBe(1);
     expect(result.err).toContain("(code: no-input)");
   });
@@ -121,10 +121,10 @@ describe("snappy-export inspect checks", () => {
 
   it("--checks-only on its own is a usage error that names the checks", async () => {
     const { part1 } = writeThreeParts(tempDir("insp"));
-    const { code, err, out } = await run(["inspect", part1, "--checks-only"]);
+    const { code, err, out } = await run(["inspect", part1, "--checks-only", "--verbose"]);
     expect(code).toBe(1);
     expect(out).toBe("");
-    expect(err).toContain("--layout, --memory-links or --mtime-check");
+    expect(err).toContain("--layout, --memory-links, or --mtime-check");
     expect(err).toContain("(code: usage)");
   });
 
@@ -161,14 +161,14 @@ describe("snappy-export inspect checks", () => {
 
   it("a wildcard that matches nothing is a calm error with a code", async () => {
     const dir = tempDir("insp");
-    const { code, err } = await run(["inspect", join(dir, "nothing*.zip")]);
+    const { code, err } = await run(["inspect", join(dir, "nothing*.zip"), "--verbose"]);
     expect(code).toBe(1);
     expect(err).toContain("No .zip files match");
     expect(err).toContain("(code: no-zips)");
   });
 
   it("a wildcard in a folder that does not exist is a calm error", async () => {
-    const { code, err } = await run(["inspect", join(tempDir("insp"), "missing", "x*.zip")]);
+    const { code, err } = await run(["inspect", join(tempDir("insp"), "missing", "x*.zip"), "--verbose"]);
     expect(code).toBe(1);
     expect(err).toContain("(code: not-found)");
   });
@@ -179,7 +179,7 @@ describe("snappy-export inspect checks", () => {
     writeFileSync(zip, buildFixtureZip([{ name: "json/friends.json", data: enc({}) }]));
     const { code, out } = await run(["inspect", zip, "--memory-links", "--mtime-check", "--checks-only"]);
     expect(code).toBe(0);
-    expect(out).toContain("memories_history.json was not found in these zips.");
+    expect(out).toContain("memories_history.json was not found in these ZIP files.");
   });
 });
 
@@ -258,7 +258,7 @@ describe("inspect output follows the brand guide", () => {
       expect(text).not.toContain("!");
       expect(/\p{Extended_Pictographic}/u.test(text)).toBe(false);
       expect(banned.exec(text)?.[0]).toBeUndefined();
-      const shouting = (text.match(/\b[A-Z]{4,}\b/g) ?? []).filter((w) => !["JSON", "HTML"].includes(w));
+      const shouting = (stripPaths(text).match(/\b[A-Z]{4,}\b/g) ?? []).filter((w) => !["JSON", "HTML"].includes(w));
       expect(shouting).toEqual([]);
     }
   });

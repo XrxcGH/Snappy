@@ -168,13 +168,13 @@ export function emptyParsed(issues: ExportIssue[]): ParsedExport {
 
 // Fixed-text issues shared by every zip front end, so all of them report a bad archive identically.
 /** @internal */
-export const zipUnreadableIssue = (): ExportIssue => issue("error", "zip-unreadable", "The file could not be read as a zip archive.");
+export const zipUnreadableIssue = (): ExportIssue => issue("error", "zip-unreadable", "Snappy could not read this file as a ZIP file.");
 /** @internal */
 export const zipTooManyEntriesIssue = (count: number): ExportIssue =>
-  issue("error", "zip-too-many-entries", `The archive declares ${count} entries, which is more than the ${MAX_ENTRIES} Snappy will open.`);
+  issue("error", "zip-too-many-entries", `This ZIP file lists ${count} items, more than the ${MAX_ENTRIES} Snappy opens.`);
 /** @internal */
 export const zipEntryUnreadableIssue = (e: Entry): ExportIssue =>
-  issue("error", "zip-entry-unreadable", `${baseName(e.path)} inside the archive could not be decompressed.`);
+  issue("error", "zip-entry-unreadable", `Snappy could not open ${baseName(e.path)} inside the ZIP file.`);
 
 /** Which known data file an entry is, by its file name. @internal */
 export function targetOf(e: Entry): Target | undefined {
@@ -294,7 +294,7 @@ export function finishExport(
   }
 
   if (media.length > 0) {
-    issues.push(issue("info", "media-not-opened", `${media.length} media file${media.length === 1 ? " was" : "s were"} listed by name and size only; their contents were not opened.`));
+    issues.push(issue("info", "media-not-opened", `Snappy listed ${media.length} media ${media.length === 1 ? "file" : "files"} by name and size only. It did not open ${media.length === 1 ? "it" : "them"}.`));
   }
   const fileList = capFileList(maskFileList(files.map((e) => e.path)), issues);
   // Last, so that mergeParsedExports can replace them by the notes for the whole export.

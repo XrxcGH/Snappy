@@ -16,13 +16,14 @@ export interface Parsed<T> {
  */
 export function parseFlags<T>(command: string, args: string[], options: OptionSpec): Parsed<T> {
   try {
-    const { values, positionals } = parseArgs({ args, options, allowPositionals: true, strict: true });
+    // --verbose works on every command: it adds the short code to errors (and to notes, where a command prints them).
+    const { values, positionals } = parseArgs({ args, options: { verbose: { type: "boolean" }, ...options }, allowPositionals: true, strict: true });
     return { values: values as T, positionals };
   } catch (e) {
     const message = e instanceof Error ? e.message : "";
     const named = /'(--?[\w-]+)/.exec(message)?.[1];
     const problem = /ambiguous/i.test(message)
-      ? `The option ${named ?? "you typed"} needs a value, and the next word starts with a dash. If the value really starts with a dash, write it as ${named ?? "--option"}=value.`
+      ? `The option ${named ?? "you typed"} needs a value. If it starts with a dash, write ${named ?? "--option"}=value.`
       : /argument missing/i.test(message)
       ? `The option ${named ?? "you typed"} needs a value.`
       : /does not take an argument/i.test(message)
@@ -30,7 +31,7 @@ export function parseFlags<T>(command: string, args: string[], options: OptionSp
         : named
           ? `Snappy does not know the option ${named} for ${command}.`
           : `Snappy could not read those options for ${command}.`;
-    throw new CliError("usage", `${problem} Run "snappy-export help ${command}" to see what it accepts.`);
+    throw new CliError("usage", `${problem} Run "snappy-export help ${command}" for the options.`);
   }
 }
 

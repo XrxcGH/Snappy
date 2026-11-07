@@ -32,7 +32,7 @@ const BANNED: [string, RegExp][] = [
   ["banned word", /\b(oops|whoops|awesome|simply|just|purge|stalker|exposed|leaked)\b/i],
   ["exclamation mark", /!/],
   ["emoji", /\p{Extended_Pictographic}/u],
-  ["orange", /orange|vermilion/i],
+  ["color value", /#[0-9a-f]{3,8}\b|\brgba?\(|\bhsla?\(/i],
   ["British spelling", /\b(colour|organis|analys(e|ing)|cancelled|licence|centre|favourite|behaviour|grey)\w*/i],
   ["British wording", /\b(tick|ticks|ticked|ticking|unrecognis\w*)\b/i],
   ["shouting", /\b[A-Z]{5,}\b/],
@@ -58,7 +58,8 @@ describe("copy module", () => {
       expect(route.title).not.toMatch(/^[A-Z][a-z]+( [A-Z][a-z]+){2,}$/);
     }
     expect(copy.routes.disappeared.label).toBe("Disappeared friends");
-    expect(copy.routes.requests.label).toBe("Requests no one accepted");
+    // The owner chose this name for the menu, the page and every surface; the route id stays "requests".
+    expect(copy.routes.requests.label).toBe("Unaccepted requests");
     expect(copy.routes.quiet.label).toBe("Quiet friends");
     expect(copy.routes.cleanup.label).toBe("Cleanup queue");
     expect(copy.routes.memories.label).toBe("Memories rescue");
@@ -70,8 +71,9 @@ describe("copy module", () => {
       "Snappy is an independent tool. It is not affiliated with, endorsed by, or sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.",
     );
     expect(copy.brand.privacyLine).toBe("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
-    expect(copy.brand.basedOn).toBe("Based on your exports, not on anything Snapchat told us.");
-    expect(copy.memories.capLabel).toBe("Snapchat's free storage cap (as reported; may change)");
+    expect(copy.brand.basedOn).toBe("Based on your exports, not on anything Snapchat told Snappy.");
+    expect(copy.memories.capLabel).toBe("Free storage cap (GB)");
+    expect(copy.memories.capHelp).toMatch(/may change/);
     expect(copy.disappeared.needTwoTitle).toBe("Add another export later to compare");
   });
 

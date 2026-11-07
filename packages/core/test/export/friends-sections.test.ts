@@ -42,7 +42,7 @@ describe("friends.json of the real shape", () => {
     const { friends, issues } = parseFriendsJson(real());
     expect(friends.deletedFriends).toEqual([{ username: "dana", createdAt: Date.UTC(2023, 4, 1, 10), modifiedAt: Date.UTC(2024, 4, 15, 11, 30), deletedAt: Date.UTC(2024, 4, 15, 11, 30) }]);
     expect(issues.find((i) => i.code === "deleted-date-guessed")?.message).toBe(
-      "1 deleted-friend entry has no explicit deletion date; used the created/modified timestamp instead.",
+      "1 friend you removed has no removal date. Snappy used another date from the file.",
     );
   });
 
@@ -62,13 +62,13 @@ describe("friends.json of the real shape", () => {
   it("still mentions an unknown section that holds something, by count only", () => {
     const { issues } = parseFriendsJson({ ...real(), "Unexpected Names": [entry("zed", 9)], "Unexpected Other": { a: 1 } });
     const hit = issues.find((i) => i.code === "friends-unknown-sections");
-    expect(hit).toEqual({ severity: "info", code: "friends-unknown-sections", message: "Ignored 2 unrecognized top-level keys in friends.json." });
+    expect(hit).toEqual({ severity: "info", code: "friends-unknown-sections", message: "Snappy skipped 2 sections in friends.json that it does not recognize." });
     expect(JSON.stringify(issues)).not.toMatch(/Unexpected|\bzed\b/);
   });
 
   it("does not let an empty unknown section hide that no known section exists", () => {
     const { issues } = parseFriendsJson({ "Some Section Nobody Knows": [] });
     expect(issues.map((i) => i.code)).toEqual(["friends-no-sections"]);
-    expect(issues[0]?.message).toBe("No known friend sections were found in friends.json (0 unrecognized top-level keys).");
+    expect(issues[0]?.message).toBe("Snappy found no friend lists in friends.json. The file may use a layout it does not know.");
   });
 });

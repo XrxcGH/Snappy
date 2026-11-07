@@ -627,7 +627,7 @@ function renderNode(label: string | null, node: StructureNode, depth: number, ou
  */
 export function formatStructureReport(r: StructureReport): string {
   const out: string[] = [
-    "Snappy export structure report (names, types and bucketed counts only; no values)",
+    "Snappy export structure report (names, types, and bucketed counts only; no values)",
     r.showKeys
       ? "key names: vocabulary plus plain-word names (dynamic maps collapsed). Review before sharing: a group title or display name made of plain words can appear here."
       : "key names: known vocabulary only",

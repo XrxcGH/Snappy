@@ -11,7 +11,9 @@ import type { Child } from "../dom.ts";
 import { queueToCsv, queueToText } from "../queue-export.ts";
 import { button, profileLink, routeLink } from "../components/button.ts";
 import { candidateRow } from "../components/candidateRow.ts";
+import { categoryOfCandidate, categoryTag } from "../components/category.ts";
 import { confidenceBadge } from "../components/confidenceBadge.ts";
+import { icon } from "../components/icon.ts";
 import { disclosureSummary, emptyState, pageHeader, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pagedList } from "../components/pagedList.ts";
@@ -29,20 +31,19 @@ let protectedOpen = false;
 export const cleanupView: View = (ctx) =>
   h(
     "div",
-    { class: "view" },
-    pageHeader(routes.cleanup.title, cleanup.lead),
-    notice("info", cleanup.note),
-    region(ctx.store, (s) => [...dataDeps(s), s.cleanup], (s) => render(ctx, analyze(s), s.cleanup)),
+    { class: "view cat-cleanup" },
+    pageHeader(routes.cleanup.title, cleanup.lead, { icon: "queue", category: "cleanup" }),
+    region(ctx.store, (s) => [...dataDeps(s), s.cleanup], (s) => render(ctx, analyze(s), s.cleanup), { className: "region region-tight" }),
   );
 
 function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
   const { actions } = ctx;
   if (a.source === "none") {
-    return [emptyState({ icon: "queue", title: cleanup.emptyTitle, body: cleanup.emptyBody, actions: [routeLink("start", common.addExport, "primary")] })];
+    return [emptyState({ icon: "queue", spot: "import", category: "cleanup", title: cleanup.emptyTitle, body: cleanup.emptyBody, actions: [routeLink("start", common.addExport, "primary")] })];
   }
   // An export was read and the queue is empty: say so, and point to the next step rather than the first one.
   if (a.queue.summary.total === 0) {
-    return [emptyState({ icon: "check", title: cleanup.nothingFound, body: cleanup.nothingFoundBody, actions: [routeLink("start", common.addAnotherExport, "primary")] })];
+    return [emptyState({ icon: "check", spot: "overview", category: "cleanup", title: cleanup.nothingFound, body: cleanup.nothingFoundBody, actions: [routeLink("start", common.addExport, "primary")] })];
   }
 
   const all = a.queue.items;
@@ -51,8 +52,10 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
   const protectedItems = a.queue.protectedItems;
 
   return [
-    // The 30-day protection only works when chat and Snap events were read: say which it is.
-    a.hasChats ? notice("info", cleanup.protectedByChats) : notice("warning", cleanup.noChatProtection(a.source === "ledger")),
+    // The 30-day protection only works when chat and Snap events were read. When they were not, that is a
+    // warning and comes first. When they were, the quiet note about it follows the list, so the top of the
+    // page holds the one warning that matters before any action (two notices at most above the fold).
+    a.hasChats ? null : notice("warning", cleanup.noChatProtection(a.source === "ledger")),
     controls(actions, view),
     h("p", { class: "summary", role: "status" }, cleanup.summary(shown.length, total)),
     // The consequence is stated before any action, in both modes.
@@ -62,7 +65,8 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
       ? h("p", { class: "empty-inline" }, cleanup.noMatch)
       : view.guided
         ? guidedPanel(ctx, a, shown)
-        : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: !a.sample }), { key: "queue-review", className: "rows candidate-list" }),
+        : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: !a.sample, showCategory: true }), { key: "queue-review", className: "rows candidate-list" }),
+    a.hasChats ? notice("info", cleanup.protectedByChats) : null,
     protectedItems.length > 0 ? protectedSection(actions, protectedItems, !a.sample) : null,
   ];
 }
@@ -74,7 +78,10 @@ function selectField(id: string, label: string, key: string, value: string, opti
     ...options.map(([v, text]) => h("option", { value: v, selected: v === value }, text)),
   );
   select.addEventListener("change", () => onChange(select.value));
-  return h("div", { class: "field" }, h("label", { class: "label", for: id }, label), select);
+  // The select draws no native arrow: the chevron is its own icon, 12 px or more from the right edge.
+  const chevron = icon("chevron-right", 16);
+  chevron.setAttribute("class", "icon select-chevron");
+  return h("div", { class: "field" }, h("label", { class: "label", for: id }, label), h("div", { class: "select-wrap" }, select, chevron));
 }
 
 function controls(actions: Actions, view: CleanupView): HTMLElement {
@@ -128,7 +135,7 @@ function listActions(items: readonly Candidate[]): HTMLElement {
         onclick: () => void copyText(queueToText(items)).then((ok) => announce(ok ? cleanup.listCopied : common.copyFailed)),
       }),
     ),
-    h("p", { class: "caption muted" }, cleanup.listHelp),
+    h("p", {}, cleanup.listHelp),
   );
 }
 
@@ -140,8 +147,7 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
 
   return h(
     "section",
-    { class: "guided", "aria-labelledby": "guided-title" },
-    h("h2", { id: "guided-title", class: "section-title" }, cleanup.guidedHeading),
+    { class: "guided", "aria-label": cleanup.guidedLabel },
     h("p", {}, cleanup.guidedNote),
     h("div", { class: "guided-progress" }, h("p", { class: "summary", role: "status" }, text), slideIn(progressBar({ label: cleanup.progressLabel, value: done / items.length, valueText: text }), 0)),
     done > 0
@@ -175,14 +181,15 @@ function guidedRow(actions: Actions, candidate: Candidate, isDone: boolean, item
     if (box.checked) checked.add(candidate.key);
     else checked.delete(candidate.key);
     const done = items.filter((c) => checked.has(c.key)).length;
-    announce(`${user}: ${box.checked ? "done" : "not done"}. ${cleanup.progressText(done, items.length)}.`);
+    announce(cleanup.doneAnnounce(user, box.checked, cleanup.progressText(done, items.length)));
   });
+  const cat = categoryOfCandidate(candidate.category);
   return slideIn(
     h(
       "li",
-      { class: isDone ? "guided-row is-done" : "guided-row" },
+      { class: `${isDone ? "guided-row is-done" : "guided-row"} bar-left cat-${cat}` },
       h("label", { class: "check" }, box, h("span", {}, cleanup.done)),
-      h("div", { class: "guided-who" }, usernameChip(candidate.key, { key: `copy:${candidate.key}` }), confidenceBadge(candidate.confidence), h("span", { class: "caption muted" }, categories[candidate.category].label)),
+      h("div", { class: "guided-who" }, usernameChip(candidate.key, { key: `copy:${candidate.key}` }), confidenceBadge(candidate.confidence), categoryTag(cat, categories[candidate.category].label)),
       h("div", { class: "candidate-actions" }, profileLinks ? profileLink(candidate.key, "secondary") : null),
     ),
     index,
@@ -194,8 +201,8 @@ function protectedSection(actions: Actions, items: readonly Candidate[], profile
     "details",
     { class: "protected" },
     disclosureSummary(cleanup.protectedHeading(items.length), "protected-summary"),
-    h("p", { class: "caption muted" }, cleanup.protectedBody),
-    pagedList(items, (candidate, index) => candidateRow({ candidate, actions, mode: "protected", index, profileLinks }), { key: "queue-protected", className: "rows candidate-list" }),
+    h("p", {}, cleanup.protectedBody),
+    pagedList(items, (candidate, index) => candidateRow({ candidate, actions, mode: "protected", index, profileLinks, showCategory: true }), { key: "queue-protected", className: "rows candidate-list" }),
   );
   details.open = protectedOpen;
   details.addEventListener("toggle", () => {

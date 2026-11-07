@@ -78,12 +78,29 @@ describe("resolvePassphrase", () => {
   });
 
   it("asks twice when creating a ledger and refuses a mismatch", async () => {
-    const ok = makeIo({ answers: ["abc", "abc"] });
-    expect(await resolvePassphrase(ok, { creating: true })).toBe("abc");
+    const ok = makeIo({ answers: ["three blue horses", "three blue horses"] });
+    expect(await resolvePassphrase(ok, { creating: true })).toBe("three blue horses");
     expect(ok.asked).toHaveLength(2);
 
-    const bad = makeIo({ answers: ["abc", "abd"] });
+    const bad = makeIo({ answers: ["three blue horses", "three blue horsez"] });
     await expect(resolvePassphrase(bad, { creating: true })).rejects.toMatchObject({ code: "passphrase-mismatch" });
+  });
+
+  it("asks for 12 or more characters on a new ledger, from every source, like the dashboard", async () => {
+    const short = "only eleven";
+    expect(short).toHaveLength(11);
+    const file = join(tempDir("pass"), "short.txt");
+    writeFileSync(file, `${short}\n`);
+    for (const io of [makeIo({ answers: [short, short] }), makeIo({ env: { SNAPPY_PASSPHRASE: short } })]) {
+      const failure = await resolvePassphrase(io, { creating: true }).catch((e: unknown) => e);
+      expect(failure).toMatchObject({ code: "passphrase-short" });
+      expect((failure as Error).message).toContain("12 or more characters");
+      expect((failure as Error).message).toContain("cannot be recovered");
+    }
+    await expect(resolvePassphrase(makeIo(), { file, creating: true })).rejects.toMatchObject({ code: "passphrase-short" });
+    // It is a rule for new ledgers only: an older, shorter passphrase still opens its ledger.
+    expect(await resolvePassphrase(makeIo({ env: { SNAPPY_PASSPHRASE: short } }), { creating: false })).toBe(short);
+    expect(await resolvePassphrase(makeIo({ env: { SNAPPY_PASSPHRASE: "exactly 12ch" } }), { creating: true })).toBe("exactly 12ch");
   });
 
   it("rejects an empty file and an empty answer", async () => {

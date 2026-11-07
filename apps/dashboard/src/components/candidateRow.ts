@@ -1,9 +1,10 @@
 import type { Candidate } from "@snappy-export/core";
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
-import { brand, categories, common, protection, protectionFallback } from "../copy.ts";
+import { categories, common, protection } from "../copy.ts";
 import { h } from "../dom.ts";
 import { headlineEvidence } from "../evidence.ts";
+import { categoryOfCandidate, categoryTag } from "./category.ts";
 import { confidenceBadge } from "./confidenceBadge.ts";
 import { button, profileLink } from "./button.ts";
 import { disclosureSummary, slideIn } from "./layout.ts";
@@ -20,6 +21,8 @@ export interface CandidateRowOptions {
   index?: number;
   /** False for sample data: its invented usernames could belong to real people, so they are never linked. */
   profileLinks?: boolean;
+  /** Show the category tag (icon and label) after the confidence badge: for lists that mix categories, such as the cleanup queue. */
+  showCategory?: boolean;
 }
 
 /**
@@ -33,7 +36,7 @@ export function candidateRow(options: CandidateRowOptions): HTMLElement {
   const user = displayUsername(candidate.key);
   const onKeepList = candidate.protectedBy.includes("allowlist");
 
-  const reasons = candidate.protectedBy.map((id) => protection[id] ?? protectionFallback);
+  const reasons = candidate.protectedBy.map((id) => protection[id] ?? common.protectedLabel);
 
   const decision =
     mode === "protected"
@@ -62,8 +65,14 @@ export function candidateRow(options: CandidateRowOptions): HTMLElement {
 
   const row = h(
     "li",
-    { class: `candidate candidate-${candidate.category}` },
-    h("div", { class: "candidate-head" }, usernameChip(candidate.key, { key: `copy:${candidate.key}` }), confidenceBadge(candidate.confidence)),
+    { class: `candidate candidate-${candidate.category} cat-${categoryOfCandidate(candidate.category)} bar-left` },
+    h(
+      "div",
+      { class: "candidate-head" },
+      usernameChip(candidate.key, { key: `copy:${candidate.key}` }),
+      confidenceBadge(candidate.confidence),
+      options.showCategory ? categoryTag(categoryOfCandidate(candidate.category), categories[candidate.category].label) : null,
+    ),
     h(
       "p",
       { class: "candidate-evidence" },
@@ -71,7 +80,6 @@ export function candidateRow(options: CandidateRowOptions): HTMLElement {
       headline ? headline.detail : "",
     ),
     reasons.length > 0 ? h("p", { class: "candidate-protected" }, h("strong", {}, `${common.protectedLabel}: `), reasons.join("; ")) : null,
-    h("p", { class: "caption muted" }, brand.basedOn),
     candidate.evidence.length > 1
       ? h(
           "details",

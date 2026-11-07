@@ -17,7 +17,7 @@ describe("files that are not zips", () => {
     const issue = store.get().real.issues.find((i) => i.code === "files-skipped-not-zip");
     expect(issue).toMatchObject({ severity: "warning" });
     expect(issue?.message).toBe(start.skippedFiles(1));
-    expect(issue?.message).toContain("1 file was skipped because it is not a .zip file.");
+    expect(issue?.message).toContain("1 file was skipped because it is not a ZIP file.");
     expect(issue?.message).not.toContain("crdownload");
   });
 
@@ -28,17 +28,17 @@ describe("files that are not zips", () => {
   });
 
   it("word the note for several files", () => {
-    expect(start.skippedFiles(3)).toContain("3 files were skipped because they are not .zip files.");
+    expect(start.skippedFiles(3)).toContain("3 files were skipped because they are not ZIP files.");
   });
 });
 
 describe("the Cleanup page and its protection", () => {
   it("states the 30-day protection only with chat data, and warns when there is none", () => {
-    expect(cleanup.note).not.toMatch(/30 days/);
+    expect(cleanup.lead).not.toMatch(/30 days/);
     expect(cleanup.protectedByChats).toContain("30 days");
-    expect(cleanup.noChatProtection(false)).toMatch(/no one is protected for that reason/);
-    expect(cleanup.noChatProtection(false)).toMatch(/no chat or Snap history/);
-    expect(cleanup.noChatProtection(true)).toMatch(/not saved with your history/);
+    expect(cleanup.noChatProtection(false)).toMatch(/cannot protect recent chats/);
+    expect(cleanup.noChatProtection(false)).toMatch(/no chat history/);
+    expect(cleanup.noChatProtection(true)).toMatch(/not saved/);
     expect(cleanup.noChatProtection(true)).toMatch(/Check Snapchat before you remove anyone/);
   });
 
@@ -51,11 +51,11 @@ describe("the Cleanup page and its protection", () => {
 
 describe("Memories is spelled as Snapchat spells it", () => {
   it("is capitalized in the counts and notes", () => {
-    expect(overview.cardMemories(400)).toBe("400 Memories");
-    expect(overview.cardMemories(1)).toBe("1 Memory");
+    expect(overview.unitMemories(400)).toBe("Memories in your export");
+    expect(overview.unitMemories(1)).toBe("Memory in your export");
     expect(overview.cardMemoriesNone).toBe("No Memories in this export");
-    expect(memories.unknownSizes(139)).toBe("139 Memories have no size in the export, so the total is a lower bound.");
-    expect(memories.unknownSizes(1)).toBe("1 Memory has no size in the export, so the total is a lower bound.");
+    expect(memories.unknownSizes(139)).toBe("Some Memories have no listed size, so the total may be low.");
+    expect(memories.unknownSizes(1)).toBe("One Memory has no listed size, so the total may be low.");
   });
 
   it("puts a missing part first among the reasons some Memories may not be included", () => {

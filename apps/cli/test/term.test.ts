@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 import { describe, expect, it } from "vitest";
 import { formatBytes, formatDate, formatPercent, plural } from "../src/format.ts";
-import { VIOLET_RGB, createTerm, useColor } from "../src/term.ts";
+import { ORANGE_RGB, VIOLET_RGB, createTerm, useColor } from "../src/term.ts";
 import type { TermOptions } from "../src/term.ts";
 
 const base: TermOptions = { env: {}, isTTY: true, columns: 80 };
@@ -47,11 +47,38 @@ describe("brand colors", () => {
     expect([...VIOLET_RGB]).toEqual(rgb);
   });
 
-  it("never uses orange or red-orange codes", () => {
+  it("keeps ORANGE_RGB equal to --orange-fg of the dark theme in the token file", () => {
+    const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "brand", "tokens", "tokens.css"), "utf8");
+    // The dark theme is the last block that sets --orange-fg (the light values come first).
+    const hex = [...css.matchAll(/--orange-fg:\s*#([0-9a-f]{6})/gi)].at(-1)?.[1];
+    expect(hex).toBeDefined();
+    const rgb = [0, 2, 4].map((i) => parseInt((hex as string).slice(i, i + 2), 16));
+    expect([...ORANGE_RGB]).toEqual(rgb);
+  });
+
+  it("offers orange as a secondary highlight, in truecolor or as an ANSI orange", () => {
+    expect(color({ env: { COLORTERM: "truecolor" } }).orange("x")).toBe(`\x1b[38;2;${ORANGE_RGB.join(";")}mx\x1b[0m`);
+    const index = /^\x1b\[38;5;(\d+)mx\x1b\[0m$/.exec(color().orange("x"))?.[1];
+    expect([202, 203, 204, 205, 206, 207, 208, 214, 215]).toContain(Number(index));
+    expect(color({ isTTY: false }).orange("x")).toBe("x");
+    expect(color({ env: { NO_COLOR: "1" } }).orange("x")).toBe("x");
+  });
+
+  it("keeps violet the main color: orange is none of the statuses, the banner or the confidence colors", () => {
     const term = color({ env: { COLORTERM: "truecolor" } });
-    const codes = [term.violet("x"), term.bold("x"), term.dim("x"), term.ok("x"), term.warn("x"), term.danger("x"), term.info("x"), term.slate("x")].join("");
-    // ANSI 256 oranges are 202-208 and 214-215; none of the styles may use them.
-    expect(codes).not.toMatch(/38;5;(20[2-8]|21[45])m/);
+    const orange = term.orange("x");
+    const others = [term.violet("x"), term.bold("x"), term.dim("x"), term.ok("x"), term.warn("x"), term.danger("x"), term.info("x"), term.slate("x")];
+    // Each style is its own color, and the warning (yellow) is not the orange.
+    expect(new Set([orange, ...others]).size).toBe(others.length + 1);
+    expect(term.warn("x")).not.toBe(orange);
+    const banner = term.banner().join("\n");
+    expect(banner).toContain(term.violet("   ▐" + "█".repeat(8) + "▌"));
+    expect(banner).not.toContain("38;2;" + ORANGE_RGB.join(";"));
+    const confidence = (["high", "medium", "low"] as const).map((l) => {
+      const cell = term.confidence(l);
+      return typeof cell === "string" ? cell : (cell.paint?.(cell.text) ?? cell.text);
+    });
+    expect(confidence.join("")).not.toContain("38;2;" + ORANGE_RGB.join(";"));
   });
 });
 

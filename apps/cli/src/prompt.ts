@@ -26,7 +26,7 @@ export function promptHidden(question: string, input: SecretInput, output: { wri
     return Promise.reject(
       new CliError(
         "no-terminal",
-        "Snappy needs your passphrase but there is no terminal to ask on. Set SNAPPY_PASSPHRASE or use --passphrase-file.",
+        "Snappy needs your passphrase but cannot ask here. Set SNAPPY_PASSPHRASE or use --passphrase-file.",
       ),
     );
   }
@@ -64,6 +64,19 @@ export function promptHidden(question: string, input: SecretInput, output: { wri
   });
 }
 
+/** The shortest passphrase for a new saved history. The dashboard asks for the same. */
+export const MIN_PASSPHRASE_LENGTH = 12;
+
+/** A new saved history needs a long enough passphrase. An existing one is never checked: it may be older than this rule. */
+function requireLongEnough(passphrase: string, creating: boolean): void {
+  if (creating && Array.from(passphrase).length < MIN_PASSPHRASE_LENGTH) {
+    throw new CliError(
+      "passphrase-short",
+      `Use ${MIN_PASSPHRASE_LENGTH} or more characters for your passphrase. If you forget it, your saved history cannot be recovered.`,
+    );
+  }
+}
+
 export interface PassphraseOptions {
   /** --passphrase-file path. Wins over the environment variable. */
   file?: string;
@@ -96,17 +109,22 @@ export async function resolvePassphrase(io: Io, opts: PassphraseOptions): Promis
     // other trailing space is part of the passphrase.
     const passphrase = text.split(/\r\n|\n|\r/, 1)[0] ?? "";
     if (passphrase === "") throw new CliError("passphrase-empty", "The passphrase file is empty. Put your passphrase on its first line.");
+    requireLongEnough(passphrase, opts.creating);
     return passphrase;
   }
 
   const fromEnv = io.env.SNAPPY_PASSPHRASE;
-  if (fromEnv !== undefined && fromEnv !== "") return fromEnv;
+  if (fromEnv !== undefined && fromEnv !== "") {
+    requireLongEnough(fromEnv, opts.creating);
+    return fromEnv;
+  }
 
-  const first = await io.askSecret("Passphrase for your ledger: ");
-  if (first === "") throw new CliError("passphrase-empty", "A passphrase is required to seal your ledger. Try again with at least one character.");
+  const first = await io.askSecret("Passphrase for your saved history: ");
+  if (first === "") throw new CliError("passphrase-empty", `Your saved history needs a passphrase. Use ${MIN_PASSPHRASE_LENGTH} or more characters.`);
+  requireLongEnough(first, opts.creating);
   if (opts.creating) {
     const again = await io.askSecret("Type it again to confirm: ");
-    if (again !== first) throw new CliError("passphrase-mismatch", "The two passphrases did not match. Nothing was saved. Try again.");
+    if (again !== first) throw new CliError("passphrase-mismatch", "The passphrases did not match, so nothing was saved. Try again.");
   }
   return first;
 }

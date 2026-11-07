@@ -200,7 +200,7 @@ describe("passphrase feedback", () => {
     const sixEmoji = "\u{1F510}".repeat(6); // 12 UTF-16 units, 6 characters
     expect(sixEmoji.length).toBe(12);
     expect(await actions.sealWith(sixEmoji)).toBe(false);
-    expect(store.get().vault.message).toEqual({ kind: "error", text: "Use at least 12 characters." });
+    expect(store.get().vault.message).toEqual({ kind: "error", text: "Add more characters." });
   });
 });
 

@@ -98,8 +98,9 @@ describe("content-blind and offline", () => {
 });
 
 describe("brand", () => {
-  it("has no orange or vermilion anywhere, and no color values that copy a token", () => {
-    expect(offenders(/orange|vermilion|#ff[0-9a-f]{4}\b/i, files)).toEqual([]);
+  it("has no hard-coded color anywhere, orange included: colors come from tokens", () => {
+    // Named orange colors and the old off-brand vermilion values are out; orange exists only as the --orange-* tokens.
+    expect(offenders(/:\s*(orange|darkorange|orangered|coral|tomato|vermilion)\b|#ff[0-9a-f]{4}\b/i, files)).toEqual([]);
     const css = stripComments(read(path.join(srcDir, "styles.css")));
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     expect(css).not.toMatch(/\brgba?\(|\bhsla?\(/);

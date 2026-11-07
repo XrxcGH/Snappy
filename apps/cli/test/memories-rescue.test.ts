@@ -69,9 +69,9 @@ describe("memories rescue of a three-part export", () => {
   it("saves every file with its exact capture time, the overlays unchanged, and no location", async () => {
     const { folder, code, out } = await rescue("rescue-a");
     expect(code).toBe(0);
-    expect(out).toContain(`${formatCount(mains)} saved from your zips, 0 already there, 0 failed.`);
+    expect(out).toContain(`${formatCount(mains)} saved from your ZIP files, 0 already there, 0 failed.`);
     expect(out).toContain(`${facts.overlays} overlay files saved next to their Memory, unchanged.`);
-    expect(out).toContain("matched to a file in your zips by exact capture time");
+    expect(out).toContain("matched to a file in your ZIP files by exact capture time");
 
     const verified = verifyRescue(folder, zips, FORBIDDEN);
     expect(verified.problems).toEqual([]);
@@ -83,7 +83,8 @@ describe("memories rescue of a three-part export", () => {
     for (const f of files(folder).filter((f) => f !== "memories-report.json")) {
       expect(f).toMatch(/^\d{4}\/\d{4}-\d{2}\/\d{4}-\d{2}-\d{2}_\d{6}_(image|video)_\d{4}(-overlay)?\.(jpg|mp4|png)$/);
     }
-  });
+    // This test writes and checks every file of a real-sized rescue: a busy machine needs more than the default 30 s.
+  }, 120_000);
 
   it("writes a report of counts and statuses and nothing that identifies a file, a place or a date", async () => {
     const { folder } = await rescue("rescue-report");
@@ -109,7 +110,7 @@ describe("memories rescue of a three-part export", () => {
     const before = snapshot(folder);
     const again = await run(["memories", dir, "--out", folder, "--no-color"]);
     expect(again.code).toBe(0);
-    expect(again.out).toContain(`0 saved from your zips, ${formatCount(mains)} already there, 0 failed.`);
+    expect(again.out).toContain(`0 saved from your ZIP files, ${formatCount(mains)} already there, 0 failed.`);
     expect(again.out).not.toContain("overlay files saved");
     expect(snapshot(folder)).toEqual(before);
     expect(reportOf(folder).counts).toMatchObject({ extracted: 0, skippedExisting: mains, failed: 0, overlaysWritten: 0 });
@@ -127,7 +128,7 @@ describe("memories rescue of a three-part export", () => {
 
     const again = await run(["memories", dir, "--out", folder, "--no-color"]);
     expect(again.code).toBe(0);
-    expect(again.out).toContain(`${removed.length} saved from your zips, ${formatCount(mains - removed.length)} already there, 0 failed.`);
+    expect(again.out).toContain(`${removed.length} saved from your ZIP files, ${formatCount(mains - removed.length)} already there, 0 failed.`);
     // The overlay of the restored file was never lost, so it is not written twice.
     expect(again.out).not.toContain("overlay files saved");
     const verified = verifyRescue(folder, zips, FORBIDDEN);
@@ -156,40 +157,40 @@ describe("memories rescue of a three-part export", () => {
     const result = await run(["memories", dir, "--out", out, "--download", "--no-color"], io);
     expect(result.code).toBe(0);
     expect(calls).toBe(0);
-    expect(flat(result.out)).toContain("This export has no download links, so --download has nothing to download and Snappy did not use the network.");
-    expect(result.out).not.toContain("Heads up");
+    expect(flat(result.out)).toContain("This export has no download links, so Snappy did not use the network.");
+    expect(result.out).not.toContain("only Snappy command that uses the network");
     expect(result.out).not.toContain("were contacted");
-    expect(result.out).toContain("Nothing here has left your device.");
-    expect(result.out).toContain(`${formatCount(mains)} saved from your zips, 0 already there, 0 failed.`);
+    expect(result.out).toContain("Nothing here has left this device.");
+    expect(result.out).toContain(`${formatCount(mains)} saved from your ZIP files, 0 already there, 0 failed.`);
     expect(reportOf(out).download).toBe(false);
     expect(verifyRescue(out, zips).problems).toEqual([]);
 
     const dry = await run(["memories", dir, "--dry-run", "--download", "--no-color"], makeIo({ transport }));
     expect(calls).toBe(0);
     expect(flat(dry.out)).toContain("This export has no download links");
-    expect(dry.out).toContain(`A real run would copy ${formatCount(mains)} files from your zips.`);
+    expect(dry.out).toContain(`A real run would copy ${formatCount(mains)} files from your ZIP files.`);
     expect(dry.out).not.toContain("and download");
   });
 
   it("explains Memories that have no file, in the words core gives, and counts them", async () => {
     const { folder, out } = await rescue("rescue-unmatched");
     const report = reportOf(folder);
-    expect(flat(out)).toContain(`${report.counts.unmatchedItems} of ${report.counts.planned} saved Memories have no file in the zips Snappy was given.`);
-    expect(flat(out)).toContain("If part of your export is missing, add it and run again. Your Memories stay in your Snapchat account either way");
+    expect(flat(out)).toContain(`${report.counts.unmatchedItems} of ${report.counts.planned} saved Memories have no file in your ZIP files.`);
+    expect(flat(out)).toContain("If part of your export is missing, add it and run again.");
     // Said once, in the Memories section, not again under the export check.
-    expect(flat(out).match(/have no file in the zips Snappy was given/g)).toHaveLength(1);
-    expect(out).toContain(`${report.counts.unmatchedItems} Memories had neither a file nor a link, so they were not saved.`);
+    expect(flat(out).match(/have no file in your ZIP files/g)).toHaveLength(1);
+    expect(out).toContain(`${report.counts.unmatchedItems} Memories had no file or link, so they were not saved.`);
   });
 
   it("works from parts 1 and 2 alone, and from part 1 alone, without failing", async () => {
     const two = await rescue("rescue-two", [], [zips[0] as string, zips[1] as string]);
     expect(two.code).toBe(0);
-    expect(two.out).toContain(`${formatCount(facts.mainsPerZip[1] as number)} saved from your zips, 0 already there, 0 failed.`);
+    expect(two.out).toContain(`${formatCount(facts.mainsPerZip[1] as number)} saved from your ZIP files, 0 already there, 0 failed.`);
     expect(verifyRescue(two.folder, zips.slice(0, 2)).problems).toEqual([]);
 
     const one = await rescue("rescue-one", [], [zips[0] as string]);
     expect(one.code).toBe(0);
-    expect(one.out).toContain("0 saved from your zips");
+    expect(one.out).toContain("0 saved from your ZIP files");
     expect(files(one.folder)).toEqual(["memories-report.json"]);
   });
 
@@ -198,9 +199,9 @@ describe("memories rescue of a three-part export", () => {
     const dry = await run(["memories", dir, "--out", out, "--dry-run", "--no-color"]);
     expect(dry.code).toBe(0);
     expect(existsSync(out)).toBe(false);
-    expect(dry.out).toContain(`${formatCount(mains)} are in your zips, 0 are only links.`);
-    expect(dry.out).toContain(`A real run would copy ${formatCount(mains)} files from your zips.`);
-    expect(dry.out).toContain(`${facts.overlays} overlay files came with them.`);
+    expect(dry.out).toContain(`${formatCount(mains)} are in your ZIP files, 0 are only links.`);
+    expect(dry.out).toContain(`A real run would copy ${formatCount(mains)} files from your ZIP files.`);
+    expect(dry.out).toContain(`${facts.overlays} overlay files go with them.`);
   });
 });
 
@@ -212,8 +213,8 @@ describe("analyze over a three-part export", () => {
   it("shows the Memories pairing as counts, and says Snaps count as recent activity", async () => {
     const { code, out } = await run(["analyze", dir, "--no-save", "--no-color"]);
     expect(code).toBe(0);
-    expect(out).toContain(`${formatCount(mains)} of 400 Memories are matched to a file in your zips by exact capture time.`);
-    expect(out).toContain("overlay files came with them.");
+    expect(out).toContain(`${formatCount(mains)} of 400 Memories are matched to a file in your ZIP files by exact capture time.`);
+    expect(out).toContain("overlay files go with them.");
     expect(out).toContain("Saved chats and Snaps count as recent activity.");
     expect(out).not.toMatch(/\.jpg|\.mp4|memories\//);
   });
@@ -318,7 +319,7 @@ describe("memories rescue: edge cases", () => {
     const out = join(dir, "out");
     const result = await run(["memories", zip, "--out", out]);
     expect(result.code).toBe(3);
-    expect(result.out).toContain("1 saved from your zips, 0 already there, 1 failed.");
+    expect(result.out).toContain("1 saved from your ZIP files, 0 already there, 1 failed.");
     expect(result.out).toContain("item 1 failed (corrupt)");
     expect(result.out).not.toMatch(/memories\/|\.jpg|\.mp4|AAAAAAAA|BBBBBBBB/);
     const report = reportOf(out);
@@ -331,7 +332,7 @@ describe("memories rescue: edge cases", () => {
     writeFileSync(zip, bytes);
     const again = await run(["memories", zip, "--out", out]);
     expect(again.code).toBe(0);
-    expect(again.out).toContain("1 saved from your zips, 1 already there, 0 failed.");
+    expect(again.out).toContain("1 saved from your ZIP files, 1 already there, 0 failed.");
     expect(verifyRescue(out, [zip]).problems).toEqual([]);
   });
 
@@ -351,7 +352,7 @@ describe("memories rescue: edge cases", () => {
     const result = await run(["memories", zip, "--out", out, "--no-color"]);
     expect(result.code).toBe(0);
     expect(flat(result.out)).toContain("by capture time, allowing for a 2-hour clock difference");
-    expect(result.out).toContain("2 saved from your zips, 0 already there, 0 failed.");
+    expect(result.out).toContain("2 saved from your ZIP files, 0 already there, 0 failed.");
     // The dates written are the list's exact dates, not the shifted file times.
     const names = files(out).filter((f) => f !== "memories-report.json");
     expect(names.map((n) => n.split("/").pop()?.slice(0, 17)).sort()).toEqual(["2025-03-01_101112", "2025-03-02_131415"]);
@@ -367,7 +368,7 @@ describe("memories rescue: edge cases", () => {
     const result = await run(["memories", zip, "--out", out, "--download", "--no-color"], makeIo({ transport, sleep: async () => undefined }));
     expect(result.code).toBe(0);
     expect(calls).toBeGreaterThan(0);
-    expect(result.out).toContain("Heads up: this is the only Snappy command that uses the network.");
+    expect(result.out).toContain("This is the only Snappy command that uses the network.");
     expect(result.out).not.toContain("has no download links");
     expect(reportOf(out).counts.downloaded).toBe(calls);
   });

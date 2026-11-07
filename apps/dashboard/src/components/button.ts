@@ -19,13 +19,15 @@ export interface ButtonOptions {
   disabled?: boolean;
   pressed?: boolean;
   type?: "button" | "submit";
+  /** Extra class names after the button's own (for example a placement class). */
+  className?: string;
 }
 
 export function button(options: ButtonOptions): HTMLButtonElement {
   return h(
     "button",
     {
-      class: `btn btn-${options.variant ?? "secondary"}`,
+      class: `btn btn-${options.variant ?? "secondary"}${options.className ? ` ${options.className}` : ""}`,
       type: options.type ?? "button",
       onclick: options.onclick,
       "aria-label": options.ariaLabel,

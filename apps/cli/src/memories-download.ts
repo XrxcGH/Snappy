@@ -18,9 +18,10 @@ export type Transport = (url: string, init: { signal: AbortSignal; redirect: "ma
 
 /** Printed once, before the first download, in plain language. */
 export const DOWNLOAD_NOTICE: readonly string[] = [
-  "Heads up: this is the only Snappy command that uses the network.",
-  "It contacts only the links inside your own export, to download your Memories to this computer.",
-  "If a link forwards to another secure (https) address, Snappy follows it; anything else is refused. Snappy sends nothing else and never prints or saves those links. If a link has expired, you will see a failure for that item.",
+  "This is the only Snappy command that uses the network.",
+  "It contacts only the links in your own export, to download your Memories here.",
+  "A link that forwards to another secure (https) address is followed. Snappy never prints or saves the links.",
+  "An expired link shows as a failed item.",
 ];
 
 /**

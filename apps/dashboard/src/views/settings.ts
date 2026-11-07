@@ -5,7 +5,8 @@ import type { Theme, State } from "../reducer.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button } from "../components/button.ts";
-import { disclosureSummary, pageHeader, section } from "../components/layout.ts";
+import { icon } from "../components/icon.ts";
+import { detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
 import { region } from "../reactive.ts";
@@ -15,27 +16,32 @@ export const settingsView: View = (ctx) =>
   h(
     "div",
     { class: "view" },
-    pageHeader(routes.settings.title),
+    pageHeader(routes.settings.title, undefined, { icon: "settings" }),
     themeSection(ctx),
     region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }),
     aboutSection(),
   );
 
+/**
+ * The theme control. It reads and writes the same state as the header toggle (the store, through
+ * actions.setTheme), so the two always agree. A compact segmented control: Dark, Light, Match device.
+ */
 function themeSection(ctx: ViewContext): HTMLElement {
-  const current = ctx.store.get().theme;
-  const options: Theme[] = ["system", "light", "dark"];
-  return section(
-    settings.themeHeading,
-    h(
-      "fieldset",
-      { class: "fieldset" },
-      h("legend", { class: "label" }, settings.themeLegend),
-      ...options.map((theme) => {
-        const input = h("input", { type: "radio", name: "theme", value: theme, class: "check-input", checked: theme === current, "data-key": `theme:${theme}` });
-        input.addEventListener("change", () => ctx.actions.setTheme(theme));
-        return h("label", { class: "check" }, input, h("span", {}, settings.themes[theme]));
-      }),
-    ),
+  const options: Theme[] = ["dark", "light", "system"];
+  return region(
+    ctx.store,
+    (s) => [s.theme],
+    (s) =>
+      section(
+        settings.themeHeading,
+        h(
+          "div",
+          { class: "segmented segmented-theme", role: "group", "aria-label": settings.themeHeading },
+          ...options.map((theme) => button({ label: settings.themes[theme], key: `theme:${theme}`, pressed: s.theme === theme, onclick: () => ctx.actions.setTheme(theme) })),
+        ),
+        h("p", {}, settings.themeNote),
+      ),
+    { className: "region region-section" },
   );
 }
 
@@ -47,6 +53,8 @@ function storageSection(ctx: ViewContext, s: State): Child[] {
   return [
     section(
       settings.storageHeading,
+      // The sealed-history status shows here and nowhere else.
+      vault.phase === "unlocked" ? h("p", {}, h("span", { class: "pill" }, icon("seal", 16), h("span", {}, shell.sealedOn))) : null,
       h("p", {}, status),
       msg ? notice(msg.kind, msg.text) : null,
       vault.supported && vault.phase !== "locked"
@@ -135,20 +143,20 @@ function aboutSection(): HTMLElement {
   return section(
     settings.aboutHeading,
     h("p", {}, settings.aboutBody),
-    h("p", { class: "caption muted" }, settings.versionLabel(brand.version)),
-    h("p", { class: "caption muted" }, brand.nonAffiliation),
-    h("h3", { class: "subheading" }, settings.licensesHeading),
-    h("p", {}, settings.licensesBody),
-    h(
-      "div",
-      { class: "licenses" },
-      ...licenses.map((lib) =>
-        h(
-          "details",
-          { class: "license" },
-          disclosureSummary(`${lib.name}: ${lib.license}`),
-          h("p", { class: "caption muted" }, lib.copyright),
-          h("pre", { class: "code code-wrap" }, h("code", {}, lib.text)),
+    h("p", { class: "caption" }, settings.versionLabel(brand.version)),
+    subsection(
+      settings.licensesHeading,
+      h("p", {}, settings.licensesBody),
+      h(
+        "div",
+        { class: "licenses" },
+        ...licenses.map((lib) =>
+          h(
+            "details",
+            { class: "license" },
+            disclosureSummary(lib.name),
+            detailsBody(h("p", { class: "caption" }, `${lib.license}. ${lib.copyright}`), h("pre", { class: "code code-wrap" }, h("code", {}, lib.text))),
+          ),
         ),
       ),
     ),

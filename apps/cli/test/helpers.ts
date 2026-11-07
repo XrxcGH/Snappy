@@ -116,3 +116,18 @@ export function writeSyntheticParts(dir: string, opts: Partial<SyntheticExportOp
     return path;
   });
 }
+
+/**
+ * Text with file paths replaced by "<path>". A path is data from the machine running the test (a
+ * Windows runner's temp folder is C:\Users\RUNNER~1\AppData\Local\Temp\...), not copy, so the
+ * wording checks (all-caps words, spelling) must not see it. Covers drive paths, UNC paths,
+ * home-relative paths (~/.snappy), absolute POSIX paths, and a bare 8.3 short name such as RUNNER~1.
+ */
+export function stripPaths(text: string): string {
+  return text
+    .replace(/[A-Za-z]:[\\/][^\s"'<>|?*]*/g, "<path>")
+    .replace(/\\\\[^\s\\/"'<>|]+[\\/][^\s"'<>|]*/g, "<path>")
+    .replace(/(^|[\s("'=:])~[\\/][^\s"'<>|]*/g, "$1<path>")
+    .replace(/(^|[\s("'=:])\/(?:[\w.~@+%-]+\/)*[\w.~@+%-]+(?:\/[^\s"'<>|]*)?/g, "$1<path>")
+    .replace(/\b[A-Za-z0-9_]+~\d+\b/g, "<path>");
+}

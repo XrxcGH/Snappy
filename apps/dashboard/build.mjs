@@ -26,6 +26,9 @@ const FONTS = [
   { pkg: "jetbrains-mono", family: "JetBrains Mono", weights: [400, 500], short: "JetBrains Mono" },
 ];
 
+/** The weights the digits-only family is cut at. */
+const DIGIT_WEIGHTS = [400, 500, 600, 700];
+
 const sha256 = (text) => `'sha256-${createHash("sha256").update(text, "utf8").digest("base64")}'`;
 
 function packageDir(name) {
@@ -46,6 +49,19 @@ async function fontCss() {
           `src:url(data:font/woff2;base64,${woff2.toString("base64")}) format("woff2")}`,
       );
     }
+  }
+  // Atkinson Hyperlegible Next draws a slashed zero and has no plain-zero feature (its GSUB table offers only ccmp,
+  // frac, locl, pnum and tnum). So the ten digits 0 to 9 come from "Snappy Digits", a digits-only family cut from
+  // Bricolage Grotesque (whose zero is plain) at weights 400, 500, 600 and 700 by fonts/make-snappy-digits.py (fontTools
+  // pyftsubset, U+0030-0039, tnum and pnum kept). The family is listed FIRST in --font-body and --font-display
+  // (brand/tokens/tokens.css), so only digits switch and every letter stays Atkinson or Bricolage. Usernames and code
+  // stay in JetBrains Mono, where the slashed zero keeps 0 and O apart.
+  for (const weight of DIGIT_WEIGHTS) {
+    const woff2 = await readFile(path.join(here, "fonts", `snappy-digits-${weight}.woff2`));
+    faces.push(
+      `@font-face{font-family:"Snappy Digits";font-style:normal;font-weight:${weight};font-display:swap;unicode-range:U+0030-0039;` +
+        `src:url(data:font/woff2;base64,${woff2.toString("base64")}) format("woff2")}`,
+    );
   }
   return faces.join("\n");
 }
@@ -89,10 +105,10 @@ async function spriteMarkup() {
   return sprite.replace("</svg>", `${logo}</svg>`).trim();
 }
 
-const cspFor = (scriptHash, styleHash) =>
+const cspFor = (scriptHashes, styleHash) =>
   [
     "default-src 'none'",
-    `script-src ${scriptHash}`,
+    `script-src ${scriptHashes.join(" ")}`,
     `style-src ${styleHash}`,
     "font-src data:",
     "img-src data:",
@@ -161,11 +177,15 @@ export async function buildDashboard({ outDir = path.join(here, "dist") } = {}) 
 
   const style = (await transform(`${fonts}\n${tokens}\n${own}`, { loader: "css", minify: true, legalComments: "none" })).code;
   const script = await bundleScript(entries, await bundleWorker());
+  // A tiny script in <head> applies a remembered theme before the first paint. Its hash goes in the policy too.
+  const themeBoot = (await transform(await readFile(path.join(here, "src", "theme-boot.js"), "utf8"), { loader: "js", minify: true, legalComments: "none" })).code.trim();
+  if (/<\/script|<!--/i.test(themeBoot)) throw new Error("The theme script contains a sequence that could end the inline script early.");
   if (/<\/script|<!--/i.test(script)) throw new Error("The bundle contains a sequence that could end the inline script early.");
   if (/<\/style/i.test(style)) throw new Error("The stylesheet contains a sequence that could end the inline style early.");
 
   const values = {
-    CSP: cspFor(sha256(script), sha256(style)),
+    CSP: cspFor([sha256(themeBoot), sha256(script)], sha256(style)),
+    THEME_BOOT: themeBoot,
     FAVICON: `data:image/svg+xml;base64,${favicon.toString("base64")}`,
     STYLE: style,
     SPRITE: sprite,

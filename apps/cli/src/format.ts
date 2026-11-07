@@ -13,10 +13,22 @@ export function formatCount(n: number): string {
   return Math.round(n).toLocaleString("en-US");
 }
 
-/** "1 friend", "3 friends". */
-export function plural(n: number, one: string, many = `${one}s`): string {
-  return `${formatCount(n)} ${n === 1 ? one : many}`;
+/** The word alone, for a count that is printed another way: "friend" for 1, "friends" for 0 or 3. */
+export function noun(n: number, one: string, many = `${one}s`): string {
+  return n === 1 ? one : many;
 }
+
+/** "1 friend", "3 friends". Use this (or noun) wherever a count meets a word, so "1 requests" cannot happen. */
+export function plural(n: number, one: string, many = `${one}s`): string {
+  return `${formatCount(n)} ${noun(n, one, many)}`;
+}
+
+/** "is" for 1, "are" for anything else. */
+export const isAre = (n: number): string => noun(n, "is", "are");
+/** "has" for 1, "have" for anything else. */
+export const hasHave = (n: number): string => noun(n, "has", "have");
+/** "was" for 1, "were" for anything else. */
+export const wasWere = (n: number): string => noun(n, "was", "were");
 
 /** "340 MB", "1.2 GB". Binary steps (1024), the way file managers report sizes. */
 export function formatBytes(bytes: number): string {

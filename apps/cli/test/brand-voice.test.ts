@@ -4,11 +4,20 @@
  */
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { makeIo, run, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
 
 /** Synthetic usernames are data, not copy: they are removed before the wording checks. */
 const USERNAMES = /\b(?:ghost|oneway|dormant|active|newfriend)_\d+\b/g;
 const ACRONYMS = new Set(["JSON", "HTML", "ZIP", "CSV", "AES", "NO", "SNAPPY"]);
+
+/**
+ * All-caps words that are not acronyms. File paths are removed first: they come from the machine
+ * running the test, such as the Windows runner's temp folder (C:\Users\RUNNER~1\AppData\Local\Temp).
+ */
+function shoutingWords(text: string): string[] {
+  const words = stripPaths(text).replace(USERNAMES, "").match(/\b[A-Z]{4,}\b/g) ?? [];
+  return words.filter((w) => !ACRONYMS.has(w));
+}
 
 async function collect(): Promise<Record<string, string>> {
   const dir = tempDir("voice");
@@ -74,7 +83,7 @@ describe("terminal copy follows the brand guide", () => {
   it("uses the feature names from the guide", async () => {
     const out = (await everything()).analyze as string;
     expect(out).toContain("Disappeared friends");
-    expect(out).toContain("Requests no one accepted");
+    expect(out).toContain("Unaccepted requests");
     expect(out).toContain("Quiet friends");
     expect(out).toContain("Cleanup queue");
     expect(out).toContain("They may have removed you, or their account may be gone.");
@@ -87,23 +96,40 @@ describe("terminal copy follows the brand guide", () => {
   it("writes in sentence case: no all-caps words apart from acronyms and environment variables", async () => {
     const outputs = await everything();
     for (const [name, text] of Object.entries(outputs)) {
-      const words = text.replace(USERNAMES, "").match(/\b[A-Z]{4,}\b/g) ?? [];
-      const bad = words.filter((w) => !ACRONYMS.has(w));
-      expect(bad, name).toEqual([]);
+      expect(shoutingWords(text), name).toEqual([]);
     }
+  });
+
+  it("does not mistake a file path for a shouting word", () => {
+    const paths = [
+      "File: C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\snappy-cli-voice-Ab12\\ledger.sealed",
+      "CSV saved: c:/Users/RUNNER~1/AppData/Local/Temp/queue.csv",
+      "Saved to \\\\BUILDHOST\\SHARE\\Snappy\\out",
+      "Folder: ~/SNAPPY/ledger.sealed",
+      "Saved in /home/RUNNER/work/_temp/snappy-out",
+      "Short name RUNNER~1 only",
+    ];
+    for (const line of paths) {
+      expect(shoutingWords(line), line).toEqual([]);
+      expect(stripPaths(line), line).not.toMatch(/RUNNER|BUILDHOST|SHARE/);
+    }
+    // Shouting that sits next to a path is still caught.
+    expect(shoutingWords("WARNING: saved in C:\\Users\\RUNNER~1\\Temp")).toEqual(["WARNING"]);
+    expect(shoutingWords("Saved. Careful, ALWAYS check.")).toEqual(["ALWAYS"]);
   });
 
   it("uses American spelling", async () => {
     const british = /\b(colour\w*|grey|organis\w*|analys(?!is)\w*|cancelled|licence|centre|favourite|behaviour|catalogue|programme)\b/i;
     for (const [name, text] of Object.entries(await everything())) {
-      expect(british.exec(text.replace(USERNAMES, ""))?.[0], name).toBeUndefined();
+      expect(british.exec(stripPaths(text).replace(USERNAMES, ""))?.[0], name).toBeUndefined();
     }
   });
 
-  it("says what happened and what to do in errors, with a code", async () => {
+  it("says what happened and what to do in errors, without a developer code", async () => {
     const all = await everything();
     for (const name of ["errors", "usage", "unknown"]) {
-      expect(all[name], name).toMatch(/\(code: [a-z-]+\)\n$/);
+      expect(all[name], name).not.toMatch(/\bcode\b/);
+      expect(all[name], name).toMatch(/\.\n$/);
       expect(all[name], name).toMatch(/[Cc]heck|Run |Give it|try again/);
     }
   });
@@ -111,8 +137,8 @@ describe("terminal copy follows the brand guide", () => {
   it("carries the privacy lines where they matter", async () => {
     const all = await everything();
     expect(all.analyze).toContain("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
-    expect(all.analyze).toContain("Nothing here has left your device.");
-    expect(all.analyze).toContain("Confidence is an estimate from your exports, not from anything Snapchat told us.");
-    expect(all["analyze saved"]).toContain("Ledger sealed with your passphrase.");
+    expect(all.analyze).toContain("Nothing here has left this device.");
+    expect(all.analyze).toContain("Confidence is an estimate from your exports, not something Snapchat told Snappy.");
+    expect(all["analyze saved"]).toContain("Saved history sealed with your passphrase.");
   });
 });

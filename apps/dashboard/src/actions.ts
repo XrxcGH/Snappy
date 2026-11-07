@@ -172,12 +172,12 @@ export function createActions(store: Store, deps: Deps): Actions {
           ? {
               severity: "warning",
               code: "export-time-future",
-              message: "The date stored in this export is in the future, so Snappy used today's date for your history instead.",
+              message: start.exportTimeFuture,
             }
           : {
               severity: "warning",
               code: "export-time-unknown",
-              message: "Snappy could not tell when this export was made, so it used today's date for your history. If you add it again later, it may count as a new snapshot.",
+              message: start.exportTimeUnknown,
             },
       );
     }

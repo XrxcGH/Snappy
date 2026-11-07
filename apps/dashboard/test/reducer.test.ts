@@ -96,14 +96,14 @@ describe("reducer: lock, unlock, wipe", () => {
     const p = parsed(2000, ["a"]);
     const loaded = run(
       initialState(),
-      { type: "theme", theme: "dark" },
+      { type: "theme", theme: "light" },
       { type: "import-finished", latest: p, issues: [], snapshot: snapshotFromExport(p), now: 1 },
       { type: "vault", patch: { phase: "unlocked", hasSaved: true } },
     );
     const locked = reduce(loaded, { type: "locked" });
     expect(locked.real.ledger.snapshots).toHaveLength(0);
     expect(locked.real.latest).toBeNull();
-    expect(locked.theme).toBe("dark");
+    expect(locked.theme).toBe("light");
     expect(locked.vault).toMatchObject({ phase: "locked", hasSaved: true });
 
     const wiped = reduce(loaded, { type: "wiped" });
@@ -118,11 +118,12 @@ describe("store", () => {
     const seen: string[] = [];
     store.subscribe((s, prev) => {
       seen.push(`${prev.theme}>${s.theme}`);
-      if (s.theme === "dark") store.dispatch({ type: "theme", theme: "light" });
+      if (s.theme === "light") store.dispatch({ type: "theme", theme: "system" });
     });
-    store.dispatch({ type: "theme", theme: "dark" });
-    expect(seen).toEqual(["system>dark", "dark>light"]);
-    expect(store.get().theme).toBe("light");
+    // Dark is the default theme, so the first change starts from dark.
+    store.dispatch({ type: "theme", theme: "light" });
+    expect(seen).toEqual(["dark>light", "light>system"]);
+    expect(store.get().theme).toBe("system");
   });
 
   it("does not notify when an action changes nothing, or after unsubscribing", () => {
@@ -132,7 +133,7 @@ describe("store", () => {
     store.dispatch({ type: "clear-checked" });
     expect(calls).toBe(0);
     off();
-    store.dispatch({ type: "theme", theme: "dark" });
+    store.dispatch({ type: "theme", theme: "light" });
     expect(calls).toBe(0);
   });
 });

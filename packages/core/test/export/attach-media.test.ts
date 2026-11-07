@@ -59,10 +59,10 @@ describe("attachBundledMedia", () => {
       ["info", "memories-links-empty"],
       ["warning", "memories-unmatched-items"],
     ]);
-    expect(r.issues[1]?.message).toBe("3 of 10 saved Memories have no file in the zips Snappy was given. If part of your export is missing, add it and run again. Your Memories stay in your Snapchat account either way, and Snapchat may not have included every one in the export.");
+    expect(r.issues[1]?.message).toBe("3 of 10 saved Memories have no file in your ZIP files.");
 
     const one = attachBundledMedia(items, filesFor(items, [0, 1, 2, 3, 4, 5, 6, 7, 8]));
-    expect(one.issues[1]?.message).toBe("1 of 10 saved Memories has no file in the zips Snappy was given. If part of your export is missing, add it and run again. Your Memories stay in your Snapchat account either way, and Snapchat may not have included every one in the export.");
+    expect(one.issues[1]?.message).toBe("1 of 10 saved Memories has no file in your ZIP files.");
   });
 
   it("does not count an entry with a download link as missing, and does not claim the links are empty", () => {
@@ -77,7 +77,7 @@ describe("attachBundledMedia", () => {
     const r = attachBundledMedia(items, filesFor(items, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 1, "dos", -8));
     expect(r.pairing).toMatchObject({ method: "offset-time", offsetHours: -8, paired: 10 });
     expect(r.issues.map((i) => i.code)).toEqual(["memories-links-empty", "memories-time-offset", "memories-unmatched-items"]);
-    expect(r.issues[1]?.message).toBe("The Memories files store their times on a clock 8 hours behind UTC; Snappy allowed for that when matching them.");
+    expect(r.issues[1]?.message).toBe("The Memories files keep their times on a clock 8 hours behind UTC. Snappy allowed for that.");
   });
 
   it("warns when it had to fall back to the date and type, and pairs only unambiguous days", () => {
@@ -98,7 +98,7 @@ describe("attachBundledMedia", () => {
     expect(r.memories.map((m) => m.zipPath !== undefined)).toEqual([true, false, false]);
     expect(r.issues.map((i) => i.code)).toEqual(["memories-links-empty", "memories-pairing-fallback", "memories-ambiguous-items"]);
     // Those two have files in the zips that could not be told apart: the advice is not "a part may be missing".
-    expect(r.issues[2]?.message).toBe("2 saved Memories could not be told apart from other Memories with the same capture time, so Snappy left them unmatched instead of guessing which file is which. The files are in your zips.");
+    expect(r.issues[2]?.message).toBe("2 saved Memories share a time with others, so Snappy did not guess. Their files are in your ZIP files.");
   });
 
   it("fills in an unknown media type from the file it pairs with", () => {
@@ -112,7 +112,7 @@ describe("attachBundledMedia", () => {
     const r = attachBundledMedia(items, []);
     expect(r.pairing).toBeUndefined();
     expect(r.memories).toEqual(items);
-    expect(r.issues).toEqual([{ severity: "warning", code: "memories-no-media-source", message: "2 Memories have no file or download link in the zips Snappy was given. If your export came in more than one zip, add the other parts (the ones with -2, -3 and so on at the end of their names) and run again." }]);
+    expect(r.issues).toEqual([{ severity: "warning", code: "memories-no-media-source", message: "2 Memories have no file or link in your ZIP files. Part of your export may be missing." }]);
   });
 
   it("starts from the list alone: stale file fields are dropped and the input is not touched", () => {

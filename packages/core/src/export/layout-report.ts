@@ -667,7 +667,7 @@ async function loadMemoriesList(readers: RandomAccessReader[], parts: ZipEntryIn
 }
 
 const LIST_PROBLEM: Record<"missing" | "unreadable", string> = {
-  missing: "memories_history.json was not found in these zips.",
+  missing: "memories_history.json was not found in these ZIP files.",
   unreadable: "memories_history.json could not be read as a list of saved media.",
 };
 

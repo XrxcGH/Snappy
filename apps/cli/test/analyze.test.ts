@@ -24,12 +24,12 @@ describe("analyze --no-save", () => {
     expect(io.asked).toEqual([]);
     expect(readdirSync(home)).toEqual([]);
     expect(out).toContain("Export check");
-    expect(out).toContain("2 exports on record");
+    expect(out).toContain("2 exports in your history");
     expect(out).toMatch(/ghost_1 +Disappeared +▰▰▱ Medium/);
-    expect(out).toMatch(/oneway_1 +Not accepted/);
+    expect(out).toMatch(/oneway_1 +Unaccepted/);
     expect(out).toMatch(/dormant_\d+ +Quiet +▰▱▱ Low/);
-    expect(out).toContain("The ledger was not read or written, as you asked.");
-    expect(out).toContain("Nothing here has left your device.");
+    expect(out).toContain("Your saved history was not read or written, as you asked.");
+    expect(out).toContain("Nothing here has left this device.");
     expect(out).not.toContain("\x1b");
   });
 
@@ -37,16 +37,16 @@ describe("analyze --no-save", () => {
     const { later } = writeDemoPair(tempDir("an"));
     const { out } = await run(["analyze", later, "--no-save"]);
     const text = out.replace(/\s+/g, " ");
-    expect(text).toContain("one export on record, so it cannot tell who has disappeared yet");
-    expect(text).toContain("Export your data again");
+    expect(text).toContain("Snappy needs two exports to see who disappeared.");
+    expect(text).toContain("Request a new one in a few weeks");
     expect(out).not.toMatch(/ghost_\d+ +Disappeared/);
   });
 
   it("limits the table and points to --csv and --json for the rest", async () => {
     const { earlier, later } = writeDemoPair(tempDir("an"));
     const { out } = await run(["analyze", later, "--earlier", earlier, "--no-save", "--limit", "3"]);
-    expect(out.match(/^ {2}\w+_\d+ +(Disappeared|Not accepted|Quiet)/gm)).toHaveLength(3);
-    expect(out).toMatch(/\d+ more friends not shown\. Use --csv or --json/);
+    expect(out.match(/^ {2}\w+_\d+ +(Disappeared|Unaccepted|Quiet)/gm)).toHaveLength(3);
+    expect(out).toMatch(/\d+ more not shown\. Use --csv or --json/);
   });
 
   it("uses a folder of zips as the parts of one export", async () => {
@@ -79,8 +79,8 @@ describe("analyze --no-save", () => {
 
   it("warns when the friend count does not match the export", async () => {
     const { later } = writeDemoPair(tempDir("an"));
-    const { out } = await run(["analyze", later, "--no-save", "--friend-count", "400"]);
-    expect(out).toMatch(/Warning +The export lists 40 friends but 400 were expected/);
+    const { out } = await run(["analyze", later, "--no-save", "--friend-count", "400", "--verbose"]);
+    expect(out).toMatch(/Warning +The export has 40 friends, not the 400 you expected/);
     expect(out).toContain("code: friend-count-mismatch");
   });
 });
@@ -94,12 +94,12 @@ describe("analyze with a sealed ledger", () => {
 
     const first = await run(["analyze", earlier, "--ledger", ledger], makeIo({ env }));
     expect(first.code).toBe(0);
-    expect(first.out).toContain("Ledger sealed with your passphrase.");
-    expect(first.out).toContain("1 export on record");
-    expect(first.out).toContain("cannot tell who has disappeared yet");
+    expect(first.out).toContain("Saved history sealed with your passphrase.");
+    expect(first.out).toContain("1 export in your history");
+    expect(first.out).toContain("Snappy needs two exports to see who disappeared.");
 
     const second = await run(["analyze", later, "--ledger", ledger], makeIo({ env }));
-    expect(second.out).toContain("2 exports on record");
+    expect(second.out).toContain("2 exports in your history");
     expect(second.out).toMatch(/ghost_1 +Disappeared/);
 
     const everything = first.out + first.err + second.out + second.err + readFileSync(ledger).toString("latin1");
@@ -149,7 +149,7 @@ describe("analyze with a sealed ledger", () => {
     await run(["analyze", earlier, "--ledger", ledger], makeIo({ env }));
     const before = readFileSync(ledger);
 
-    const result = await run(["analyze", later, "--ledger", ledger], makeIo({ env: { SNAPPY_PASSPHRASE: "not it" } }));
+    const result = await run(["analyze", later, "--ledger", ledger, "--verbose"], makeIo({ env: { SNAPPY_PASSPHRASE: "not it" } }));
     expect(result.code).toBe(1);
     expect(result.err).toContain("(code: wrong-passphrase)");
     expect(result.err).not.toContain("not it");
@@ -158,7 +158,7 @@ describe("analyze with a sealed ledger", () => {
 
   it("fails calmly with no terminal and no other passphrase source", async () => {
     const { later } = writeDemoPair(tempDir("an"));
-    const result = await run(["analyze", later, "--ledger", join(tempDir("an"), "l.sealed")]);
+    const result = await run(["analyze", later, "--ledger", join(tempDir("an"), "l.sealed"), "--verbose"]);
     expect(result.code).toBe(1);
     expect(result.err).toContain("(code: no-terminal)");
   });
@@ -168,7 +168,10 @@ describe("analyze with a sealed ledger", () => {
     const ledger = join(dir, "ledger.sealed");
     const { earlier, later } = writeDemoPair(dir);
     await run(["analyze", later, "--ledger", ledger], makeIo({ env }));
-    const { out } = await run(["analyze", earlier, "--ledger", ledger], makeIo({ env }));
+    // The short code under a note is for bug reports, so it shows only with --verbose.
+    const plain = await run(["analyze", earlier, "--ledger", ledger], makeIo({ env }));
+    expect(plain.out).not.toContain("code: ");
+    const { out } = await run(["analyze", earlier, "--ledger", ledger, "--verbose"], makeIo({ env }));
     expect(out).toContain("code: older-than-ledger");
   });
 
@@ -180,7 +183,7 @@ describe("analyze with a sealed ledger", () => {
 
     const keep = await run(["keep", "Ghost_1", "ghost_2", "ghost_1", "--ledger", ledger], makeIo({ env }));
     expect(keep.code).toBe(0);
-    expect(keep.out).toContain("2 friends added to your allowlist. 2 friends in total.");
+    expect(keep.out).toContain("2 friends added to your keep list. 2 friends in total.");
     expect(keep.out).not.toContain("ghost_");
 
     const protectedRun = await run(["analyze", later, "--ledger", ledger], makeIo({ env }));
@@ -189,7 +192,7 @@ describe("analyze with a sealed ledger", () => {
     expect(protectedRun.out).toMatch(/2 friends protected/);
 
     const unkeep = await run(["unkeep", "ghost_1", "someone_else", "--ledger", ledger], makeIo({ env }));
-    expect(unkeep.out).toContain("1 friend taken off your allowlist (1 were not on it). 1 friend left.");
+    expect(unkeep.out).toContain("1 friend taken off your keep list (1 not on it). 1 friend left.");
     const after = await run(["analyze", later, "--ledger", ledger], makeIo({ env }));
     expect(after.out).toMatch(/^ {2}ghost_1 +Disappeared/m);
     expect(after.out).not.toMatch(/^ {2}ghost_2 /m);
@@ -205,10 +208,11 @@ describe("analyze with a sealed ledger", () => {
 
     const { code, out } = await run(["ledger", "status", "--ledger", ledger], makeIo({ env }));
     expect(code).toBe(0);
-    expect(out).toContain("2 exports on record.");
-    expect(out).toMatch(/Jul 4, 2026 +\d+ +\d+ +Data export/);
-    expect(out).toMatch(/Nov 1, 2026 +40 +\d+ +Data export/);
-    expect(out).toContain("1 friend protected.");
+    expect(out).toContain("2 exports in your history.");
+    expect(out).toMatch(/Jul 4, 2026 +\d+ +\d+\s*$/m);
+    expect(out).toMatch(/Nov 1, 2026 +40 +\d+\s*$/m);
+    expect(out).not.toMatch(/Scan|Source/);
+    expect(out).toContain("1 friend on your keep list.");
     expect(out).not.toMatch(/ghost_|oneway_|dormant_/);
   });
 
@@ -269,7 +273,7 @@ describe("analyze output formats", () => {
     const { later } = writeDemoPair(dir);
     const victim = join(dir, "friends.json");
     writeFileSync(victim, "keep me");
-    const { code, err } = await run(["analyze", later, "--no-save", "--csv", victim]);
+    const { code, err } = await run(["analyze", later, "--no-save", "--csv", victim, "--verbose"]);
     expect(code).toBe(1);
     expect(err).toContain("(code: usage)");
     expect(readFileSync(victim, "utf8")).toBe("keep me");
@@ -292,7 +296,7 @@ describe("analyze output formats", () => {
     const args = ["analyze", later, "--earlier", earlier, "--no-save"];
     const tty = await run(args, makeIo({ interactive: true, env: { COLORTERM: "truecolor" } }));
     expect(tty.out).toContain("\x1b[38;2;");
-    expect(tty.out).toContain("\x1b[33m"); // medium confidence is amber
+    expect(tty.out).toContain("\x1b[33m"); // medium confidence is yellow
     expect((await run(args, makeIo({ interactive: true, env: { NO_COLOR: "1" } }))).out).not.toContain("\x1b");
     expect((await run([...args, "--no-color"], makeIo({ interactive: true }))).out).not.toContain("\x1b");
   });
@@ -305,13 +309,13 @@ describe("analyze with broken input", () => {
     writeFileSync(zip, zipSync({ "html/index.html": new TextEncoder().encode("<html></html>") }));
     const ledger = join(dir, "ledger.sealed");
     const io = makeIo();
-    const { code, out } = await run(["analyze", zip, "--ledger", ledger], io);
+    const { code, out } = await run(["analyze", zip, "--ledger", ledger, "--verbose"], io);
 
     expect(code).toBe(2);
     expect(io.asked).toEqual([]);
     expect(existsSync(ledger)).toBe(false);
     expect(out.indexOf("Error")).toBeGreaterThan(-1);
-    expect(out.indexOf("Error")).toBeLessThan(out.indexOf("stopped before building the cleanup queue"));
+    expect(out.indexOf("Error")).toBeLessThan(out.indexOf("Snappy stopped. It will not suggest removals"));
     expect(out).toContain("code: html-only-export");
     expect(out).not.toContain("Cleanup queue");
   });
@@ -320,7 +324,7 @@ describe("analyze with broken input", () => {
     const dir = tempDir("an");
     const zip = join(dir, "junk.zip");
     writeFileSync(zip, "this is not a zip file at all");
-    const { code, out } = await run(["analyze", zip, "--no-save"]);
+    const { code, out } = await run(["analyze", zip, "--no-save", "--verbose"]);
     expect(code).toBe(2);
     expect(out).toContain("code: zip-unreadable");
   });
@@ -328,13 +332,24 @@ describe("analyze with broken input", () => {
   it("rejects bad options with a usage message and exit code 1", async () => {
     const { later } = writeDemoPair(tempDir("an"));
     for (const bad of [["--limit", "x"], ["--min-confidence", "huge"], ["--friend-count", "-3"], ["--allow", "has space"], ["--ledger"], ["--no-save=1"]]) {
-      const result = await run(["analyze", later, "--no-save", ...bad]);
+      const result = await run(["analyze", later, "--no-save", "--verbose", ...bad]);
       expect(result.code, bad.join(" ")).toBe(1);
       expect(result.err, bad.join(" ")).toContain("(code: usage)");
       expect(result.out).toBe("");
     }
-    expect((await run(["analyze"])).err).toContain("(code: no-input)");
-    expect((await run(["analyze", join(tempDir("an"), "missing.zip")])).err).toContain("(code: not-found)");
+    expect((await run(["analyze", "--verbose"])).err).toContain("(code: no-input)");
+    expect((await run(["analyze", join(tempDir("an"), "missing.zip"), "--verbose"])).err).toContain("(code: not-found)");
+  });
+
+  it("shows the short error code only with --verbose or SNAPPY_DEBUG=1", async () => {
+    const missing = join(tempDir("an"), "missing.zip");
+    const plain = await run(["analyze", missing]);
+    expect(plain.err).toContain("Check the path and try again.");
+    expect(plain.err).not.toContain("code");
+    expect((await run(["analyze", missing, "--verbose"])).err).toContain("(code: not-found)");
+    expect((await run(["analyze", missing], makeIo({ env: { SNAPPY_DEBUG: "1" } }))).err).toContain("(code: not-found)");
+    // --verbose is accepted by every command, so it never turns an error into a different one.
+    expect((await run(["ledger", "status", "--verbose", "--ledger", join(tempDir("an"), "none.sealed")])).code).toBe(0);
   });
 
   it("prints its own help", async () => {
@@ -352,6 +367,6 @@ describe("a synthetic export without chat history", () => {
     const later = join(dir, "no-chats.zip");
     writeFileSync(later, zipSync(files));
     const { out } = await run(["analyze", later, "--no-save"]);
-    expect(out).toContain("No chat or Snap history is included, so recent activity cannot protect anyone and quiet friends cannot be found.");
+    expect(out).toContain("This export has no chats or Snaps, so quiet friends cannot be found.");
   });
 });

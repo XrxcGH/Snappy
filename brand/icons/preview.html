@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Snappy icon preview: lists every symbol in icons.svg and the three confidence meters, using the design tokens. Open it in a browser. -->
+<!-- Snappy icon preview: lists every symbol in icons.svg (small glyphs and spot illustrations), the category chips and the three confidence meters, using the design tokens. Open it in a browser. -->
 <html lang="en-US">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,7 +7,9 @@
 <link rel="stylesheet" href="../tokens/tokens.css">
 <style>
   main { max-width: var(--content-max); margin: 0 auto; padding: var(--space-6) var(--space-4); }
+  h2 { margin-top: var(--space-8); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+  .grid-spot { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
   .tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-2); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); }
   .tile code { font-size: var(--text-12); color: var(--text-muted); }
   svg.icon { width: 24px; height: 24px; }
@@ -17,11 +19,43 @@
   .pill.high { color: var(--conf-high-fg); background: var(--conf-high-bg); border-color: var(--conf-high-border); }
   .pill.medium { color: var(--conf-medium-fg); background: var(--conf-medium-bg); border-color: var(--conf-medium-border); }
   .pill.low { color: var(--conf-low-fg); background: var(--conf-low-bg); border-color: var(--conf-low-border); }
+
+  /* Category scopes: the same four custom properties the dashboard uses. */
+  .cat-disappeared { --c-fg: var(--cat-disappeared-fg); --c-bg: var(--cat-disappeared-bg); --c-border: var(--cat-disappeared-border); --c-solid: var(--cat-disappeared-solid); }
+  .cat-requests    { --c-fg: var(--cat-requests-fg);    --c-bg: var(--cat-requests-bg);    --c-border: var(--cat-requests-border);    --c-solid: var(--cat-requests-solid); }
+  .cat-quiet       { --c-fg: var(--cat-quiet-fg);       --c-bg: var(--cat-quiet-bg);       --c-border: var(--cat-quiet-border);       --c-solid: var(--cat-quiet-solid); }
+  .cat-cleanup     { --c-fg: var(--cat-cleanup-fg);     --c-bg: var(--cat-cleanup-bg);     --c-border: var(--cat-cleanup-border);     --c-solid: var(--cat-cleanup-solid); }
+  .cat-memories    { --c-fg: var(--cat-memories-fg);    --c-bg: var(--cat-memories-bg);    --c-border: var(--cat-memories-border);    --c-solid: var(--cat-memories-solid); }
+  .cat-neutral     { --c-fg: var(--text-muted); --c-bg: var(--surface-sunken); --c-border: var(--border-strong); --c-solid: var(--border-strong); }
+
+  /* Spot illustrations: the look the dashboard gives .spot. */
+  .spot { display: block; width: 160px; height: 120px; color: var(--text-muted); --spot-hi: var(--accent); --spot-wash: var(--tint-violet-2); }
+  .cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+  .cat-card { display: flex; align-items: center; gap: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); }
+  .cat-card .bar { flex: none; width: 0.25rem; align-self: stretch; border-radius: var(--radius-bar); background: var(--c-solid); }
+  .cat-card .name { font-weight: 600; }
+  .cat-card .name small { display: block; font-weight: 400; color: var(--text-muted); font-size: var(--text-12); }
+  .chip-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 2.5rem; height: 2.5rem; border-radius: var(--radius-md); background: var(--c-bg); color: var(--c-fg); border: 1px solid var(--c-border); }
+  .cat-tag { display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); border: 1px solid var(--c-border); border-radius: var(--radius-sm); background: var(--c-bg); color: var(--c-fg); font-size: var(--text-14); font-weight: 600; line-height: 1.5; }
+  .cat-tag svg.icon { width: 16px; height: 16px; }
+  .spot-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+  .spot-row .tile { padding: var(--space-4); }
 </style>
 <main>
   <h1>Icons</h1>
   <div class="grid" id="grid"></div>
-  <h2 style="margin-top:var(--space-8)">Confidence</h2>
+
+  <h2>Category icons</h2>
+  <p>Each finding area has one icon and one quiet color. The color always travels with the icon and the label.</p>
+  <div class="cats" id="cats"></div>
+
+  <h2>Spot illustrations</h2>
+  <p>160 by 120, built from pill bars. One highlight element takes the category color. Decorative only.</p>
+  <div class="grid grid-spot" id="spots"></div>
+  <h3 style="margin-top:var(--space-6)">Highlight in each category</h3>
+  <div class="spot-row" id="spot-cats"></div>
+
+  <h2>Confidence</h2>
   <div class="conf">
     <span class="pill high"><svg class="icon" aria-hidden="true"><use href="icons.svg#conf-high"/></svg>High</span>
     <span class="pill medium"><svg class="icon" aria-hidden="true"><use href="icons.svg#conf-medium"/></svg>Medium</span>
@@ -29,9 +63,66 @@
   </div>
 </main>
 <script>
+  const NS = "http://www.w3.org/2000/svg";
+  function use(cls, id, size) {
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("class", cls);
+    svg.setAttribute("aria-hidden", "true");
+    if (size) { svg.setAttribute("width", size[0]); svg.setAttribute("height", size[1]); }
+    const u = document.createElementNS(NS, "use");
+    u.setAttribute("href", "icons.svg#" + id);
+    svg.appendChild(u);
+    return svg;
+  }
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text) e.textContent = text;
+    return e;
+  }
+  function tile(id, svg) {
+    const t = el("div", "tile");
+    t.append(svg, el("code", "", id));
+    return t;
+  }
+
+  const CATS = [
+    ["cat-disappeared", "i-vanished", "Disappeared friends"],
+    ["cat-requests", "i-one-way", "Unaccepted requests"],
+    ["cat-quiet", "i-quiet", "Quiet friends"],
+    ["cat-cleanup", "i-queue", "Cleanup queue"],
+    ["cat-memories", "i-memories", "Memories rescue"],
+    ["cat-neutral", "i-people", "Neutral count"],
+  ];
+  const cats = document.getElementById("cats");
+  for (const [cls, id, label] of CATS) {
+    const card = el("div", "cat-card " + cls);
+    const name = el("div", "name", label);
+    const tag = el("span", "cat-tag");
+    tag.append(use("icon", id, ["16", "16"]), document.createTextNode("Tag"));
+    const chip = el("span", "chip-icon");
+    chip.appendChild(use("icon", id, ["20", "20"]));
+    const small = el("small", "", cls);
+    name.appendChild(small);
+    card.append(el("span", "bar"), chip, name, tag);
+    cats.appendChild(card);
+  }
+
   fetch("icons.svg").then(r => r.text()).then(t => {
-    const ids = [...t.matchAll(/<symbol id="([^"]+)"/g)].map(m => m[1]).filter(i => i.startsWith("i-"));
-    document.getElementById("grid").innerHTML = ids.map(id =>
-      `<div class="tile"><svg class="icon big" aria-hidden="true"><use href="icons.svg#${id}"/></svg><code>${id}</code></div>`).join("");
+    const ids = [...t.matchAll(/<symbol id="([^"]+)"/g)].map(m => m[1]);
+    const grid = document.getElementById("grid");
+    for (const id of ids.filter(i => i.startsWith("i-"))) grid.appendChild(tile(id, use("icon big", id)));
+    const spots = ids.filter(i => i.startsWith("g-"));
+    const spotGrid = document.getElementById("spots");
+    for (const id of spots) spotGrid.appendChild(tile(id, use("spot", id, ["160", "120"])));
+    // One illustration (g-import) in every category scope, to show the highlight recoloring.
+    const row = document.getElementById("spot-cats");
+    for (const [cls, , label] of CATS.slice(0, 5)) {
+      const t = el("div", "tile " + cls);
+      const svg = use("spot", "g-import", ["160", "120"]);
+      svg.setAttribute("style", "--spot-hi: var(--c-solid); --spot-wash: var(--c-bg)");
+      t.append(svg, el("code", "", label));
+      row.appendChild(t);
+    }
   });
 </script>

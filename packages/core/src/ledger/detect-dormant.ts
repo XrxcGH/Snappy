@@ -106,7 +106,7 @@ function assess(
   evidence.push({
     signal: "chat-history-only-covers-saved-chats",
     detail:
-      "The export only contains saved chats and your Snap history, so you may have talked with this friend in ways it cannot show (unsaved chats, calls).",
+      "The export has only saved chats and Snap history, so you may have talked in ways it cannot show (unsaved chats, calls).",
     weight: 0,
   });
 

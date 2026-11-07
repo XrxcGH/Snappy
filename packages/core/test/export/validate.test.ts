@@ -38,7 +38,7 @@ describe("validateExport", () => {
     const out = validateExport(mk({ friends: { deletedFriends: [{ username: "a" }, { username: "b" }] } }));
     const hit = out.find((i) => i.code === "friends-empty-but-deleted");
     expect(hit?.severity).toBe("error");
-    expect(hit?.message).toContain("2 deleted");
+    expect(hit?.message).toContain("2 removed");
     expect(out.map((i) => i.code)).not.toContain("no-friends-section");
   });
 
@@ -58,7 +58,7 @@ describe("validateExport", () => {
     const out = validateExport(mk({ friends: { friends: [{ username: "a" }, { username: "a" }, { username: "b" }], sentRequests: [{ username: "x" }, { username: "x" }] } }));
     const hit = out.find((i) => i.code === "duplicate-usernames");
     expect(hit?.severity).toBe("warning");
-    expect(hit?.message).toContain("2 duplicate");
+    expect(hit?.message).toContain("2 usernames appear");
     expect(allMessages(out)).not.toMatch(/\b[ax]\b.*duplicate/);
   });
 
@@ -73,7 +73,7 @@ describe("validateExport", () => {
     });
     const hit = validateExport(future).find((i) => i.code === "future-timestamps");
     expect(hit?.severity).toBe("warning");
-    expect(hit?.message).toContain("2 timestamps");
+    expect(hit?.message).toContain("2 dates are");
   });
 
   it("uses hints.now when exportedAt is unknown, and skips the check with neither", () => {
@@ -90,7 +90,7 @@ describe("validateExport", () => {
 
   it("says a missing Snap history may make friends look quieter, without a value or a file path", () => {
     const hit = validateExport(mk({ fileList: ["friends.json", "chat_history.json"], friends: { friends: people(3) } })).find((i) => i.code === "snap-history-missing");
-    expect(hit).toEqual({ severity: "info", code: "snap-history-missing", message: "No Snap history file was found, so Snaps are not counted and friends you mostly Snap may look quieter than they are." });
+    expect(hit).toEqual({ severity: "info", code: "snap-history-missing", message: "No Snap history was found. Friends you mostly Snap may look quieter than they are." });
   });
 
   it("does not ask for a Snap history that is there", () => {

@@ -37,7 +37,7 @@ describe("snappy-export demo", () => {
     expect(out).toContain("Running the first command");
     expect(out).toContain("Cleanup queue");
     expect(out).toMatch(/ghost_1 +Disappeared/);
-    expect(out).toContain("The ledger was not read or written, as you asked.");
+    expect(out).toContain("Your saved history was not read or written, as you asked.");
     expect(readdirSync(dir)).toHaveLength(2); // --no-save: the analysis added nothing
   });
 

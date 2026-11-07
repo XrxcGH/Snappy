@@ -18,25 +18,26 @@ import type { LabeledIssue } from "../render.ts";
 import { analysisToJson, queueToCsv, renderAnalysisText } from "../render-analysis.ts";
 import { createTerm } from "../term.ts";
 
-export const ANALYZE_USAGE = `Usage: snappy-export analyze <zips or folder...> [options]
+export const ANALYZE_USAGE = `Usage: snappy-export analyze <ZIP files or folder...> [options]
 
-Reads your export, compares it with earlier ones, and lists friends worth reviewing.
-Several zips (or a folder of zips) are the parts of ONE export. Saved chats and Snaps both count
-as recent activity. It also shows how the Memories list matches the files in the zips (counts only).
+Finds friends worth reviewing and saves your export to your sealed history (the ledger).
+Several ZIP files, or a folder of them, are the parts of one export.
 
 Options
-  --earlier <path>          An earlier export to compare with (zips or a folder). Repeatable.
-  --no-save                 Do not read or write the ledger. Nothing is written and no passphrase is asked.
+  --earlier <path>          An earlier export to compare with. Repeatable.
+  --no-save                 Skip the ledger. Nothing is written, no passphrase asked.
   --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
-  --passphrase-file <path>  Read the passphrase from the first line of this file.
-                            Otherwise SNAPPY_PASSPHRASE, otherwise a hidden prompt.
-  --friend-count <n>        The friend count you see in the app, to catch an incomplete export.
-  --min-confidence <level>  Hide results below low, medium or high. Default: low.
-  --allow <name,...>        Never list these friends (this run only; use snappy-export keep to save them).
-  --limit <n>               Rows to print in the queue table. Default: 50. Use 0 for all.
-  --json                    Print a machine-readable result instead of the table.
-  --csv <path>              Also write the queue as a CSV file (username, category, confidence, score).
+  --passphrase-file <path>  Use the first line of this file as the passphrase.
+  --friend-count <n>        The friend count in the app, to catch a short export.
+  --min-confidence <level>  Hide results below low, medium, or high. Default: low.
+  --allow <name,...>        Leave these friends out this run. Use keep to save them.
+  --limit <n>               Rows to print. Default: 50. Use 0 for all.
+  --json                    Print JSON instead of the table.
+  --csv <path>              Also save the queue as a CSV file.
+  --verbose                 Add a short code to notes and errors, for bug reports.
   --no-color                Plain text.
+
+The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
 
 Exit codes: 0 done, 1 could not run, 2 the export has errors.
 `;
@@ -51,6 +52,7 @@ interface Flags {
   allow?: string[];
   limit?: string;
   json?: boolean;
+  verbose?: boolean;
   csv?: string;
   "no-color"?: boolean;
   help?: boolean;
@@ -84,7 +86,7 @@ async function readExport(paths: string[], source: string, io: Io, friendCount?:
     issues.push({
       severity: "warning",
       code: "export-time-from-file",
-      message: "Snappy could not find when this export was made, so it used the date of the file. If you copied or re-downloaded the file, the date may be wrong.",
+      message: "Snappy could not find the export date, so it used the file date. That may be wrong if you copied the file.",
       source,
     });
   }
@@ -95,7 +97,7 @@ function parseAllow(values: string[] | undefined): string[] {
   const names = (values ?? []).flatMap((v) => v.split(",")).map((v) => normUser(v.trim())).filter((v) => v !== "");
   for (const name of names) {
     if (/\s/.test(name) || name.length > 100) {
-      throw new CliError("usage", "--allow takes usernames separated by commas, for example --allow sam_01,alex.k");
+      throw new CliError("usage", "--allow takes usernames separated by commas, like --allow sam_01,alex.k");
     }
   }
   return names;
@@ -112,6 +114,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
     allow: { type: "string", multiple: true },
     limit: { type: "string" },
     json: { type: "boolean" },
+    verbose: { type: "boolean" },
     csv: { type: "string" },
     "no-color": { type: "boolean" },
     help: { type: "boolean", short: "h" },
@@ -125,10 +128,10 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
   const limit = intOption("--limit", flags.limit, 0, 1_000_000) ?? 50;
   const minConfidence = (flags["min-confidence"] ?? "low").toLowerCase();
   if (!CONFIDENCES.includes(minConfidence)) {
-    throw new CliError("usage", "--min-confidence must be low, medium or high.");
+    throw new CliError("usage", "--min-confidence must be low, medium, or high.");
   }
   if (flags.csv !== undefined && !flags.csv.toLowerCase().endsWith(".csv")) {
-    throw new CliError("usage", "--csv needs a file name ending in .csv, so Snappy never overwrites another kind of file.");
+    throw new CliError("usage", "--csv needs a file name ending in .csv, so no other file is overwritten.");
   }
   const allow = parseAllow(flags.allow);
   const noSave = flags["no-save"] === true;
@@ -155,10 +158,10 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
       io.out.write(JSON.stringify({ generatedAt: new Date(io.now()).toISOString(), issues, stopped: "export-errors" }, null, 2) + "\n");
     } else {
       const stop = wrapText(
-        "Snappy stopped before building the cleanup queue, because it will not suggest removing anyone based on a broken export. Fix the problems above and run it again. Nothing was saved.",
+        "Snappy stopped. It will not suggest removals from a broken export, so nothing was saved. Fix the problems above and run it again.",
         term.columns - 2,
       );
-      io.out.write([...renderIssues(issues, term), "", ...stop, PRIVACY_RESULTS].join("\n") + "\n");
+      io.out.write([...renderIssues(issues, term, flags.verbose === true), "", ...stop, PRIVACY_RESULTS].join("\n") + "\n");
     }
     return 2;
   }
@@ -189,7 +192,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
       issues.push({
         severity: "warning",
         code: "older-than-ledger",
-        message: "This export is older than the newest one in your ledger, so friends are compared with the newer export.",
+        message: "This export is older than one in your ledger, so Snappy compares with the newer one.",
         source: "your export",
       });
     }
@@ -212,7 +215,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
   if (flags.json) {
     io.out.write(analysisToJson(result, { issues, ledger: ledgerState, generatedAt: io.now() }));
   } else {
-    io.out.write(renderAnalysisText(result, { term, issues, limit, ledger: ledgerState, csvPath: flags.csv }));
+    io.out.write(renderAnalysisText(result, { term, issues, limit, ledger: ledgerState, csvPath: flags.csv, verbose: flags.verbose === true }));
   }
   return 0;
 }

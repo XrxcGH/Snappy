@@ -119,7 +119,7 @@ describe("downloadToFile", () => {
   it("explains itself in plain language before downloading", () => {
     const notice = DOWNLOAD_NOTICE.join(" ");
     expect(notice).toMatch(/only Snappy command that uses the network/);
-    expect(notice).toMatch(/only the links inside your own export/);
+    expect(notice).toMatch(/only the links in your own export/);
     expect(notice).not.toContain("!");
   });
 });

@@ -29,14 +29,18 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 const sha = (text: string): string => `'sha256-${createHash("sha256").update(text, "utf8").digest("base64")}'`;
 const csp = (): string => /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)?.[1] ?? "";
+/** The inline scripts, in page order: the theme script in <head>, then the app. */
+const scripts = (page: string): string[] => [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1] ?? "");
 const directive = (name: string): string => csp().split(";").map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? "";
 
 describe("built file", () => {
   it("is one self-contained page that stays small", () => {
     expect(html.startsWith("<!doctype html>")).toBe(true);
-    expect(html).toContain('<html lang="en">');
+    // Dark is the default theme: the page ships data-theme="dark" on <html>, so the first paint is dark.
+    expect(html).toContain('<html lang="en" data-theme="dark">');
     expect(html).toContain('name="viewport"');
-    expect((html.match(/<script/g) ?? []).length).toBe(1);
+    // Two inline scripts: the few-line theme script in <head> (so a returning light-theme visitor never sees a dark frame) and the app.
+    expect((html.match(/<script/g) ?? []).length).toBe(2);
     expect((html.match(/<style/g) ?? []).length).toBe(1);
     expect(html).not.toMatch(/<script[^>]*\ssrc=/i);
     expect(html).not.toMatch(/<link[^>]*rel=["']?stylesheet/i);
@@ -64,16 +68,19 @@ describe("built file", () => {
   });
 
   it("pins the inline script and style by hash, matching the exact inlined text", () => {
-    const script = /<script>([\s\S]*)<\/script>/.exec(html)?.[1] ?? "";
+    const [boot = "", script = ""] = scripts(html);
     const style = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
+    expect(scripts(html)).toHaveLength(2);
     expect(script.length).toBeGreaterThan(10_000);
+    expect(boot.length).toBeGreaterThan(50);
+    expect(boot.length).toBeLessThan(600);
     expect(style.length).toBeGreaterThan(10_000);
-    expect(directive("script-src")).toBe(`script-src ${sha(script)}`);
+    expect(directive("script-src")).toBe(`script-src ${sha(boot)} ${sha(script)}`);
     expect(directive("style-src")).toBe(`style-src ${sha(style)}`);
   });
 
   it("has no inline style attributes anywhere in the markup or the sprite", () => {
-    const body = html.replace(/<style>[\s\S]*?<\/style>/, "").replace(/<script>[\s\S]*<\/script>/, "");
+    const body = html.replace(/<style>[\s\S]*?<\/style>/, "").replace(/<script>[\s\S]*?<\/script>/g, "");
     expect(body).not.toMatch(/\sstyle\s*=/i);
     expect(body).not.toMatch(/\son[a-z]+\s*=/i);
   });
@@ -84,8 +91,7 @@ describe("built file", () => {
     for (const url of urls) expect(url).toMatch(/^https:\/\/www\.snapchat\.com\/add\/$|^http:\/\/www\.w3\.org\/2000\/svg$/);
   });
 
-  it("has no orange or vermilion, and uses the violet accent from the tokens", () => {
-    expect(html).not.toMatch(/orange|vermilion/i);
+  it("uses the violet accent from the tokens, and no off-brand accent color", () => {
     // The off-brand accent colors, by value, in any case and with or without the hash.
     expect(html).not.toMatch(/FF3D14|FF5A36|BA2900|FF7352|FF8A6E/i);
     expect(html).toMatch(/--accent:\s*#6b4dff/);
@@ -93,14 +99,68 @@ describe("built file", () => {
   });
 
   it("inlines the brand fonts (latin, the weights the brand uses) and the icon sprite", () => {
-    expect((html.match(/@font-face/g) ?? []).length).toBe(8);
-    expect((html.match(/data:font\/woff2;base64,/g) ?? []).length).toBe(8);
+    expect((html.match(/@font-face/g) ?? []).length).toBe(12);
+    expect((html.match(/data:font\/woff2;base64,/g) ?? []).length).toBe(12);
     for (const family of ["Bricolage Grotesque", "Atkinson Hyperlegible Next", "JetBrains Mono"]) expect(html).toContain(`@font-face{font-family:${family};`);
-    for (const id of ["i-content-blind", "i-vanished", "i-one-way", "i-quiet", "i-memories", "i-queue", "i-seal", "i-import", "i-file-zip", "i-settings", "i-check", "i-copy", "i-external", "conf-high", "conf-medium", "conf-low", "logo-mark"]) {
+    for (const id of ["i-content-blind", "i-vanished", "i-one-way", "i-quiet", "i-memories", "i-queue", "i-seal", "i-import", "i-file-zip", "i-settings", "i-check", "i-copy", "i-external", "i-overview", "i-people", "i-snapshots", "i-guide", "i-photo", "i-video", "i-file", "i-file-missing", "i-calendar", "i-list", "i-storage", "i-device", "i-shield", "i-minus", "g-import", "g-overview", "g-empty", "g-memories", "g-privacy", "g-guide", "conf-high", "conf-medium", "conf-low", "logo-mark"]) {
       expect(html).toContain(`id="${id}"`);
     }
     // Fonts are the only external-looking resources, and they are data: URIs.
     expect([...html.matchAll(/url\(([^)]{0,20})/g)].every((m) => (m[1] ?? "").startsWith("data:"))).toBe(true);
+  });
+
+  it("defines the digits-only family Snappy Digits at four weights, and lists it first in the body and display stacks", () => {
+    // Atkinson draws a slashed zero and has no switch for it, so the ten digits come from a Bricolage Grotesque subset.
+    const faces = [...html.matchAll(/@font-face\{font-family:Snappy Digits;([^}]*)\}/g)].map((m) => m[1] ?? "");
+    expect(faces).toHaveLength(4);
+    expect(faces.map((f) => /font-weight:(\d+)/.exec(f)?.[1]).sort()).toEqual(["400", "500", "600", "700"]);
+    for (const face of faces) {
+      expect(face).toContain("unicode-range:U+0030-0039");
+      expect(face).toContain("data:font/woff2;base64,");
+      // A subset of ten glyphs, not a whole font: each file stays a few kilobytes.
+      expect(/base64,([A-Za-z0-9+/=]+)/.exec(face)?.[1]?.length ?? 0).toBeLessThan(6000);
+    }
+    // The family is listed first, ahead of the real font, in both stacks (custom properties keep their quotes).
+    expect(html).toMatch(/--font-body:[ ]*"Snappy Digits",[ ]*"Atkinson Hyperlegible Next",/);
+    expect(html).toMatch(/--font-display:[ ]*"Snappy Digits",[ ]*"Bricolage Grotesque",/);
+    // Usernames and code keep the mono face and its zero.
+    expect(html).toMatch(/--font-mono:[ ]*"JetBrains Mono",/);
+    expect(html).not.toMatch(/--font-mono:[ ]*"Snappy Digits"/);
+  });
+
+  it("credits the digits family in THIRD-PARTY-NOTICES.md as a subset of Bricolage Grotesque under the OFL", () => {
+    const notices = fs.readFileSync(path.resolve(root, "..", "..", "THIRD-PARTY-NOTICES.md"), "utf8");
+    expect(notices).toContain("Snappy Digits");
+    expect(notices).toMatch(/subset/i);
+    expect(notices).toContain("U+0030 to U+0039");
+    expect(notices).toContain("SIL Open Font License");
+    for (const weight of [400, 500, 600, 700]) expect(fs.existsSync(path.join(root, "fonts", `snappy-digits-${weight}.woff2`)), `fonts/snappy-digits-${weight}.woff2`).toBe(true);
+  });
+
+  it("keeps the source token stacks in step: Snappy Digits first in body and display, never in mono", () => {
+    const tokens = fs.readFileSync(path.resolve(root, "..", "..", "brand", "tokens", "tokens.css"), "utf8");
+    expect(/--font-body:\s*"Snappy Digits",\s*"Atkinson Hyperlegible Next"/.test(tokens)).toBe(true);
+    expect(/--font-display:\s*"Snappy Digits",\s*"Bricolage Grotesque"/.test(tokens)).toBe(true);
+    expect(/--font-mono:\s*"JetBrains Mono"/.test(tokens)).toBe(true);
+  });
+
+  it("runs a small theme script in <head> before the style and the page, on a hash, so a returning light visitor sees no dark frame", () => {
+    const [boot = ""] = scripts(html);
+    expect(html.indexOf("<script>")).toBeLessThan(html.indexOf("<style>"));
+    expect(html.indexOf("<script>")).toBeLessThan(html.indexOf("<body"));
+    expect(html.indexOf("Content-Security-Policy")).toBeLessThan(html.indexOf("<script>"));
+    // It reads the one saved word and sets data-theme; it never writes, fetches or touches anything else.
+    expect(boot).toContain("localStorage.getItem(\"snappy-theme\")");
+    expect(boot).toMatch(/setAttribute\(\s*"data-theme"/);
+    expect(boot).toMatch(/removeAttribute\(\s*"data-theme"/);
+    expect(boot).not.toMatch(/setItem|fetch|XMLHttp|indexedDB|cookie|innerHTML|eval|style/);
+    expect(boot).toMatch(/^try\{/);
+    // Same key and the same three words as the app itself.
+    const vault = fs.readFileSync(path.join(root, "src", "vault.ts"), "utf8");
+    expect(/THEME_KEY = "([^"]+)"/.exec(vault)?.[1]).toBe("snappy-theme");
+    const shell = fs.readFileSync(path.join(root, "src", "app-shell.ts"), "utf8");
+    expect(shell).toContain('root.removeAttribute("data-theme")');
+    expect(html).toContain('<html lang="en" data-theme="dark">');
   });
 
   it("carries the skip link target, live regions and the license texts for the fonts", () => {
@@ -131,22 +191,30 @@ function hueAndSaturation(hex: string): { hue: number; saturation: number } {
 }
 
 describe("built file: brand colors", () => {
-  it("holds no orange-looking color value, apart from the amber of the warning status colors", () => {
-    // Amber is a status color in the tokens (--warning-*), not the accent; everything else must not look orange.
+  it("holds an orange-looking color value only as a token: the --orange-* palette, never anywhere else", () => {
+    // Orange is a secondary color. Every color in the page that falls in the orange band (hue 12 to 48, saturated) must be
+    // one of the values defined for --orange-* in the token sheet. The warning gold and every accent stay out of that band.
     const tokens = fs.readFileSync(path.resolve(root, "..", "..", "brand", "tokens", "tokens.css"), "utf8");
-    const warning = new Set(
-      tokens
-        .split("\n")
-        .filter((line) => /--warning-/.test(line))
-        .flatMap((line) => [...line.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0].toLowerCase())),
-    );
-    expect(warning.size).toBeGreaterThan(0);
-    const colors = [...new Set([...html.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0].toLowerCase()))].filter((c) => !warning.has(c));
+    const orangeTokens = new Set([...tokens.matchAll(/--orange-(?:fg|bg|border|solid):\s*(#[0-9a-fA-F]{6})/g)].map((m) => (m[1] ?? "").toLowerCase()));
+    expect(orangeTokens.size).toBe(8);
+    const colors = [...new Set([...html.matchAll(/#[0-9a-fA-F]{6}\b/g)].map((m) => m[0].toLowerCase()))];
     expect(colors.length).toBeGreaterThan(10);
     for (const color of colors) {
       const { hue, saturation } = hueAndSaturation(color);
-      const orange = saturation > 0.45 && hue >= 12 && hue <= 48;
-      expect(orange, `${color} looks orange`).toBe(false);
+      const orangeish = saturation > 0.45 && hue >= 12 && hue <= 48;
+      if (orangeish) expect(orangeTokens.has(color), `${color} looks orange and is not an --orange-* token`).toBe(true);
+    }
+  });
+
+  it("never lets orange be the primary color: accent, link, focus ring and primary tokens are not orange", () => {
+    const tokens = fs.readFileSync(path.resolve(root, "..", "..", "brand", "tokens", "tokens.css"), "utf8");
+    for (const name of ["accent", "accent-hover", "accent-fg", "link", "focus-ring", "primary", "primary-hover"]) {
+      const values = [...tokens.matchAll(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`, "g"))].map((m) => m[1] ?? "");
+      expect(values.length, name).toBeGreaterThanOrEqual(2);
+      for (const value of values) {
+        const { hue, saturation } = hueAndSaturation(value);
+        expect(saturation > 0.45 && hue >= 12 && hue <= 48, `--${name}: ${value} is orange`).toBe(false);
+      }
     }
   });
 
@@ -160,7 +228,7 @@ describe("built file: brand colors", () => {
 
 describe("built file: background reader", () => {
   it("carries the reader's code as text inside the one script, not as a second script or file", () => {
-    expect((html.match(/<script/g) ?? []).length).toBe(1);
+    expect((html.match(/<script/g) ?? []).length).toBe(2);
     // The text of the reader's own failure reply: only the reader sends it as an object.
     expect(html).toContain('{type:"failed"}');
     expect(readdirSync(outDir).sort()).toEqual(["index.html", "licenses"]);
@@ -169,7 +237,7 @@ describe("built file: background reader", () => {
   it("starts that code only from a blob: URL, and the page has no other way to load a script", () => {
     expect(html).toMatch(/createObjectURL\(new Blob\(\[/);
     expect(html).not.toMatch(/importScripts|new SharedWorker/);
-    expect(directive("script-src")).toMatch(/^script-src 'sha256-[A-Za-z0-9+/=]+'$/);
+    expect(directive("script-src")).toMatch(/^script-src 'sha256-[A-Za-z0-9+/=]+' 'sha256-[A-Za-z0-9+/=]+'$/);
   });
 });
 
@@ -180,24 +248,23 @@ describe("the dist/index.html that is checked in", () => {
   it.skipIf(!exists)("has the same policy hashes as its own inline script and style, and the worker rule", () => {
     const page = fs.readFileSync(shipped, "utf8");
     const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(page)?.[1] ?? "";
-    const script = /<script>([\s\S]*)<\/script>/.exec(page)?.[1] ?? "";
+    const [boot = "", script = ""] = scripts(page);
     const style = /<style>([\s\S]*?)<\/style>/.exec(page)?.[1] ?? "";
-    expect(policy).toContain(`script-src ${sha(script)}`);
+    expect(policy).toContain(`script-src ${sha(boot)} ${sha(script)}`);
     expect(policy).toContain(`style-src ${sha(style)}`);
     expect(policy).toContain("worker-src blob:");
     expect(policy).toContain("connect-src 'none'");
   });
 
-  it.skipIf(!exists)("has no orange, by name or by value", () => {
+  it.skipIf(!exists)("has no off-brand accent color value", () => {
     const page = fs.readFileSync(shipped, "utf8");
-    expect(page).not.toMatch(/orange|vermilion/i);
     expect(page).not.toMatch(/FF3D14|FF5A36|BA2900|FF7352|FF8A6E/i);
   });
 
   it("keeps the build and serve scripts free of off-brand colors and hard-coded accents", () => {
     for (const name of ["build.mjs", "serve.mjs"]) {
       const text = fs.readFileSync(path.join(root, name), "utf8");
-      expect(text, name).not.toMatch(/orange|vermilion|FF3D14|FF5A36|BA2900|FF7352|FF8A6E/i);
+      expect(text, name).not.toMatch(/FF3D14|FF5A36|BA2900|FF7352|FF8A6E/i);
       expect(text, name).not.toMatch(/#[0-9a-fA-F]{6}\b/);
     }
   });

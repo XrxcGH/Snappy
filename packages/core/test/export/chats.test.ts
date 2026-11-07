@@ -82,7 +82,7 @@ describe("parseChatHistoryJson", () => {
     expect(chats.every((c) => !c.isGroup && c.conversation === "alice")).toBe(true);
     const note = issues.find((i) => i.code === "chat-direction-unknown");
     expect(note?.severity).toBe("info");
-    expect(note?.message).toBe("1 message has no IsSender flag, so whether it was sent or received is unknown; it still counts as activity.");
+    expect(note?.message).toBe("1 message does not say if you sent or received it. It still counts as activity.");
   });
 
   it("keeps a flat-list entry of a titled group when direction is unknown, and drops one that cannot name its chat", () => {
@@ -150,7 +150,7 @@ describe("parseChatHistoryJson", () => {
       Another: "x",
     });
     expect(chats.map((c) => c.conversation)).toEqual(["zed", "amy"]);
-    expect(issues.find((i) => i.code === "chat-non-list-values")?.message).toContain("2 top-level");
+    expect(issues.find((i) => i.code === "chat-non-list-values")?.message).toContain("2 items in chat_history.json");
   });
 
   it("notes when every conversation was treated as a group", () => {

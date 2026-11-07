@@ -58,7 +58,7 @@ describe("an overlay in a different zip part than its main file", () => {
     const out = join(tempDir("cross-part-out"), "rescued");
     const result = await run(["memories", dir, "--out", out, "--no-color"]);
     expect(result.code).toBe(0);
-    expect(result.out).toContain("2 saved from your zips, 0 already there, 0 failed.");
+    expect(result.out).toContain("2 saved from your ZIP files, 0 already there, 0 failed.");
     const saved = filesOf(out);
     expect(saved.some((f) => /-overlay\.png$/.test(f))).toBe(true);
     expect(saved.filter((f) => /\.(jpg|mp4)$/.test(f))).toHaveLength(2);
@@ -80,7 +80,7 @@ describe("resuming a run that lacked a part", () => {
     const second = await run(["memories", dir, "--out", out, "--no-color"]);
     expect(second.code).toBe(0);
     expect(second.out).toContain("1 item already there was completed");
-    expect(second.out).toContain("1 saved from your zips, 0 already there, 0 failed."); // the completed one is counted on its own line
+    expect(second.out).toContain("1 saved from your ZIP files, 0 already there, 0 failed."); // the completed one is counted on its own line
     expect(filesOf(out).some((f) => /-overlay\.png$/.test(f))).toBe(true);
     expect(reportOf(out).counts).toMatchObject({ repaired: 1, extracted: 1, overlaysWritten: 1 });
 
@@ -93,7 +93,7 @@ describe("resuming a run that lacked a part", () => {
     expect(Math.abs(statSync(target).mtimeMs - T1)).toBeLessThanOrEqual(2000);
 
     const fourth = await run(["memories", dir, "--out", out, "--no-color"]);
-    expect(fourth.out).toContain("0 saved from your zips, 2 already there, 0 failed.");
+    expect(fourth.out).toContain("0 saved from your ZIP files, 2 already there, 0 failed.");
     expect(fourth.out).not.toContain("was completed");
   });
 });
@@ -128,8 +128,8 @@ describe("a missing first part", () => {
       const args = command === "memories" ? ["memories", parts[1] as string, parts[2] as string, "--dry-run"] : ["analyze", parts[1] as string, parts[2] as string, "--no-save"];
       const result = await run(args);
       expect(result.code).toBe(1);
-      expect(result.err).toContain("later parts of an export");
-      expect(result.err).toContain("the one with no number at the end of its name");
+      expect(result.err).toContain("later parts");
+      expect(result.err).toContain("Add the first part");
       expect(result.out).not.toContain("Request your export again");
     }
   });
@@ -160,18 +160,18 @@ describe("what the run says when it ends", () => {
     const result = await run(["memories", zip, "--out", out, "--no-color"]);
     expect(result.code).toBe(3);
     expect(result.out).toContain("item 1 failed (corrupt)");
-    expect(result.out).toContain("corrupt: A zip looks damaged");
+    expect(result.out).toContain("corrupt: A ZIP file looks damaged");
     expect(result.out).toContain("Download that part again");
-    expect(result.out.match(/corrupt: A zip looks damaged/g)).toHaveLength(1);
+    expect(result.out.match(/corrupt: A ZIP file looks damaged/g)).toHaveLength(1);
     expect(existsSync(out) && filesOf(out).filter((f) => f.endsWith(".jpg"))).toEqual([]); // damaged bytes are never written as a good file
   });
 
   it("says how to save for real after a dry run, and what the cap is", async () => {
     const { dir } = threeParts("dry");
     const dry = await run(["memories", dir, "--dry-run", "--no-color"]);
-    expect(dry.out).toContain("To save the files, run the same command again with --out <folder> and without --dry-run.");
+    expect(dry.out).toContain("To save the files, run it again with --out <folder> and no --dry-run.");
     const withOut = await run(["memories", dir, "--dry-run", "--out", join(tempDir("dry-out"), "x"), "--no-color"]);
-    expect(withOut.out).toContain("To save the files, run the same command again without --dry-run.");
+    expect(withOut.out).toContain("To save the files, run it again without --dry-run.");
   });
 
   it("says what the storage cap is when sizes are unknown, so a 0% bar is not a mystery", async () => {
@@ -180,7 +180,7 @@ describe("what the run says when it ends", () => {
     writeFileSync(zip, buildFixtureZip([{ name: "json/memories_history.json", data: list }]));
     const dry = await run(["memories", zip, "--dry-run", "--no-color"]);
     expect(dry.out).toContain("2 Memories have no known size, so the real total is higher.");
-    expect(dry.out).toContain("The cap is your own storage goal (change it with --cap-gb); Snappy does not enforce it.");
+    expect(dry.out).toContain("The cap is your own goal (change it with --cap-gb). Snappy does not enforce it.");
   });
 
   it("names the count and the place before the first file is done, without a terminal", async () => {
@@ -195,6 +195,6 @@ describe("what the run says when it ends", () => {
     const zip = join(dir, "mydata~1.zip");
     writeFileSync(zip, buildFixtureZip([{ name: "json/memories_history.json", data: list }]));
     const result = await run(["memories", zip, "--out", join(dir, "out"), "--no-color"]);
-    expect(result.out.replace(/\s+/g, " ")).toContain("still in your Snapchat account; if part of your export is missing, add it and run again.");
+    expect(result.out.replace(/\s+/g, " ")).toContain("still in your Snapchat account. If part of your export is missing, add it and run again.");
   });
 });

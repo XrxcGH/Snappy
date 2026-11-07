@@ -14,14 +14,14 @@ import { plural } from "../format.ts";
 export const KEEP_USAGE = `Usage: snappy-export keep <username...> [options]
        snappy-export unkeep <username...> [options]
 
-keep adds friends to your allowlist: they never appear in the cleanup queue.
-unkeep takes them off again. The allowlist is sealed with your passphrase, in a file next to
-your ledger (ledger.allowlist.sealed).
+keep adds friends to your keep list, so they never appear in the cleanup queue.
+unkeep takes them off. The keep list is sealed in ledger.allowlist.sealed, next to your ledger.
 
 Options
   --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
-  --passphrase-file <path>  Read the passphrase from the first line of this file.
-                            Otherwise SNAPPY_PASSPHRASE, otherwise a hidden prompt.
+  --passphrase-file <path>  Use the first line of this file as the passphrase.
+
+The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
 `;
 
 interface Flags {
@@ -42,7 +42,7 @@ export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: I
   }
   const names = [...new Set(positionals.map(normUser).filter((n) => n !== ""))];
   if (names.length === 0) {
-    throw new CliError("usage", `Name at least one friend, for example: snappy ${mode} sam_01 alex.k`);
+    throw new CliError("usage", `Name at least one friend, like: snappy-export ${mode} sam_01 alex.k`);
   }
   if (names.some((n) => /\s/.test(n) || n.length > MAX_USERNAME_LENGTH)) {
     throw new CliError("usage", "Usernames have no spaces. Check the names and try again.");
@@ -66,10 +66,10 @@ export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: I
   const total = current.size;
   const skipped = names.length - changed.length;
   if (mode === "keep") {
-    io.out.write(`${plural(changed.length, "friend")} added to your allowlist${skipped > 0 ? ` (${skipped} already there)` : ""}. ${plural(total, "friend")} in total.\n`);
-    io.out.write("They will not appear in the cleanup queue. Allowlist sealed with your passphrase.\n");
+    io.out.write(`${plural(changed.length, "friend")} added to your keep list${skipped > 0 ? ` (${skipped} already there)` : ""}. ${plural(total, "friend")} in total.\n`);
+    io.out.write("They will not appear in the cleanup queue. Keep list sealed with your passphrase.\n");
   } else {
-    io.out.write(`${plural(changed.length, "friend")} taken off your allowlist${skipped > 0 ? ` (${skipped} were not on it)` : ""}. ${plural(total, "friend")} left.\n`);
+    io.out.write(`${plural(changed.length, "friend")} taken off your keep list${skipped > 0 ? ` (${skipped} not on it)` : ""}. ${plural(total, "friend")} left.\n`);
   }
   io.out.write(`${PRIVACY_RESULTS}\n`);
   return 0;

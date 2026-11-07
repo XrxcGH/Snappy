@@ -19,10 +19,9 @@ describe("activity wording", () => {
     expect(copy.quiet.inference).not.toMatch(/only holds saved chats/);
     expect(copy.quiet.emptyBody).toMatch(/chat or Snap/);
     expect(copy.quiet.noChatsTitle).toMatch(/chat or Snap history/);
-    expect(copy.overview.cardQuiet(0, false)).toBe("Needs chat or Snap history");
-    expect(copy.protection["recent-message"]).toMatch(/Snaps/);
-    expect(copy.cleanup.note).toMatch(/Snap/);
-    expect(copy.cleanup.protectedBody).toMatch(/Snaps/);
+    expect(copy.overview.needsChats).toBe("Needs chat or Snap history");
+    expect(copy.protection["recent-message"]).toMatch(/chat or Snap/);
+    expect(copy.cleanup.protectedByChats).toMatch(/Snap/);
   });
 
   it("no longer tells people that Snaps are invisible to Snappy", () => {
@@ -33,19 +32,19 @@ describe("activity wording", () => {
 
   it("lists chat and Snap metadata as read, and text, photos and videos as never read", () => {
     const reads = Object.fromEntries(copy.privacy.readsRows.map(([what, detail]) => [what, detail]));
-    expect(reads["Chat and Snap metadata"]).toMatch(/who/i);
-    expect(reads["Chat and Snap metadata"]).toMatch(/when/);
-    expect(reads["Chat and Snap metadata"]).toMatch(/Never what was said/);
-    expect(reads["Chat and Snap metadata"]).toMatch(/never the photo or video/);
-    expect(Object.keys(reads).join(" | ")).toMatch(/times inside the ZIPs/);
+    expect(reads["Chat and Snap activity"]).toMatch(/who/i);
+    expect(reads["Chat and Snap activity"]).toMatch(/when/);
+    expect(reads["Chat and Snap activity"]).toMatch(/Never the words, photos, or videos/);
+    expect(Object.keys(reads).join(" | ")).toMatch(/File names and times/);
     const never = copy.privacy.neverRows.map(([what]) => what.toLowerCase()).join(" | ");
     for (const word of ["message text", "photos and videos", "locations", "display names"]) expect(never).toContain(word);
   });
 
   it("tells the export guide that Snap history is optional and used the same way", () => {
-    const row = copy.guide.rows.find(([option]) => option.startsWith("Chat history"));
-    expect(row?.[0]).toBe("Chat history and Snap history");
-    expect(row?.[2]).toMatch(/never read or kept/);
+    const row = copy.guide.rows.find(([option]) => option.startsWith("Chat and Snap"));
+    expect(row?.[0]).toBe("Chat and Snap history");
+    expect(row?.[1]).toBe("Optional");
+    expect(row?.[2]).toMatch(/never reads message text/);
   });
 });
 
@@ -69,26 +68,29 @@ describe("progress wording", () => {
   });
 });
 
-describe("Memories pairing summary", () => {
-  it("says N listed, M have a file, K are not included, in plain words", () => {
-    expect(copy.memories.pairingSummary(711, 498, 213)).toBe("711 saved Memories listed, 498 have a file in your export, 213 are not included.");
-    expect(copy.memories.pairingSummary(1, 1, 0)).toBe("1 saved Memory listed, 1 has a file in your export, 0 are not included.");
-    expect(copy.memories.pairingSummary(2, 1, 1)).toBe("2 saved Memories listed, 1 has a file in your export, 1 is not included.");
+describe("Memories pairing wording", () => {
+  it("shows the files found, not included and overlays as three cards; the listed count is said once, in the Memories card", () => {
+    expect(copy.memories.pairingHave).toBe("Files found");
+    expect(copy.memories.pairingMissing).toBe("Not included");
+    expect(copy.memories.total).toBe("Memories");
+    expect(copy.memories.pairingOverlayLabel).toBe("Overlays");
+    expect(copy.memories.pairingOverlays).toMatch(/captions and stickers/);
   });
 
   it("explains why some may be missing and what to do, with hedged wording", () => {
     const why = copy.memories.pairingWhy.join(" ");
     expect(why).toMatch(/may leave out/);
-    expect(why).toMatch(/every part/);
-    expect(copy.memories.pairingTodo).toMatch(/inside the Snapchat app/);
+    expect(copy.memories.pairingWhy[0]).toMatch(/A part may be missing/);
+    expect(copy.memories.pairingTodo).toMatch(/every part/);
+    expect(copy.memories.pairingTodo).toMatch(/from the Snapchat app/);
     expect(copy.memories.pairingTodo).toMatch(/request a new export/);
   });
 
-  it("says the links are empty and that the command-line tool extracts the files and restores the exact capture time", () => {
-    expect(copy.memories.pairingLinksEmpty).toMatch(/links in this export are empty/);
-    expect(copy.memories.rescueBody).toMatch(/command-line tool/);
-    expect(copy.memories.rescueBody).toMatch(/exact capture time/);
-    expect(copy.memories.rescueBody).toMatch(/takes the files out of your ZIPs/);
+  it("says the links are empty and that the command line tool copies the files and restores the exact capture time", () => {
+    expect(copy.memories.pairingLinksEmpty).toMatch(/no download links/);
+    expect(copy.memories.rescueBody).toMatch(/command line tool/);
+    expect(copy.memories.rescueBody).toMatch(/restores dates/);
+    expect(copy.memories.rescueBody).toMatch(/copies your Memories/);
   });
 
   it("shows the exact command with the person's folder as a placeholder, never a real path", () => {
@@ -98,9 +100,11 @@ describe("Memories pairing summary", () => {
   });
 
   it("explains the background reader and the one policy line it needs", () => {
-    expect(copy.privacy.workerBody).toMatch(/worker-src blob:/);
-    expect(copy.privacy.workerBody).toMatch(/connect-src 'none'/);
-    expect(copy.privacy.workerBody).toMatch(/reads on the page instead/);
+    // The plain sentence is up front; the policy keywords sit in the collapsed technical details.
+    expect(copy.privacy.workerBody).toMatch(/cannot connect anywhere/);
+    expect(copy.privacy.workerBody).not.toMatch(/worker-src|connect-src/);
+    expect(copy.privacy.policyWorker).toMatch(/worker-src blob:/);
+    expect(copy.privacy.policyWorker).toMatch(/reads on the page instead/);
   });
 });
 

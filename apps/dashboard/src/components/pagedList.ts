@@ -42,7 +42,7 @@ export function pagedList<T>(items: readonly T[], renderItem: (item: T, index: n
     const remaining = items.length - shown;
     if (remaining <= 0) return;
     footer.append(
-      h("p", { class: "caption muted" }, `Showing ${formatCount(shown)} of ${formatCount(items.length)}`),
+      h("p", { class: "caption muted" }, common.showing(formatCount(shown), formatCount(items.length))),
       button({
         label: common.showMore(Math.min(pageSize, remaining)),
         key: `more:${options.key}`,
@@ -54,7 +54,7 @@ export function pagedList<T>(items: readonly T[], renderItem: (item: T, index: n
           paintFooter();
           first?.setAttribute("tabindex", "-1");
           first?.focus({ preventScroll: false });
-          announce(`Showing ${formatCount(shown)} of ${formatCount(items.length)}`);
+          announce(common.showing(formatCount(shown), formatCount(items.length)));
         },
       }),
     );

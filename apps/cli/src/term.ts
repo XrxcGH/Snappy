@@ -14,6 +14,14 @@ import { wrapText } from "./render.ts";
 export const VIOLET_RGB = [155, 134, 255] as const;
 /** ANSI 256-color index of the nearest violet, for every other color terminal. */
 const VIOLET_256 = 99;
+/**
+ * The secondary color, orange, as RGB for truecolor terminals. It must equal --orange-fg in the dark
+ * theme of brand/tokens/tokens.css; a test reads the token file and compares. Violet stays the
+ * primary color: orange marks only the Memories rescue, and is never a status.
+ */
+export const ORANGE_RGB = [255, 154, 99] as const;
+/** ANSI 256-color index of an orange, for every other color terminal (the 208 step of the color cube). */
+const ORANGE_256 = 208;
 
 export interface TermOptions {
   env: Readonly<Record<string, string | undefined>>;
@@ -39,6 +47,8 @@ export interface Term {
   readonly ascii: boolean;
   readonly columns: number;
   violet(s: string): string;
+  /** The secondary highlight: the Memories rescue. Never a status, never the main color. */
+  orange(s: string): string;
   bold(s: string): string;
   dim(s: string): string;
   ok(s: string): string;
@@ -98,6 +108,7 @@ export function createTerm(opts: TermOptions): Term {
   const ascii = opts.env.SNAPPY_ASCII === "1";
   const wrap = (code: string) => (s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s);
   const violetCode = supportsTruecolor(opts.env) ? `38;2;${VIOLET_RGB.join(";")}` : `38;5;${VIOLET_256}`;
+  const orangeCode = supportsTruecolor(opts.env) ? `38;2;${ORANGE_RGB.join(";")}` : `38;5;${ORANGE_256}`;
 
   const ok = wrap("32");
   const warn = wrap("33");
@@ -116,6 +127,7 @@ export function createTerm(opts: TermOptions): Term {
     ascii,
     columns: opts.columns,
     violet: wrap(violetCode),
+    orange: wrap(orangeCode),
     bold: wrap("1"),
     dim: wrap("2"),
     ok,
@@ -178,7 +190,7 @@ export function createTerm(opts: TermOptions): Term {
         bar(2, 5),
         side(term.violet(bar(3, 10)), term.bold("Snappy")),
         side(bar(9, 5), "Tidy your friend list and rescue your Memories."),
-        side(bar(2, 11), "Everything stays on this device."),
+        bar(2, 11),
       ];
     },
   };

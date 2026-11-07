@@ -82,7 +82,7 @@ export function analyzeExport(input: AnalysisInput): AnalysisResult {
  */
 export const CATEGORY: Record<CandidateCategory, { id: string; feature: string; label: string }> = {
   ghost: { id: "disappeared", feature: "Disappeared friends", label: "Disappeared" },
-  "one-way": { id: "not-accepted", feature: "Requests no one accepted", label: "Not accepted" },
+  "one-way": { id: "not-accepted", feature: "Unaccepted requests", label: "Unaccepted" },
   dormant: { id: "quiet", feature: "Quiet friends", label: "Quiet" },
 };
 

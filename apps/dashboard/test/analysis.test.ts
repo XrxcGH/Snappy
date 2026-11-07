@@ -64,7 +64,7 @@ describe("analyze", () => {
 });
 
 describe("parsedFromSnapshot", () => {
-  it("lets a saved ledger alone reproduce the requests no one accepted", async () => {
+  it("lets a saved ledger alone reproduce the unaccepted requests", async () => {
     const ws = await buildSampleWorkspace();
     const latest = ws.latest;
     const snap = ws.ledger.snapshots[1];

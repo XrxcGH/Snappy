@@ -39,7 +39,7 @@ describe("help and version", () => {
 
   it("prints the version", async () => {
     for (const flag of ["--version", "-v", "version"]) {
-      expect(await run([flag])).toEqual({ code: 0, out: `snappy ${VERSION}\n`, err: "" });
+      expect(await run([flag])).toEqual({ code: 0, out: `snappy-export ${VERSION}\n`, err: "" });
     }
   });
 
@@ -62,7 +62,8 @@ describe("mistakes", () => {
       const { code, out, err } = await run(args);
       expect(code, args.join(" ")).toBe(1);
       expect(out).toBe("");
-      expect(err).toMatch(/\(code: usage\)\n$/);
+      expect(err).not.toContain("code");
+      expect((await run([...args, "--verbose"])).err).toMatch(/\(code: usage\)\n$/);
       expect(err).toContain("snappy-export help");
       expect(err.split("\n").length).toBeLessThanOrEqual(2);
     }
@@ -92,7 +93,7 @@ describe("mistakes", () => {
     const { code, err } = await run(["demo", "--dir", tempDir("boom"), "--run"], io);
     // demo never reads the clock before --run: the failure comes from deeper in, and must still be calm.
     expect(code).toBe(1);
-    expect(err).toContain("(code: unexpected)");
+    expect(err).toContain("The output never includes your data");
     expect(err).not.toContain("secret-detail-12345");
     expect(err).not.toMatch(/\n\s+at /);
     expect(err.split("\n").length).toBeLessThanOrEqual(2);
@@ -112,13 +113,13 @@ describe("running it for real", () => {
     expect(command).toBe("node");
     const result = spawnSync(process.execPath, [...flags, "--version"], { cwd: ROOT, encoding: "utf8" });
     expect(result.status).toBe(0);
-    expect(result.stdout).toBe(`snappy ${VERSION}\n`);
+    expect(result.stdout).toBe(`snappy-export ${VERSION}\n`);
     expect(result.stderr).toBe("");
   });
 
   it("runs a command that reaches into core, and exits with the command's code", () => {
     const [, ...flags] = script.split(" ");
-    const result = spawnSync(process.execPath, [...flags, "analyze", "does-not-exist.zip"], { cwd: ROOT, encoding: "utf8" });
+    const result = spawnSync(process.execPath, [...flags, "analyze", "does-not-exist.zip", "--verbose"], { cwd: ROOT, encoding: "utf8" });
     expect(result.status).toBe(1);
     expect(result.stdout).toBe("");
     expect(result.stderr).toContain("(code: not-found)");

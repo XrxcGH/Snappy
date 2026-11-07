@@ -158,7 +158,7 @@ describe("Memories across the three zips", () => {
     expect(merged.issues.find((i) => i.code === "memories-unmatched-items")).toEqual({
       severity: "warning",
       code: "memories-unmatched-items",
-      message: `${memoryEntries.length - plantedMains} of ${memoryEntries.length} saved Memories ${memoryEntries.length - plantedMains === 1 ? "has" : "have"} no file in the zips Snappy was given. If part of your export is missing, add it and run again. Your Memories stay in your Snapchat account either way, and Snapchat may not have included every one in the export.`,
+      message: `${memoryEntries.length - plantedMains} of ${memoryEntries.length} saved Memories ${memoryEntries.length - plantedMains === 1 ? "has" : "have"} no file in your ZIP files.`,
     });
     expect(merged.issues.filter((i) => i.severity === "error")).toEqual([]);
     expect(validateExport(merged).filter((i) => i.severity !== "info")).toEqual([]);

@@ -34,7 +34,7 @@ const has = (record: Record<string, number | undefined | null>, key: string): bo
 
 /**
  * A saved snapshot holds friends, requests, deletions and blocks, which is all the one-way
- * detector reads. This lets a freshly unlocked ledger show "Requests no one accepted" before
+ * detector reads. This lets a freshly unlocked ledger show "Unaccepted requests" before
  * any export is added. Chats and memories are never stored, so they stay empty.
  */
 export function parsedFromSnapshot(snap: Snapshot): ParsedExport {

@@ -83,10 +83,10 @@ describe("parseSnapHistoryJson", () => {
     expect(chats).toHaveLength(2); // the Snap without IsSender still counts as activity
     expect(chats.map((c) => c.direction)).toEqual(["received", "unknown"]);
     expect(issues.map((i) => [i.severity, i.code, i.message])).toEqual([
-      ["warning", "snap-invalid-entries", "1 entry in snap_history.json was not an object and skipped."],
-      ["warning", "snap-bad-timestamp", "1 Snap has no readable timestamp and was skipped."],
-      ["info", "snap-non-list-values", "1 top-level snap_history.json value is not a Snap list and was skipped."],
-      ["info", "snap-direction-unknown", "1 Snap has no IsSender flag, so whether it was sent or received is unknown; it still counts as activity."],
+      ["warning", "snap-invalid-entries", "1 entry in snap_history.json could not be read and was skipped."],
+      ["warning", "snap-bad-timestamp", "1 Snap has no readable date and was skipped."],
+      ["info", "snap-non-list-values", "1 item in snap_history.json is not a Snap list and was skipped."],
+      ["info", "snap-direction-unknown", "1 Snap does not say if you sent or received it. It still counts as activity."],
     ]);
     expect(allMessages(issues)).not.toContain("chat_history");
   });
@@ -95,7 +95,7 @@ describe("parseSnapHistoryJson", () => {
     expect(parseSnapHistoryJson([snap()]).issues.map((i) => i.code)).toEqual(["snap-top-level-array"]);
     const bad = parseSnapHistoryJson("nope");
     expect(bad.chats).toEqual([]);
-    expect(bad.issues).toEqual([{ severity: "warning", code: "snap-unexpected-shape", message: "snap_history.json has an unexpected top-level shape; no Snaps were read." }]);
+    expect(bad.issues).toEqual([{ severity: "warning", code: "snap-unexpected-shape", message: "snap_history.json looks different from what Snappy expects, so no Snaps were read." }]);
   });
 
   it.each([null, undefined, 5, "s", [], {}, [null, 3, "x", {}], { a: null, b: [null], c: {} }])("never throws on %j", (bad) => {

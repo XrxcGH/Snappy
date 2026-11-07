@@ -434,7 +434,7 @@ export async function listZipEntries(reader: RandomAccessReader): Promise<ZipLis
 
     const issues: ExportIssue[] = [];
     if (dir.count !== undefined && dir.count !== entries.length) {
-      issues.push(issue("warning", "zip-entry-count-mismatch", `The archive header declares ${dir.count} entries but ${entries.length} were found.`));
+      issues.push(issue("warning", "zip-entry-count-mismatch", `The ZIP file says it holds ${dir.count} items, but Snappy found ${entries.length}. It may be damaged.`));
     }
     return newest === undefined ? { entries, issues } : { entries, issues, newestMtime: newest };
   } catch {

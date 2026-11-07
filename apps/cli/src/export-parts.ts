@@ -35,7 +35,7 @@ export async function expandWildcards(args: string[]): Promise<string[]> {
     const pattern = wildcardToRegExp(basename(arg));
     const matches = names.filter((n) => pattern.test(n) && n.toLowerCase().endsWith(".zip") && !n.startsWith("._"));
     if (matches.length === 0) {
-      throw new CliError("no-zips", `No .zip files match "${arg}". Check the folder and the name, and put quotes around a path that contains spaces.`);
+      throw new CliError("no-zips", `No .zip files match "${arg}". Check the folder and name, and put quotes around paths with spaces.`);
     }
     out.push(...matches.map((n) => join(folder, n)));
   }

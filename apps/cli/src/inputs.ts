@@ -23,7 +23,7 @@ const byName = (a: string, b: string): number => a.localeCompare(b, "en", { nume
  */
 export async function resolveZipPaths(args: string[]): Promise<string[]> {
   if (args.length === 0) {
-    throw new CliError("no-input", "Snappy needs your export. Give it one or more .zip files, or a folder that holds the parts.");
+    throw new CliError("no-input", "Give Snappy your export: one or more .zip files, or a folder with every part.");
   }
   const found: string[] = [];
   for (const arg of await expandWildcards(args)) {
@@ -44,13 +44,13 @@ export async function resolveZipPaths(args: string[]): Promise<string[]> {
         throw fsError(e, "read the folder", arg);
       }
       if (names.length === 0) {
-        throw new CliError("no-zips", `There are no .zip files in "${arg}". Put the parts of your export there, or name the files directly.`);
+        throw new CliError("no-zips", `No .zip files in "${arg}". Put your export parts there, or name the files.`);
       }
       found.push(...names.sort(byName).map((n) => join(path, n)));
     } else if (isZip(path)) {
       found.push(path);
     } else {
-      throw new CliError("not-zip", `"${arg}" is not a .zip file. Snappy reads the .zip you downloaded from Snapchat.`);
+      throw new CliError("not-zip", `"${arg}" is not a .zip file. Use the .zip you downloaded from Snapchat.`);
     }
   }
   return orderExportParts([...new Set(found)]);
@@ -64,7 +64,7 @@ export function requireFirstPart(paths: string[]): void {
   if (isLaterPartsOnly(paths)) {
     throw new CliError(
       "later-parts-only",
-      "These zips are later parts of an export (their names end in -2, -3 and so on). The lists Snappy reads are in the first part, the one with no number at the end of its name. Add it and run again.",
+      "These ZIP files are later parts (names end in -2, -3). Add the first part, which holds the lists, and run again.",
     );
   }
 }

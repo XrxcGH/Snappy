@@ -69,11 +69,19 @@ describe("source scan", () => {
     expect(bad).toEqual([]);
   });
 
-  it("keeps orange out of code, and brand values out of literals", () => {
-    expect(offenders(files, /orange|vermilion|ff3d14|ff4d00|ff5a1f/i)).toEqual([]);
-    // ANSI 256-color codes 202 to 208 and 214 and 215 are the oranges: the only 256-color index in use is the violet.
-    expect(offenders(files, /38;5;(?!\$\{VIOLET_256\})|(?:202|208|214)m/)).toEqual([]);
-    // Colors come from tokens: no hex literals in source (the one RGB triple is checked against tokens.css).
+  it("keeps orange to a secondary highlight: only through the term helper, never hard-coded", () => {
+    // Orange is allowed as a secondary color, defined once in term.ts (from the dark orange token) and
+    // used only for the Memories rescue. It is never the main color, so violet stays the one accent.
+    const outsideTerm = without(["term.ts"]);
+    const named = (f: (typeof files)[number]): boolean => /orange|vermilion/i.test(f.text.replace(/term\.orange\(/g, ""));
+    expect(outsideTerm.filter(named).map((f) => f.path)).toEqual([]);
+    expect(offenders(files, /ff3d14|ff4d00|ff5a1f|ff7a3d|ff9a63|d9531a/i)).toEqual([]);
+    expect(offenders(without(["commands/memories.ts", "term.ts"]), /\.orange\(/)).toEqual([]);
+    // ANSI 256-color codes 202 to 208 and 214 and 215 are the oranges: outside term.ts none may be spelled out.
+    expect(offenders(outsideTerm, /38;5;|38;2;|(?:20[2-8]|21[45])m/)).toEqual([]);
+    // Inside term.ts a 256-color index comes only from the named violet and orange constants.
+    expect(offenders(files, /38;5;(?!\$\{(?:VIOLET|ORANGE)_256\})/)).toEqual([]);
+    // Colors come from tokens: no hex literals in source (the RGB triples are checked against tokens.css).
     expect(offenders(files, /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/)).toEqual([]);
   });
 

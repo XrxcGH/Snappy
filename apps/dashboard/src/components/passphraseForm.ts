@@ -16,39 +16,51 @@ export interface PassphraseFormOptions {
   key: string;
 }
 
-function field(id: string, label: string, key: string, autocomplete: string): { wrap: HTMLElement; input: HTMLInputElement } {
+function field(id: string, label: string, key: string, autocomplete: string, help?: HTMLElement): { wrap: HTMLElement; input: HTMLInputElement } {
   const input = h("input", { id, class: "input", type: "password", autocomplete, "data-key": key, spellcheck: "false", autocapitalize: "none" });
-  return { wrap: h("div", { class: "field" }, h("label", { class: "label", for: id }, label), input), input };
+  return { wrap: h("div", { class: "field" }, h("label", { class: "label", for: id }, label), input, help ?? null), input };
 }
 
 /** Passphrase entry with guidance (12 or more characters, no composition rules) and a show toggle. */
 export function passphraseForm(options: PassphraseFormOptions): HTMLFormElement {
   const id = `pp${++counter}`;
-  const first = field(`${id}-a`, settings.passphraseLabel, `${options.key}:a`, options.mode === "unlock" ? "current-password" : "new-password");
+  // The help is shown once, right under the field it describes (and only when a passphrase is being chosen).
+  const hint = h("p", { id: `${id}-hint` }, settings.passphraseHelp);
+  const first = field(`${id}-a`, settings.passphraseLabel, `${options.key}:a`, options.mode === "unlock" ? "current-password" : "new-password", options.mode === "set" ? hint : undefined);
   const second = options.mode === "set" ? field(`${id}-b`, settings.confirmLabel, `${options.key}:b`, "new-password") : null;
   const inputs = [first.input, ...(second ? [second.input] : [])];
 
   const error = h("p", { class: "field-error", id: `${id}-err`, role: "alert" });
-  const hint = h("p", { class: "caption muted", id: `${id}-hint` }, options.mode === "set" ? settings.passphraseHelp : "");
+  // The meter has a name and a value in words, and is as wide as the field.
   const fill = h("span", { class: "meter-fill" });
   const meter = h(
     "div",
-    { class: "meter strength", role: "meter", "aria-label": passphraseHint.label, "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": "0" },
+    {
+      class: "meter strength",
+      role: "meter",
+      "aria-label": passphraseHint.label,
+      "aria-valuemin": "0",
+      "aria-valuemax": "100",
+      "aria-valuenow": "0",
+      "aria-valuetext": passphraseHint.empty,
+    },
     fill,
   );
-  const strengthText = h("p", { class: "caption", id: `${id}-strength` }, passphraseHint.empty);
-  first.input.setAttribute("aria-describedby", options.mode === "set" ? `${id}-hint ${id}-strength` : `${id}-err`);
+  const strengthText = h("span", { class: "meter-text", id: `${id}-strength` }, passphraseHint.empty);
+  const strength = h("div", { class: "meter-block strength-block" }, h("p", { class: "meter-head" }, h("span", { class: "meter-name" }, passphraseHint.label), " ", strengthText), meter);
+  first.input.setAttribute("aria-describedby", options.mode === "set" ? `${id}-hint ${id}-strength ${id}-err` : `${id}-err`);
 
-  if (options.mode === "set") {
-    first.input.addEventListener("input", () => {
-      const strength = estimateStrength(first.input.value);
-      const percent = Math.round(strength.fraction * 100);
-      setVar(fill, "width", `${percent}%`);
-      meter.setAttribute("aria-valuenow", String(percent));
-      strengthText.textContent = first.input.value === "" ? passphraseHint.empty : passphraseHint[strength.level];
-      meter.dataset.level = strength.level;
-    });
-  }
+  const showStrength = (): void => {
+    const estimate = estimateStrength(first.input.value);
+    const percent = Math.round(estimate.fraction * 100);
+    const word = first.input.value === "" ? passphraseHint.empty : passphraseHint[estimate.level];
+    setVar(fill, "width", `${percent}%`);
+    meter.setAttribute("aria-valuenow", String(percent));
+    meter.setAttribute("aria-valuetext", word);
+    strengthText.textContent = word;
+    meter.dataset.level = estimate.level;
+  };
+  if (options.mode === "set") first.input.addEventListener("input", showStrength);
 
   const showId = `${id}-show`;
   const show = h("input", { id: showId, type: "checkbox", class: "check-input", "data-key": `${options.key}:show` });
@@ -62,9 +74,9 @@ export function passphraseForm(options: PassphraseFormOptions): HTMLFormElement 
     "form",
     { class: "form", novalidate: true, autocomplete: "off" },
     first.wrap,
-    ...(options.mode === "set" ? [hint, meter, strengthText] : []),
+    ...(options.mode === "set" ? [strength] : []),
     second?.wrap ?? null,
-    h("label", { class: "check", for: showId }, show, h("span", {}, "Show passphrase")),
+    h("label", { class: "check", for: showId }, show, h("span", {}, settings.showPassphrase)),
     error,
     h("div", { class: "actions" }, submit),
   );
@@ -90,7 +102,9 @@ export function passphraseForm(options: PassphraseFormOptions): HTMLFormElement 
       return;
     }
     void options.onSubmit(value).then((accepted) => {
-      if (accepted) for (const input of inputs) input.value = "";
+      if (!accepted) return;
+      for (const input of inputs) input.value = "";
+      if (options.mode === "set") showStrength();
     });
   });
   return form;

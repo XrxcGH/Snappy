@@ -14,8 +14,7 @@ import { analyzeCommand } from "./analyze.ts";
 
 export const DEMO_USAGE = `Usage: snappy-export demo [--dir <folder>] [--run]
 
-Writes two invented exports (an earlier one and a later one) so you can try Snappy without
-your own data, and prints the commands to analyze them.
+Writes two invented exports, an earlier and a later one, and prints the commands to try.
 
 Options
   --dir <folder>   Where to write the two files. Default: a new temporary folder.
@@ -81,10 +80,10 @@ export async function demoCommand(args: string[], io: Io): Promise<number> {
       `  Earlier export: ${earlier}`,
       `  Later export:   ${later}`,
       "",
-      "Find friends worth reviewing (nothing is saved):",
+      "Find friends to review (saves nothing):",
       `  ${analyze}`,
       "",
-      "Preview a Memories rescue (nothing is written):",
+      "Preview a Memories rescue (writes nothing):",
       `  ${memories}`,
       "",
     ].join("\n") + "\n",

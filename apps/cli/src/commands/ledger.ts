@@ -17,9 +17,10 @@ Shows which exports are in your sealed ledger: dates and friend counts, never us
 
 Options
   --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
-  --passphrase-file <path>  Read the passphrase from the first line of this file.
-                            Otherwise SNAPPY_PASSPHRASE, otherwise a hidden prompt.
+  --passphrase-file <path>  Use the first line of this file as the passphrase.
   --no-color                Plain text.
+
+The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
 `;
 
 interface Flags {
@@ -41,7 +42,7 @@ export async function ledgerCommand(args: string[], io: Io): Promise<number> {
     return 0;
   }
   if (positionals[0] !== "status" || positionals.length > 1) {
-    throw new CliError("usage", 'Snappy knows one ledger command: "snappy-export ledger status".');
+    throw new CliError("usage", 'The only ledger command is "snappy-export ledger status".');
   }
 
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
@@ -59,21 +60,21 @@ export async function ledgerCommand(args: string[], io: Io): Promise<number> {
   if (ledger === undefined) {
     lines.push("  No exports saved yet.");
   } else {
-    lines.push(`  ${plural(ledger.snapshots.length, "export")} on record.`, "");
+    lines.push(`  ${plural(ledger.snapshots.length, "export")} in your history.`, "");
     lines.push(
       ...term
         .table(
-          [{ header: "Export from" }, { header: "Friends", align: "right" }, { header: "Requests sent", align: "right" }, { header: "Source" }],
-          ledger.snapshots.map((s) => [formatDate(s.takenAt), String(s.friends.length), String(s.sentRequests.length), s.source === "export" ? "Data export" : "Scan"]),
+          [{ header: "Export from" }, { header: "Friends", align: "right" }, { header: "Requests sent", align: "right" }],
+          ledger.snapshots.map((s) => [formatDate(s.takenAt), String(s.friends.length), String(s.sentRequests.length)]),
         )
         .map((l) => `  ${l}`),
     );
   }
-  lines.push("", term.bold("Allowlist"));
+  lines.push("", term.bold("Keep list"));
   lines.push(
     allowlist === undefined
-      ? "  Empty. Use snappy-export keep to protect friends from the cleanup queue."
-      : `  ${plural(allowlist.length, "friend")} protected. File: ${allowlistPathFor(ledgerPath)}`,
+      ? "  Empty. Use snappy-export keep to add friends."
+      : `  ${plural(allowlist.length, "friend")} on your keep list. File: ${allowlistPathFor(ledgerPath)}`,
   );
   lines.push("", PRIVACY_RESULTS);
   io.out.write(lines.join("\n") + "\n");

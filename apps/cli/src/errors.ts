@@ -23,17 +23,17 @@ export function fsError(e: unknown, action: string, path: string): CliError {
       return new CliError("not-found", `Snappy could not find "${path}". Check the path and try again.`);
     case "EACCES":
     case "EPERM":
-      return new CliError("no-access", `Snappy does not have permission to ${action} "${path}". Check the permissions and try again.`);
+      return new CliError("no-access", `No permission to ${action} "${path}". Check the permissions and try again.`);
     case "EEXIST":
     case "ENOTDIR":
-      return new CliError("not-a-folder", `"${path}" is a file, or part of its path is, but Snappy needs a folder there. Choose another folder.`);
+      return new CliError("not-a-folder", `Snappy needs a folder at "${path}", but found a file. Choose another folder.`);
     case "EISDIR":
-      return new CliError("is-directory", `"${path}" is a folder, but Snappy expected a file.`);
+      return new CliError("is-directory", `Snappy needs a file at "${path}", but found a folder.`);
     case "ENOSPC":
-      return new CliError("disk-full", `There is no space left to ${action} "${path}". Free some space and try again.`);
+      return new CliError("disk-full", `No space left to ${action} "${path}". Free some space and try again.`);
     case "EBUSY":
       return new CliError("file-busy", `"${path}" is in use by another program. Close it and try again.`);
     default:
-      return new CliError("file-error", `Snappy could not ${action} "${path}". Check that the path is valid and try again.`);
+      return new CliError("file-error", `Snappy could not ${action} "${path}". Check the path and try again.`);
   }
 }

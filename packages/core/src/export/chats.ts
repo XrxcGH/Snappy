@@ -132,7 +132,7 @@ export class HistoryReader {
     const trimmed = rawKey.trim();
     this.key = trimmed === "" || FLAT_SECTION.test(normKey(trimmed)) ? undefined : trimmed;
     if (rawKey === "") {
-      this.issues.push(issue("warning", `${this.code}-top-level-array`, `${this.file} is a bare list; conversations may be mis-grouped.`));
+      this.issues.push(issue("warning", `${this.code}-top-level-array`, `${this.file} looks different from what Snappy expects. Conversations may be grouped wrongly.`));
     }
   }
 
@@ -187,17 +187,17 @@ export class HistoryReader {
     this.flush();
     const { file, noun, code, issues } = this;
     const verb = (n: number): string => (n === 1 ? "was" : "were");
-    if (this.badEntries > 0) issues.push(issue("warning", `${code}-invalid-entries`, `${entries(this.badEntries)} in ${file} ${this.badEntries === 1 ? "was not an object" : "were not objects"} and skipped.`));
-    if (this.badTimestamps > 0) issues.push(issue("warning", `${code}-bad-timestamp`, `${this.badTimestamps} ${noun}${this.badTimestamps === 1 ? " has" : "s have"} no readable timestamp and ${verb(this.badTimestamps)} skipped.`));
-    if (this.skippedContainers > 0) issues.push(issue("info", `${code}-non-list-values`, `${this.skippedContainers} top-level ${file} value${this.skippedContainers === 1 ? ` is not a ${noun} list` : `s are not ${noun} lists`} and ${verb(this.skippedContainers)} skipped.`));
+    if (this.badEntries > 0) issues.push(issue("warning", `${code}-invalid-entries`, `${entries(this.badEntries)} in ${file} could not be read and ${this.badEntries === 1 ? "was" : "were"} skipped.`));
+    if (this.badTimestamps > 0) issues.push(issue("warning", `${code}-bad-timestamp`, `${this.badTimestamps} ${noun}${this.badTimestamps === 1 ? " has" : "s have"} no readable date and ${verb(this.badTimestamps)} skipped.`));
+    if (this.skippedContainers > 0) issues.push(issue("info", `${code}-non-list-values`, `${this.skippedContainers} ${this.skippedContainers === 1 ? "item" : "items"} in ${file} ${this.skippedContainers === 1 ? `is not a ${noun} list` : `are not ${noun} lists`} and ${verb(this.skippedContainers)} skipped.`));
     if (this.directionUnknown > 0) {
-      issues.push(issue("info", `${code}-direction-unknown`, `${this.directionUnknown} ${noun}${this.directionUnknown === 1 ? " has" : "s have"} no IsSender flag, so whether it was sent or received is unknown; ${this.directionUnknown === 1 ? "it still counts" : "they still count"} as activity.`));
+      issues.push(issue("info", `${code}-direction-unknown`, `${this.directionUnknown} ${noun}${this.directionUnknown === 1 ? " does" : "s do"} not say if you sent or received ${this.directionUnknown === 1 ? "it" : "them"}. ${this.directionUnknown === 1 ? "It still counts" : "They still count"} as activity.`));
     }
     if (this.noConversation > 0) {
-      issues.push(issue("info", `${code}-conversation-unknown`, `${this.noConversation} ${noun}${this.noConversation === 1 ? " has" : "s have"} no determinable conversation and ${verb(this.noConversation)} skipped.`));
+      issues.push(issue("info", `${code}-conversation-unknown`, `${this.noConversation} ${noun}${this.noConversation === 1 ? " has" : "s have"} could not be matched to a conversation and ${verb(this.noConversation)} skipped.`));
     }
     if (this.conversations > 0 && this.groups === this.conversations) {
-      issues.push(issue("info", `${code}-all-groups`, `All ${this.conversations} conversations were treated as group chats; if that is wrong the export layout may differ from what Snappy expects.`));
+      issues.push(issue("info", `${code}-all-groups`, `Snappy treated all ${this.conversations} conversations as group chats. The export layout may differ from what it expects.`));
     }
     return { chats: this.events, issues };
   }
@@ -251,7 +251,7 @@ function parseHistory(obj: unknown, history: HistoryFile): { chats: ChatEvent[];
   } else {
     return {
       chats: [],
-      issues: [issue("warning", `${history}-unexpected-shape`, `${FILE_NAME[history]} has an unexpected top-level shape; no ${NOUN[history]}s were read.`)],
+      issues: [issue("warning", `${history}-unexpected-shape`, `${FILE_NAME[history]} looks different from what Snappy expects, so no ${NOUN[history]}s were read.`)],
     };
   }
   return reader.finish();

@@ -63,7 +63,8 @@ describe("init", () => {
   it("ignores an unknown theme value and notices saved data", async () => {
     const { store, actions } = setup(fakeVault(new Uint8Array([1, 2, 3])));
     await actions.init("neon");
-    expect(store.get().theme).toBe("system");
+    // Dark is the default theme: an unknown remembered value leaves it alone.
+    expect(store.get().theme).toBe("dark");
     expect(store.get().vault).toMatchObject({ phase: "locked", hasSaved: true });
   });
 

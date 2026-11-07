@@ -6,7 +6,10 @@
   Fonts are not loaded here. The dashboard blocks all network access, so these OFL fonts are
   self-hosted as local woff2 files:
     Bricolage Grotesque 600/700 (display), Atkinson Hyperlegible Next 400/500/600/700 (body),
-    JetBrains Mono 400/500 (usernames, code).
+    JetBrains Mono 400/500 (usernames, code), and Snappy Digits 400/500/600/700 (the ten digits only).
+  Snappy Digits is cut from Bricolage Grotesque because Atkinson draws a slashed zero and has no switch for it. It is
+  listed FIRST in the body and display stacks, so numerals show a plain zero and every letter falls through to the real
+  font. A page that does not define the family simply ignores it. Usernames and code keep JetBrains Mono's zero.
   The fallback stacks below keep the UI usable if a font file is missing.
 */
 
@@ -39,7 +42,7 @@
 
   /* Semantic: always pair with an icon and a text label. */
   --success-fg: #0b6b43; --success-bg: #e2f4ea; --success-border: #2f8f63;
-  --warning-fg: #7a4300; --warning-bg: #fcefd6; --warning-border: #b26a00;
+  --warning-fg: #574d00; --warning-bg: #fbf5cc; --warning-border: #8f8000;
   --danger-fg: #a8112b;  --danger-bg: #fbe5e8;  --danger-border: #c8334c;
   --info-fg: #1b4f9e;    --info-bg: #e3edfa;    --info-border: #2f6fcc;
 
@@ -48,9 +51,19 @@
   --conf-medium-fg: var(--warning-fg); --conf-medium-bg: var(--warning-bg); --conf-medium-border: var(--warning-border);
   --conf-low-fg: #4a5560; --conf-low-bg: #e8ecef; --conf-low-border: #6b7782;
 
+  /* Category accents + violet tints. Pair every use with the category icon and its label. */
+  --cat-disappeared-fg: #a72a97; --cat-disappeared-bg: #faebf8; --cat-disappeared-border: #cc5cbd; --cat-disappeared-solid: #c954ba;
+  --cat-requests-fg: #08697d; --cat-requests-bg: #ebf7fa; --cat-requests-border: #1498b3; --cat-requests-solid: #128da5;
+  --cat-quiet-fg: #546b0b; --cat-quiet-bg: #f6faeb; --cat-quiet-border: #789518; --cat-quiet-solid: #718c17;
+  --cat-cleanup-fg: #5a3be8; --cat-cleanup-bg: #efebff; --cat-cleanup-border: #7b62ff; --cat-cleanup-solid: #6b4dff;
+  /* Orange: a SECONDARY color. Violet is the brand accent. Orange paints the Memories rescue area and small illustration highlights, only through these tokens. */
+  --orange-fg: #a33c00; --orange-bg: #ffe2cf; --orange-border: #d2541a; --orange-solid: #d9531a;
+  --cat-memories-fg: var(--orange-fg); --cat-memories-bg: var(--orange-bg); --cat-memories-border: var(--orange-border); --cat-memories-solid: var(--orange-solid);
+  --tint-violet-1: #f6f3ff; --tint-violet-2: #efebff; --tint-violet-3: #e2dbff; --tint-violet-line: #cdc2ff;
+
   /* ---- Typography ---- */
-  --font-display: "Bricolage Grotesque", "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Snappy Digits", "Bricolage Grotesque", "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: "Snappy Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
 
   --text-12: 0.75rem;   /* 12px caption, minimum size */
@@ -128,10 +141,18 @@
     --scrim: rgba(0, 0, 0, 0.64);
 
     --success-fg: #6fd9a3; --success-bg: #0f2a1e; --success-border: #3fa877;
-    --warning-fg: #f2b45a; --warning-bg: #2e2005; --warning-border: #c98a1f;
+    --warning-fg: #e6d24a; --warning-bg: #28250a; --warning-border: #b5a21f;
     --danger-fg: #ff8fa0;  --danger-bg: #35101a;  --danger-border: #e5586f;
     --info-fg: #8db8ff;    --info-bg: #10223d;    --info-border: #4f86e0;
     --conf-low-fg: #b5bec7; --conf-low-bg: #22282e; --conf-low-border: #7c8791;
+
+    --cat-disappeared-fg: #d76ac9; --cat-disappeared-bg: #2b1228; --cat-disappeared-border: #a83e99; --cat-disappeared-solid: #ba45ab;
+    --cat-requests-fg: #4ab9cf; --cat-requests-bg: #12272b; --cat-requests-border: #2e7a8a; --cat-requests-solid: #338899;
+    --cat-quiet-fg: #afcd4c; --cat-quiet-bg: #252b12; --cat-quiet-border: #677a29; --cat-quiet-solid: #819933;
+    --cat-cleanup-fg: #b3a3ff; --cat-cleanup-bg: #1f1838; --cat-cleanup-border: #7c66e8; --cat-cleanup-solid: #9b86ff;
+    --orange-fg: #ff9a63; --orange-bg: #3a1a0a; --orange-border: #e0612c; --orange-solid: #ff7a3d;
+    --cat-memories-fg: var(--orange-fg); --cat-memories-bg: var(--orange-bg); --cat-memories-border: var(--orange-border); --cat-memories-solid: var(--orange-solid);
+    --tint-violet-1: #181328; --tint-violet-2: #1f1838; --tint-violet-3: #2b2252; --tint-violet-line: #44397a;
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -161,10 +182,18 @@
   --scrim: rgba(0, 0, 0, 0.64);
 
   --success-fg: #6fd9a3; --success-bg: #0f2a1e; --success-border: #3fa877;
-  --warning-fg: #f2b45a; --warning-bg: #2e2005; --warning-border: #c98a1f;
+  --warning-fg: #e6d24a; --warning-bg: #28250a; --warning-border: #b5a21f;
   --danger-fg: #ff8fa0;  --danger-bg: #35101a;  --danger-border: #e5586f;
   --info-fg: #8db8ff;    --info-bg: #10223d;    --info-border: #4f86e0;
   --conf-low-fg: #b5bec7; --conf-low-bg: #22282e; --conf-low-border: #7c8791;
+
+  --cat-disappeared-fg: #d76ac9; --cat-disappeared-bg: #2b1228; --cat-disappeared-border: #a83e99; --cat-disappeared-solid: #ba45ab;
+  --cat-requests-fg: #4ab9cf; --cat-requests-bg: #12272b; --cat-requests-border: #2e7a8a; --cat-requests-solid: #338899;
+  --cat-quiet-fg: #afcd4c; --cat-quiet-bg: #252b12; --cat-quiet-border: #677a29; --cat-quiet-solid: #819933;
+  --cat-cleanup-fg: #b3a3ff; --cat-cleanup-bg: #1f1838; --cat-cleanup-border: #7c66e8; --cat-cleanup-solid: #9b86ff;
+  --orange-fg: #ff9a63; --orange-bg: #3a1a0a; --orange-border: #e0612c; --orange-solid: #ff7a3d;
+  --cat-memories-fg: var(--orange-fg); --cat-memories-bg: var(--orange-bg); --cat-memories-border: var(--orange-border); --cat-memories-solid: var(--orange-solid);
+  --tint-violet-1: #181328; --tint-violet-2: #1f1838; --tint-violet-3: #2b2252; --tint-violet-line: #44397a;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);

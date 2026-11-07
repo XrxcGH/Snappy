@@ -30,7 +30,7 @@ describe("snappy-export memories: dry run", () => {
     expect(text).toContain("Memories rescue");
     expect(text).toMatch(/\d+ Memories: \d+ photos, \d+ videos/);
     expect(text).toMatch(/probable duplicate/);
-    expect(text).toMatch(/6 are in your zips, \d+ are only links/);
+    expect(text).toMatch(/6 are in your ZIP files, \d+ are only links/);
     expect(text).toContain("Storage meter");
     expect(text).toMatch(/[▰▱]{20} +[\d.]+ \w+ of 5 GB \(\d+%\)/);
     expect(text).toContain("Dry run: nothing was written.");
@@ -60,8 +60,8 @@ describe("snappy-export memories: bundled media", () => {
     const { code, out: text } = await run(["memories", zip, "--out", out]);
 
     expect(code).toBe(0);
-    expect(text).toMatch(/6 saved from your zips, 0 already there, 0 failed\./);
-    expect(text).toMatch(/\d+ items? only available as links: run again with --download/);
+    expect(text).toMatch(/6 saved from your ZIP files, 0 already there, 0 failed\./);
+    expect(text).toMatch(/\d+ items? (?:are|is) only (?:links|a link)\. Run again with --download/);
     const files = listFiles(out).filter((f) => f !== "memories-report.json");
     expect(files).toHaveLength(6);
     expect(files.every((f) => /^\d{4}\/\d{4}-\d{2}\/\d{4}-\d{2}-\d{2}_\d{6}_(image|video)_\d{4}\.(jpg|mp4)$/.test(f))).toBe(true);
@@ -93,7 +93,7 @@ describe("snappy-export memories: bundled media", () => {
     const before = listFiles(out);
     const again = await run(["memories", zip, "--out", out]);
     expect(again.code).toBe(0);
-    expect(again.out).toMatch(/0 saved from your zips, 6 already there, 0 failed\./);
+    expect(again.out).toMatch(/0 saved from your ZIP files, 6 already there, 0 failed\./);
     expect(listFiles(out)).toEqual(before);
   });
 
@@ -136,7 +136,7 @@ describe("snappy-export memories: --download", () => {
 
     expect(code).toBe(3); // finished, but some items failed
     expect(seen.length).toBeGreaterThan(0);
-    expect(text.match(/Heads up: this is the only Snappy command that uses the network\./g)).toHaveLength(1);
+    expect(text.match(/This is the only Snappy command that uses the network\./g)).toHaveLength(1);
     expect(text).toMatch(/item \d+ failed \(http-403\)/);
 
     // Nothing that resembles a link reaches any output or the report.
@@ -179,7 +179,7 @@ describe("snappy-export memories: --download", () => {
     const transport: Transport = async () => (calls++, ok(JPEG, "image/jpeg"));
     const { out } = await run(["memories", zip, "--out", join(dir, "o")], makeIo({ transport }));
     expect(calls).toBe(0);
-    expect(out).not.toContain("Heads up");
+    expect(out).not.toContain("only Snappy command that uses the network");
   });
 
   it("downloads nothing on a dry run", async () => {
@@ -191,7 +191,7 @@ describe("snappy-export memories: --download", () => {
     expect(code).toBe(0);
     expect(calls).toBe(0);
     expect(existsSync(join(dir, "o"))).toBe(false);
-    expect(out).not.toContain("Heads up");
+    expect(out).not.toContain("only Snappy command that uses the network");
   });
 });
 
@@ -233,7 +233,7 @@ describe("snappy-export memories: guards", () => {
   it("rejects bad options calmly", async () => {
     const zip = writeSyntheticZip(tempDir("mem"), "later.zip");
     for (const bad of [["--concurrency", "0"], ["--concurrency", "9"], ["--concurrency", "x"], ["--layout", "deep"], ["--cap-gb", "-1"], ["--cap-gb", "abc"]]) {
-      const result = await run(["memories", zip, "--dry-run", ...bad]);
+      const result = await run(["memories", zip, "--dry-run", "--verbose", ...bad]);
       expect(result.code, bad.join(" ")).toBe(1);
       expect(result.err).toContain("(code: usage)");
     }

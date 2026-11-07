@@ -79,7 +79,7 @@ describe("parseFriendsJson", () => {
     });
     const byName = Object.fromEntries(friends.deletedFriends.map((d) => [d.username, d.deletedAt]));
     expect(byName).toEqual({ a: Date.UTC(2022, 1, 2), b: Date.UTC(2021, 0, 1), c: Date.UTC(2019, 0, 1), d: undefined });
-    expect(issues.find((i) => i.code === "deleted-date-guessed")?.message).toContain("2 deleted-friend entries");
+    expect(issues.find((i) => i.code === "deleted-date-guessed")?.message).toContain("2 friends you removed");
   });
 
   it("flags a pending-direction caveat and unknown/bad sections by count only", () => {

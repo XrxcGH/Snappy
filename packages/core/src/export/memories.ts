@@ -49,9 +49,9 @@ export function parseMemoriesJson(obj: unknown): { memories: MemoryItem[]; issue
   } else if (isRecord(obj)) {
     const key = Object.keys(obj).find((k) => SECTION_ALIASES.has(normKey(k)) && Array.isArray(obj[k]));
     if (key !== undefined) list = obj[key] as unknown[];
-    else issues.push(issue("warning", "memories-no-section", 'No "Saved Media" list was found in memories_history.json.'));
+    else issues.push(issue("warning", "memories-no-section", "memories_history.json has no list of saved Memories."));
   } else {
-    issues.push(issue("warning", "memories-unexpected-shape", "memories_history.json has an unexpected top-level shape; no Memories were read."));
+    issues.push(issue("warning", "memories-unexpected-shape", "memories_history.json looks different from what Snappy expects, so no Memories were read."));
   }
   if (list === undefined) return { memories: [], issues };
 
@@ -90,8 +90,8 @@ export function parseMemoriesJson(obj: unknown): { memories: MemoryItem[]; issue
     items.push(item);
   }
 
-  if (invalid > 0) issues.push(issue("warning", "memories-invalid-entries", `${entries(invalid)} in memories_history.json ${invalid === 1 ? "was" : "were"} not objects and skipped.`));
-  if (badDates > 0) issues.push(issue("info", "memories-bad-date", `${badDates} ${badDates === 1 ? "Memory has" : "Memories have"} an unreadable date.`));
+  if (invalid > 0) issues.push(issue("warning", "memories-invalid-entries", `${entries(invalid)} in memories_history.json could not be read and ${invalid === 1 ? "was" : "were"} skipped.`));
+  if (badDates > 0) issues.push(issue("info", "memories-bad-date", `${badDates} ${badDates === 1 ? "Memory has" : "Memories have"} a date Snappy could not read.`));
   return { memories: items, issues };
 }
 
@@ -128,7 +128,7 @@ export function attachBundledMedia(
   if (files.length === 0) {
     const unreachable = items.filter((m) => m.downloadUrl === undefined && m.zipPath === undefined).length;
     if (unreachable > 0) {
-      issues.push(issue("warning", "memories-no-media-source", `${unreachable} ${unreachable === 1 ? "Memory has" : "Memories have"} no file or download link in the zips Snappy was given. If your export came in more than one zip, add the other parts (the ones with -2, -3 and so on at the end of their names) and run again.`));
+      issues.push(issue("warning", "memories-no-media-source", `${unreachable} ${unreachable === 1 ? "Memory has" : "Memories have"} no file or link in your ZIP files. Part of your export may be missing.`));
     }
     return { memories: items.map((m) => ({ ...m })), issues };
   }
@@ -154,16 +154,16 @@ export function attachBundledMedia(
   if (items.length === 0) return { memories, issues };
 
   if (!items.some((m) => m.downloadUrl !== undefined)) {
-    issues.push(issue("info", "memories-links-empty", "None of the Memories entries has a download link; Snappy uses the files inside the export instead."));
+    issues.push(issue("info", "memories-links-empty", "No Memory has a download link. Snappy uses the files inside the export instead."));
   }
   if (result.method === "offset-time") {
     const hours = (h: number): string => `${Math.abs(h)} hour${Math.abs(h) === 1 ? "" : "s"} ${h < 0 ? "behind" : "ahead of"} UTC`;
     issues.push(issue("info", "memories-time-offset", result.extraOffsetHours.length === 0
-      ? `The Memories files store their times on a clock ${hours(result.offsetHours)}; Snappy allowed for that when matching them.`
-      : `The Memories files store their times on a clock that was ${[result.offsetHours, ...result.extraOffsetHours].map(hours).join(" or ")}, as happens around daylight saving time; Snappy allowed for that when matching them.`));
+      ? `The Memories files keep their times on a clock ${hours(result.offsetHours)}. Snappy allowed for that.`
+      : `The Memories files keep their times on a clock that was ${[result.offsetHours, ...result.extraOffsetHours].map(hours).join(" or ")}. Snappy allowed for both.`));
   }
   if (result.method === "date-type") {
-    issues.push(issue("warning", "memories-pairing-fallback", "The Memories files carry no usable time, so Snappy matched them by date and type. Only days with exactly one photo or video were matched, so some Memories may be unmatched."));
+    issues.push(issue("warning", "memories-pairing-fallback", "The Memories files have no usable time, so Snappy matched them by date and type. Some Memories may be unmatched."));
   }
   const missing = memories.filter((m) => m.zipPath === undefined && m.downloadUrl === undefined).length;
   // Some of these have a file that Snappy could not tell from another's: that is not a missing file, and the advice differs.
@@ -171,11 +171,11 @@ export function attachBundledMedia(
   const notFound = missing - ambiguous;
   if (notFound > 0) {
     issues.push(issue("warning", "memories-unmatched-items",
-      `${notFound} of ${items.length} saved Memories ${notFound === 1 ? "has" : "have"} no file in the zips Snappy was given. If part of your export is missing, add it and run again. Your Memories stay in your Snapchat account either way, and Snapchat may not have included every one in the export.`));
+      `${notFound} of ${items.length} saved Memories ${notFound === 1 ? "has" : "have"} no file in your ZIP files.`));
   }
   if (ambiguous > 0) {
     issues.push(issue("warning", "memories-ambiguous-items",
-      `${ambiguous} saved ${ambiguous === 1 ? "Memory" : "Memories"} could not be told apart from other Memories with the same capture time, so Snappy left ${ambiguous === 1 ? "it" : "them"} unmatched instead of guessing which file is which. The files are in your zips.`));
+      `${ambiguous} saved ${ambiguous === 1 ? "Memory" : "Memories"} share a time with others, so Snappy did not guess. Their files are in your ZIP files.`));
   }
   return { memories, pairing, issues };
 }

@@ -1,10 +1,12 @@
 import { announce } from "../announce.ts";
-import { start, settings } from "../copy.ts";
+import { common, routes, settings, start } from "../copy.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button, routeLink } from "../components/button.ts";
+import { chipIcon } from "../components/category.ts";
 import { icon } from "../components/icon.ts";
-import { section } from "../components/layout.ts";
+import type { IconName } from "../components/icon.ts";
+import { pointList, stepSection } from "../components/layout.ts";
 import { issueNotice, notice } from "../components/notice.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
 import { progressBar, updateProgress } from "../components/progressBar.ts";
@@ -25,21 +27,25 @@ export const startView: View = (ctx) => {
     region(store, (s) => [s.vault.phase, s.vault.busy, s.vault.message], (s) => unlockCard(ctx, s)),
     // Before the steps, so the advice to seal a history comes before the first import, not after it.
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
-    getExportSection(),
-    countSection(ctx),
-    addSection(ctx),
+    h("div", { class: "step-list" }, getExportSection(), countSection(ctx), addSection(ctx)),
     sampleSection(ctx),
   );
 };
 
 function hero(): HTMLElement {
+  const [onDevice, neverOpens, noNetwork] = start.trustChips;
+  const pill = (name: IconName, text: string): HTMLElement => h("span", { class: "pill" }, icon(name, 16), h("span", {}, text));
   return h(
     "header",
     { class: "page-header hero" },
-    h("div", { class: "hero-icon" }, icon("content-blind", 48)),
-    h("h1", { id: "page-title", tabindex: "-1" }, start.promiseTitle),
-    h("p", { class: "lead" }, start.promiseLead),
-    h("p", {}, start.promiseMore, " ", h("a", { href: "#/privacy" }, start.privacyLink), "."),
+    h(
+      "div",
+      { class: "page-header-main" },
+      h("div", { class: "page-title-row" }, chipIcon("import", "lg"), h("h1", { id: "page-title", tabindex: "-1" }, routes.start.title)),
+      h("p", { class: "lead" }, start.promiseLead),
+    ),
+    // The three promises sit under the lead, in the same column.
+    h("div", { class: "trust-row" }, pill("device", onDevice), pill("content-blind", neverOpens), pill("shield", noNetwork)),
   );
 }
 
@@ -48,8 +54,8 @@ function unlockCard(ctx: ViewContext, s: State): Child {
   const msg = s.vault.message;
   return h(
     "section",
-    { class: "card card-pad", "aria-labelledby": "unlock-title" },
-    h("h2", { id: "unlock-title", class: "section-title" }, h("span", { class: "title-icon" }, icon("seal", 24)), start.unlockHeading),
+    { class: "card card-pad card-tint", "aria-labelledby": "unlock-title" },
+    h("h2", { id: "unlock-title", class: "section-title" }, start.unlockHeading),
     h("p", {}, start.unlockBody),
     passphraseForm({
       mode: "unlock",
@@ -69,16 +75,17 @@ function unlockCard(ctx: ViewContext, s: State): Child {
       },
     }),
     msg ? notice(msg.kind, msg.text) : null,
-    h("p", { class: "caption muted" }, start.unlockSkip),
+    h("p", {}, start.unlockSkip),
   );
 }
 
 function getExportSection(): HTMLElement {
-  return section(
+  return stepSection(
+    1,
     start.exportHeading,
     h("p", {}, start.exportBody),
-    h("ul", { class: "plain-list" }, ...start.exportPoints.map((p) => h("li", {}, p))),
-    h("p", {}, routeLink("guide", start.exportGuideLink)),
+    pointList(start.exportPoints),
+    h("p", {}, routeLink("guide", common.openGuide)),
   );
 }
 
@@ -89,6 +96,7 @@ function countSection(ctx: ViewContext): HTMLElement {
     type: "text",
     inputmode: "numeric",
     autocomplete: "off",
+    placeholder: start.countPlaceholder,
     "aria-describedby": "friend-count-help friend-count-error",
     "data-key": "friend-count",
     value: ctx.store.get().expectedFriendCount === null ? "" : String(ctx.store.get().expectedFriendCount),
@@ -106,14 +114,15 @@ function countSection(ctx: ViewContext): HTMLElement {
     error.textContent = "";
     ctx.actions.setExpectedFriendCount(parsed);
   });
-  return section(
+  return stepSection(
+    2,
     start.countHeading,
     h(
       "div",
       { class: "field" },
       h("label", { class: "label", for: "friend-count" }, start.countLabel),
-      h("p", { class: "caption muted", id: "friend-count-help" }, start.countHelp),
       input,
+      h("p", { id: "friend-count-help" }, start.countHelp),
       error,
     ),
   );
@@ -145,7 +154,7 @@ function addSection(ctx: ViewContext): HTMLElement {
   const dropzone = h(
     "div",
     { class: "dropzone" },
-    icon("file-zip", 24),
+    chipIcon("file-zip", "lg"),
     h("p", { class: "dropzone-title" }, start.dropTitle),
     h("p", { class: "caption muted" }, start.dropAlt),
     button({ label: start.choose, variant: "primary", icon: "import", key: "choose-files", onclick: () => picker.click() }),
@@ -168,7 +177,8 @@ function addSection(ctx: ViewContext): HTMLElement {
     void run([...(e.dataTransfer?.files ?? [])]);
   });
 
-  return section(
+  return stepSection(
+    3,
     start.addHeading,
     h("p", {}, start.addBody),
     dropzone,
@@ -221,8 +231,10 @@ function importStatus(store: Store, s: State): Child {
 }
 
 function sampleSection(ctx: ViewContext): HTMLElement {
-  return section(
-    start.sampleHeading,
+  return h(
+    "section",
+    { class: "card card-tint card-pad" },
+    h("h2", { class: "section-title" }, start.sampleHeading),
     h("p", {}, start.sampleBody),
     h(
       "div",
@@ -250,7 +262,7 @@ function storageNote(s: State): Child {
   if (s.vault.phase === "session") {
     return h(
       "section",
-      { class: "card card-pad" },
+      { class: "card card-pad card-tint" },
       h("h2", { class: "section-title" }, start.sessionOnlyTitle),
       h("p", {}, start.sessionOnlyBody),
       h("p", {}, routeLink("settings", start.sessionOnlyAction)),

@@ -75,25 +75,25 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
   const hasJson = names.some((n) => n.endsWith(".json"));
   const hasHtml = names.some((n) => n.endsWith(".html"));
   if (hasHtml && !hasJson) {
-    out.push(issue("error", "html-only-export", "This export contains only HTML files. Request a new export from Snapchat and choose the JSON format, then try again."));
+    out.push(issue("error", "html-only-export", "This export has only HTML files. Request a new export and choose JSON."));
   }
 
   if (totalFriendRecords === 0) {
-    out.push(issue("error", "no-friends-section", "No friend list was found in this export, so nothing can be analyzed. Re-request the export in JSON format and make sure Friends is included."));
+    out.push(issue("error", "no-friends-section", "This export has no friends list, so Snappy cannot analyze it. Request it again with User information selected."));
   } else if (f.friends.length === 0 && f.deletedFriends.length > 0) {
-    out.push(issue("error", "friends-empty-but-deleted", `The friends list is empty but ${f.deletedFriends.length} deleted friend${f.deletedFriends.length === 1 ? " is" : "s are"} listed. The export is probably incomplete; do not trust results from it.`));
+    out.push(issue("error", "friends-empty-but-deleted", `The friends list is empty, but ${f.deletedFriends.length} removed ${f.deletedFriends.length === 1 ? "friend is" : "friends are"} listed. The export may be incomplete, so results may be wrong.`));
   }
 
   const dupes = duplicateCount(f.friends) + duplicateCount(f.sentRequests);
   if (dupes > 0) {
-    out.push(issue("warning", "duplicate-usernames", `${dupes} duplicate username${dupes === 1 ? "" : "s"} found within the friends or sent-request lists.`));
+    out.push(issue("warning", "duplicate-usernames", `${dupes} ${dupes === 1 ? "username appears" : "usernames appear"} more than once in your friends or sent requests.`));
   }
 
   const expected = hints.expectedFriendCount;
   if (expected !== undefined && Number.isFinite(expected) && expected >= 0) {
     const diff = Math.abs(f.friends.length - expected);
     if (diff >= COUNT_MISMATCH_MIN_DIFF && diff > expected * COUNT_MISMATCH_RATIO) {
-      out.push(issue("warning", "friend-count-mismatch", `The export lists ${f.friends.length} friends but ${expected} were expected. A date range chosen when the export was requested may have truncated the friends list; re-request it with "All Time" before trusting any results.`));
+      out.push(issue("warning", "friend-count-mismatch", `The export has ${f.friends.length} friends, not the ${expected} you expected. A date range may have limited it. Choose “All Time”.`));
     }
   }
 
@@ -104,25 +104,25 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
   ]);
   if (oldestFriend !== undefined && oldestOther !== undefined && oldestFriend - oldestOther > DATE_LIMIT_GAP_MS) {
     const years = Math.round(((oldestFriend - oldestOther) / DAY_MS / 365) * 10) / 10;
-    out.push(issue("warning", "possibly-date-limited", `The oldest current friendship is about ${years} years newer than the oldest sent or deleted record. The export may have been limited to a date range; re-request it with "All Time".`));
+    out.push(issue("warning", "possibly-date-limited", `Your friendships start ${years} years after your oldest records. A date range may have limited this export. Choose “All Time”.`));
   }
 
   const reference = parsed.exportedAt ?? hints.now;
   if (reference !== undefined) {
     const future = countFuture(parsed, reference + FUTURE_SLACK_MS);
     if (future > 0) {
-      out.push(issue("warning", "future-timestamps", `${future} timestamp${future === 1 ? " is" : "s are"} later than the export date; the data or its dates may be unreliable.`));
+      out.push(issue("warning", "future-timestamps", `${future} ${future === 1 ? "date is" : "dates are"} later than the export date, so some dates may be wrong.`));
     }
   }
 
   if (parsed.chats.length === 0 && !names.includes("chat_history.json")) {
-    out.push(issue("info", "chat-history-missing", "No chat history file was found; reply and one-way analysis will be unavailable."));
+    out.push(issue("info", "chat-history-missing", "No chat history was found, so quiet friends cannot be checked."));
   }
   if (!names.includes("snap_history.json")) {
-    out.push(issue("info", "snap-history-missing", "No Snap history file was found, so Snaps are not counted and friends you mostly Snap may look quieter than they are."));
+    out.push(issue("info", "snap-history-missing", "No Snap history was found. Friends you mostly Snap may look quieter than they are."));
   }
   if (parsed.memories.length === 0 && !names.includes("memories_history.json")) {
-    out.push(issue("info", "memories-missing", "No Memories file was found; Memories rescue will be unavailable."));
+    out.push(issue("info", "memories-missing", "No Memories list was found, so Memories rescue is not available."));
   }
   return out;
 }

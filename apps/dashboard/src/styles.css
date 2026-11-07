@@ -2,16 +2,51 @@
   Snappy dashboard styles. Brand tokens (colors, type, space, radius, motion) are prepended by
   build.mjs from brand/tokens/tokens.css, so nothing here repeats a token value: every color,
   size and duration below is a var(--token). Phone first; breakpoints 768px and 1024px.
+
+  One layout system:
+    - ONE content column per view (--col). Every block in a view (paragraph, list, table, code, notice,
+      card, form) fills that column, so left and right edges agree. The column is sized so running text
+      stays near 75 characters a line. The sidebar plus the column are centered in the window, and the
+      header and footer use the same centered width, so the logo, the menu and the content share edges.
+    - ONE spacing scale: --gap-section between sections of a view (and before an h3 sub-section),
+      --gap-card between sibling cards, rows and notices, --gap-heading from a heading (h1, h2 or h3) to
+      its content, --pad-card inside a card, --pad-notice inside a notice.
+    - ONE type scale: page title (h1), section title (h2), sub-heading (h3), lead, body, caption.
+  Numerals: Atkinson Hyperlegible Next draws a slashed zero and offers no plain-zero feature (its GSUB
+  table has only ccmp, frac, locl, pnum and tnum). The ten digits in running text, dates and counts come
+  from Bricolage Grotesque, whose zero is plain, through the "Snappy Digits" family (build.mjs). The
+  slashed zero stays in usernames and code (JetBrains Mono), where it keeps 0 and O apart.
 */
+
+/* -------------------------------------------------------------- scales --- */
+:root {
+  --col: 36rem;                          /* the one content column: about 75 characters of running text */
+  --gutter: var(--space-4);
+  --gap-section: var(--space-8);         /* between sections of a view, and before an h3 sub-section */
+  --gap-card: var(--space-4);            /* between sibling cards, rows and notices */
+  --gap-heading: var(--space-4);         /* from a heading (h1, h2 or h3) to its content */
+  --pad-card: var(--space-5);            /* inside every card */
+  --pad-notice: var(--space-3) var(--space-4); /* inside every notice */
+  --field-w: var(--col);                 /* every text field and select fills the column, like every other block */
+  --field-w-narrow: 9rem;                /* number boxes */
+  --tap-pad: 0.625rem;                   /* turns a 24 px text line into a 44 px target */
+  --shell-max: calc(var(--col) + 2 * var(--gutter));
+}
+@media (min-width: 48rem) { :root { --gutter: var(--space-6); } }
+@media (min-width: 64rem) { :root { --shell-max: calc(16rem + var(--col) + 2 * var(--gutter)); } }
 
 /* ---------------------------------------------------------------- base --- */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-padding-top: var(--space-4); }
+/* The font stacks in the tokens list "Snappy Digits" first, so every numeral shows a plain zero; every other character falls through to Atkinson. */
 body { min-height: 100vh; }
-h1 { font-size: clamp(1.75rem, 6vw, var(--text-36)); }
+code, kbd, samp, .username { font-family: var(--font-mono); }
+h1 { font-size: var(--title-size, clamp(1.75rem, 6vw, var(--text-36))); }
 h2 { font-size: clamp(1.375rem, 4.5vw, var(--text-24)); font-weight: 600; }
 h3 { font-size: var(--text-20); }
-p { margin: 0; max-width: var(--measure); }
+p { margin: 0; }
+/* Short notes and list items never end on one word; headings balance. */
+p, li, dd, td, th { text-wrap: pretty; }
 pre { margin: 0; }
 img, svg { max-width: 100%; }
 :target { scroll-margin-top: var(--space-4); }
@@ -26,14 +61,70 @@ img, svg { max-width: 100%; }
 .ic-f { fill: currentColor; stroke: none; }
 .logo-bar { fill: currentColor; }
 .logo-spine { fill: var(--accent); }
-.icon { flex: none; vertical-align: middle; }
+/* An icon keeps its size: never squeezed by a flex row, never capped by the generic svg rule. */
+.icon { flex: none; vertical-align: middle; max-width: none; }
 .muted { color: var(--text-muted); }
+/* The type scale. Page title: h1. Section title: h2. Sub-heading: h3 (.subheading). Lead: one paragraph under the
+   title. Body: everything else. Caption: small muted notes that nobody needs in order to act. */
 .caption { font-size: var(--text-14); line-height: var(--leading-body); color: var(--text-muted); }
-.lead { font-size: var(--text-18); line-height: 1.5; }
-.label { font-size: var(--text-14); font-weight: 600; letter-spacing: var(--tracking-label); }
+.lead { font-size: clamp(1rem, 0.9rem + 0.5vw, var(--text-18)); line-height: 1.5; }
+.label { font-size: var(--text-16); font-weight: 600; letter-spacing: var(--tracking-label); }
 .subheading { font-size: var(--text-20); }
 .noscript { padding: var(--space-4); }
 [hidden] { display: none !important; }
+
+/* ------------------------------------------------------- category scope --- */
+/*
+  One mechanism colors every finding area. A view root, card, row, tag or nav link carries
+  cat-<id>, which sets four custom properties; icon tiles, tags, bars and key figures paint
+  themselves with var(--c-*). The default scope is violet, the brand accent. Category colors
+  appear only on their own area's surfaces and are always paired with the category icon and its
+  label, never used as a status and never placed inside a notice.
+*/
+:root { --c-fg: var(--accent-fg); --c-bg: var(--tint-violet-2); --c-border: var(--cat-cleanup-border); --c-solid: var(--accent); }
+.cat-disappeared { --c-fg: var(--cat-disappeared-fg); --c-bg: var(--cat-disappeared-bg); --c-border: var(--cat-disappeared-border); --c-solid: var(--cat-disappeared-solid); }
+.cat-requests { --c-fg: var(--cat-requests-fg); --c-bg: var(--cat-requests-bg); --c-border: var(--cat-requests-border); --c-solid: var(--cat-requests-solid); }
+.cat-quiet { --c-fg: var(--cat-quiet-fg); --c-bg: var(--cat-quiet-bg); --c-border: var(--cat-quiet-border); --c-solid: var(--cat-quiet-solid); }
+.cat-cleanup { --c-fg: var(--cat-cleanup-fg); --c-bg: var(--cat-cleanup-bg); --c-border: var(--cat-cleanup-border); --c-solid: var(--cat-cleanup-solid); }
+.cat-memories { --c-fg: var(--cat-memories-fg); --c-bg: var(--cat-memories-bg); --c-border: var(--cat-memories-border); --c-solid: var(--cat-memories-solid); }
+/* Counts that belong to no category (friends, snapshots): a quiet gray chip. */
+.cat-neutral { --c-fg: var(--text-muted); --c-bg: var(--surface-sunken); --c-border: var(--border-strong); --c-solid: var(--border-strong); }
+
+/* Icon tile: a rounded square holding one icon, painted by the scope. */
+.chip-icon {
+  display: inline-flex; align-items: center; justify-content: center; flex: none; width: 2.5rem; height: 2.5rem;
+  border-radius: var(--radius-md); background: var(--c-bg); color: var(--c-fg); border: 1px solid var(--c-border);
+}
+.chip-icon-sm { width: 2rem; height: 2rem; }
+.chip-icon-lg { width: 3rem; height: 3rem; border-radius: var(--radius-lg); }
+
+/* Small labeled tag: category icon plus its words. */
+.cat-tag {
+  display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm); background: var(--c-bg); color: var(--c-fg); font-size: var(--text-14); font-weight: 600; line-height: 1.5;
+}
+
+/* Pill-ended vertical bar inside the left edge of a row. (Notices and the sample strip use a real left border instead.) */
+.bar-left { position: relative; padding-inline-start: var(--space-6); }
+.bar-left::before {
+  content: ""; position: absolute; left: var(--space-2); top: var(--space-3); bottom: var(--space-3); width: 0.25rem;
+  border-radius: var(--radius-bar); background: var(--c-solid);
+}
+
+/* Spot illustrations: pill bars and rounded cards, themed by two custom properties. Decorative. The view box is
+   cropped to the wash card, so the drawing's own edge is the svg's edge. */
+.spot { display: block; width: 9rem; height: 6.5rem; flex: none; color: var(--text-muted); --spot-hi: var(--c-solid); --spot-wash: var(--c-bg); }
+
+.g-wash { fill: var(--spot-wash, var(--tint-violet-2)); }
+.g-card { fill: var(--surface-raised); stroke: var(--border-strong); stroke-width: 2; stroke-linejoin: round; }
+.g-soft { fill: var(--border-strong); opacity: 0.55; }
+.g-ink { fill: currentColor; }
+.g-hi { fill: var(--spot-hi, var(--accent)); }
+/* The one small orange highlight in a drawing: orange is a secondary color, always through its token. */
+.g-orange { fill: var(--orange-solid); }
+.g-tick { fill: none; stroke: var(--surface-raised); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.g-line { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.g-dash { fill: none; stroke: var(--border-strong); stroke-width: 2; stroke-dasharray: 4 4; stroke-linecap: round; }
 
 /* ------------------------------------------------------------ skip link --- */
 .skip-link {
@@ -44,92 +135,180 @@ img, svg { max-width: 100%; }
 .skip-link:focus { top: var(--space-2); }
 
 /* ---------------------------------------------------------------- shell --- */
-.site-header {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4);
-  padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); background: var(--surface);
+/* Header: one row on every width. The band is full width; the row inside has the shell's width and centering, so the
+   logo lines up with the menu below it and the toggle with the right edge of the content column. */
+.site-header { border-bottom: 1px solid var(--border); background: var(--surface); }
+.site-header-inner {
+  display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: var(--space-3);
+  max-width: var(--shell-max); margin-inline: auto; padding-block: var(--space-3); padding-inline: var(--gutter);
 }
 .brand {
   display: inline-flex; align-items: center; gap: var(--space-3); min-height: var(--target-min);
-  color: var(--text); text-decoration: none; margin-right: auto;
+  color: var(--text); text-decoration: none; min-width: 0;
 }
-.logo-mark { display: block; }
-.wordmark { font-family: var(--font-display); font-weight: 700; font-size: var(--text-24); letter-spacing: var(--tracking-display); }
-.header-status { order: 3; flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-.header-status:focus { outline: none; }
-.status-pill {
-  display: inline-flex; align-items: center; gap: var(--space-2); min-height: 1.75rem; padding: 0 var(--space-3);
-  border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: var(--text-14); color: var(--text-muted);
+.logo-mark { display: block; flex: none; }
+.wordmark { font-family: var(--font-display); font-weight: 700; font-size: var(--text-24); line-height: 1; letter-spacing: var(--tracking-display); }
+.header-actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+/* The theme toggle and the Menu button are the same kind of control: outlined, 44 px, the global focus ring. */
+.theme-toggle { width: var(--target-min); height: var(--target-min); min-height: var(--target-min); padding: 0; flex: none; }
+.theme-toggle .icon { width: 1.5rem; height: 1.5rem; }
+.menu-button { flex: none; }
+.menu-button .icon { width: 1.25rem; height: 1.25rem; }
+/* On the narrowest phones the Menu button keeps only its icon (its name stays "Menu"), so the toggle stays at the top right. */
+@media (max-width: 21.25rem) {
+  .menu-button { width: var(--target-min); padding: 0; }
+  .menu-button > span { display: none; }
 }
-.menu-button { order: 2; }
 
-.layout { display: block; max-width: calc(var(--content-max) + 16rem); margin: 0 auto; }
-.nav { display: none; padding: var(--space-2) var(--space-4); border-bottom: 1px solid var(--border); background: var(--surface); }
+.layout { display: block; max-width: var(--shell-max); margin-inline: auto; }
+.nav { display: none; padding: var(--space-2) var(--gutter); border-bottom: 1px solid var(--border); background: var(--surface); }
 .nav[data-open="true"] { display: block; }
 .nav-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.nav-group { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
+.nav-label { margin: var(--space-4) 0 var(--space-1); padding: 0 var(--space-3); font-size: var(--text-12); font-weight: 600; letter-spacing: var(--tracking-label); color: var(--text-muted); }
 .nav-link {
-  display: flex; align-items: center; gap: var(--space-3); min-height: var(--target-min); padding: 0 var(--space-3);
-  border-radius: var(--radius-md); color: var(--text); text-decoration: none; font-weight: 500;
+  position: relative; display: flex; align-items: center; gap: var(--space-3); min-height: var(--target-min); padding: 0 var(--space-3);
+  border-radius: var(--radius-md); color: var(--text); text-decoration: none; font-weight: 500; line-height: 1.5;
 }
-.nav-link:hover { background: var(--surface-sunken); }
-.nav-link[aria-current="page"] { background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--border-strong); font-weight: 700; }
+/* Every menu label stays on one line. */
+.nav-link > span { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nav-link:hover { background: var(--tint-violet-1); }
+/* Category links show their area's color on the glyph only; the label stays ink. */
+.nav-link-cat .icon { color: var(--c-solid); }
+/* The active item has three signals that are not color: bold weight, the pill bar, aria-current. */
+.nav-link[aria-current="page"] { background: var(--tint-violet-3); box-shadow: none; font-weight: 700; }
+.nav-link[aria-current="page"]::before {
+  content: ""; position: absolute; left: 0; top: var(--space-2); bottom: var(--space-2); width: 0.25rem;
+  border-radius: var(--radius-bar); background: var(--accent);
+}
+@media (forced-colors: active) { .nav-link[aria-current="page"] { outline: 2px solid CanvasText; } }
 
-.content { min-width: 0; padding: var(--space-6) var(--space-4) var(--space-12); }
+.content { min-width: 0; padding: var(--space-6) var(--gutter) var(--space-12); }
 .main { outline: none; }
 .main:focus-visible { outline: none; }
-.view { display: grid; gap: var(--space-8); max-width: var(--content-max); }
-.region { display: grid; gap: var(--space-6); min-width: 0; }
+/* The one column. In a single-column layout it is centered; beside the sidebar it fills the content area exactly. */
+.view { display: grid; gap: var(--gap-section); max-width: var(--col); margin-inline: auto; }
+.region { display: grid; gap: var(--gap-section); min-width: 0; }
+.region:empty { display: none; }
+/* A list view: notices, controls and the list sit one card gap apart. */
+.region-tight { gap: var(--gap-card); }
+/* A count line sits with the list it counts. */
+.region > .summary { margin-bottom: calc(var(--gap-card) - var(--gap-section)); }
+.region-tight > .summary { margin-bottom: 0; }
 /* A repaint that loses the focused control parks focus here; a ring around the whole view helps no one. */
 .region:focus-visible { outline: none; }
-.region-section { gap: var(--space-8); }
-.banner-slot { margin-bottom: var(--space-6); }
+/* The sample-data strip sits one section gap above the page header, so every page starts the same way. */
+.banner-slot { margin: 0 auto var(--gap-section); max-width: var(--col); }
 .banner-slot:empty { display: none; }
 .banner-slot:focus { outline: none; }
-.banner {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
-  padding: var(--space-3) var(--space-4); border: 1px solid var(--info-border); border-radius: var(--radius-lg);
-  background: var(--info-bg); color: var(--info-fg);
-}
-.site-footer { display: grid; gap: var(--space-2); padding: var(--space-6) var(--space-4); border-top: 1px solid var(--border); color: var(--text-muted); max-width: calc(var(--content-max) + 16rem); margin: 0 auto; }
 
-@media (min-width: 48rem) {
-  .site-header { padding-inline: var(--space-6); }
-  .header-status { order: 2; flex: 0 1 auto; }
-  .menu-button { order: 3; }
-  .content { padding-inline: var(--space-6); }
-  .site-footer { padding-inline: var(--space-6); }
+/* Sample-data strip: one slim, quiet row. Normal text color; only the icon and the left border carry the info color.
+   Below 40rem it says only "Sample data", so the Clear button never drops under the text. */
+.banner {
+  --c-solid: var(--info-border);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); border: 1px solid var(--border); border-inline-start: 0.25rem solid var(--c-solid);
+  border-radius: var(--radius-lg); background: var(--surface); color: var(--text);
 }
+.banner-text { display: flex; align-items: center; gap: var(--space-2); min-width: 0; font-size: var(--text-14); line-height: var(--leading-body); }
+.banner-text .icon { color: var(--info-fg); }
+.banner-long { display: none; }
+/* Clear is a small outlined button, so it looks like one; on a phone it keeps the 44 px touch size inside the one-row strip. */
+.banner-clear { flex: none; padding-inline: var(--space-3); }
+@media (min-width: 40rem) {
+  .banner-long { display: inline; }
+  .banner-short { display: none; }
+}
+@media (min-width: 48rem) {
+  .banner-clear { min-height: var(--target-min-pointer); }
+}
+
+.site-footer { border-top: 1px solid var(--border); color: var(--text-muted); }
+.site-footer-inner { display: grid; gap: var(--space-2); padding: var(--space-6) var(--gutter); max-width: var(--shell-max); margin-inline: auto; }
+
 @media (min-width: 64rem) {
   .site-header .menu-button { display: none; }
+  /* Beside the sidebar the logo starts at the sidebar's edge, and the toggle ends at the column's edge. */
+  .site-header-inner { padding-inline-start: 0; }
   .layout { display: grid; grid-template-columns: 16rem minmax(0, 1fr); align-items: start; }
-  .site-footer { padding-left: calc(16rem + var(--space-6)); }
-  .nav { display: block; position: sticky; top: 0; border-bottom: 0; background: transparent; padding: var(--space-6) var(--space-4); }
+  .site-footer-inner { padding-left: calc(16rem + var(--gutter)); }
+  .nav { display: block; position: sticky; top: 0; border-bottom: 0; background: transparent; padding: var(--space-6) var(--space-4) var(--space-6) 0; }
 }
 
 /* ------------------------------------------------------------ page parts --- */
-.page-header { display: grid; gap: var(--space-3); }
+.page-header { position: relative; display: grid; gap: var(--gap-heading) var(--space-8); align-items: center; }
+.page-header-main { display: grid; gap: var(--gap-heading); min-width: 0; align-content: start; }
+/* The icon tile is as tall as the first line of the title and stays beside that line, so the two share one center. */
+.page-title-row { --title-size: clamp(1.75rem, 6vw, var(--text-36)); display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
+.page-title-row .chip-icon { width: calc(var(--title-size) * var(--leading-snug)); height: calc(var(--title-size) * var(--leading-snug)); border-radius: var(--radius-md); }
 .page-header h1:focus-visible { outline-offset: 4px; }
-.hero { gap: var(--space-4); }
+
 .hero-icon { color: var(--text); }
-.section { display: grid; gap: var(--space-4); }
+/* A section: its heading, then its content one heading gap below. A sub-section (h3) starts one section gap after
+   what comes before it, whatever that is. */
+.section { display: grid; gap: var(--gap-heading); min-width: 0; }
+.section > .subsection, .details-body > .subsection { margin-top: calc(var(--gap-section) - var(--gap-heading)); }
 .section-title { display: flex; align-items: center; gap: var(--space-3); }
-.title-icon { display: inline-flex; }
-.stack { display: grid; gap: var(--space-3); }
-.plain-list { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-2); max-width: var(--measure); }
-.steps { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-3); max-width: var(--measure); }
+.section-title .chip-icon { flex: none; }
+.stack { display: grid; gap: var(--gap-card); }
+.plain-list { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-2); }
+.steps { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-3); }
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
 .empty-inline { padding: var(--space-6) 0; color: var(--text-muted); }
 .seal-icon { color: var(--text); }
 
+/* Empty state. The illustration carries the dashes, so the frame is a plain card. */
 .empty {
-  display: grid; justify-items: start; gap: var(--space-3); padding: var(--space-6); border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-lg); background: var(--surface);
+  display: grid; gap: var(--gap-card) var(--space-6); align-items: center; padding: var(--pad-card);
+  border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);
 }
-.empty-title { font-size: var(--text-24); }
-.empty-body { color: var(--text-muted); }
+.empty-copy { display: grid; justify-items: start; gap: var(--gap-heading); min-width: 0; }
+.empty-tint { background: var(--tint-violet-1); border-color: var(--tint-violet-line); }
+.empty-title { font-size: clamp(1.375rem, 4.5vw, var(--text-24)); }
+@media (min-width: 40rem) { .empty-spot { grid-template-columns: auto minmax(0, 1fr); } }
+
+/* Tinted panels and quiet section parts. */
+.card.card-tint { background: var(--tint-violet-1); border-color: var(--tint-violet-line); }
+
+/* Bulleted list with small check icons. */
+.point-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.point-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2); }
+.point-list li > span, .dropzone-title, .finding-unit { text-wrap: balance; }
+.point-list .icon { color: var(--accent-fg); margin-top: 0.125rem; }
+
+/* Step cards: the violet number marks where you are in the sequence. Every card puts its content under the number, in
+   one column, so the heading and the body share an edge. */
+.step-list { display: grid; gap: var(--gap-card); margin: 0; padding: 0; list-style: none; }
+.step-card {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); padding: var(--pad-card);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+.step-card-compact { align-items: start; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: var(--radius-md);
+  background: var(--accent); color: var(--accent-text-on); font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.step-card:not(.step-card-compact) { align-items: center; row-gap: var(--gap-heading); }
+.step-content { grid-column: 1 / -1; display: grid; gap: var(--gap-card); min-width: 0; }
+.step-card-compact p { align-self: center; min-height: 2.25rem; display: flex; align-items: center; }
+
+/* Pills: always an icon plus a word. */
+.pill {
+  display: inline-flex; align-items: flex-start; gap: var(--space-1); padding: 2px var(--space-2); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); background: var(--surface-sunken); color: var(--text); font-size: var(--text-14); font-weight: 600; line-height: 1.5;
+}
+/* A pill that wraps keeps its icon beside the first line (a 16 px icon in a 1.5 line box of 14 px text). */
+.pill .icon { margin-top: 0.15rem; }
+.pill-yes { background: var(--tint-violet-2); border-color: var(--cat-cleanup-border); color: var(--accent-fg); }
+.pill-no { background: transparent; color: var(--text-muted); }
+.trust-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.trust-row .icon { color: var(--accent-fg); }
+
 
 /* --------------------------------------------------------------- buttons --- */
+/* Buttons size to their content; a grid parent never stretches them across the column. */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); justify-self: start;
   min-height: var(--target-min); padding: 0 var(--space-4); border: 1px solid transparent; border-radius: var(--radius-md);
   font: inherit; font-weight: 600; letter-spacing: var(--tracking-label); line-height: 1.2; text-decoration: none; cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
@@ -143,61 +322,160 @@ img, svg { max-width: 100%; }
 .btn-danger { background: transparent; color: var(--danger-fg); border-color: var(--danger-border); }
 .btn-danger:hover { background: var(--danger-bg); }
 .btn-icon { width: var(--target-min); padding: 0; }
-.btn[aria-pressed="true"] { background: var(--primary); color: var(--primary-text-on); border-color: var(--primary); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 
 /* ------------------------------------------------------------ form parts --- */
-.form { display: grid; gap: var(--space-4); max-width: 28rem; }
-.form-inline { grid-template-columns: minmax(0, 1fr); align-items: end; max-width: 36rem; }
+.form { display: grid; gap: var(--gap-card); }
 .field { display: grid; gap: var(--space-2); }
+/* One width for every text field and select; number boxes use the narrow one. */
 .input {
-  width: 100%; min-height: var(--target-min); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md); background: var(--surface-raised); color: var(--text); font: inherit; font-size: var(--text-16);
+  width: 100%; max-width: var(--field-w); min-height: var(--target-min); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md); background: var(--surface-raised); color: var(--text); font: inherit; font-size: var(--text-16); line-height: 1.5;
 }
-.input-narrow { max-width: 14rem; }
+.input::placeholder { color: var(--text-muted); opacity: 1; }
+.input-narrow { max-width: var(--field-w-narrow); }
 .input[aria-invalid="true"] { border-color: var(--danger-border); }
+/* Label above, then the small input and its button on one aligned row, both the same height. */
+.cap-form { gap: var(--space-2); }
+.field-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.field-row .input { flex: 0 1 var(--field-w-narrow); width: var(--field-w-narrow); }
+/* A select draws its own chevron (an icon in a wrapper), 12 px or more from the right edge, with room so text never runs under it. */
+.select-wrap { position: relative; width: 100%; max-width: var(--field-w); }
+.select-wrap .input { appearance: none; -webkit-appearance: none; max-width: none; padding-right: calc(var(--space-3) + 1rem + var(--space-3)); text-overflow: ellipsis; cursor: pointer; }
+.select-wrap .select-chevron { position: absolute; right: var(--space-3); top: 50%; width: 1rem; height: 1rem; margin-top: -0.5rem; transform: rotate(90deg); pointer-events: none; color: var(--text); }
 .field-error { color: var(--danger-fg); font-size: var(--text-14); font-weight: 600; }
 .field-error:empty { display: none; }
 .field-error:not(:empty)::before { content: "Error: "; }
 .fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: var(--space-1); }
 .fieldset legend { padding: 0; margin-bottom: var(--space-2); }
-.check { display: flex; align-items: center; gap: var(--space-3); min-height: var(--target-min); cursor: pointer; }
+/* The padding makes a 44 px target; the matching negative margin keeps the layout gap on the scale. */
+.check { display: flex; align-items: center; gap: var(--space-3); padding-block: var(--tap-pad); margin-block: calc(var(--tap-pad) * -1); cursor: pointer; }
 .check-input { width: 1.5rem; height: 1.5rem; margin: 0; flex: none; accent-color: var(--primary); cursor: pointer; }
 
 /* -------------------------------------------------------------- cards ----- */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
-.card-pad { padding: var(--space-5); display: grid; gap: var(--space-4); }
-.cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.card-pad { padding: var(--pad-card); display: grid; gap: var(--gap-card); }
 .card-link {
-  display: grid; gap: var(--space-2); padding: var(--space-5); color: var(--text); text-decoration: none;
-  transition: border-color var(--dur-fast) var(--ease);
+  color: var(--text); text-decoration: none;
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
 }
-.card-link:hover { border-color: var(--border-strong); }
-.card-icon { display: inline-flex; color: var(--text); }
-.card-title { font-size: var(--text-20); }
-.card-count { font-family: var(--font-display); font-weight: 600; font-size: var(--text-20); font-variant-numeric: tabular-nums; }
-.card-figure { color: var(--accent-fg); }
-.card-open { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text); font-weight: 600; min-height: 1.5rem; }
-.stats { margin: 0; display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
-.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-4); display: grid; gap: var(--space-1); align-content: start; }
-.stat-label { font-size: var(--text-14); color: var(--text-muted); }
+.card-link:hover { border-color: var(--c-border); background: var(--surface-raised); }
+
+/*
+  Tiles: the Overview findings and every row of counts (Overview, Memories). One grid of six columns holds the tiles, and
+  each tile takes the rows it needs from the grid as a SUBGRID. So the icon tiles, titles, numbers, descriptions and Open
+  actions of the tiles that share a row sit on the same horizontal lines, whatever the neighbor says: a description that
+  runs to two lines makes that row taller for every tile in it, and the Open actions still line up. Everything in a tile
+  is centered; running text elsewhere stays left-aligned. Rows of tiles are separated by each tile's bottom margin (the
+  margin of a subgrid counts in the shared rows), and the grid pulls its own last margin back so it is exactly as tall
+  as its tiles. Titles take one line at every width that has room for them (14 px label type), and where one does wrap
+  the shared rows keep the others lined up.
+*/
+.tiles { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); column-gap: var(--gap-card); row-gap: 0; margin: 0 0 calc(var(--gap-card) * -1); padding: 0; }
+.tiles-findings { --tile-rows: 5; }
+.tiles-stats { --tile-rows: 3; }
+.tile {
+  grid-column: span 6; grid-row: span var(--tile-rows); display: grid; grid-template-rows: subgrid;
+  justify-items: center; align-items: start; text-align: center; min-width: 0; margin: 0 0 var(--gap-card);
+  padding: var(--space-4) var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+}
+/* On a phone a tile is compact: a smaller icon tile and tighter rows, so the first screen shows more than one. */
+.tile .chip-icon { width: 2rem; height: 2rem; }
+@media (min-width: 30rem) {
+  .tile { padding: var(--pad-card) var(--space-3); }
+  .tile .chip-icon { width: 2.5rem; height: 2.5rem; }
+}
+/* Count tiles are two across from the narrowest phone, the findings one across until 30rem; two from a larger phone (an odd last tile takes the whole row), three from 40rem (the five
+   findings are three, then two wider ones, so the grid has no hole). */
+@media (min-width: 20rem) { .tiles-stats .tile { grid-column: span 3; } }
+@media (min-width: 30rem) { .tiles-findings .tile { grid-column: span 3; } }
+@media (min-width: 20rem) and (max-width: 39.99rem) { .tile:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+@media (min-width: 40rem) {
+  .tiles-stats .tile, .tiles-findings .tile { grid-column: span 2; }
+  .tiles-findings .tile:nth-child(n+4) { grid-column: span 3; }
+}
+/* No subgrid (very old browsers): the tile is a plain column with its action pinned to the bottom. */
+@supports not (grid-template-rows: subgrid) {
+  .tile { grid-row: auto; grid-template-rows: none; display: flex; flex-direction: column; align-items: center; }
+  .tile-title { min-height: 3rem; }
+  .tile-action { margin-top: auto; padding-top: var(--space-3); }
+}
+
+.card-title { font-size: var(--text-16); line-height: 1.5; font-weight: 600; }
+.tile-title { margin: var(--space-2) 0 0; font-size: var(--text-14); letter-spacing: var(--tracking-label); text-wrap: balance; }
+.card-open { display: inline-flex; color: var(--text); }
+.tile-action { margin-top: var(--space-2); align-self: end; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-14); font-weight: 600; letter-spacing: var(--tracking-label); }
+.tile-action .icon { transition: transform var(--dur-fast) var(--ease); }
+.card-link:hover .tile-action .icon { transform: translateX(0.125rem); }
+
+/* Finding tile: icon tile, name, key figure in the area's color, what it counts, Open. The Overview and nothing else. */
+.finding-text { display: grid; justify-items: center; gap: var(--space-1); margin-top: var(--space-1); }
+.finding-unit { margin: 0; font-size: var(--text-14); color: var(--text-muted); text-wrap: balance; }
+.finding-figure { margin: var(--space-1) 0 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-30); line-height: var(--leading-tight); font-variant-numeric: tabular-nums; color: var(--c-fg); }
+.finding-none { color: var(--text-muted); }
+
+/* Count tile: the icon tile above its one-line label, the number, then a short bar in the scope's color. */
+.stat-label { font-size: var(--text-14); color: var(--text-muted); line-height: var(--leading-body); }
 .stat-value { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-30); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .stat-accent { color: var(--accent-fg); }
+.stat:not(.tile) { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--pad-card); display: grid; gap: var(--space-2); align-content: start; }
+.stat-card .stat-label { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); min-width: 0; text-wrap: balance; }
+.stat-card .stat-value { margin-top: var(--space-2); color: var(--text); }
+.stat-card .stat-value.stat-accent { color: var(--accent-fg); }
+.stat-card::after { content: ""; width: 2rem; height: 0.25rem; margin-top: var(--space-2); border-radius: var(--radius-bar); background: var(--c-solid); }
+/* A short list of facts (label left, number right) for a set that does not fill a card grid. */
+.facts { margin: 0; display: grid; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
+.fact { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--pad-card); }
+.fact + .fact { border-top: 1px solid var(--border); }
+.fact dt { display: flex; align-items: center; gap: var(--space-3); }
+.fact dd { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--text-20); font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------------- notices ---- */
+/*
+  Notices: a plain surface, a hairline border, a thin status-colored left border, and a status-colored
+  icon. The body text always uses the normal text color, so no notice is blue text on a blue
+  ground. Warnings and errors add a subtle tint to the surface and a border in the status color.
+  One padding for every notice; a one-line notice is not shorter than a two-line one by more than its text.
+*/
 .notice {
-  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) var(--space-4);
-  border: 1px solid; border-radius: var(--radius-lg);
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3); align-items: start; align-content: center;
+  min-height: 3.5rem; padding: var(--pad-notice); border: 1px solid var(--border); border-inline-start: 0.25rem solid var(--c-solid);
+  border-radius: var(--radius-lg); background: var(--surface); color: var(--text);
 }
-.notice .icon { margin-top: 0.125rem; }
+/* The icon is 20 px in a 24 px line, so it centers on the first line of text. */
+.notice > .icon { margin-top: 0.125rem; }
 .notice-body { display: grid; gap: var(--space-1); min-width: 0; }
-.notice-text { max-width: var(--measure); overflow-wrap: anywhere; }
-.notice-error { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-fg); }
-.notice-warning { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-fg); }
-.notice-info { background: var(--info-bg); border-color: var(--info-border); color: var(--info-fg); }
-.notice-success { background: var(--success-bg); border-color: var(--success-border); color: var(--success-fg); }
-.notice .caption { color: inherit; }
+.notice-text { overflow-wrap: anywhere; }
+.notice-info { --c-solid: var(--info-border); }
+.notice-success { --c-solid: var(--success-border); }
+.notice-warning { --c-solid: var(--warning-border); background: var(--warning-bg); border-color: var(--warning-border); border-inline-start-color: var(--c-solid); }
+.notice-error { --c-solid: var(--danger-border); background: var(--danger-bg); border-color: var(--danger-border); border-inline-start-color: var(--c-solid); }
+.notice-info .icon { color: var(--info-fg); }
+.notice-success .icon { color: var(--success-fg); }
+.notice-warning .icon { color: var(--warning-fg); }
+.notice-error .icon { color: var(--danger-fg); }
+.notice .caption { color: var(--text-muted); }
+.notice-warning .caption, .notice-error .caption { color: var(--text); }
+/* Several quiet notes in one frame, divided by hairlines. */
+.notice-group { display: grid; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); overflow: hidden; }
+.notice-group > .notice { border: 0; border-radius: 0; background: transparent; border-inline-start: 0.25rem solid var(--c-solid); }
+.notice-group > .notice + .notice { border-top: 1px solid var(--border); }
+
+/* Collapsible frames (Export health, Protected, a license): the summary, then the body one card gap below. */
+.health-group, .protected, .license { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: var(--tap-pad) var(--pad-card); }
+.details-body { display: grid; gap: var(--gap-card); margin-top: var(--gap-heading); min-width: 0; }
+.health-summary { flex-wrap: wrap; gap: var(--space-2) var(--space-3); }
+.health-title { font-size: var(--text-20); }
+.health-badges { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); margin-inline-start: auto; }
+.badge {
+  display: inline-flex; align-items: center; gap: var(--space-1); padding: 2px var(--space-2); border: 1px solid; border-radius: var(--radius-sm);
+  font-size: var(--text-14); font-weight: 600; line-height: 1.5;
+}
+.badge-error { color: var(--danger-fg); background: var(--danger-bg); border-color: var(--danger-border); }
+.badge-warning { color: var(--warning-fg); background: var(--warning-bg); border-color: var(--warning-border); }
+.badge-info { color: var(--info-fg); background: var(--info-bg); border-color: var(--info-border); }
+.badge-success { color: var(--success-fg); background: var(--success-bg); border-color: var(--success-border); }
 
 /* ------------------------------------------------------ username + conf --- */
 .chip-group { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; }
@@ -215,41 +493,51 @@ img, svg { max-width: 100%; }
 .conf-low { color: var(--conf-low-fg); background: var(--conf-low-bg); border-color: var(--conf-low-border); }
 
 /* ---------------------------------------------------------- candidates ---- */
-.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap-card); }
 .candidate, .guided-row {
-  display: grid; gap: var(--space-3); padding: var(--space-4); background: var(--surface); border: 1px solid var(--border);
+  display: grid; gap: var(--space-3); padding: var(--pad-card); background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
+.candidate.bar-left, .guided-row.bar-left { padding-inline-start: var(--space-6); }
 /* Rows are focused after "Show more"; they keep the global focus ring so the position is visible. */
 .candidate-head, .guided-who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 .candidate-evidence { overflow-wrap: anywhere; }
 .candidate-protected { font-size: var(--text-14); }
 .candidate-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+/* A disclosure row is a 44 px target; the matching negative margin keeps the layout gap on the scale. */
 .disclosure {
-  display: flex; align-items: center; gap: var(--space-2); min-height: var(--target-min); cursor: pointer; font-weight: 600; color: var(--text); list-style: none;
+  display: flex; align-items: center; gap: var(--space-2); padding-block: var(--tap-pad); margin-block: calc(var(--tap-pad) * -1);
+  cursor: pointer; font-weight: 600; color: var(--text); list-style: none; line-height: 1.5;
 }
 .disclosure::-webkit-details-marker { display: none; }
 .disclosure .icon { transition: transform var(--dur-fast) var(--ease); }
 details[open] > .disclosure .icon { transform: rotate(90deg); }
 .why ul { padding-bottom: var(--space-2); }
-.protected { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0 var(--space-4); background: var(--surface); }
-.protected[open] { padding-bottom: var(--space-4); display: grid; gap: var(--space-3); }
-.paged { display: grid; gap: var(--space-3); }
+.paged { display: grid; gap: var(--gap-card); }
 .more { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
 .more:empty { display: none; }
-.guided { display: grid; gap: var(--space-4); }
+.guided { display: grid; gap: var(--gap-card); }
 .guided-progress { display: grid; gap: var(--space-2); }
 .guided-row.is-done .guided-who { color: var(--text-muted); }
 .guided-row.is-done { border-color: var(--success-border); }
 
-.controls { display: grid; gap: var(--space-4); }
-.filters { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
-.segmented { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+.controls { display: grid; gap: var(--gap-card); }
+.filters { display: grid; gap: var(--gap-card); grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
 .summary { font-weight: 600; }
 .list-actions { display: grid; gap: var(--space-2); }
 
+/*
+  Segmented control (Cleanup view, Settings theme): joined buttons in one track. The chosen one has a tinted fill,
+  bold text and a 2 px violet border (3:1 or more against the track), so it is clear in both themes without
+  being louder than the rest of the page.
+*/
+.segmented { display: inline-flex; justify-self: start; flex-wrap: nowrap; max-width: 100%; gap: 2px; padding: 2px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-sunken); }
+.segmented .btn { border: 2px solid transparent; border-radius: calc(var(--radius-md) - 2px); justify-self: auto; flex: 0 1 auto; padding-inline: var(--space-4); min-height: var(--target-min); }
+.segmented .btn:not([aria-pressed="true"]):hover { background: var(--tint-violet-1); }
+.segmented .btn[aria-pressed="true"] { background: var(--tint-violet-2); border-color: var(--accent); color: var(--text); font-weight: 700; }
+
 /* ------------------------------------------------------ progress, meters --- */
-.progress, .meter { position: relative; height: 0.5rem; overflow: hidden; background: var(--surface-sunken); box-shadow: inset 0 0 0 1px var(--border-strong); border-radius: var(--radius-bar); }
+.progress, .meter { position: relative; height: 0.5rem; overflow: hidden; background: var(--tint-violet-2); box-shadow: inset 0 0 0 1px var(--border-strong); border-radius: var(--radius-bar); }
 .progress-fill, .meter-fill { display: block; height: 100%; width: 0; background: var(--accent); border-radius: var(--radius-bar); transition: width var(--dur-slow) var(--ease); }
 .progress-slide {
   position: absolute; top: 0; bottom: 0; left: 0; width: 35%; background: var(--accent); border-radius: var(--radius-bar);
@@ -258,43 +546,66 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .progress-slide-b { width: 20%; left: 80%; animation-direction: alternate-reverse; }
 @keyframes bars-trade { from { transform: translateX(0); } to { transform: translateX(185%); } }
 .meter-large { height: 1rem; }
+/* A meter: label and value on one line above the bar. */
 .meter-block { display: grid; gap: var(--space-2); }
+.meter-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); margin: 0; }
+.meter-name { font-weight: 600; }
 .meter-text { font-weight: 600; font-variant-numeric: tabular-nums; }
 .strength { height: 0.375rem; }
 .strength .meter-fill { background: var(--primary); }
+/* The strength meter is as wide as the field it describes, so its value sits beside the field and not at the far edge. */
+.strength-block { max-width: var(--field-w); }
 .status { display: grid; gap: var(--space-2); }
 
 /* ----------------------------------------------------------- drop zone ---- */
 .dropzone {
   display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-8) var(--space-4); text-align: center;
-  border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); background: var(--surface);
+  border: 2px dashed var(--border-strong); border-radius: var(--radius-lg); background: var(--tint-violet-1);
 }
+.dropzone .btn { justify-self: center; }
 .dropzone-title { font-family: var(--font-display); font-weight: 600; font-size: var(--text-20); }
 .dropzone-active { border-color: var(--accent-fg); background: var(--surface-raised); }
 
 /* -------------------------------------------------------- tables, code ---- */
-.table-wrap { overflow-x: auto; }
-.table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+/* The frame is rounded like every card; the table inside scrolls sideways if it must. */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.table { width: 100%; border-collapse: collapse; background: var(--surface); font-variant-numeric: tabular-nums; }
 .table-caption { text-align: left; padding: var(--space-2) 0; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .table th, .table td { text-align: left; vertical-align: top; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
-.table thead th { background: var(--surface-sunken); font-size: var(--text-14); }
+.table tr:last-child > th, .table tr:last-child > td { border-bottom: 0; }
+/* A light header row: lighter than the body's row names, on a quiet fill. */
+.table thead th { background: var(--surface-sunken); font-size: var(--text-14); font-weight: 500; color: var(--text-muted); border-bottom: 1px solid var(--border); }
 .table tbody th { font-weight: 600; }
+@media (min-width: 40.01rem) {
+  /* The first column names the row and never wraps; the pill column fits its pill. */
+  .table tbody th { white-space: nowrap; }
+  .table td.cell-pill { white-space: nowrap; width: 1%; }
+}
 @media (max-width: 40rem) {
+  /* Each row becomes a card inside the frame: the name, then its cells. The header row is hidden, and a cell does not
+     repeat its column name (the pill and the words already say what they are). */
   .table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .table, .table tbody, .table tr, .table th, .table td { display: block; }
   .table tr { padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .table tr:last-child { border-bottom: 0; }
   .table th, .table td { border: 0; padding: var(--space-1) var(--space-4); }
-  /* The header row is hidden here, so each cell names its own column. */
-  .table td[data-label]::before { content: attr(data-label) ": "; font-weight: 600; }
 }
-.code { padding: var(--space-3) var(--space-4); background: var(--surface-sunken); border-radius: var(--radius-md); overflow-x: auto; font-size: var(--text-14); }
+.code { padding: var(--space-3) var(--space-4); background: var(--surface-sunken); border-radius: var(--radius-md); overflow-x: auto; font-size: var(--text-14); white-space: pre; }
 .code-wrap { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow-y: auto; }
+/* A command: the code scrolls sideways inside the frame, and a compact Copy button sits at its top right. The code
+   ends before the button (it never runs under it), and fades at its right edge to show there is more to scroll to. */
 .command { display: grid; gap: var(--space-2); }
+.code-block { grid-template-columns: minmax(0, 1fr) auto; gap: 0; align-items: start; background: var(--surface-sunken); border-radius: var(--radius-md); }
+.code-block .code {
+  background: transparent; padding-inline-end: var(--space-6);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
+  mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
+}
+.code-copy { margin: var(--space-1); padding-inline: var(--space-3); justify-self: end; }
 .licenses { display: grid; gap: var(--space-2); }
-.license { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0 var(--space-4); background: var(--surface); }
-.license[open] { padding-bottom: var(--space-4); display: grid; gap: var(--space-3); }
-.delete, .confirm { display: grid; gap: var(--space-3); }
-.confirm { padding: var(--space-4); border: 1px solid var(--danger-border); border-radius: var(--radius-lg); background: var(--surface); }
+.delete, .confirm { display: grid; gap: var(--gap-card); }
+.confirm { padding: var(--pad-card); border: 1px solid var(--danger-border); border-radius: var(--radius-lg); background: var(--surface); }
+.notice-details { margin-top: 0; }
 
 /* --------------------------------------------------------------- motion --- */
 /* Signature: key bars slide in 8px from the left, each one stagger after the last. Once per view. */
@@ -302,5 +613,6 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 @keyframes bar-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .slide-in, .progress-slide { animation: none; }
-  .progress-fill, .meter-fill, .btn, .card-link, .disclosure .icon { transition: none; }
+  .progress-fill, .meter-fill, .btn, .card-link, .tile-action .icon, .disclosure .icon { transition: none; }
+  .card-link:hover .tile-action .icon { transform: none; }
 }

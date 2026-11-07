@@ -3,7 +3,7 @@
  * handled by actions.ts, which dispatches the results into this reducer.
  *
  * Data lives in a Workspace. There are two: the real one, and an optional sample one that
- * shadows it while "Try with sample data" is on. Changes made while looking at the sample
+ * shadows it while "Use sample data" is on. Changes made while looking at the sample
  * (keeping someone, ticking a checkbox) never touch the real workspace, so they are never saved.
  */
 import { addSnapshot, emptyLedger } from "@snappy-export/core";
@@ -11,7 +11,10 @@ import type { CandidateCategory, Confidence, ExportIssue, Ledger, ParsedExport, 
 import { mergeSaved, sortedUnique } from "./persist-codec.ts";
 import type { Saved } from "./persist-codec.ts";
 
+/** Dark is the default on a first visit, whatever the operating system prefers. "system" follows the device when chosen. */
 export type Theme = "system" | "light" | "dark";
+
+export const DEFAULT_THEME: Theme = "dark";
 
 export interface Workspace {
   /** The newest export read this session (merged parts). Null when only a saved ledger is loaded. */
@@ -82,7 +85,7 @@ export function emptyWorkspace(now = 0): Workspace {
 
 export function initialState(): State {
   return {
-    theme: "system",
+    theme: DEFAULT_THEME,
     real: emptyWorkspace(),
     sample: null,
     expectedFriendCount: null,

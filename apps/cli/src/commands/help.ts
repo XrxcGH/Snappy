@@ -25,7 +25,7 @@ export function helpCommand(args: string[], io: Io, version: string): number {
   if (topic !== undefined) {
     const usage = USAGE[topic];
     if (usage === undefined) {
-      throw new CliError("usage", `Snappy has no help for "${topic}". Run "snappy-export help" to see its commands.`);
+      throw new CliError("usage", `No help for "${topic}". Run "snappy-export help" to see the commands.`);
     }
     io.out.write(usage);
     return 0;
@@ -41,17 +41,18 @@ export function helpCommand(args: string[], io: Io, version: string): number {
       "Usage: snappy-export <command> [options]",
       "",
       term.bold("Commands"),
-      "  analyze <zips...>     Find friends worth reviewing and update your sealed ledger",
-      "  memories <zips...>    Plan your Memories rescue and save the files with their dates",
-      "  inspect <zips...>     Show the structure of your export, never its contents",
-      "  keep <username...>    Protect friends from the cleanup queue",
-      "  unkeep <username...>  Take friends off your allowlist",
-      "  ledger status         Show which exports are in your ledger",
-      "  demo                  Try Snappy on invented data",
-      "  help [command]        Show help",
+      "  analyze <ZIP files...>   Find friends to review and update your saved history",
+      "  memories <ZIP files...>  Save your Memories with their dates restored",
+      "  inspect <ZIP files...>   Show the shape of your export, never its contents",
+      "  keep <username...>       Add friends to your keep list",
+      "  unkeep <username...>     Take friends off your keep list",
+      "  ledger status            Show which exports are saved",
+      "  demo                     Try Snappy on invented data",
+      "  help [command]           Show help",
       "",
-      "<zips...> are one or more .zip files, or a folder holding the parts of one export.",
-      'Run "snappy-export help <command>" for the options of a command.',
+      "<ZIP files...> means .zip files, or a folder with every part of one export.",
+      'The "ledger" is your saved history: the sealed file that holds your past exports.',
+      'Run "snappy-export help <command>" for its options. Add --verbose to see short codes for bug reports.',
       "",
       PRIVACY_IMPORT,
       "",

@@ -207,6 +207,11 @@ function panel(theme, x0, y0) {
     'Status',
     Object.entries(tokens.semantic).map(([name, v]) => ({ label: name[0].toUpperCase() + name.slice(1), ...v[theme] })),
   );
+  const areaLabels = { disappeared: 'Disappeared', requests: 'Unaccepted', quiet: 'Quiet', cleanup: 'Cleanup', memories: 'Memories' };
+  chipRows(
+    'Categories',
+    Object.entries(tokens.category).map(([name, v]) => ({ label: areaLabels[name], ...v[theme] })),
+  );
   const levels = { high: 3, medium: 2, low: 1 };
   chipRows(
     'Confidence',
@@ -223,7 +228,7 @@ parts.push(pl.svg, pd.svg);
 const H = y + Math.max(pl.h, pd.h) + M;
 
 const paletteSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${num(H)}" role="img" aria-label="Snappy">
-  <!-- Snappy palette sheet: brand colors, then every light and dark theme token with its role name and hex value. Values come from tokens.json; all text is outlined. -->
+  <!-- Snappy palette sheet: brand colors, then every light and dark theme token with its role name and hex value, plus the status, category (orange included) and confidence colors. Values come from tokens.json; all text is outlined. -->
   <rect width="${W}" height="${num(H)}" fill="${sheetBg}"/>
   ${parts.join('\n  ')}
 </svg>

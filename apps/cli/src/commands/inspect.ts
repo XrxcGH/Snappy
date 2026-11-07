@@ -10,26 +10,22 @@ import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { resolveZipPaths, withReaders } from "../inputs.ts";
 
-export const INSPECT_USAGE = `Usage: snappy-export inspect <zips or folder...> [--show-keys] [--layout] [--memory-links] [--mtime-check] [--checks-only]
+export const INSPECT_USAGE = `Usage: snappy-export inspect <ZIP files or folder...> [--show-keys] [--layout] [--memory-links] [--mtime-check] [--checks-only]
 
-Prints the structure of your export: field names, types and rough counts. It never prints a
-value, so the report is safe to share once you have read it. Photos, videos, web pages and other
-files are counted but never opened or listed.
+Prints the shape of your export: field names, types and rough counts. It never prints a
+value, so the report is safe to share once you have read it. Photos, videos and other files
+are counted, never opened or listed.
 
-Give it every part of your export in one command. The parts are separate files named like
-mydata~1234567890123.zip, mydata~1234567890123-2.zip and mydata~1234567890123-3.zip. A folder
-works too, and so does a wildcard such as "mydata*.zip".
+Give it every part of your export. The parts are named like mydata~1234567890123.zip,
+mydata~1234567890123-2.zip and mydata~1234567890123-3.zip. A folder or a wildcard such as
+"mydata*.zip" works too.
 
 Options
-  --show-keys      Also print unknown field names. These can include a group title or another
-                   plain-word name, so read the output line by line before sharing it.
-  --layout         Add folder totals: files per type, sizes, and the shape of file names with
-                   every letter and digit masked.
-  --memory-links   Check whether Memories entries can be matched to files by an identifier in
-                   their download links. Prints counts and masked patterns only.
-  --mtime-check    Check whether the times stored in the zip match the dates in your Memories
-                   list, and whether a clock offset is needed. Prints counts only.
-  --checks-only    Print only the checks you asked for, not the JSON structure.
+  --show-keys      Also print unknown field names. Read them before sharing.
+  --layout         Add folder totals: files per type, sizes and masked file name shapes.
+  --memory-links   Check whether Memories link to files by an identifier. Counts only.
+  --mtime-check    Check whether zip times match your Memories dates. Counts only.
+  --checks-only    Print only the checks you asked for.
 `;
 
 interface Flags {
@@ -56,7 +52,7 @@ export async function inspectCommand(args: string[], io: Io): Promise<number> {
   }
   const wantsCheck = flags.layout === true || flags["memory-links"] === true || flags["mtime-check"] === true;
   if (flags["checks-only"] === true && !wantsCheck) {
-    throw new CliError("usage", 'The option --checks-only needs at least one check: --layout, --memory-links or --mtime-check. Run "snappy-export help inspect" to see what each one does.');
+    throw new CliError("usage", 'The option --checks-only needs at least one check: --layout, --memory-links, or --mtime-check. Run "snappy-export help inspect" to see what each one does.');
   }
 
   const paths = await resolveZipPaths(positionals);

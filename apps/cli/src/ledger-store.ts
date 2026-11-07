@@ -27,7 +27,7 @@ export function allowlistPathFor(ledgerPath: string): string {
 
 const WRONG_PASSPHRASE = new CliError(
   "wrong-passphrase",
-  "Snappy could not unlock your ledger. The passphrase may be wrong, or the file may be damaged. Nothing was changed.",
+  "Snappy could not unlock your ledger and changed nothing. The passphrase may be wrong, or the file damaged.",
 );
 
 /**
@@ -115,7 +115,7 @@ export async function acquireLedgerLock(ledgerPath: string, opts: { waitMs?: num
     if (attempt >= retries) {
       throw new CliError(
         "ledger-busy",
-        `Another Snappy command is using this ledger. Wait for it to finish, then try again. If none is running, delete "${lockPath}" first. Nothing was changed.`,
+        `Another command is using this ledger, so nothing was changed. Wait and try again, or delete "${lockPath}" if none is running.`,
       );
     }
     await new Promise((r) => setTimeout(r, 100));
@@ -155,7 +155,7 @@ export async function fileExists(path: string): Promise<boolean> {
 
 function unsealError(e: unknown): CliError {
   if (e instanceof LedgerFormatError) {
-    return new CliError("ledger-version", "This ledger was written by a newer version of Snappy. Update Snappy to open it. Nothing was changed.");
+    return new CliError("ledger-version", "This ledger was written by a newer Snappy, so nothing was changed. Update Snappy to open it.");
   }
   if (e instanceof SealError) return WRONG_PASSPHRASE;
   throw e;
@@ -192,7 +192,7 @@ export async function loadAllowlist(ledgerPath: string, passphrase: string): Pro
     if (!Array.isArray(list)) throw new Error("shape");
     return normalizeAllowlist(list.filter((v): v is string => typeof v === "string"));
   } catch {
-    throw new CliError("allowlist-unreadable", "Snappy could not read your saved allowlist. The file may be damaged. Nothing was changed.");
+    throw new CliError("allowlist-unreadable", "Snappy could not read your saved keep list, so nothing was changed. The file may be damaged.");
   }
 }
 

@@ -13,7 +13,7 @@ import { ZipEntryError, listZipEntries, planMemories, readZipEntry } from "@snap
 import type { MemoriesPlan, PlannedMemory, RandomAccessReader, ZipEntryInfo } from "@snappy-export/core";
 import { intOption, parseFlags } from "../args.ts";
 import { CliError, fsError } from "../errors.ts";
-import { formatBytes, formatCount, formatDate, formatPercent, plural } from "../format.ts";
+import { formatBytes, formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
 import type { Io } from "../io.ts";
 import { parseParts, requireFirstPart, resolveZipPaths, withReaders } from "../inputs.ts";
 import { atomicWrite } from "../ledger-store.ts";
@@ -24,29 +24,27 @@ import type { LabeledIssue } from "../render.ts";
 import { createTerm } from "../term.ts";
 import type { Term } from "../term.ts";
 
-export const MEMORIES_USAGE = `Usage: snappy-export memories <zips or folder...> --out <folder> [options]
+export const MEMORIES_USAGE = `Usage: snappy-export memories <ZIP files or folder...> --out <folder> [options]
 
-Plans your Memories rescue and shows the storage meter. Memories bundled in your export are
-copied to the folder with their exact capture time restored, as the date inside the file and as
-the file's own date. Snappy never looks at the photos or videos themselves, and never reads or
-writes locations.
+Plans your Memories rescue and shows the storage meter. Memories are copied to the folder
+with their capture date restored, in the file and as the file date. Snappy never opens the
+photos or videos, and never reads or writes locations.
 
-Give it every part of your export in one command (a folder or a wildcard such as "mydata*.zip"
-works too): the Memories are spread over the parts, and the list that names their dates is in
-the first one.
+Give it every part of your export, or a folder or wildcard such as "mydata*.zip". The list
+of dates is in the first part.
 
 Options
-  --out <folder>        Where to save the files. Files already there are skipped, so you can run it again.
+  --out <folder>        Where to save the files. Files already there are skipped.
   --dry-run             Show the plan and write nothing.
-  --layout <layout>     flat, year or year-month. Default: year-month.
-  --download            Older exports only: also download Memories that are only available as links.
-                        This is the only command that uses the network, and it contacts only the
-                        links in your export. Newer exports have no links and need no download.
+  --layout <layout>     Folders: flat, year, or year-month. Default: year-month.
+  --download            Older exports only: also download Memories that are only links.
+                        This is the only command that uses the network. Newer exports need none.
   --concurrency <n>     Downloads at once, 1 to 8. Default: 3.
   --cap-gb <n>          Storage cap for the meter, in GB. Default: 5.
+  --verbose             Add a short code to notes and errors, for bug reports.
   --no-color            Plain text.
 
-A report with counts and statuses (no names, dates or places) is saved as memories-report.json.
+A report with counts and statuses only is saved as memories-report.json.
 
 Exit codes: 0 done, 1 could not run, 3 finished but some items failed.
 `;
@@ -58,6 +56,7 @@ interface Flags {
   download?: boolean;
   concurrency?: string;
   "cap-gb"?: string;
+  verbose?: boolean;
   "no-color"?: boolean;
   help?: boolean;
 }
@@ -66,7 +65,7 @@ interface Flags {
 const MAX_BUNDLED_BYTES = 512 * 1024 * 1024;
 
 const NO_LINKS =
-  "This export has no download links, so --download has nothing to download and Snappy did not use the network. Snappy saves the Memories it finds inside your zip files.";
+  "This export has no download links, so Snappy did not use the network. It saves the Memories found in your ZIP files.";
 
 /** Items shown by number in the terminal when they fail; the rest are in the report. */
 const FAILURES_SHOWN = 20;
@@ -79,30 +78,30 @@ type Status = "extracted" | "downloaded" | "skipped-existing" | "repaired" | "fa
  */
 function failureAdvice(code: string): string {
   if (/^http-(401|403|404|410)$/.test(code)) return "The link has expired. Request a new export from Snapchat and run again.";
-  if (code.startsWith("http-")) return "Snapchat's server refused or was busy. Wait a while and run again; finished items are skipped.";
+  if (code.startsWith("http-")) return "Snapchat's server refused or was busy. Wait a while and run again.";
   switch (code) {
     case "too-large":
-      return `A file in your zips is larger than the ${formatBytes(MAX_BUNDLED_BYTES)} Snappy reads at once, so it was not copied. Take that file out of the zip with another tool; the others were saved.`;
+      return `A file is over the ${formatBytes(MAX_BUNDLED_BYTES)} limit and was not copied. Take it out of the ZIP file with another tool.`;
     case "missing-file":
-      return "The list names a file that is not in the zips you gave. Add every part of your export and run again; finished items are skipped.";
+      return "A file named in the list is not in these ZIP files. Add every part of your export and run again.";
     case "corrupt":
-      return "A zip looks damaged: a file inside does not match its checksum. Download that part again and run again; finished items are skipped.";
+      return "A ZIP file looks damaged. Download that part again and run again.";
     case "encrypted":
     case "unsupported-method":
-      return "A file in your zips is encrypted or uses a compression Snappy does not support, so it was not copied.";
+      return "A file is encrypted or in a format Snappy cannot read, so it was not copied.";
     case "disk-full":
     case "disk":
-      return "The disk ran out of space. Free some space and run again; finished items are skipped.";
+      return "The disk is full. Free some space and run again.";
     case "network":
     case "timeout":
-      return "The connection failed. Check it and run again; finished items are skipped.";
+      return "The connection failed. Check it and run again.";
     case "bad-link":
     case "not-media":
       return "The link did not lead to a photo or video. Request a new export from Snapchat.";
     case "unsafe-path":
-      return "Snappy could not build a safe place to save it, so nothing was written for it.";
+      return "Snappy could not find a safe place to save it, so it wrote nothing.";
     default:
-      return "Snappy could not save it. Run again; if it repeats, the zip may be damaged.";
+      return "Snappy could not save it. Run again. If it repeats, the ZIP file may be damaged.";
   }
 }
 
@@ -179,15 +178,15 @@ function meterLines(plan: MemoriesPlan, term: Term): string[] {
   const m = plan.meter;
   const lines = [
     term.bold("Storage meter"),
-    `  ${term.meter(m.fractionOfCap, 20)}  ${formatBytes(m.knownBytes)} of ${formatBytes(m.capBytes)} (${formatPercent(m.fractionOfCap)})`,
+    `  ${term.orange(term.meter(m.fractionOfCap, 20))}  ${formatBytes(m.knownBytes)} of ${formatBytes(m.capBytes)} (${formatPercent(m.fractionOfCap)})`,
   ];
   if (m.unknownSizeCount > 0) {
-    lines.push(`  ${plural(m.unknownSizeCount, "Memory", "Memories")} ${m.unknownSizeCount === 1 ? "has" : "have"} no known size, so the real total is higher.`);
-    lines.push(`  The cap is your own storage goal (change it with --cap-gb); Snappy does not enforce it.`);
+    lines.push(`  ${plural(m.unknownSizeCount, "Memory", "Memories")} ${hasHave(m.unknownSizeCount)} no known size, so the real total is higher.`);
+    lines.push(`  The cap is your own goal (change it with --cap-gb). Snappy does not enforce it.`);
   }
   if (m.fractionOfCap >= 1) lines.push("  Your Memories are at or past the cap.");
   else if (m.projectedCapAt !== null) {
-    lines.push(`  At your recent pace you would reach the cap around ${formatDate(m.projectedCapAt)}.`);
+    lines.push(`  At your recent pace you may reach the cap around ${formatDate(m.projectedCapAt)}.`);
   }
   return lines;
 }
@@ -200,6 +199,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     download: { type: "boolean" },
     concurrency: { type: "string" },
     "cap-gb": { type: "string" },
+    verbose: { type: "boolean" },
     "no-color": { type: "boolean" },
     help: { type: "boolean", short: "h" },
   });
@@ -211,7 +211,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
   const dryRun = flags["dry-run"] === true;
   const layout = flags.layout ?? "year-month";
   if (layout !== "flat" && layout !== "year" && layout !== "year-month") {
-    throw new CliError("usage", "--layout must be flat, year or year-month.");
+    throw new CliError("usage", "--layout must be flat, year, or year-month.");
   }
   const concurrency = intOption("--concurrency", flags.concurrency, 1, 8) ?? 3;
   let capBytes: number | undefined;
@@ -243,7 +243,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     const issues: LabeledIssue[] = parsed.issues
       .filter((i) => i.severity !== "info" && i.code !== "memories-unmatched-items")
       .map((i) => ({ ...i, source: "your export" }));
-    if (issues.length > 0) out.push(...renderIssues(issues, term), "");
+    if (issues.length > 0) out.push(...renderIssues(issues, term, flags.verbose === true), "");
 
     // Which planned items have bytes in a zip, which only a link, which neither.
     const index = await indexEntries(plan, readers);
@@ -258,16 +258,16 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
 
     const c = plan.counts;
     const width = term.columns - 4;
-    out.push(term.bold("Memories rescue"));
+    out.push(term.orange(term.bold("Memories rescue")));
     if (c.total === 0) {
-      out.push("  No Memories found in this export. Request your export again with Memories selected, and choose JSON.");
+      out.push("  No Memories found in this export. Request it again with Memories selected, in JSON format.");
     } else {
-      out.push(`  ${plural(c.total, "Memory", "Memories")}: ${formatCount(c.images)} photos, ${formatCount(c.videos)} videos, ${formatCount(c.unknown)} of unknown type.`);
-      out.push(`  ${formatCount(c.withDate)} have a capture date; ${formatCount(c.total - c.withDate)} do not, and will be saved undated.`);
+      out.push(`  ${plural(c.total, "Memory", "Memories")}: ${plural(c.images, "photo")}, ${plural(c.videos, "video")}, ${formatCount(c.unknown)} of unknown type.`);
+      out.push(`  ${formatCount(c.withDate)} ${hasHave(c.withDate)} a capture date. ${formatCount(c.total - c.withDate)} ${noun(c.total - c.withDate, "does", "do")} not and will be saved undated.`);
       out.push(`  ${plural(plan.duplicates.length, "probable duplicate")} skipped, matched by metadata only.`);
-      out.push(`  ${formatCount(counts.bundled)} are in your zips, ${formatCount(counts.links)} are only links${counts.neither > 0 && parsed.memoriesPairing === undefined ? `, ${formatCount(counts.neither)} have no file or link` : ""}.`);
+      out.push(`  ${formatCount(counts.bundled)} ${isAre(counts.bundled)} in your ZIP files, ${formatCount(counts.links)} ${isAre(counts.links)} only ${noun(counts.links, "a link", "links")}${counts.neither > 0 && parsed.memoriesPairing === undefined ? `, ${formatCount(counts.neither)} ${hasHave(counts.neither)} no file or link` : ""}.`);
       if (parsed.memoriesPairing !== undefined) for (const line of wrapText(describePairing(parsed.memoriesPairing), width)) out.push(`  ${line}`);
-      if (unmatchedAdvice !== undefined) for (const line of wrapText(unmatchedAdvice, width)) out.push(`  ${line}`);
+      if (unmatchedAdvice !== undefined) for (const line of wrapText(`${unmatchedAdvice} If part of your export is missing, add it and run again.`, width)) out.push(`  ${line}`);
       if (flags.download === true && !parsed.memories.some((m) => m.downloadUrl !== undefined)) {
         for (const line of wrapText(NO_LINKS, width)) out.push(`  ${line}`);
       }
@@ -277,11 +277,11 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     if (dryRun || outDir === undefined) {
       const existing = outDir === undefined ? 0 : await countExisting(plan.entries, outDir);
       out.push(
-        `Dry run: nothing was written. A real run would copy ${formatCount(counts.bundled)} files from your zips${download ? ` and download ${formatCount(counts.links)} more` : ""}.`,
+        `Dry run: nothing was written. A real run would copy ${plural(counts.bundled, "file")} from your ZIP files${download ? ` and download ${formatCount(counts.links)} more` : ""}.`,
       );
       if (existing > 0) out.push(`${plural(existing, "item")} already in the output folder would be skipped.`);
       if (flags.download !== true && counts.links > 0) out.push("Add --download to download the items that are only links.");
-      out.push(outDir === undefined ? "To save the files, run the same command again with --out <folder> and without --dry-run." : "To save the files, run the same command again without --dry-run.");
+      out.push(outDir === undefined ? "To save the files, run it again with --out <folder> and no --dry-run." : "To save the files, run it again without --dry-run.");
       out.push(PRIVACY_RESULTS);
       io.out.write(out.join("\n") + "\n");
       return 0;
@@ -416,19 +416,20 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
 
     const lines: string[] = [term.bold("Result")];
     lines.push(
-      `  ${formatCount(result.extracted)} saved from your zips${download ? `, ${formatCount(result.downloaded)} downloaded` : ""}, ${formatCount(result.skippedExisting)} already there, ${formatCount(result.failed)} failed.`,
+      `  ${formatCount(result.extracted)} saved from your ZIP files${download ? `, ${formatCount(result.downloaded)} downloaded` : ""}, ${formatCount(result.skippedExisting)} already there, ${formatCount(result.failed)} failed.`,
     );
-    if (tally("repaired") > 0) lines.push(`  ${plural(tally("repaired"), "item")} already there ${tally("repaired") === 1 ? "was" : "were"} completed (a missing overlay added or the file date set).`);
-    if (result.overlaysWritten > 0) lines.push(`  ${plural(result.overlaysWritten, "overlay file")} saved next to ${result.overlaysWritten === 1 ? "its" : "their"} Memory, unchanged.`);
-    if (result.linkOnly > 0) lines.push(`  ${plural(result.linkOnly, "item")} only available as links: run again with --download to download them.`);
+    if (tally("repaired") > 0) lines.push(`  ${plural(tally("repaired"), "item")} already there ${wasWere(tally("repaired"))} completed (overlay added or file date set).`);
+    if (result.overlaysWritten > 0) lines.push(`  ${plural(result.overlaysWritten, "overlay file")} saved next to ${noun(result.overlaysWritten, "its", "their")} Memory, unchanged.`);
+    if (result.linkOnly > 0) lines.push(`  ${plural(result.linkOnly, "item")} ${isAre(result.linkOnly)} only ${noun(result.linkOnly, "a link", "links")}. Run again with --download to get ${noun(result.linkOnly, "it", "them")}.`);
     if (result.unmatchedItems > 0) {
-      lines.push(`  ${plural(result.unmatchedItems, "Memory", "Memories")} had neither a file nor a link, so ${result.unmatchedItems === 1 ? "it was" : "they were"} not saved. ${result.unmatchedItems === 1 ? "It is" : "They are"} still in your Snapchat account; if part of your export is missing, add it and run again.`);
+      lines.push(`  ${plural(result.unmatchedItems, "Memory", "Memories")} had no file or link, so ${noun(result.unmatchedItems, "it was", "they were")} not saved.${unmatchedAdvice === undefined ? ` ${noun(result.unmatchedItems, "It is", "They are")} still in your Snapchat account. If part of your export is missing, add it and run again.` : ""}`);
     }
     for (const f of failures.slice(0, FAILURES_SHOWN)) lines.push(`  item ${f.item} failed (${f.reason})`);
-    if (failures.length > FAILURES_SHOWN) lines.push(`  ${plural(failures.length - FAILURES_SHOWN, "more failure")} are listed in the report.`);
+    if (failures.length > FAILURES_SHOWN) lines.push(`  ${plural(failures.length - FAILURES_SHOWN, "more failure")} ${isAre(failures.length - FAILURES_SHOWN)} listed in the report.`);
     for (const code of [...new Set(failures.map((f) => f.reason ?? "error"))]) lines.push(`  ${code}: ${failureAdvice(code)}`);
+    if (failures.length > 0) lines.push("  Run again to retry. Finished items are skipped.");
     // With --download the links in the export were contacted, so the plain results line would overstate.
-    lines.push(`  Report: ${reportPath}`, "", download ? "Only the links in your export, and the secure addresses they forwarded to, were contacted. Nothing else has left your device." : PRIVACY_RESULTS);
+    lines.push(`  Report: ${reportPath}`, "", download ? "Only the links in your export, and the secure addresses they forwarded to, were contacted. Nothing else has left this device." : PRIVACY_RESULTS);
     io.out.write(lines.join("\n") + "\n");
     return failures.length > 0 ? 3 : 0;
   });

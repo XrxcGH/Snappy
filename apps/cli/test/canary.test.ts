@@ -137,7 +137,7 @@ describe("no canary reaches any output", () => {
     });
     const { code, out, err } = await run(["analyze", zip, "--no-save"], io);
     expect(code).toBe(1);
-    expect(err).toContain("(code: unexpected)");
+    expect(err).toContain("The output never includes your data");
     expect(err).toMatch(/\n\s+at /); // frames only
     leaks(out + err, "debug output");
     expect(err).not.toContain("boom");
@@ -194,7 +194,8 @@ describe("no canary or zip entry name reaches a three-part rescue", () => {
       for (const piece of pieces) expect(text, "file bytes").not.toContain(piece);
       if (e.name.endsWith(".jpg")) for (const id of uuids) expect(text, "jpeg bytes").not.toContain(id);
     }
-  });
+    // Three real runs over multi-part zips: about 5 s alone, but it passed the default 30 s limit once under a full parallel run.
+  }, 120_000);
 
   it("analyze and inspect over all three parts", async () => {
     const csv = join(tempDir("canary-parts-csv"), "q.csv");

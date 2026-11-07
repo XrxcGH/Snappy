@@ -358,8 +358,8 @@ describe("inspectExport", () => {
   it("says calmly when memories_history.json is missing or is not a list", async () => {
     const none = [bytesReader(buildFixtureZip([{ name: "json/friends.json", data: enc({}) }]))];
     const text = (await inspectExport(none, { memoryLinks: true, mtimeCheck: true, checksOnly: true })).text;
-    expect(text).toContain("Memories link check\n  memories_history.json was not found in these zips.");
-    expect(text).toContain("Memories file-time check\n  memories_history.json was not found in these zips.");
+    expect(text).toContain("Memories link check\n  memories_history.json was not found in these ZIP files.");
+    expect(text).toContain("Memories file-time check\n  memories_history.json was not found in these ZIP files.");
 
     const odd = [bytesReader(buildFixtureZip([{ name: "json/memories_history.json", data: enc("not json at all") }]))];
     const unreadable = (await inspectExport(odd, { memoryLinks: true, checksOnly: true })).text;

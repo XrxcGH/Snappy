@@ -108,7 +108,7 @@ describe("a damaged Snap history", () => {
     const bad = zip.slice();
     bad.fill(0xff, at, at + 6);
     const reader = await parseExportFromReader(bytesReader(bad));
-    expect(reader.issues).toContainEqual({ severity: "error", code: "zip-entry-unreadable", message: "snap_history.json inside the archive could not be decompressed." });
+    expect(reader.issues).toContainEqual({ severity: "error", code: "zip-entry-unreadable", message: "Snappy could not open snap_history.json inside the ZIP file." });
     expect(reader.chats.map((c) => c.kind)).toEqual(["TEXT"]);
   });
 

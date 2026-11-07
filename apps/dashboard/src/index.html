@@ -1,14 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="{{CSP}}">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark light">
 <meta name="description" content="Snappy reads your own Snapchat export on your device. Nothing is uploaded.">
 <title>Snappy</title>
 <link rel="icon" type="image/svg+xml" href="{{FAVICON}}">
+<script>{{THEME_BOOT}}</script>
 <style>{{STYLE}}</style>
 </head>
 <body>
@@ -16,7 +17,7 @@
 <div id="live-polite" class="sr-only" role="status" aria-live="polite"></div>
 <div id="live-assertive" class="sr-only" role="alert" aria-live="assertive"></div>
 <div id="app"></div>
-<noscript><p class="noscript">Snappy needs JavaScript to run. Everything runs on your device, and nothing is sent anywhere.</p></noscript>
+<noscript><p class="noscript">Snappy needs JavaScript. Everything stays on your device.</p></noscript>
 <script>{{SCRIPT}}</script>
 </body>
 </html>
