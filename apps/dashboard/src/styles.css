@@ -260,6 +260,8 @@ img, svg { max-width: 100%; }
 .section-title { display: flex; align-items: center; gap: var(--space-3); }
 .section-title .chip-icon { flex: none; }
 .stack { display: grid; gap: var(--gap-card); }
+/* The notes of one part of Export health: one block here, a grid of cards on a wide screen. */
+.health-notes { display: grid; gap: var(--gap-card); min-width: 0; }
 /* Independent sections in a row of the page: stacked like any blocks here, in balanced columns on a wide screen. */
 .cols { display: grid; gap: var(--gap-section); }
 .plain-list { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-2); }
@@ -729,10 +731,21 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
      six across from the next step up. The notes in Export health are cards in two equal columns, so no note runs past the measure. */
   .tiles-findings { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .tiles-findings .tile, .tiles-findings .tile:nth-child(n+4) { grid-column: span 1; }
-  .details-body .stack, .details-body .notice-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-card); align-items: start; }
-  .details-body .notice-group { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+  /* The notes of one part of Export health are one grid of cards (the stack and the group dissolve into it), and the
+     columns follow the count so no note is left alone in a row: one note at the measure, two or four in pairs, three or
+     five and more in threes. Where the card holds two parts, the notes and the Memories notes, the parts are the two columns
+     and each lists its notes down one column. */
+  .health-notes { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .health-notes :is(.stack, .notice-group) { display: contents; }
+  .health-notes > p { grid-column: 1 / -1; }
+  .health-n-1 { grid-template-columns: minmax(0, var(--col)); }
+  .health-n-2, .health-n-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .details-body .notice-group > .notice, .details-body .notice-group > .notice + .notice { border: 1px solid var(--border); border-inline-start: 0.25rem solid var(--c-solid); border-radius: var(--radius-lg); background: var(--surface); }
   .details-body :is(.stack, .notice-group), .details-body .stack > .notice, .details-body .notice-group > .notice { max-width: none; }
+  .details-body:has(> .health-notes):has(> .subsection) { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--gap-section); align-items: start; }
+  .details-body:has(> .health-notes):has(> .subsection) > * { grid-column: 1 / -1; }
+  .details-body:has(> .health-notes):has(> .subsection) > .health-notes, .details-body:has(> .health-notes):has(> .subsection) > .subsection { grid-column: span 1; grid-row: 1; margin-top: 0; }
+  .details-body:has(> .health-notes):has(> .subsection) .health-notes { grid-template-columns: minmax(0, 1fr); }
 }
 @media (min-width: 80rem) {
   /* Start: the three steps side by side, in order, as equal cards. The sample-data card and the notes about saving are
@@ -740,7 +753,11 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   div.step-list { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
   /* The title row and the content row are shared by the three cards, so a title of two lines pushes all three bodies down alike. */
   div.step-list { grid-template-rows: auto 1fr; }
-  div.step-list > .step-card { grid-row: span 2; grid-template-rows: subgrid; }
+  div.step-list > .step-card { grid-row: span 2; grid-template-rows: subgrid; align-items: start; }
+  /* Every title starts at the card's top (a one-line title centers on the number), and every body starts right under the
+     shared title row, so the three bodies share one top and no field floats in the middle of a card. */
+  div.step-list > .step-card > h2 { min-height: 2.25rem; }
+  div.step-list > .step-card > .step-content { align-self: start; }
   .card-band { grid-template-columns: minmax(0, calc(var(--col) - 2 * var(--pad-card))) auto; column-gap: var(--space-8); align-items: center; justify-content: space-between; }
   .card-band > :is(h2, p:first-of-type) { grid-column: 1; }
   .card-band > :is(.actions, p:last-child:not(:nth-child(2))) { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
@@ -759,6 +776,11 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .steps-n-9, .steps-n-10 { --rows: 5; }
 }
 @media (min-width: 80rem) {
+  /* The Tools hub: one tile width on the whole page, three across at every wide width (four across would leave a group of
+     five with one lone tile in its second row, three across makes it three and two). A group of two or five leaves the end
+     of its last row empty rather than stretching a tile, so a tile is the same size in every group. */
+  .tiles-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tiles-tools.tiles-tools .tile:nth-child(n) { grid-column: span 1; }
   /* Six short counts are one row. */
   .tiles-stats.tiles-n-6 .tile { grid-column: span 1; }
   /* Independent sections flow down two balanced columns, in document order. Each one stays whole. */
@@ -767,6 +789,14 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   /* Lists of people: two equal columns, a last odd card takes the whole row, and a card that opens does not stretch its neighbor. */
   .candidate-list, .guided-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .candidate-list > :last-child:nth-child(odd), .guided-list > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* From --bp-xwide the people are three across, in a grid of six: a lone last card takes the row and the last two share it. */
+  @media (min-width: 100rem) {
+    .candidate-list, .guided-list { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .candidate-list > :nth-child(n), .guided-list > :nth-child(n) { grid-column: span 2; }
+    .candidate-list > :last-child:nth-child(3n + 1), .guided-list > :last-child:nth-child(3n + 1) { grid-column: 1 / -1; }
+    .candidate-list > :nth-last-child(2):nth-child(3n + 1), .guided-list > :nth-last-child(2):nth-child(3n + 1),
+    .candidate-list > :last-child:nth-child(3n + 2), .guided-list > :last-child:nth-child(3n + 2) { grid-column: span 3; }
+  }
   /* A short list of facts is a row of small cards: three across, two by two for four, three and two for five. */
   .facts { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap-card); border: 0; border-radius: 0; background: none; overflow: visible; }
   .fact, .fact + .fact { grid-column: span 6; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
@@ -782,12 +812,6 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .step-content .label { text-wrap: balance; }
 }
 @media (min-width: 100rem) {
-  /* The Tools hub: twelve columns, so a group of four is four across (three across before; five stay three and two). */
-  .tiles-tools { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .tiles-tools .tile, .tiles-tools.tiles-n-3 .tile { grid-column: span 4; }
-  .tiles-tools.tiles-n-1 .tile { grid-column: 1 / -1; }
-  .tiles-tools.tiles-n-2 .tile, .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 6; }
-  .tiles-tools.tiles-n-4 .tile { grid-column: span 3; }
   .facts-n-4 .fact { grid-column: span 3; }
 }
 

@@ -14,3 +14,10 @@
   .tool-waiting-on-reply .rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tool-waiting-on-reply .rows > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
+/* From 100rem (--bp-xwide) three across, in a grid of six: a lone last row takes the line and the last two share it. */
+@media (min-width: 100rem) {
+  .tool-waiting-on-reply .rows { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .tool-waiting-on-reply .rows > :nth-child(n) { grid-column: span 2; }
+  .tool-waiting-on-reply .rows > :last-child:nth-child(3n + 1) { grid-column: 1 / -1; }
+  .tool-waiting-on-reply .rows > :nth-last-child(2):nth-child(3n + 1), .tool-waiting-on-reply .rows > :last-child:nth-child(3n + 2) { grid-column: span 3; }
+}

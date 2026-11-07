@@ -96,6 +96,11 @@ const isMemoriesIssue = (i: { code: string }): boolean => i.code.startsWith("mem
 /** Errors and warnings ask for action and stay tinted; everything else is a quiet note. */
 const isLoud = (i: { severity: string }): boolean => i.severity === "error" || i.severity === "warning";
 
+/** One part of Export health: its notes in one block. The count picks the columns on a wide screen, so no note is left alone in a row. */
+function healthNotes(count: number, ...children: Child[]): HTMLElement {
+  return h("div", { class: `health-notes health-n-${Math.min(count, 6)}` }, ...children);
+}
+
 function healthSection(a: Analysis): HTMLElement {
   if (a.source === "ledger") return section(overview.healthHeading, notice("info", overview.healthFromLedger));
   const all = a.workspace.issues;
@@ -127,17 +132,25 @@ function healthSection(a: Analysis): HTMLElement {
           healthOpen = open;
         },
       },
-      friendErrors + friendWarnings > 0 ? h("p", {}, overview.healthIntro(friendErrors, friendWarnings)) : null,
-      loud.length > 0 ? h("div", { class: "stack" }, ...loud.map(issueNotice)) : null,
-      quiet.length > 0 ? noticeGroup(...quiet.map(issueNotice)) : null,
+      issues.length === 0
+        ? null
+        : healthNotes(
+            issues.length,
+            friendErrors + friendWarnings > 0 ? h("p", {}, overview.healthIntro(friendErrors, friendWarnings)) : null,
+            loud.length > 0 ? h("div", { class: "stack" }, ...loud.map(issueNotice)) : null,
+            quiet.length > 0 ? noticeGroup(...quiet.map(issueNotice)) : null,
+          ),
       memoryNotes.length === 0
         ? null
         : subsection(
             overview.healthMemoriesHeading,
             h("p", {}, overview.healthMemoriesNote),
             // Tinted warnings keep their own frames; the quiet notes share one.
-            ...(memoryLoud.length > 0 ? [h("div", { class: "stack" }, ...memoryLoud.map(issueNotice))] : []),
-            memoryQuiet.length > 0 ? noticeGroup(...memoryQuiet.map(issueNotice)) : null,
+            healthNotes(
+              memoryNotes.length,
+              memoryLoud.length > 0 ? h("div", { class: "stack" }, ...memoryLoud.map(issueNotice)) : null,
+              memoryQuiet.length > 0 ? noticeGroup(...memoryQuiet.map(issueNotice)) : null,
+            ),
             routeLink("memories", overview.healthMemoriesLink),
           ),
       h("p", {}, overview.schemaNote),
