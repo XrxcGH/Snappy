@@ -14,7 +14,7 @@
  */
 
 /** The insight commands behind the tool pages. They read an export and print; none of them is allowed to write a file here. */
-export const INSIGHT_NAMES = ["check", "storage", "backup", "replies", "reply-speed", "reach-out", "habits", "calendar", "closest", "safety", "anniversaries", "on-this-day", "blocked", "lookalikes", "friend-count", "friends", "rescue", "privacy", "remind", "since", "year"] as const;
+export const INSIGHT_NAMES = ["check", "storage", "backup", "replies", "reply-speed", "reach-out", "habits", "calendar", "closest", "safety", "anniversaries", "on-this-day", "gaps", "blocked", "lookalikes", "friend-count", "friends", "rescue", "privacy", "remind", "since", "year"] as const;
 
 export const ALLOWED_COMMANDS = ["help", "demo", "inspect", "analyze", "memories", "ledger", ...INSIGHT_NAMES] as const;
 
@@ -76,6 +76,7 @@ export const RULES: Readonly<Record<(typeof ALLOWED_COMMANDS)[number], CommandRu
   safety: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
   anniversaries: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
   "on-this-day": { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
+  gaps: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
   blocked: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
   lookalikes: { flags: [...COMMON, "json", "no-color"], values: {}, positional: "files" },
   "friend-count": { flags: [...COMMON, "json", "no-color", "no-save"], values: {}, positional: "files" },

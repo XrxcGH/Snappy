@@ -30,6 +30,7 @@ export type CommandId =
   | "safety"
   | "anniversaries"
   | "on-this-day"
+  | "gaps"
   | "blocked"
   | "lookalikes"
   | "friend-count"
@@ -111,6 +112,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   safety: entry("safety", ["safety"]),
   anniversaries: entry("anniversaries", ["anniversaries", exportSlot()]),
   "on-this-day": entry("on-this-day", ["on-this-day", exportSlot()]),
+  gaps: entry("gaps", ["gaps", exportSlot()]),
   blocked: entry("blocked", ["blocked", exportSlot()]),
   lookalikes: entry("lookalikes", ["lookalikes", exportSlot()]),
   // --no-save keeps it from opening the saved history, so it needs no passphrase.

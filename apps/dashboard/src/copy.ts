@@ -572,6 +572,7 @@ export const terminal = {
     safety: "Show the safety checklist",
     anniversaries: "Find friendship anniversaries",
     "on-this-day": "Find Memories from this day",
+    gaps: "Find gaps in your Memories",
     blocked: "Review blocked and ignored",
     lookalikes: "Find lookalike usernames",
     "friend-count": "Chart your friend count",
