@@ -1,0 +1,24 @@
+{
+  "name": "@snappy-export/app",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "description": "Snappy desktop app: the dashboard in a Tauri 2 shell (Windows, macOS, Linux).",
+  "scripts": {
+    "frontend": "node scripts/build-frontend.mjs",
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "tauri icon ../../brand/logo/png/app-icon-1024.png",
+    "synthetic-zip": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/make-synthetic-zip.mjs"
+  },
+  "dependencies": {
+    "@snappy-export/core": "*",
+    "@snappy-export/dashboard": "*",
+    "@tauri-apps/api": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}
