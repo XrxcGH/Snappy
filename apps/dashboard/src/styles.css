@@ -745,7 +745,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .card-band > :is(h2, p:first-of-type) { grid-column: 1; }
   .card-band > :is(.actions, p:last-child:not(:nth-child(2))) { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
   /* The unlock card: the words on the left, the passphrase form on the right. */
-  .card-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-8); align-items: start; }
+  .card-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: var(--space-8); align-items: start; }
   .card-split > :is(h2, p) { grid-column: 1; }
   .card-split > form { grid-column: 2; grid-row: 1 / span 3; }
   .card-split > .notice { grid-column: 2; }
