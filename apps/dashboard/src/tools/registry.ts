@@ -4,6 +4,7 @@
  * here is the order on the hub inside each group.
  */
 import type { Scope } from "../components/category.ts";
+import { descriptor as activityCalendar } from "./activity-calendar/index.ts";
 import { descriptor as anniversaries } from "./anniversaries/index.ts";
 import { descriptor as blockedReview } from "./blocked-review/index.ts";
 import { descriptor as closestFading } from "./closest-fading/index.ts";
@@ -42,6 +43,7 @@ export const TOOLS: readonly ToolDescriptor[] = [
   replySpeed,
   reachOutFirst,
   habits,
+  activityCalendar,
   storagePlanner,
   memoriesOnThisDay,
   rescueManifest,

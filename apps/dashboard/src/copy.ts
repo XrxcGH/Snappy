@@ -567,6 +567,7 @@ export const terminal = {
     "reply-speed": "See how fast you reply",
     "reach-out": "Find who reaches out first",
     habits: "See your busiest chat hours",
+    calendar: "See your activity calendar",
     closest: "Find your closest friends",
     safety: "Show the safety checklist",
     anniversaries: "Find friendship anniversaries",

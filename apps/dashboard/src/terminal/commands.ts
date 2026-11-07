@@ -25,6 +25,7 @@ export type CommandId =
   | "reply-speed"
   | "reach-out"
   | "habits"
+  | "calendar"
   | "closest"
   | "safety"
   | "anniversaries"
@@ -105,6 +106,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   "reply-speed": entry("reply-speed", ["reply-speed", exportSlot()]),
   "reach-out": entry("reach-out", ["reach-out", exportSlot()]),
   habits: entry("habits", ["habits", exportSlot()]),
+  calendar: entry("calendar", ["calendar", exportSlot()]),
   closest: entry("closest", ["closest", exportSlot()]),
   safety: entry("safety", ["safety"]),
   anniversaries: entry("anniversaries", ["anniversaries", exportSlot()]),
