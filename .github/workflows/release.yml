@@ -65,7 +65,8 @@ name: Release
 #   * No build cache is restored here: a release is built from the tagged source and the lock files.
 #   * npm runs with --ignore-scripts (no package install script runs) and cargo runs with --locked.
 #   * Building needs a network (crates, npm packages, NSIS and WiX tools). The app itself makes no connections.
-#   * apps/app/test/workflows.test.ts fails if any of the above stops being true in these files.
+#   * apps/app/test/workflows.test.ts reads every workflow file and fails on the common ways the above can stop
+#     being true. It is a tripwire, not a proof: review changes to these files by hand as well.
 #
 # KNOWN GAP: the Windows signature is put on the finished installers (.exe and .msi), not on the program file
 # inside them, because signing that file would need the build to run with the certificate. The release notes

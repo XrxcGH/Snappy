@@ -111,7 +111,7 @@ A run started by hand (Actions, Release, Run workflow) is never official: it bui
 
 Check the setup with `gh api repos/OWNER/REPO/environments/release --jq '.protection_rules'` (it should list a required reviewer) and `gh api repos/OWNER/REPO/environments/release/deployment-branch-policies` (it should list only `v*`).
 
-The other workflows reference no secret, never use `pull_request_target`, and give each job read-only access, so pull requests from forks and from Dependabot cannot reach anything. `apps/app/test/workflows.test.ts` fails the test run if a secret, a write permission, an unpinned action, `pull_request_target` or an `npm ci` without `--ignore-scripts` appears where it should not.
+The other workflows reference no secret, never use `pull_request_target`, and give each job read-only access, so pull requests from forks and from Dependabot cannot reach anything. `apps/app/test/workflows.test.ts` reads every file in `.github/workflows` and fails the test run on the common forms of a secret, a write permission, an unpinned action, a trigger that runs on someone else's content, an expression inside a script, a checkout that keeps the token, or an `npm ci` without `--ignore-scripts` appearing where it should not. It is a tripwire, not a proof, so review changes to the workflow files by hand as well. A `workflow-lint` job in `ci.yml` runs actionlint for syntax.
 
 Known limits of this design: the Windows signature is on the installers, not on the program inside them; the macOS and Android signing steps and every other step beyond the Windows build have never run on GitHub; and a person who can push to `main` and approve the `release` environment can still ship what they like, because the review step is the person.
 

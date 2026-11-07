@@ -5,8 +5,10 @@ name: CI
 #     nothing to read. It uses the `pull_request` trigger (never `pull_request_target`, which would run
 #     the pull request's code with the base repository's token and secrets).
 #   * For those pull requests GitHub also hands the run a read-only token, whatever the file says.
-#   * Every job states `permissions: contents: read`. apps/app/test/workflows.test.ts fails if a secret,
-#     a write permission, an unpinned action or `pull_request_target` appears in any workflow.
+#   * Every job states `permissions: contents: read`. apps/app/test/workflows.test.ts reads every workflow file
+#     and fails on the common forms of a secret, a write permission, an unpinned action, a risky trigger
+#     or an expression inside a script. It is a tripwire, not a proof: review workflow changes by hand too.
+#     The `workflow-lint` job below runs actionlint for syntax.
 #   * `npm ci --ignore-scripts`: no package install script runs (only esbuild has one; the build and the
 #     tests were run without it).
 
@@ -70,3 +72,22 @@ jobs:
           node-version: 24
       - name: Check the Rust dependency tree
         run: node apps/app/tools/check-no-network-deps.mjs
+
+  # Syntax and expression errors in the workflow files. Go is already on the runner. The version is pinned (Go
+  # checks the download against its public checksum database). The shell and Python checkers are off: they
+  # would lint the signing scripts for style, and this job is only for the workflow syntax.
+  workflow-lint:
+    name: Workflow files pass actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run actionlint
+        run: |
+          set -euo pipefail
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint" -shellcheck= -pyflakes=
