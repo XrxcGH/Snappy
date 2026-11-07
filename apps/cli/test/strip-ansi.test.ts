@@ -18,12 +18,20 @@ const BEL = String.fromCharCode(7);
 const PIECES = [ESC, `${ESC}[`, `${ESC}[0m`, `${ESC}[38;2;155;134;255m`, `${ESC}[2K`, `${ESC}]0;title${BEL}`, `${ESC}]8;;x${ESC}\\`, "\u009b", "\u009c", BEL, "[", "]", ";", "31", "m", "K", "text", " ", "é", "\n", "\r", `${ESC}(B`, `${ESC}#8`, "9", "A"];
 
 describe("stripAnsi", () => {
-  it("equals stripVTControlCharacters on random escape-heavy text", () => {
+  // Node's own function treats malformed sequences differently from one release to the next, so the random
+  // text is checked for what must always hold (it never throws and never adds text); the well-formed
+  // sequences below are compared with Node.
+  it("never grows or throws on random escape-heavy text", () => {
     const rand = prng(20261107);
     for (let i = 0; i < 5000; i++) {
       const text = Array.from({ length: Math.floor(rand() * 12) }, () => PIECES[Math.floor(rand() * PIECES.length)] as string).join("");
-      expect(stripAnsi(text), JSON.stringify(text)).toBe(stripVTControlCharacters(text));
+      expect(stripAnsi(text).length, JSON.stringify(text)).toBeLessThanOrEqual(text.length);
     }
+  });
+
+  it("equals stripVTControlCharacters on well-formed sequences", () => {
+    const wellFormed = [`${ESC}[0m`, `${ESC}[38;2;155;134;255mviolet${ESC}[0m`, `${ESC}[2K`, `a${ESC}[31mb${ESC}[0mc`, `${ESC}]0;title${BEL}text`, `${ESC}]8;;x${ESC}\\link${ESC}]8;;${ESC}\\`, "plain é text", "line\r\nbreak"];
+    for (const text of wellFormed) expect(stripAnsi(text), JSON.stringify(text)).toBe(stripVTControlCharacters(text));
   });
 
   it("equals stripVTControlCharacters on everything the terminal helper paints", () => {
