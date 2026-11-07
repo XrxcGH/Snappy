@@ -4,6 +4,7 @@
  */
 import { syntheticExportZip } from "@snappy-export/core";
 import { parseFlags } from "../args.ts";
+import type { OptionSpec } from "../args.ts";
 import { fsError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { atomicWrite } from "../ledger-store.ts";
@@ -23,6 +24,14 @@ Options
 /** Fixed, so the demo files are identical on every run. The earlier export is 120 days older. */
 const DEMO_NOW = Date.UTC(2026, 10, 1, 12, 0, 0);
 
+/** The options this command accepts, shared with the in-app command catalog's checks. */
+export const DEMO_OPTIONS: OptionSpec = {
+  dir: { type: "string" },
+  run: { type: "boolean" },
+  "no-color": { type: "boolean" },
+  help: { type: "boolean", short: "h" },
+};
+
 interface Flags {
   dir?: string;
   run?: boolean;
@@ -36,12 +45,7 @@ function commandPrefix(io: Io): string {
 }
 
 export async function demoCommand(args: string[], io: Io): Promise<number> {
-  const { values: flags } = parseFlags<Flags>("demo", args, {
-    dir: { type: "string" },
-    run: { type: "boolean" },
-    "no-color": { type: "boolean" },
-    help: { type: "boolean", short: "h" },
-  });
+  const { values: flags } = parseFlags<Flags>("demo", args, DEMO_OPTIONS);
   if (flags.help) {
     io.out.write(DEMO_USAGE);
     return 0;

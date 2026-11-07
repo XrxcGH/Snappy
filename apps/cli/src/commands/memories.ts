@@ -10,6 +10,7 @@
 import { ZipEntryError, listZipEntries, planMemories, readZipEntry } from "@snappy-export/core";
 import type { MemoriesPlan, PlannedMemory, RandomAccessReader, ZipEntryInfo } from "@snappy-export/core";
 import { intOption, parseFlags } from "../args.ts";
+import type { OptionSpec } from "../args.ts";
 import { CliError, fsError } from "../errors.ts";
 import { formatBytes, formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
 import type { Io } from "../io.ts";
@@ -46,6 +47,19 @@ A report with counts and statuses only is saved as memories-report.json.
 
 Exit codes: 0 done, 1 could not run, 3 finished but some items failed.
 `;
+
+/** The options this command accepts, shared with the in-app command catalog's checks. */
+export const MEMORIES_OPTIONS: OptionSpec = {
+  out: { type: "string" },
+  "dry-run": { type: "boolean" },
+  layout: { type: "string" },
+  download: { type: "boolean" },
+  concurrency: { type: "string" },
+  "cap-gb": { type: "string" },
+  verbose: { type: "boolean" },
+  "no-color": { type: "boolean" },
+  help: { type: "boolean", short: "h" },
+};
 
 interface Flags {
   out?: string;
@@ -189,17 +203,7 @@ function meterLines(plan: MemoriesPlan, term: Term): string[] {
 }
 
 export async function memoriesCommand(args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseFlags<Flags>("memories", args, {
-    out: { type: "string" },
-    "dry-run": { type: "boolean" },
-    layout: { type: "string" },
-    download: { type: "boolean" },
-    concurrency: { type: "string" },
-    "cap-gb": { type: "string" },
-    verbose: { type: "boolean" },
-    "no-color": { type: "boolean" },
-    help: { type: "boolean", short: "h" },
-  });
+  const { values: flags, positionals } = parseFlags<Flags>("memories", args, MEMORIES_OPTIONS);
   if (flags.help) {
     io.out.write(MEMORIES_USAGE);
     return 0;

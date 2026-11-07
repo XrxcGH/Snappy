@@ -4,6 +4,7 @@
  */
 import { MAX_USERNAME_LENGTH, normUser } from "@snappy-export/core";
 import { parseFlags } from "../args.ts";
+import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { defaultLedgerPath, isFreshStore, normalizeAllowlist, saveAllowlist, unlockStore, withLedgerLock } from "../ledger-store.ts";
@@ -24,6 +25,13 @@ Options
 The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
 `;
 
+/** The options this command accepts, shared with the in-app command catalog's checks. */
+export const KEEP_OPTIONS: OptionSpec = {
+  ledger: { type: "string" },
+  "passphrase-file": { type: "string" },
+  help: { type: "boolean", short: "h" },
+};
+
 interface Flags {
   ledger?: string;
   "passphrase-file"?: string;
@@ -31,11 +39,7 @@ interface Flags {
 }
 
 export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseFlags<Flags>(mode, args, {
-    ledger: { type: "string" },
-    "passphrase-file": { type: "string" },
-    help: { type: "boolean", short: "h" },
-  });
+  const { values: flags, positionals } = parseFlags<Flags>(mode, args, KEEP_OPTIONS);
   if (flags.help) {
     io.out.write(KEEP_USAGE);
     return 0;

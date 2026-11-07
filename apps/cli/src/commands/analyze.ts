@@ -8,6 +8,7 @@ import type { Confidence, Ledger, ParsedExport } from "@snappy-export/core";
 import { analyzeExport } from "../analysis.ts";
 import type { AnalysisResult } from "../analysis.ts";
 import { intOption, parseFlags } from "../args.ts";
+import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { newestMtime, parseParts, requireFirstPart, resolveZipPaths, withReaders } from "../inputs.ts";
@@ -41,6 +42,23 @@ The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidd
 
 Exit codes: 0 done, 1 could not run, 2 the export has errors.
 `;
+
+/** The options this command accepts, shared with the in-app command catalog's checks. */
+export const ANALYZE_OPTIONS: OptionSpec = {
+  earlier: { type: "string", multiple: true },
+  "no-save": { type: "boolean" },
+  ledger: { type: "string" },
+  "passphrase-file": { type: "string" },
+  "friend-count": { type: "string" },
+  "min-confidence": { type: "string" },
+  allow: { type: "string", multiple: true },
+  limit: { type: "string" },
+  json: { type: "boolean" },
+  verbose: { type: "boolean" },
+  csv: { type: "string" },
+  "no-color": { type: "boolean" },
+  help: { type: "boolean", short: "h" },
+};
 
 interface Flags {
   earlier?: string[];
@@ -104,21 +122,7 @@ function parseAllow(values: string[] | undefined): string[] {
 }
 
 export async function analyzeCommand(args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseFlags<Flags>("analyze", args, {
-    earlier: { type: "string", multiple: true },
-    "no-save": { type: "boolean" },
-    ledger: { type: "string" },
-    "passphrase-file": { type: "string" },
-    "friend-count": { type: "string" },
-    "min-confidence": { type: "string" },
-    allow: { type: "string", multiple: true },
-    limit: { type: "string" },
-    json: { type: "boolean" },
-    verbose: { type: "boolean" },
-    csv: { type: "string" },
-    "no-color": { type: "boolean" },
-    help: { type: "boolean", short: "h" },
-  });
+  const { values: flags, positionals } = parseFlags<Flags>("analyze", args, ANALYZE_OPTIONS);
   if (flags.help) {
     io.out.write(ANALYZE_USAGE);
     return 0;

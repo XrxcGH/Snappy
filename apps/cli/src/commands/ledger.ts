@@ -3,6 +3,7 @@
  * usernames are never printed.
  */
 import { parseFlags } from "../args.ts";
+import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import { formatDate, plural } from "../format.ts";
 import type { Io } from "../io.ts";
@@ -23,6 +24,14 @@ Options
 The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
 `;
 
+/** The options this command accepts, shared with the in-app command catalog's checks. */
+export const LEDGER_OPTIONS: OptionSpec = {
+  ledger: { type: "string" },
+  "passphrase-file": { type: "string" },
+  "no-color": { type: "boolean" },
+  help: { type: "boolean", short: "h" },
+};
+
 interface Flags {
   ledger?: string;
   "passphrase-file"?: string;
@@ -31,12 +40,7 @@ interface Flags {
 }
 
 export async function ledgerCommand(args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseFlags<Flags>("ledger", args, {
-    ledger: { type: "string" },
-    "passphrase-file": { type: "string" },
-    "no-color": { type: "boolean" },
-    help: { type: "boolean", short: "h" },
-  });
+  const { values: flags, positionals } = parseFlags<Flags>("ledger", args, LEDGER_OPTIONS);
   if (flags.help || (positionals.length === 0 && args.length === 0)) {
     io.out.write(LEDGER_USAGE);
     return 0;

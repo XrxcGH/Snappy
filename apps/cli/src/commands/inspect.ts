@@ -6,6 +6,7 @@
  */
 import { inspectExport } from "@snappy-export/core";
 import { parseFlags } from "../args.ts";
+import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { resolveZipPaths, withReaders } from "../inputs.ts";
@@ -28,6 +29,16 @@ Options
   --checks-only    Print only the checks you asked for.
 `;
 
+/** The options this command accepts, shared with the in-app command catalog's checks. */
+export const INSPECT_OPTIONS: OptionSpec = {
+  "show-keys": { type: "boolean" },
+  layout: { type: "boolean" },
+  "memory-links": { type: "boolean" },
+  "mtime-check": { type: "boolean" },
+  "checks-only": { type: "boolean" },
+  help: { type: "boolean", short: "h" },
+};
+
 interface Flags {
   "show-keys"?: boolean;
   layout?: boolean;
@@ -38,14 +49,7 @@ interface Flags {
 }
 
 export async function inspectCommand(args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseFlags<Flags>("inspect", args, {
-    "show-keys": { type: "boolean" },
-    layout: { type: "boolean" },
-    "memory-links": { type: "boolean" },
-    "mtime-check": { type: "boolean" },
-    "checks-only": { type: "boolean" },
-    help: { type: "boolean", short: "h" },
-  });
+  const { values: flags, positionals } = parseFlags<Flags>("inspect", args, INSPECT_OPTIONS);
   if (flags.help) {
     io.out.write(INSPECT_USAGE);
     return 0;
