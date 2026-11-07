@@ -52,7 +52,11 @@
  *   field-width            text inputs with different widths (one form-field width)
  *   segmented              radio choices stacked vertically, native radios shown, weak selected state
  *   table-*                table header weight, first-column wrapping, cell padding
- *   code-copy              the copy button sits inside or beside the code block, content-sized; block scrolls
+ *   code-copy              a command's Copy and Run buttons sit together in the header row above its code, Copy first, content-sized,
+ *                          inside the frame; the code scrolls sideways and never runs under them
+ *   terminal-panel         the open terminal panel (Run pressed on the Export guide's help command): fits the page, panel buttons at touch size,
+ *                          output at 4.5:1 on its ground, one exit chip with icon and words on one line, focus back on Run
+ *   terminal-csp           while a command ran: a request other than data: or blob:, a security policy violation, or a console error
  *   nav-active             the active menu item has a clear state (3:1) and is bold
  *   nav-icon               menu icons that repeat another meaning (overview, privacy, guide)
  *   header-*               one tidy row, vertical centers, theme toggle (name, 44 px, focus ring, pressed state)
@@ -1013,26 +1017,30 @@ function measurePage(opts) {
       if (Math.max(rBorder, rFill) < 3) add("segmented", chosen, "chosen option stands out only " + (Math.round(Math.max(rBorder, rFill) * 100) / 100) + ":1 from its track; needs 3:1");
       if (others.length && !(parseInt(s.fontWeight, 10) > parseInt(cs(others[0]).fontWeight, 10))) add("segmented", chosen, "chosen option is not bolder than the others");
     }
-    // code blocks
+    // code blocks: the code scrolls sideways; a command's Copy and Run sit together in the header row above it
     for (const pre of document.querySelectorAll("pre")) {
       if (!vis(pre)) continue;
       const s = cs(pre);
       const pr = R(pre);
       if (!(s.overflowX === "auto" || s.overflowX === "scroll")) add("code-copy", pre, "code block does not scroll sideways (overflow-x " + s.overflowX + "); long lines get cut or spill");
       if (!/^pre$/.test(s.whiteSpace)) add("code-copy", pre, "code block wraps its text (white-space " + s.whiteSpace + "); it should scroll sideways instead");
-      let scopeEl = pre.parentElement;
-      let btn = null;
-      for (let i = 0; i < 3 && scopeEl && !btn; i++, scopeEl = scopeEl.parentElement) btn = [...scopeEl.querySelectorAll("button")].find((b) => vis(b) && /copy/i.test(norm(b.textContent) + (b.getAttribute("aria-label") || "")));
-      if (btn) {
-        const br = R(btn);
-        const inside = br.left >= pr.left - 1 && br.right <= pr.right + 1 && br.top >= pr.top - 1 && br.bottom <= pr.bottom + 1;
-        const beside = br.left >= pr.right - 1 && br.bottom > pr.top && br.top < pr.bottom;
-        const under = br.top >= pr.bottom - 2;
-        if (under) add("code-copy", btn, "copy button is a separate bar under the code block (" + px(br.width) + " wide); place it top right inside the block");
-        else if (!inside && !beside) add("code-copy", btn, "copy button is neither inside nor beside the code block");
-        else if (inside && !(br.top - pr.top <= 28 && pr.right - br.right <= 28)) add("code-copy", btn, "copy button is inside the block but not at the top right (offset top " + px(br.top - pr.top) + ", right " + px(pr.right - br.right) + ")");
-        if (br.width > pr.width * 0.5 && pr.width > 200) add("code-copy", btn, "copy button is " + px(br.width) + " wide in a " + px(pr.width) + " block; make it compact");
+      const frame = pre.closest(".command");
+      if (!frame) continue; // other code (the page's policy text) has no buttons
+      const fr = R(frame);
+      const head = frame.querySelector(".command-head");
+      const buttons = head ? [...head.querySelectorAll("button")].filter(vis) : [];
+      const copy = buttons.find((x) => /^copy$/i.test(norm(x.textContent)));
+      const runButton = buttons.find((x) => /^run$/i.test(norm(x.textContent)));
+      if (!copy || !runButton) { add("code-copy", frame, "a command needs a Copy button and a Run button in the header row above its code"); continue; }
+      const cr = R(copy);
+      const rr = R(runButton);
+      for (const [name, x, r] of [["Copy", copy, cr], ["Run", runButton, rr]]) {
+        if (r.left < fr.left - 1 || r.right > fr.right + 1) add("code-copy", x, name + " button is outside the command frame");
+        if (r.bottom > pr.top + 1) add("code-copy", x, name + " button is not above the code (the button ends at " + px(r.bottom) + ", the code starts at " + px(pr.top) + ")");
+        if (r.width > fr.width * 0.5 && fr.width > 200) add("code-copy", x, name + " button is " + px(r.width) + " wide in a " + px(fr.width) + " frame; make it compact");
       }
+      if (!(cr.left < rr.left - 1 || cr.top < rr.top - 1)) add("code-copy", copy, "Copy must come before Run");
+      if (pr.right > fr.right + 1 || pr.left < fr.left - 1) add("code-copy", pre, "the code is wider than its frame (" + px(pr.left) + " to " + px(pr.right) + " in " + px(fr.left) + " to " + px(fr.right) + ")");
     }
   }
 
@@ -1151,11 +1159,6 @@ function measurePage(opts) {
     if (tg && mb && vis(tg) && vis(mb)) {
       const a = cs(tg); const b = cs(mb);
       if (parseFloat(a.borderTopWidth) !== parseFloat(b.borderTopWidth) || a.borderTopColor !== b.borderTopColor) add("header-controls", tg, "theme toggle border " + a.borderTopWidth + " " + a.borderTopColor + " differs from the Menu button's " + b.borderTopWidth + " " + b.borderTopColor + "; the two must look like one kind of control");
-    }
-    // a long command never runs under its Copy button
-    for (const frame of document.querySelectorAll(".code-block")) {
-      const pre = frame.querySelector("pre"); const btn = frame.querySelector("button");
-      if (pre && btn && vis(pre) && vis(btn) && R(pre).right > R(btn).left + 1) add("code-copy", btn, "the code block runs under the Copy button (code ends at " + px(R(pre).right) + ", button starts at " + px(R(btn).left) + ")");
     }
     // tables are rounded like cards, and stacked phone rows do not repeat the column names
     for (const wrap of document.querySelectorAll(".table-wrap")) {
@@ -1293,6 +1296,7 @@ async function runPass(page, { theme, width, touch, routes, fresh, mode, results
     }
     navIconDone.add(theme);
     if (route === "settings" && !fresh) await confirmPass(page, { theme, width, touch, results });
+    if (route === "guide" && !fresh) await terminalPass(page, { theme, width, touch, results });
     for (const f of res.found) results.push({ route: fresh ? `${route} (no export)` : route, theme, width, ...f });
     facts.push({ route: fresh ? `${route}*` : route, theme, width, ...res.facts });
   }
@@ -1422,6 +1426,110 @@ async function confirmPass(page, { theme, width, touch, results }) {
   for (const x of found) results.push({ route: "settings", theme, width, check: "confirm-dialog", sel: x.sel, text: "", detail: x.detail });
   const cancel = page.locator("[data-key=delete-cancel]").first();
   if ((await cancel.count()) > 0) await cancel.click();
+  await page.waitForTimeout(100);
+}
+
+/**
+ * The command block and its terminal panel, on the Export guide: Run is pressed on the "help" block and the open panel is measured
+ * once the exit chip shows. It must fit the page (nothing wider than the window), keep every panel button at touch size, read at
+ * 4.5 to 1 on its own ground, say how the Run ended on one line, and give focus back to Run. The page must make no request but data:
+ * and blob:, report no security policy violation and no console error: this is the real-browser proof that the helper starts
+ * under the policy and that sealing works in it.
+ */
+async function terminalPass(page, { theme, width, touch, results }) {
+  const block = page.locator(".command", { hasText: /Show the commands/ }).first();
+  const add = (check, sel, detail) => results.push({ route: "guide", theme, width, check, sel, text: "", detail });
+  if ((await block.count()) === 0) {
+    add("terminal-panel", ".command", "the Export guide has no command block for the help command");
+    return;
+  }
+  const requests = [];
+  const problems = [];
+  const onRequest = (r) => {
+    const u = r.url();
+    if (!/^(data:|blob:)/.test(u) && !u.startsWith(page.url().split("#")[0])) requests.push(u);
+  };
+  const onConsole = (m) => { if (m.type() === "error") problems.push("console error: " + m.text().slice(0, 120)); };
+  const onPageError = (e) => problems.push("page error: " + String(e.message).slice(0, 120));
+  page.on("request", onRequest);
+  page.on("console", onConsole);
+  page.on("pageerror", onPageError);
+  await page.evaluate(() => {
+    window.__policy = [];
+    document.addEventListener("securitypolicyviolation", (e) => window.__policy.push(e.violatedDirective + " " + (e.blockedURI || "").slice(0, 60)));
+  });
+  await block.scrollIntoViewIfNeeded();
+  const run = block.locator(".command-head button", { hasText: /^Run$/ });
+  await run.click();
+  const done = await page.waitForSelector(".command-chip", { timeout: 20000, state: "attached" }).then(() => true, () => false);
+  await page.waitForTimeout(250);
+  page.off("request", onRequest);
+  page.off("console", onConsole);
+  page.off("pageerror", onPageError);
+  if (!done) {
+    add("terminal-panel", ".command-panel", "pressing Run on the help command did not end in an exit chip within 20 seconds");
+    return;
+  }
+  const policy = await page.evaluate(() => window.__policy || []);
+  for (const v of policy) add("terminal-csp", "page", "the security policy blocked something while a command ran: " + v);
+  for (const u of requests) add("terminal-csp", "page", "a request other than data: or blob: was made while a command ran: " + u.slice(0, 80));
+  for (const p of problems) add("terminal-csp", "page", p);
+  const found = await page.evaluate(({ touch }) => {
+    const out = [];
+    const R = (e) => e.getBoundingClientRect();
+    const px = (n) => Math.round(n * 10) / 10 + "px";
+    const frame = [...document.querySelectorAll(".command")].find((f) => /Show the commands/.test(f.textContent));
+    const panel = frame && frame.querySelector(".command-panel");
+    if (!panel || panel.childNodes.length === 0) return [{ sel: ".command-panel", detail: "the panel is empty after the command ended" }];
+    const vw = document.documentElement.clientWidth;
+    if (document.documentElement.scrollWidth > vw + 1) out.push({ sel: "html", detail: "the page is " + document.documentElement.scrollWidth + " px wide in a " + vw + " px window with the panel open" });
+    const log = panel.querySelector(".t-log");
+    if (!log) out.push({ sel: ".t-log", detail: "the output area is missing" });
+    else {
+      const l = R(log); const f = R(frame);
+      if (l.right > f.right + 1 || l.left < f.left - 1) out.push({ sel: ".t-log", detail: "the output area runs past its frame (" + px(l.left) + " to " + px(l.right) + " in " + px(f.left) + " to " + px(f.right) + ")" });
+      if (log.getAttribute("role") !== "log" || log.getAttribute("aria-live") !== "off" || !log.getAttribute("aria-label")) out.push({ sel: ".t-log", detail: "the output area needs role log, aria-live off and a name" });
+      if (!(log.scrollWidth <= log.clientWidth + 1) && getComputedStyle(log).overflowX !== "auto" && getComputedStyle(log).overflowX !== "scroll") out.push({ sel: ".t-log", detail: "long output lines neither fit nor scroll sideways" });
+      if (log.innerText.trim() === "") out.push({ sel: ".t-log", detail: "the output area is empty after help ran" });
+      // text contrast of every run against the output ground
+      const parse = (c) => { const m = /rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?/.exec(c); return m ? [Number(m[1]), Number(m[2]), Number(m[3]), m[4] === undefined ? 1 : Number(m[4])] : null; };
+      const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+      const ratio = (a, b) => { const x = lum(a); const y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const ground = parse(getComputedStyle(log).backgroundColor);
+      const seen = new Set();
+      for (const run of log.querySelectorAll(".t-run")) {
+        const fg = parse(getComputedStyle(run).color);
+        if (!fg || !ground || seen.has(run.className)) continue;
+        seen.add(run.className);
+        const r = ratio(fg, ground);
+        if (r < 4.5) out.push({ sel: "." + run.className.split(" ").join("."), detail: "output text reads " + (Math.round(r * 100) / 100) + ":1 on the output ground; needs 4.5:1" });
+      }
+    }
+    const chips = [...panel.querySelectorAll(".command-chip")];
+    if (chips.length !== 1) out.push({ sel: ".command-chip", detail: "expected one exit chip, found " + chips.length });
+    for (const chip of chips) {
+      const c = R(chip);
+      const lineHeight = parseFloat(getComputedStyle(chip).lineHeight) || 20;
+      if (c.height > lineHeight * 2 + 4) out.push({ sel: ".command-chip", detail: "the exit chip takes more than one line (" + px(c.height) + " tall, line height " + px(lineHeight) + ")" });
+      if (!chip.querySelector("svg") || chip.querySelector(".command-chip-label").textContent.trim() === "") out.push({ sel: ".command-chip", detail: "the exit chip needs an icon and words, never color alone" });
+      if (c.right > R(frame).right + 1) out.push({ sel: ".command-chip", detail: "the exit chip runs past the frame" });
+    }
+    const min = touch ? 43.5 : 35.5;
+    for (const b of panel.querySelectorAll("button")) {
+      const r = R(b);
+      if (r.height < min) out.push({ sel: "button", detail: "the panel button " + JSON.stringify(b.innerText.trim()) + " is " + px(r.height) + " tall, needs " + (touch ? 44 : 36) + " px" });
+      if (r.right > vw + 1 || r.left < -1) out.push({ sel: "button", detail: "the panel button " + JSON.stringify(b.innerText.trim()) + " is off the window" });
+    }
+    const labels = [...panel.querySelectorAll("button")].map((b) => b.innerText.trim());
+    if (labels.join("|") !== "Copy output|Close") out.push({ sel: ".command-toolbar", detail: "the finished panel offers " + JSON.stringify(labels) + ', expected "Copy output" and "Close"' });
+    const run = frame.querySelector(".command-head button:last-child");
+    if (run && document.activeElement !== run) out.push({ sel: "button", detail: "focus did not return to the Run button when the command ended (it is on " + (document.activeElement ? document.activeElement.tagName.toLowerCase() + " " + (document.activeElement.innerText || "").trim().slice(0, 20) : "nothing") + ")" });
+    return out;
+  }, { touch });
+  for (const x of found) add("terminal-panel", x.sel, x.detail);
+  // put the page back as it was
+  const close = block.locator(".command-panel button", { hasText: /^Close$/ });
+  if ((await close.count()) > 0) await close.click();
   await page.waitForTimeout(100);
 }
 
