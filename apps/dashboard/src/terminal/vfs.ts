@@ -12,6 +12,7 @@
  */
 import { CliError, FsError, posixPath } from "./cli-api.ts";
 import type { FsDirEntry, FsPort, FsReadHandle, FsStat } from "./cli-api.ts";
+import { assignInputNames } from "./input-names.ts";
 
 /** One file the person picked. */
 export interface PickedInput {
@@ -61,25 +62,10 @@ function deny(): never {
   throw new FsError("EACCES");
 }
 
-/** A name that is safe as one file name: no separators or NUL, never empty. */
-function safeName(name: string): string {
-  const cleaned = name.replace(/[\\/\0]/g, "_").trim();
-  return cleaned === "" || cleaned === "." || cleaned === ".." ? "file" : cleaned;
-}
-
-/** "a.zip" taken twice becomes "a.zip" and "a (2).zip". */
+/** The picked files under their /in names ("a.zip" taken twice becomes "a.zip" and "a (2).zip"). */
 function uniqueNames(inputs: readonly PickedInput[]): Map<string, Blob> {
-  const out = new Map<string, Blob>();
-  for (const input of inputs) {
-    const base = safeName(input.name);
-    let name = base;
-    for (let n = 2; out.has(name); n++) {
-      const dot = base.lastIndexOf(".");
-      name = dot > 0 ? `${base.slice(0, dot)} (${n})${base.slice(dot)}` : `${base} (${n})`;
-    }
-    out.set(name, input.blob);
-  }
-  return out;
+  const names = assignInputNames(inputs.map((i) => i.name));
+  return new Map(inputs.map((input, i) => [names[i] as string, input.blob]));
 }
 
 function blobHandle(blob: Blob, checkStop: () => void): FsReadHandle {

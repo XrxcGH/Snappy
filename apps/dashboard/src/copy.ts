@@ -497,4 +497,88 @@ export const vaultMessages = {
   lockedFirst: "Unlock your saved data first, or delete it in Settings to start over.",
   nothingSaved: "No saved data was found on this device.",
   savedElsewhere: "Saved data already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
+  /** After a command changed the saved history while the dashboard was open. */
+  historyUpdated: "Saved history updated. Unlock to see it.",
+};
+
+/**
+ * The in-app terminal: command blocks, the output panel and the prompts. One-line labels and short
+ * notes, like the rest of the interface. Button labels are a verb plus a short noun.
+ */
+export const terminal = {
+  /** The muted one-line title above each command, by command. */
+  titles: {
+    help: "Show the commands",
+    "demo-run": "Try it on invented data",
+    inspect: "Show the shape of your export",
+    "analyze-preview": "Find friends to review",
+    "analyze-save": "Find friends and save history",
+    "memories-preview": "Preview the Memories rescue",
+    "memories-rescue": "Rescue your Memories",
+    "ledger-status": "Show your saved history",
+  },
+  runButton: "Run",
+  stopButton: "Stop",
+  closeButton: "Close",
+  copyOutputButton: "Copy output",
+  chooseButton: "Choose export",
+  clearFilesButton: "Clear",
+  continueButton: "Continue",
+  cancelButton: "Cancel",
+  confirmFolderButton: "Save files",
+  confirmStoreButton: "Update history",
+  saveFileButton: "Save",
+  saveAllButton: "Save all",
+  clearOutButton: "Clear files",
+  /** Accessible names. Each starts with the visible label. */
+  copyFor: (title: string) => `Copy command: ${title}`,
+  runFor: (title: string) => `Run command: ${title}`,
+  stopFor: (title: string) => `Stop command: ${title}`,
+  saveFileFor: (name: string) => `Save ${name}`,
+  panelLabelFor: (title: string) => `Output of ${title}`,
+  logLabel: "Command output",
+  filesChosen: (n: number) => (n === 1 ? "1 file chosen" : `${n} files chosen`),
+  /** Why Run cannot start yet, or at all. */
+  needsFileHint: "Choose your export first.",
+  busyHint: "Another command is running.",
+  noWorkerNote: "This browser cannot run commands here.",
+  networkNote: "Needs a terminal on your computer.",
+  notZipNote: "Choose .zip files from your export.",
+  /** The confirmation before a command that writes. */
+  confirmFolderTitle: "Save to a virtual folder?",
+  confirmFolderBody: (megabytes: number) => `Files stay in this page until you save them. Up to ${megabytes} MB.`,
+  confirmStoreTitle: "Update saved history?",
+  confirmStoreBody: "This changes the saved history in this browser. It locks the dashboard until you unlock it again.",
+  /** The passphrase prompt. The question itself comes from the command. */
+  secretTitle: "Passphrase needed",
+  secretNote: "Kept in memory only. It is never shown or saved.",
+  /** Status words, spoken and shown. */
+  startedAnnounce: "Running",
+  askingAnnounce: "Needs your passphrase",
+  stoppingAnnounce: "Stopping",
+  copiedCommandAnnounce: "Command copied.",
+  copiedOutputAnnounce: "Output copied.",
+  failedAnnounce: "The command could not start.",
+  doneAnnounce: (title: string, label: string, code: number) => `${title}: ${label}. Exit code ${code}.`,
+  /** The chip under the output: what the exit meant. */
+  exit: {
+    done: "Done",
+    couldNotRun: "Could not run",
+    exportErrors: "Export has errors",
+    someFailed: "Finished, some items failed",
+    stopped: "Stopped",
+    blocked: "Needs a terminal on your computer",
+    helperStopped: "The helper stopped",
+  },
+  codeLabel: (code: number) => `Exit code ${code}`,
+  secondsLabel: (seconds: string) => `${seconds} s`,
+  trimmed: "Earlier output removed.",
+  /** The virtual output folder. */
+  outHeading: "Saved files",
+  outCount: (files: number, size: string) => `${files === 1 ? "1 file" : `${files} files`}, ${size}`,
+  outMore: (n: number) => `Plus ${n} more`,
+  outLostNote: "Stopping keeps the files already written. If the helper has to be cut off, they are lost.",
+  outTooBigNote: "That is too much for one .zip. Save the files one by one.",
+  outSavedAnnounce: "File saved.",
+  outSaveFailedNote: "Snappy could not save that file. Try again.",
 };

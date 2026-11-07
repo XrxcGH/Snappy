@@ -105,7 +105,7 @@ const PREFIX_PATHS = [/^common\.stepPrefix\(/];
 /** Verbs a button may start with, plus the two noun-only labels the interface already uses. */
 const BUTTON_FIRST_WORDS = new Set([
   "Add", "Apply", "Back", "Cancel", "Change", "Choose", "Clear", "Close", "Continue", "Copy", "Delete", "Dismiss", "Done", "Download", "Edit", "Export", "Go", "Import", "Keep", "Lock", "Menu", "Next", "Open", "Pick", "Print", "Read",
-  "Remove", "Rescue", "Reset", "Retry", "Review", "Save", "Seal", "Select", "Set", "Show", "Start", "Stop", "Switch", "Try", "Undo", "Unlock", "Update", "Use", "View",
+  "Remove", "Rescue", "Reset", "Retry", "Review", "Run", "Save", "Seal", "Select", "Set", "Show", "Start", "Stop", "Switch", "Try", "Undo", "Unlock", "Update", "Use", "View",
 ]);
 
 /** The Start page promises a different headline than its menu label ("Start"); every other page title equals its menu label. */
