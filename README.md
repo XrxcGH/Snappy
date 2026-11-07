@@ -93,8 +93,9 @@ packages/core     Parsing, ledger, detectors, cleanup queue, Memories planning,
                   metadata writers, sealing, and synthetic test data (@snappy-export/core)
 apps/cli          The snappy command
 apps/dashboard    The browser dashboard (builds to one HTML file)
+apps/app          The desktop app: the dashboard in a native window (Tauri)
 brand             Logo, color and type tokens, icons
-docs              Brand guide and export guide
+docs              Brand guide, export guide and the releases guide
 ```
 
 ## Run the tests

@@ -30,8 +30,9 @@ The layout:
 - `packages/core`: parsing, analysis and planning. Pure functions only: no file access, no network, no logging, no clock (time comes in as a parameter).
 - `apps/cli`: the command-line tool.
 - `apps/dashboard`: the offline dashboard, built into one file.
+- `apps/app`: the desktop app, the same dashboard in a native window. Read `apps/app/README.md` before you touch the shell: it has the rules for dependencies, versions and what to check in the built program.
 - `brand/` and `docs/BRAND.md`: logo, tokens and the writing rules.
-- `docs/`: the brand guide and the export guide.
+- `docs/`: the brand guide, the export guide and the releases guide.
 
 ## The command runner
 
