@@ -76,3 +76,5 @@ export type { MemoryMediaFile, PairingResult } from "./memories/pair.ts";
 // synthetic fixtures (demo mode + tests)
 export { buildSyntheticExport, syntheticExportZip, syntheticExportParts, CANARIES } from "./testing/synthetic-export.ts";
 export type { SyntheticExportOptions } from "./testing/synthetic-export.ts";
+
+export * as insights from "./insights/index.ts";
