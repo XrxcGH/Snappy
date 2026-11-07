@@ -52,6 +52,11 @@ async function collect(): Promise<Record<string, string>> {
   await capture("errors", ["analyze", join(dir, "missing.zip")]);
   await capture("usage", ["analyze", later, "--bogus"]);
   await capture("unknown", ["bogus"]);
+  // The messages the in-app terminal adds: no network, and a stop request.
+  await capture("no network", ["memories", later, "--out", join(dir, "net-out"), "--download"], { network: false });
+  const stopped = new AbortController();
+  stopped.abort();
+  await capture("stopped", ["memories", parts, "--out", join(dir, "stop-out")], { signal: stopped.signal });
   return outputs;
 }
 
