@@ -78,15 +78,34 @@ and the release build are the same code apart from that.
 - The page keeps the dashboard's `connect-src 'none'`. The default reader uses no IPC. The fallback reader's
   IPC works because Tauri falls back from fetch to `postMessage`; the console shows one blocked-fetch warning.
 - Release builds start WebView2 with its background services off and the account sign-in features `msOneAuthWAM`
-  and `msForceOneAuthWAM` disabled, which removed the connection to Microsoft addresses that the browser process
-  otherwise makes from the second launch on a profile (found on one machine). On runtime 156 the first feature
-  was enough; on 157 the second was needed too. That depends on the installed WebView2 version, so it is not a
-  promise: the Windows WebView2 runtime is a separate Microsoft component that Snappy does not control, and
-  nothing in CI can see this change. After a runtime update, repeat the socket check in "Checks that need the
-  built program" (three launches on one profile, watching the browser process for outbound sockets).
+  and `msForceOneAuthWAM` disabled. That depends on the installed WebView2 version, so it is not a promise: the
+  Windows WebView2 runtime is a separate Microsoft component that Snappy does not control, and nothing in CI can
+  see this change. After a runtime update, repeat the socket check in "Checks that need the built program"
+  (three launches on one profile, watching the browser process for outbound sockets).
   The Privacy page says this in a short note, shown only in the desktop app. The wording lives in
   `apps/dashboard/src/copy.ts` (`privacy.desktop*`) and in `docs/RELEASES.md`; keep the two in step, and say
   nothing there that has not been checked.
+
+### Record of the WebView2 sign-in finding (maintainers)
+
+What was seen, all on one Windows 11 computer that is not a clean machine:
+
+- A default WebView2 browser process opened an encrypted connection to Microsoft addresses (the certificate was for
+  outlook.com) within about ten seconds of starting. A later control run with default switches and a fresh profile
+  connected on its first launch, a few seconds in. So the connection does not wait for a second launch.
+- It did not come from Snappy's page: it happened with the web engine pointed at a dead proxy. The browser process had
+  loaded Microsoft's account sign-in extension (`MicrosoftAccountWAMExtension.dll`).
+- Runtime 156: switching off `msOneAuthWAM` stopped it in every test (four runs of 30 to 150 seconds with the switch
+  passed by a test build, two runs of 60 seconds on the finished app). The same profile without the switch connected
+  in every control run.
+- Runtime 157 (the runtime updated itself): with that one switch the connection came back, although the switch was on
+  the command line. Adding `msForceOneAuthWAM` stopped it again: no connection in 4 launches of a test build and 3
+  launches of the finished app, where the switches without it connected in 5 of 6 launches of the finished app.
+
+Limits: one computer; the feature names belong to Microsoft's runtime, which updates itself, as 157 already showed;
+a build runner has no Microsoft account, so nothing automated notices a change. A firewall rule for
+`msedgewebview2.exe` should block it, but nobody has tested one (creating it needs administrator rights).
+The system web engines on macOS, Linux and Android have not been checked.
 
 ## Notes for contributors
 

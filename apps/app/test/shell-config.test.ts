@@ -247,6 +247,25 @@ describe("WebView2 hardening", () => {
     expect(c).toMatch(/pub fn run\(\) \{\s*scrub_webview_environment\(\);/); // before anything else
   });
 
+  it("says the WebView2 finding briefly and plainly in docs/RELEASES.md, with the details in the maintainer notes", () => {
+    const releases = readFileSync(path.join(root, "..", "..", "docs", "RELEASES.md"), "utf8");
+    const section = releases.split("## Network use")[1]?.split("\n## ")[0] ?? "";
+    const bullet = section.split("\n").find((l) => l.startsWith("- On Windows, the window is drawn by")) ?? "";
+    expect(bullet).not.toBe("");
+    expect(bullet.split(/\s+/).length).toBeLessThan(140);
+    // Hedged, and the same three facts as the in-app lines (copy.ts): one test, one computer, an update could change it.
+    expect(bullet).toMatch(/In one test on one computer/);
+    expect(bullet).toMatch(/could change that/);
+    expect(bullet).toMatch(/Snappy does not control/);
+    // No DLL name, feature flag, run count or certificate name in the public text, and no "second launch" claim
+    // (a control run connected on the first launch of a fresh profile).
+    expect(bullet).not.toMatch(/\.dll|msOneAuth|msForceOneAuth|outlook\.com|second launch|runtime 15\d/i);
+    // The rest of the section says nothing narrower about when the connection happens.
+    expect(section).not.toMatch(/second launch/i);
+    expect(read("README.md")).not.toMatch(/from the second launch/);
+    expect(read("README.md")).toMatch(/MicrosoftAccountWAMExtension\.dll/);
+  });
+
   it("keeps the test hooks out of default and release builds", () => {
     const features = cargo.split("[features]")[1]?.split("[profile")[0] ?? "";
     expect(features).toMatch(/^dev-hooks = \[\]$/m);
