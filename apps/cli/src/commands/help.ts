@@ -12,7 +12,13 @@ import { KEEP_USAGE } from "./keep.ts";
 import { LEDGER_USAGE } from "./ledger.ts";
 import { MEMORIES_USAGE } from "./memories.ts";
 
+const HELP_USAGE = `Usage: snappy-export help [command]
+
+Shows the list of commands, or the options of one command.
+`;
+
 const USAGE: Record<string, string> = {
+  help: HELP_USAGE,
   inspect: INSPECT_USAGE,
   analyze: ANALYZE_USAGE,
   keep: KEEP_USAGE,

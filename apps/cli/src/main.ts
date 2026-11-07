@@ -33,6 +33,9 @@ const COMMANDS: Record<string, Command> = {
   ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, c.run])),
 };
 
+/** The names that run a command (help and version are answered before this table). */
+export const COMMAND_NAMES: readonly string[] = Object.keys(COMMANDS);
+
 /**
  * Print an error for people: what happened, then what to do. The short code is for bug reports, so it
  * is added only with --verbose or SNAPPY_DEBUG=1. Returns the exit code.
