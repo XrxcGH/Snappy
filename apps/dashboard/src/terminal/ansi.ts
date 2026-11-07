@@ -96,7 +96,7 @@ const UNPRINTABLE_RANGES: readonly (readonly [number, number])[] = [
 ];
 
 /** True for a control character, DEL, a C1 code, the soft hyphen, a zero-width or a bidirectional mark. */
-function isUnprintable(ch: string): boolean {
+export function isUnprintable(ch: string): boolean {
   const code = ch.codePointAt(0) ?? 0;
   return UNPRINTABLE_RANGES.some(([from, to]) => code >= from && code <= to);
 }

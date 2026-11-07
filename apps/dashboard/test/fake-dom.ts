@@ -63,6 +63,13 @@ export class FakeElement extends FakeNode {
   checked = false;
   value = "";
   hidden = false;
+  /** Layout does not exist here; a test sets these to try scrolling code. */
+  scrollTop = 0;
+  scrollHeight = 0;
+  clientHeight = 0;
+  clientWidth = 0;
+  /** Focus requests, so a test can see what was focused. */
+  focusCount = 0;
 
   constructor(tagName: string) {
     super();
@@ -116,7 +123,25 @@ export class FakeElement extends FakeNode {
     for (let n: FakeNode | null = node; n; n = n.parentNode) if (n === this) return true;
     return false;
   }
-  focus(): void {}
+  removeChild<T extends FakeNode>(child: T): T {
+    const at = this.childNodes.indexOf(child);
+    if (at >= 0) this.childNodes.splice(at, 1);
+    child.parentNode = null;
+    return child;
+  }
+  /** Take this element out of its parent. */
+  remove(): void {
+    this.parentNode?.removeChild(this);
+  }
+  get firstChild(): FakeNode | null {
+    return this.childNodes[0] ?? null;
+  }
+  /** The element that was focused last, for tests of focus management. */
+  static lastFocused: FakeElement | null = null;
+  focus(): void {
+    this.focusCount++;
+    FakeElement.lastFocused = this;
+  }
   override get textContent(): string {
     return this.childNodes.map((c) => c.textContent).join("");
   }

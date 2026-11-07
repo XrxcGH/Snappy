@@ -602,6 +602,25 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   mask-image: linear-gradient(to right, black calc(100% - 1.5rem), transparent);
 }
 .code-copy { margin: var(--space-1); padding-inline: var(--space-3); justify-self: end; }
+/* Terminal output. The ground is the sunken surface; every color comes from a token, and each class below is
+   checked against that ground in both themes by test/ansi-contrast.test.ts. Nothing here moves, so there is
+   nothing to switch off for reduced motion. */
+.t-log {
+  position: relative; background: var(--surface-sunken); color: var(--text); border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4); font-family: var(--font-mono); font-size: var(--text-14); line-height: 1.5;
+  white-space: pre; overflow: auto; max-height: 24rem; overscroll-behavior: contain;
+}
+.t-line { min-height: 1.5em; }
+.t-trimmed { color: var(--text-muted); font-style: italic; }
+.t-probe { position: absolute; visibility: hidden; white-space: pre; }
+.ansi-violet { color: var(--accent-fg); }
+.ansi-orange { color: var(--orange-fg); }
+.ansi-ok { color: var(--success-fg); }
+.ansi-warn { color: var(--warning-fg); }
+.ansi-danger { color: var(--danger-fg); }
+.ansi-info { color: var(--info-fg); }
+.ansi-slate, .ansi-dim { color: var(--text-muted); }
+.ansi-bold { font-weight: 700; }
 .licenses { display: grid; gap: var(--space-2); }
 .delete, .confirm { display: grid; gap: var(--gap-card); }
 .confirm { padding: var(--pad-card); border: 1px solid var(--danger-border); border-radius: var(--radius-lg); background: var(--surface); }
