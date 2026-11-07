@@ -21,25 +21,25 @@ export function tickList<P>(ui: ToolUi<P>, toolId: string, items: readonly TickI
   const ticked = new Set(ui.ticks);
   return h(
     "div",
-    { class: "tick-block" },
+    { class: "mark-block" },
     h(
       "ul",
-      { class: "tick-list" },
+      { class: "mark-list" },
       ...items.map((item) => {
         const key = `${toolId}:${item.id}`;
-        const box = h("input", { type: "checkbox", class: "check-input", checked: ticked.has(key), "data-key": `tick:${key}` });
+        const box = h("input", { type: "checkbox", class: "check-input", checked: ticked.has(key), "data-key": `mark:${key}` });
         box.addEventListener("change", () => {
           ui.actions.setTick(key, box.checked);
-          announce(tools.tickAnnounce(item.label, box.checked));
+          announce(tools.markAnnounce(item.label, box.checked));
         });
         return h(
           "li",
-          { class: ticked.has(key) ? "tick-item is-done" : "tick-item" },
+          { class: ticked.has(key) ? "mark-item is-done" : "mark-item" },
           h("label", { class: "check" }, box, h("span", {}, item.label)),
           item.hint ? h("p", { class: "caption" }, item.hint) : null,
         );
       }),
     ),
-    h("p", { class: "caption" }, tools.tickNote),
+    h("p", { class: "caption" }, tools.markNote),
   );
 }

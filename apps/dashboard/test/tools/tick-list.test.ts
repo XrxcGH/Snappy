@@ -48,10 +48,10 @@ describe("the checklist", () => {
     const { root } = open();
     await settled(root);
     expect(boxes(root)).toHaveLength(2);
-    expect(root.querySelectorAll(".tick-item label").map((l) => l.textContent)).toEqual(ITEMS.map((i) => i.label));
-    expect(root.querySelectorAll(".tick-item .caption").map((c) => c.textContent)).toEqual(["Found in Settings."]);
-    expect(root.querySelectorAll(".tick-block .caption").map((c) => c.textContent)).toEqual(["Found in Settings.", tools.tickNote]);
-    expect(tools.tickNote).toMatch(/your own word/);
+    expect(root.querySelectorAll(".mark-item label").map((l) => l.textContent)).toEqual(ITEMS.map((i) => i.label));
+    expect(root.querySelectorAll(".mark-item .caption").map((c) => c.textContent)).toEqual(["Found in Settings."]);
+    expect(root.querySelectorAll(".mark-block .caption").map((c) => c.textContent)).toEqual(["Found in Settings.", tools.markNote]);
+    expect(tools.markNote).toMatch(/your own word/);
     expect(root.textContent).not.toMatch(/verified|confirmed|checked for you|secure/i);
     for (const b of boxes(root)) expect(b.getAttribute("type")).toBe("checkbox");
   });
@@ -64,7 +64,7 @@ describe("the checklist", () => {
     first.checked = true;
     first.fire("change");
     expect(store.get().real.ticks).toEqual(["sample-list:one"]);
-    expect(said).toEqual([tools.tickAnnounce("Turn on the first setting", true)]);
+    expect(said).toEqual([tools.markAnnounce("Turn on the first setting", true)]);
     await settled(root);
     // A new page is drawn with the box ticked (the attribute is what a browser reads for a fresh checkbox).
     expect(boxes(root).map((b) => b.hasAttribute("checked"))).toEqual([true, false]);
@@ -74,12 +74,12 @@ describe("the checklist", () => {
     again.checked = false;
     again.fire("change");
     expect(store.get().real.ticks).toEqual([]);
-    expect(said.at(-1)).toBe(tools.tickAnnounce("Turn on the first setting", false));
+    expect(said.at(-1)).toBe(tools.markAnnounce("Turn on the first setting", false));
   });
 
   it("keeps keyboard focus on the same box across the repaint, by its key", async () => {
     const { root } = open();
     await settled(root);
-    expect(boxes(root).map((b) => b.getAttribute("data-key"))).toEqual(["tick:sample-list:one", "tick:sample-list:two"]);
+    expect(boxes(root).map((b) => b.getAttribute("data-key"))).toEqual(["mark:sample-list:one", "mark:sample-list:two"]);
   });
 });

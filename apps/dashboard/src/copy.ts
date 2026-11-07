@@ -239,8 +239,8 @@ export const tools = {
   notesHeading: "Notes",
   commandHeading: "Run it as a command",
   downloadHeading: "Download",
-  tickNote: "Ticks are your own word, and Snappy cannot check them. They are saved only if you turned saving on, and otherwise last this session.",
-  tickAnnounce: (label: string, on: boolean) => `${label}: marked ${on ? "done" : "not done"}.`,
+  markNote: "Marks are your own word, and Snappy cannot check them. They are saved only if you turned saving on, and otherwise last this session.",
+  markAnnounce: (label: string, on: boolean) => `${label}: marked ${on ? "done" : "not done"}.`,
   downloadSaved: "File saved.",
   downloadFailedNote: "Snappy could not save the file. Your browser may block downloads.",
   needs: {
