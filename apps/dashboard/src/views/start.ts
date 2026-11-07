@@ -1,3 +1,4 @@
+import type { NamedBlob } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { common, routes, settings, start } from "../copy.ts";
 import { h } from "../dom.ts";
@@ -10,6 +11,7 @@ import { pointList, stepSection } from "../components/layout.ts";
 import { issueNotice, notice } from "../components/notice.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
 import { progressBar, updateProgress } from "../components/progressBar.ts";
+import { platform } from "../platform.ts";
 import { onDispose, region } from "../reactive.ts";
 import type { State } from "../reducer.ts";
 import type { Store } from "../store.ts";
@@ -131,7 +133,7 @@ function countSection(ctx: ViewContext): HTMLElement {
 function addSection(ctx: ViewContext): HTMLElement {
   const { store, actions } = ctx;
 
-  const run = async (files: File[]): Promise<void> => {
+  const run = async (files: NamedBlob[]): Promise<void> => {
     if (files.length === 0) return;
     announce(start.reading(0, files.length));
     const result = await actions.importZips(files);
@@ -142,6 +144,14 @@ function addSection(ctx: ViewContext): HTMLElement {
     } else {
       announce(s.import.message ?? start.readFailed, true);
     }
+  };
+
+  // A native shell opens its own dialog. A plain browser, or a shell that declines (null or an error), uses the file input.
+  const choose = async (): Promise<void> => {
+    const pick = platform().pickZips;
+    const native = pick ? await pick().catch(() => null) : null;
+    if (native === null) picker.click();
+    else void run(native);
   };
 
   const picker = h("input", { type: "file", accept: ".zip,application/zip", multiple: true, hidden: true, "aria-hidden": "true", tabindex: "-1" });
@@ -157,7 +167,7 @@ function addSection(ctx: ViewContext): HTMLElement {
     chipIcon("file-zip", "lg"),
     h("p", { class: "dropzone-title" }, start.dropTitle),
     h("p", { class: "caption muted" }, start.dropAlt),
-    button({ label: start.choose, variant: "primary", icon: "import", key: "choose-files", onclick: () => picker.click() }),
+    button({ label: start.choose, variant: "primary", icon: "import", key: "choose-files", onclick: () => void choose() }),
   );
   const setActive = (on: boolean): void => void dropzone.classList.toggle("dropzone-active", on);
   dropzone.addEventListener("dragenter", (e) => {

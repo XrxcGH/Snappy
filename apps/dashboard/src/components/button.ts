@@ -1,6 +1,7 @@
 import { h } from "../dom.ts";
 import type { Child, Handler } from "../dom.ts";
 import { common } from "../copy.ts";
+import { platform } from "../platform.ts";
 import { safeProfileUrl } from "../safe.ts";
 import { icon } from "./icon.ts";
 import type { IconName } from "./icon.ts";
@@ -48,9 +49,11 @@ export function routeLink(route: string, label: string, variant: ButtonVariant =
 /**
  * Link to a friend's Snapchat profile in a new tab, or null when the username is not plain
  * enough to link safely. The visible text stays short; the accessible name says who and that
- * it opens a new tab.
+ * it opens a new tab. A shell that must not open addresses (the desktop app) turns it off with
+ * the platform setting profileLinks, and then there is no link at all.
  */
 export function profileLink(username: string, variant: ButtonVariant = "secondary"): HTMLAnchorElement | null {
+  if (platform().profileLinks === false) return null;
   const url = safeProfileUrl(username);
   if (url === null) return null;
   return h(

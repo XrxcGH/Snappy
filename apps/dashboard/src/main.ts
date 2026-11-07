@@ -1,6 +1,7 @@
 import { createActions } from "./actions.ts";
 import { applyTheme, buildShell, followTheme } from "./app-shell.ts";
 import { browserImport } from "./browser-import.ts";
+import { importRunner } from "./platform.ts";
 import { initialState } from "./reducer.ts";
 import { startRouter } from "./router.ts";
 import { createStore } from "./store.ts";
@@ -27,7 +28,8 @@ function boot(): void {
     // A short timer, not requestAnimationFrame: hidden tabs never run animation frames, which would stall an import.
     yieldToUi: () => new Promise((resolve) => setTimeout(resolve, 20)),
     saveTheme: writeThemePreference,
-    runImport: browserImport,
+    // A native shell can swap the reader. It is looked up on each call, not once here.
+    runImport: importRunner(browserImport),
     // Lock and Delete data clear the command output and the picked export files too.
     onWipe: () => terminal.reset(),
   });

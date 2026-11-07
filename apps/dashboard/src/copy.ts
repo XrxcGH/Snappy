@@ -458,6 +458,13 @@ export const privacy = {
   networkOk: "This page cannot connect to the internet. Its security policy blocks every connection.",
   networkUnknown: "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",
   workerBody: "Background helpers read exports and run commands. They cannot connect anywhere either.",
+  // Shown only inside the desktop app. Each line says what was checked and no more.
+  desktopHeading: "In the desktop app",
+  desktopOwnPage: "This app shows only its own page. Links and new windows are refused.",
+  desktopWindows: "On Windows, the app uses Microsoft WebView2, a separate program that Snappy does not control.",
+  desktopWindowsTest: "In one test on one computer, a sign-in part of WebView2 connected to Microsoft in the background.",
+  desktopWindowsOff: "Snappy turns that part off, and the connection stopped. A Microsoft update could change that.",
+  desktopOther: "The app uses your system’s web engine, a separate program. We have not checked what it does on its own.",
   policyHeading: "Technical details",
   networkDetail: "To check, open your browser’s developer tools. The network tab stays empty.",
   policyLabel: "Security policy in this page",

@@ -3,12 +3,19 @@ import { blocksNetwork, pagePolicy } from "../csp.ts";
 import { h } from "../dom.ts";
 import { dataTable } from "../components/dataTable.ts";
 import { notice } from "../components/notice.ts";
+import { platform } from "../platform.ts";
 import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
 import type { View } from "./context.ts";
+
+/** What the desktop app adds to this page. The engine paragraphs name only what was tested, on Windows. */
+function desktopNote(system: "windows" | "other"): string[] {
+  return system === "windows" ? [privacy.desktopOwnPage, privacy.desktopWindows, privacy.desktopWindowsTest, privacy.desktopWindowsOff] : [privacy.desktopOwnPage, privacy.desktopOther];
+}
 
 /** The legal line is shown once per page, in the footer; this page does not repeat it. */
 export const privacyView: View = () => {
   const policy = pagePolicy();
+  const desktop = platform().desktop;
   return h(
     "div",
     { class: "view" },
@@ -20,11 +27,13 @@ export const privacyView: View = () => {
         privacy.networkHeading,
         blocksNetwork(policy) ? notice("success", privacy.networkOk) : notice("warning", privacy.networkUnknown),
         h("p", {}, privacy.workerBody),
+        desktop === undefined ? null : subsection(privacy.desktopHeading, ...desktopNote(desktop).map((line) => h("p", {}, line))),
         h(
           "details",
           { class: "tech-details" },
           disclosureSummary(privacy.policyHeading, "policy-details"),
-          detailsBody(h("p", {}, privacy.networkDetail), h("p", {}, privacy.policyWorker), h("p", { class: "label" }, privacy.policyLabel), h("pre", { class: "code code-wrap", tabindex: "0" }, h("code", {}, policy ?? ""))),
+          // The developer tools check is for a browser; the desktop app has no developer tools.
+          detailsBody(desktop === undefined ? h("p", {}, privacy.networkDetail) : null, h("p", {}, privacy.policyWorker), h("p", { class: "label" }, privacy.policyLabel), h("pre", { class: "code code-wrap", tabindex: "0" }, h("code", {}, policy ?? ""))),
         ),
       ),
       section(

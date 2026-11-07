@@ -161,8 +161,8 @@ const stubDownloader = {
 /** The command helper (src/terminal/worker.ts): the commands, run in a worker, with no downloader. */
 const bundleTerminalWorker = () => bundleWorker(path.join("terminal", "worker.ts"), [stubDownloader]);
 
-/** Bundle src/main.ts into one minified IIFE string. The workers' code travels inside it as text. */
-async function bundleScript(licenses, workerSource, terminalWorkerSource) {
+/** Bundle the page's entry file (src/main.ts, or a shell's own entry that imports it) into one minified IIFE string. The workers' code travels inside it as text. */
+async function bundleScript(licenses, workerSource, terminalWorkerSource, entry) {
   // "<" is escaped so the text can never contain a sequence that ends the inline script early.
   const asText = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
   const virtualModules = {
@@ -177,7 +177,7 @@ async function bundleScript(licenses, workerSource, terminalWorkerSource) {
       b.onLoad({ filter: /.*/, namespace: "snappy-virtual" }, (args) => ({ contents: virtualModules[args.path], loader: "js" }));
     },
   };
-  const result = await esbuild({ ...bundleOptions, entryPoints: [path.join(here, "src", "main.ts")], plugins: [virtualPlugin] });
+  const result = await esbuild({ ...bundleOptions, entryPoints: [entry], plugins: [virtualPlugin] });
   const output = result.outputFiles[0];
   if (!output) throw new Error("esbuild produced no output.");
   return output.text;
@@ -202,7 +202,11 @@ async function toolStyles() {
   return sheets.join("\n");
 }
 
-export async function buildDashboard({ outDir = path.join(here, "dist") } = {}) {
+/**
+ * `entry` lets a native shell bundle its own entry file, which sets the platform (src/platform.ts) and then
+ * imports src/main.ts, in place of the plain web one. The page, its policy and its checks are the same.
+ */
+export async function buildDashboard({ outDir = path.join(here, "dist"), entry = path.join(here, "src", "main.ts") } = {}) {
   const [{ entries, files }, fonts, tokens, own, tools, sprite, template, favicon] = await Promise.all([
     licenseData(),
     fontCss(),
@@ -217,7 +221,7 @@ export async function buildDashboard({ outDir = path.join(here, "dist") } = {}) 
   const style = (await transform(`${fonts}\n${tokens}\n${own}\n${tools}`, { loader: "css", minify: true, legalComments: "none" })).code;
   const workerSource = await bundleWorker("import-worker.ts");
   const terminalWorkerSource = await bundleTerminalWorker();
-  const script = await bundleScript(entries, workerSource, terminalWorkerSource);
+  const script = await bundleScript(entries, workerSource, terminalWorkerSource, entry);
   // A tiny script in <head> applies a remembered theme before the first paint. Its hash goes in the policy too.
   const themeBoot = (await transform(await readFile(path.join(here, "src", "theme-boot.js"), "utf8"), { loader: "js", minify: true, legalComments: "none" })).code.trim();
   if (/<\/script|<!--/i.test(themeBoot)) throw new Error("The theme script contains a sequence that could end the inline script early.");
