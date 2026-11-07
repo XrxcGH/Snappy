@@ -1,0 +1,87 @@
+name: Desktop smoke build
+
+# A cheap check that the desktop shell still compiles on Windows: a debug build of the app with no
+# installer bundling (so no NSIS or WiX downloads). It runs only when something the shell is made of
+# changed. The full installers are built by release.yml when a version tag is pushed.
+#
+# Budget: the job is capped at 15 minutes. A cold debug build of this app (about 410 crates) took 4 min
+# on a 20-thread desktop; it has not been timed on a 4-core GitHub runner, where a cold run could take
+# 2 to 3 times as long. The Rust cache makes later runs short, and the push trigger below fills the cache
+# on main so that pull requests start from it. If a cold run ever hits the cap, delete this job
+# rather than raising the cap.
+
+# Secrets and pull requests: this workflow references no secret, uses `pull_request` (never
+# `pull_request_target`), and every job is read-only, so a pull request from a fork or from Dependabot cannot
+# reach anything. A manual run (workflow_dispatch) from any branch is harmless for the same reason: there is
+# nothing here to steal and nothing it can publish. The Rust cache that pull requests restore is written only
+# by runs on main; a pull request's own cache is scoped to that pull request.
+# `npm ci --ignore-scripts` (no install script runs) and `--locked` (Cargo.lock is used as it is).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/app/**"
+      - "apps/dashboard/**"
+      - "packages/core/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/desktop-smoke.yml"
+  pull_request:
+    paths:
+      - "apps/app/**"
+      - "apps/dashboard/**"
+      - "packages/core/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/desktop-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep in step with release.yml. Bump deliberately.
+  RUST_VERSION: "1.98.1"
+
+jobs:
+  windows-debug-build:
+    name: Windows debug build
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Rust
+        shell: bash
+        run: |
+          rustup toolchain install "$RUST_VERSION" --profile minimal --no-self-update
+          rustup default "$RUST_VERSION"
+          rustc --version
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          workspaces: apps/app/src-tauri -> target
+      - run: npm ci --ignore-scripts
+      - name: Build the app (debug, no installer)
+        run: npm run tauri -w @snappy-export/app -- build --debug --no-bundle -- --locked
+      - name: Rust unit tests (navigation allow-list, read-only file table)
+        working-directory: apps/app/src-tauri
+        run: cargo test --lib --locked
+      - name: Check the executable exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          exe=apps/app/src-tauri/target/debug/snappy.exe
+          test -f "$exe"
+          ls -l "$exe"
