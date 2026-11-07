@@ -34,6 +34,12 @@ describe("importing the parts of an export", () => {
     expect(store.get().real.ledger.snapshots).toHaveLength(1);
   });
 
+  it("keeps how many parts it read, for the tools that say so", async () => {
+    const { store, actions } = setup();
+    await actions.importZips(partFiles(2));
+    expect(store.get().real.parts).toBe(3);
+  });
+
   it("gives the same result whatever order the parts were chosen in", async () => {
     const files = partFiles(2);
     const a = setup();

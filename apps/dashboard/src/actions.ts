@@ -159,7 +159,7 @@ export function createActions(store: Store, deps: Deps): Actions {
       // A file that is not a .zip was left out. If it was a part of the export, what was read is incomplete.
       if (zips.length < files.length) issues.push({ severity: "warning", code: "files-skipped-not-zip", message: start.skippedFiles(files.length - zips.length) });
       const snapshot = snapshotOf(merged, now, issues, futureDated);
-      store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now });
+      store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now, parts: ordered.length });
       return "done";
     } catch {
       store.dispatch({ type: "import-failed", message: start.readFailed });

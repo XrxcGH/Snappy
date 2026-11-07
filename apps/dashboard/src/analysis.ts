@@ -59,6 +59,11 @@ export function parsedFromSnapshot(snap: Snapshot): ParsedExport {
 /** Clears every memo below. Each holds its last arguments and result, so each can hold the whole export. */
 const resets: (() => void)[] = [];
 
+/** Lets a cache outside this file (the tools' results) be forgotten together with the analysis, on Lock and Delete data. */
+export function onAnalysisReset(reset: () => void): void {
+  resets.push(reset);
+}
+
 /**
  * Forget the last analysis. Called when the page is locked or wiped, because the memos keep the
  * unsealed export (usernames, chat metadata) reachable until the next analysis replaces it, and
@@ -94,11 +99,19 @@ interface Detected {
   lastDiff: LedgerDiff | null;
 }
 
+/** What the findings and the tools read: this session's export, else the newest saved snapshot rebuilt into one. */
+export const sourceOf = memoLast((ledger: Workspace["ledger"], latest: ParsedExport | null): { parsed: ParsedExport | null; source: FindingsSource } => {
+  const newestSnapshot = ledger.snapshots[ledger.snapshots.length - 1];
+  return {
+    parsed: latest ?? (newestSnapshot ? parsedFromSnapshot(newestSnapshot) : null),
+    source: latest ? "export" : newestSnapshot ? "ledger" : "none",
+  };
+});
+
 const detect = memoLast((ledger: Workspace["ledger"], latest: ParsedExport | null, now: number): Detected => {
   const snaps = ledger.snapshots;
   const newestSnapshot = snaps[snaps.length - 1];
-  const parsed = latest ?? (newestSnapshot ? parsedFromSnapshot(newestSnapshot) : null);
-  const source: FindingsSource = latest ? "export" : newestSnapshot ? "ledger" : "none";
+  const { parsed, source } = sourceOf(ledger, latest);
 
   const previous = snaps[snaps.length - 2];
   return {

@@ -27,6 +27,8 @@ export interface Workspace {
   issues: ExportIssue[];
   /** Epoch ms used for age calculations; fixed for sample data. */
   now: number;
+  /** How many ZIP parts made `latest`. Unknown (absent) for sample data and saved snapshots. */
+  parts?: number;
 }
 
 export type ImportPhase = "idle" | "reading" | "done" | "failed";
@@ -105,7 +107,7 @@ export type Action =
   | { type: "import-step"; step: number }
   | { type: "import-progress"; step: number; fraction: number | null }
   | { type: "import-failed"; message: string; issues?: ExportIssue[] }
-  | { type: "import-finished"; latest: ParsedExport; issues: ExportIssue[]; snapshot: Snapshot | null; now: number }
+  | { type: "import-finished"; latest: ParsedExport; issues: ExportIssue[]; snapshot: Snapshot | null; now: number; parts?: number }
   | { type: "import-reset" }
   | { type: "sample-loaded"; workspace: Workspace }
   | { type: "sample-cleared" }
@@ -165,6 +167,8 @@ export function reduce(state: State, action: Action): State {
         latest: useAsLatest ? action.latest : state.real.latest,
         issues: useAsLatest ? action.issues : state.real.issues,
         now: action.now,
+        // The part count belongs to the export it describes, so it follows `latest`.
+        parts: useAsLatest ? action.parts : state.real.parts,
       };
       return {
         ...state,
