@@ -17,6 +17,7 @@ export * as reachOutFirst from "./reach-out-first.ts";
 export * as replySpeed from "./reply-speed.ts";
 export * as rescueManifest from "./rescue-manifest.ts";
 export * as safetyChecklist from "./safety-checklist.ts";
+export * as sinceLastExport from "./since-last-export.ts";
 export * as storagePlanner from "./storage-planner.ts";
 export * as waitingOnReply from "./waiting-on-reply.ts";
 export * as yearInReview from "./year-in-review.ts";
