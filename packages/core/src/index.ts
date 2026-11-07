@@ -63,7 +63,7 @@ export {
   LedgerFormatError,
 } from "./ledger/ledger.ts";
 export { sealLedger, openLedger, sealText, openText, SealError } from "./ledger/seal.ts";
-export { CHECKED_OFF_ID, KEEP_LIST_ID, hasSavedLists, mergeSaved, packSaved, sortedUnique, unpackSaved } from "./ledger/saved.ts";
+export { CHECKED_OFF_ID, KEEP_LIST_ID, TICKS_ID, hasSavedLists, mergeSaved, packSaved, sortedUnique, unpackSaved } from "./ledger/saved.ts";
 export type { Saved } from "./ledger/saved.ts";
 export { findGhosts } from "./ledger/detect-ghost.ts";
 export { findOneWay } from "./ledger/detect-oneway.ts";

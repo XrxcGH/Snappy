@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CHECKED_OFF_ID,
   KEEP_LIST_ID,
+  TICKS_ID,
   addSnapshot,
   crc32,
   deserializeLedger,
@@ -48,6 +49,31 @@ describe("packSaved / unpackSaved", () => {
     expect(hasSavedLists(packSaved({ ledger: emptyLedger(), allowlist: [], checkedOff: [] }))).toBe(true);
     expect(hasSavedLists(addSnapshot(emptyLedger(), snap("a", 1000, ["x"])))).toBe(false);
     expect(hasSavedLists(emptyLedger())).toBe(false);
+  });
+});
+
+describe("ticks", () => {
+  it("travel in their own reserved list, survive sealing, and never reach the detectors", async () => {
+    const saved = { ledger: addSnapshot(emptyLedger(), snap("a", 1000, ["x"])), allowlist: [], checkedOff: [], ticks: ["privacy-tuneup:two-step", "safety-checklist:review-devices"] };
+    const packed = packSaved(saved);
+    expect(packed.snapshots.map((s) => s.id)).toContain(TICKS_ID);
+    expect(unpackSaved(packed).ledger.snapshots.map((s) => s.id)).toEqual(["a"]);
+    expect(unpackSaved(await openLedger(await sealLedger(packed, "pass phrase"), "pass phrase"))).toEqual(saved);
+  });
+
+  it("leave no trace when there are none, so a file without ticks is what it always was", () => {
+    const withNone = packSaved({ ledger: emptyLedger(), allowlist: [], checkedOff: [], ticks: [] });
+    expect(withNone).toEqual(packSaved({ ledger: emptyLedger(), allowlist: [], checkedOff: [] }));
+    expect(withNone.snapshots.map((s) => s.id)).not.toContain(TICKS_ID);
+    expect("ticks" in unpackSaved(withNone)).toBe(false);
+  });
+
+  it("drop a reserved id smuggled in as a real snapshot, and merge as a union", () => {
+    const sneaky = addSnapshot(emptyLedger(), snap(TICKS_ID, 5, ["evil:tick"]));
+    expect(unpackSaved(packSaved({ ledger: sneaky, allowlist: [], checkedOff: [] })).ledger.snapshots).toEqual([]);
+    const merged = mergeSaved({ ledger: emptyLedger(), allowlist: [], checkedOff: [], ticks: ["a:1"] }, { ledger: emptyLedger(), allowlist: [], checkedOff: [], ticks: ["b:2", "a:1"] });
+    expect(merged.ticks).toEqual(["a:1", "b:2"]);
+    expect("ticks" in mergeSaved({ ledger: emptyLedger(), allowlist: [], checkedOff: [] }, { ledger: emptyLedger(), allowlist: [], checkedOff: [] })).toBe(false);
   });
 });
 

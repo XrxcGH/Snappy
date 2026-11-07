@@ -136,7 +136,8 @@ export async function loadStore(io: FsIo, ledgerPath: string, passphrase: string
 }
 
 export async function saveStore(io: FsIo, ledgerPath: string, saved: Saved, passphrase: string): Promise<void> {
-  const normalized: Saved = { ledger: saved.ledger, allowlist: normalizeAllowlist(saved.allowlist), checkedOff: sortedUnique(saved.checkedOff) };
+  // The dashboard's checklist ticks ride along untouched, so a command that saves history never drops them.
+  const normalized: Saved = { ledger: saved.ledger, allowlist: normalizeAllowlist(saved.allowlist), checkedOff: sortedUnique(saved.checkedOff), ...(saved.ticks !== undefined && { ticks: sortedUnique(saved.ticks) }) };
   await atomicWrite(io, ledgerPath, await sealLedger(packSaved(normalized), passphrase));
 }
 

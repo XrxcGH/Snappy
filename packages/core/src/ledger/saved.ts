@@ -15,11 +15,17 @@ export interface Saved {
   allowlist: string[];
   /** Normalised usernames ticked off in guided removal. */
   checkedOff: string[];
+  /**
+   * Self-reported checklist ticks, as "tool:item" ids in lowercase. Absent when there are none, so a file with no
+   * ticks is byte for byte what it was before they existed.
+   */
+  ticks?: string[];
 }
 
 export const KEEP_LIST_ID = "snappy:keep-list";
 export const CHECKED_OFF_ID = "snappy:checked-off";
-const RESERVED = new Set([KEEP_LIST_ID, CHECKED_OFF_ID]);
+export const TICKS_ID = "snappy:ticks";
+const RESERVED = new Set([KEEP_LIST_ID, CHECKED_OFF_ID, TICKS_ID]);
 
 function listSnapshot(id: string, names: readonly string[]): Snapshot {
   return { id, takenAt: 0, source: "export", friends: [...names], sentRequests: [], deleted: {}, friendSince: {}, sentAt: {} };
@@ -34,16 +40,23 @@ export function packSaved(saved: Saved): Ledger {
   const real = saved.ledger.snapshots.filter((s) => !RESERVED.has(s.id));
   return {
     version: 1,
-    snapshots: [listSnapshot(KEEP_LIST_ID, saved.allowlist), listSnapshot(CHECKED_OFF_ID, saved.checkedOff), ...real],
+    snapshots: [
+      listSnapshot(KEEP_LIST_ID, saved.allowlist),
+      listSnapshot(CHECKED_OFF_ID, saved.checkedOff),
+      ...(saved.ticks !== undefined && saved.ticks.length > 0 ? [listSnapshot(TICKS_ID, saved.ticks)] : []),
+      ...real,
+    ],
   };
 }
 
 export function unpackSaved(packed: Ledger): Saved {
   const listOf = (id: string): string[] => packed.snapshots.find((s) => s.id === id)?.friends ?? [];
+  const ticks = sortedUnique(listOf(TICKS_ID));
   return {
     ledger: { version: 1, snapshots: packed.snapshots.filter((s) => !RESERVED.has(s.id)) },
     allowlist: sortedUnique(listOf(KEEP_LIST_ID)),
     checkedOff: sortedUnique(listOf(CHECKED_OFF_ID)),
+    ...(ticks.length > 0 && { ticks }),
   };
 }
 
@@ -64,5 +77,11 @@ export function mergeSaved(saved: Saved, session: Saved): Saved {
     ledger,
     allowlist: sortedUnique([...saved.allowlist, ...session.allowlist]),
     checkedOff: sortedUnique([...saved.checkedOff, ...session.checkedOff]),
+    ...mergedTicks(saved, session),
   };
+}
+
+function mergedTicks(a: Saved, b: Saved): { ticks?: string[] } {
+  const ticks = sortedUnique([...(a.ticks ?? []), ...(b.ticks ?? [])]);
+  return ticks.length > 0 ? { ticks } : {};
 }
