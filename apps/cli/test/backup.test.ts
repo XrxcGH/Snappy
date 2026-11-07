@@ -292,6 +292,40 @@ describe("checking a saved backup", () => {
   });
 });
 
+describe("a short export", () => {
+  it("warns when --friend-count does not fit, in the text and in the JSON, for a new backup and a comparison", async () => {
+    const dir = exportDir("backup-short");
+    const fit = await runInsight(backupCommand, [dir, "--friend-count", "30"]);
+    expect(fit.out).not.toContain("differs from the count you gave");
+    expect(JSON.parse((await runInsight(backupCommand, [dir, "--friend-count", "30", "--json"])).out)).not.toHaveProperty("exportNotes");
+
+    const create = await runInsight(backupCommand, [dir, "--friend-count", "300"]);
+    expect(create.code).toBe(0);
+    expect(create.out).toContain("Warning");
+    expect(create.out).toContain("The friends list differs from the count you gave. The backup may miss friends.");
+    expect(create.out).not.toContain("code:");
+    expectBrandSafe(create.out, "short create");
+
+    const verbose = await runInsight(backupCommand, [dir, "--friend-count", "300", "--verbose"]);
+    expect(verbose.out).toContain("code: friend-count-mismatch");
+
+    const json = JSON.parse((await runInsight(backupCommand, [dir, "--friend-count", "300", "--json"])).out) as { exportNotes: { code: string }[] };
+    expect(json.exportNotes.map((n) => n.code)).toEqual(["friend-count-mismatch"]);
+
+    // The file is still saved, and the same warning shows on the saved run.
+    const path = join(tempDir("backup-short-file"), "friends.json");
+    const saved = await runInsight(backupCommand, [dir, "--friend-count", "300", "--out", path]);
+    expect(saved.code).toBe(0);
+    expect(existsSync(path)).toBe(true);
+    expect(saved.out).toContain("The friends list differs from the count you gave.");
+
+    const compared = await runInsight(backupCommand, [dir, "--friend-count", "300", "--compare", path]);
+    expect(compared.out).toContain("The friends list differs from the count you gave. The backup may miss friends.");
+    const comparedJson = JSON.parse((await runInsight(backupCommand, [dir, "--friend-count", "300", "--compare", path, "--json"])).out) as { exportNotes: { code: string }[] };
+    expect(comparedJson.exportNotes.map((n) => n.code)).toEqual(["friend-count-mismatch"]);
+  });
+});
+
 describe("errors", () => {
   it("stops with calm messages for no input, a missing path and bad options", async () => {
     const folder = tempDir("backup-errors");

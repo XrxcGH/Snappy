@@ -65,6 +65,8 @@ export interface CreateResult {
   takenAt: number | null;
   counts: Record<ListName, { people: number; dated: number }>;
   notes: BackupNote[];
+  /** Warnings that the export may be short. Set when the run finds any. */
+  exportNotes?: ExportNote[];
   lists?: Record<ListName, insights.friendsBackup.BackupEntry[]>;
   /** The path as the person typed it, once the file is written. */
   saved?: string;
@@ -86,11 +88,34 @@ export interface CompareResult {
   identical: boolean;
   lists: Record<ListName, ListDiff | null>;
   notes: ComparisonNote[];
+  /** Warnings that the export may be short. Set when the run finds any. */
+  exportNotes?: ExportNote[];
   /** True when --list was given. */
   listed: boolean;
 }
 
 export type BackupResult = CreateResult | CompareResult;
+
+/**
+ * Warnings about the export itself that mean the backup may be missing people. They come from the
+ * whole-export checks (the friend count from --friend-count, or a date range), not from the backup.
+ */
+export type ExportNoteCode = "friend-count-mismatch" | "possibly-date-limited";
+export interface ExportNote {
+  code: ExportNoteCode;
+  params: Record<string, number>;
+}
+const EXPORT_NOTE_CODES: readonly string[] = ["friend-count-mismatch", "possibly-date-limited"];
+
+const EXPORT_NOTE_TEXT: Record<ExportNoteCode, string> = {
+  "friend-count-mismatch": "The friends list differs from the count you gave. The backup may miss friends.",
+  "possibly-date-limited": "The export may cover only part of your history. The backup may miss people.",
+};
+
+/** Notes for the export-wide warnings that matter here. */
+function exportNoteLines(notes: ExportNote[] | undefined): NoteLine[] {
+  return (notes ?? []).map((n) => ({ severity: "warning" as const, code: n.code, text: EXPORT_NOTE_TEXT[n.code] }));
+}
 
 // ----------------------------------------------------------------- wording ---
 
@@ -177,7 +202,7 @@ function renderCreate(r: CreateResult, term: Term, verbose: boolean): string[] {
     ),
   );
 
-  const notes: NoteLine[] = r.notes.map((n) => ({ severity: severityOf(n.code), code: n.code, text: createNoteText(n) }));
+  const notes: NoteLine[] = [...exportNoteLines(r.exportNotes), ...r.notes.map((n) => ({ severity: severityOf(n.code), code: n.code, text: createNoteText(n) }))];
   const noteLines = renderNotes(notes, term, { heading: "Notes", verbose });
   if (noteLines.length > 0) out.push(...noteLines, "");
 
@@ -227,7 +252,7 @@ function renderCompare(r: CompareResult, term: Term, verbose: boolean): string[]
     ]),
   );
 
-  const notes: NoteLine[] = r.notes.map((n) => ({ severity: severityOf(n.code), code: n.code, text: compareNoteText(n) }));
+  const notes: NoteLine[] = [...exportNoteLines(r.exportNotes), ...r.notes.map((n) => ({ severity: severityOf(n.code), code: n.code, text: compareNoteText(n) }))];
   const noteLines = renderNotes(notes, term, { heading: "Notes", verbose });
   if (noteLines.length > 0) out.push(...noteLines, "");
 
@@ -342,6 +367,11 @@ export async function runBackup(args: string[], io: Io): Promise<number> {
     return 2;
   }
 
+  // The export itself may be short. Say so, since a short export makes a short backup.
+  const exportNotes: ExportNote[] = input.issues
+    .filter((i) => EXPORT_NOTE_CODES.includes(i.code))
+    .map((i) => ({ code: i.code as ExportNoteCode, params: {} }));
+
   let result: BackupResult;
   if (flags.compare !== undefined) {
     const backup = await readBackupFile(flags.compare, input.now);
@@ -362,6 +392,8 @@ export async function runBackup(args: string[], io: Io): Promise<number> {
       result.saved = flags.out;
     }
   }
+
+  if (exportNotes.length > 0) result.exportNotes = exportNotes;
 
   if (flags.json) io.out.write(jsonText({ generatedAt: new Date(input.now).toISOString(), ...result }));
   else io.out.write(renderBackup(result, term, flags.verbose === true));
