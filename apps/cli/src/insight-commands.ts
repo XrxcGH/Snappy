@@ -12,6 +12,7 @@ import { friendCountCommand } from "./commands/friend-count.ts";
 import { habitsCommand } from "./commands/habits.ts";
 import { onThisDayCommand } from "./commands/on-this-day.ts";
 import { privacyCommand } from "./commands/privacy.ts";
+import { reachOutCommand } from "./commands/reach-out.ts";
 import { remindCommand } from "./commands/remind.ts";
 import { repliesCommand } from "./commands/replies.ts";
 import { rescueCommand } from "./commands/rescue.ts";
@@ -28,6 +29,7 @@ export const INSIGHT_COMMANDS: readonly InsightCommand[] = [
   blockedCommand,
   friendCountCommand,
   repliesCommand,
+  reachOutCommand,
   habitsCommand,
   storageCommand,
   onThisDayCommand,
