@@ -13,6 +13,7 @@ import { run } from "./helpers.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const README = readFileSync(join(ROOT, "apps", "cli", "README.md"), "utf8");
+const ROOT_README = readFileSync(join(ROOT, "README.md"), "utf8");
 const GUIDE = readFileSync(join(ROOT, "docs", "EXPORT-GUIDE.md"), "utf8");
 
 /** What a person can type as a command: everything main.ts dispatches, plus help. */
@@ -81,6 +82,16 @@ describe("every registered command is in the README", () => {
 
   it("gives each insight command an example in the form the repo uses", () => {
     for (const c of INSIGHT_COMMANDS) expect(README, c.name).toContain(`npm run snappy-export -- ${c.name}`);
+  });
+
+  it("points the root README at the insight commands, with the right count and real names", () => {
+    const words = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen", "Twenty"];
+    expect(ROOT_README).toContain(`${words[INSIGHT_COMMANDS.length] ?? "?"} more commands`);
+    expect(ROOT_README).toContain("apps/cli/README.md");
+    const line = ROOT_README.split(/\r?\n/).find((l) => l.includes("more commands")) ?? "";
+    const named = [...line.matchAll(/`([a-z-]+)`/g)].map((m) => m[1] ?? "");
+    expect(named.length).toBeGreaterThan(0);
+    for (const name of named) expect(INSIGHT_COMMANDS.map((c) => c.name), name).toContain(name);
   });
 
   it("lists each insight command in the export guide, with an example", () => {
