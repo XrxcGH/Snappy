@@ -13,6 +13,7 @@ export * as habits from "./habits.ts";
 export * as memoriesOnThisDay from "./memories-on-this-day.ts";
 export * as privacyTuneup from "./privacy-tuneup.ts";
 export * as reachOutFirst from "./reach-out-first.ts";
+export * as replySpeed from "./reply-speed.ts";
 export * as rescueManifest from "./rescue-manifest.ts";
 export * as safetyChecklist from "./safety-checklist.ts";
 export * as storagePlanner from "./storage-planner.ts";
