@@ -30,10 +30,19 @@
   --field-w: var(--col);                 /* every text field and select fills the column, like every other block */
   --field-w-narrow: 9rem;                /* number boxes */
   --tap-pad: 0.625rem;                   /* turns a 24 px text line into a 44 px target */
-  --shell-max: calc(var(--col) + 2 * var(--gutter));
+  --content-w: var(--col);               /* the width of the content area: one column here, wider on wide screens */
+  --shell-max: calc(var(--content-w) + 2 * var(--gutter));
+  /* Wide screens (see "wide layout" at the end). A media query cannot read a custom property, so the two breakpoints
+     are written out there as 80rem and 100rem; these tokens name them and the test keeps them in step. */
+  --bp-wide: 80rem;                      /* 1280 px: the shell widens and card pages use columns */
+  --bp-xwide: 100rem;                    /* 1600 px: one more step wider, one more column of tiles */
+  --col-wide: 60rem;                     /* content area beside the 16 rem sidebar from --bp-wide */
+  --col-xwide: 77rem;                    /* the same from --bp-xwide; the shell stops growing here (96 rem) */
 }
 @media (min-width: 48rem) { :root { --gutter: var(--space-6); } }
-@media (min-width: 64rem) { :root { --shell-max: calc(16rem + var(--col) + 2 * var(--gutter)); } }
+@media (min-width: 64rem) { :root { --shell-max: calc(16rem + var(--content-w) + 2 * var(--gutter)); } }
+@media (min-width: 80rem) { :root { --content-w: var(--col-wide); } }
+@media (min-width: 100rem) { :root { --content-w: var(--col-xwide); } }
 
 /* ---------------------------------------------------------------- base --- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -187,7 +196,7 @@ img, svg { max-width: 100%; }
 .main { outline: none; }
 .main:focus-visible { outline: none; }
 /* The one column. In a single-column layout it is centered; beside the sidebar it fills the content area exactly. */
-.view { display: grid; gap: var(--gap-section); max-width: var(--col); margin-inline: auto; }
+.view { display: grid; gap: var(--gap-section); max-width: var(--content-w); margin-inline: auto; }
 .region { display: grid; gap: var(--gap-section); min-width: 0; }
 .region:empty { display: none; }
 /* A list view: notices, controls and the list sit one card gap apart. */
@@ -198,7 +207,7 @@ img, svg { max-width: 100%; }
 /* A repaint that loses the focused control parks focus here; a ring around the whole view helps no one. */
 .region:focus-visible { outline: none; }
 /* The sample-data strip sits one section gap above the page header, so every page starts the same way. */
-.banner-slot { margin: 0 auto var(--gap-section); max-width: var(--col); }
+.banner-slot { margin: 0 auto var(--gap-section); max-width: var(--content-w); }
 .banner-slot:empty { display: none; }
 .banner-slot:focus { outline: none; }
 
@@ -693,6 +702,27 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .mark-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--gap-card); }
 .mark-item { display: grid; gap: var(--space-1); padding: var(--space-3) var(--pad-card); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .mark-item .caption { margin: 0; padding-inline-start: calc(1.5rem + var(--space-3)); }
+
+/* ------------------------------------------------------------ wide layout --- */
+/*
+  From 80rem (--bp-wide) the shell and the content area widen (--content-w: 60rem beside the 16rem sidebar, 77rem from
+  100rem, where the 96rem shell stops growing and centers). Below 80rem nothing here applies, so a phone, a tablet and
+  a narrow window look exactly as before. The rules, kept in one place:
+    - The DOM does not change and nothing is reordered: pages use CSS grid on the blocks that are siblings.
+    - Running text keeps the --col measure (about 75 characters): paragraphs, lists, notices and fields never stretch;
+      what grows is the number of columns. Tables, the terminal panel and a row of tiles use the whole width.
+    - Cards that are siblings sit in 2 or 3 columns of equal width, and a grid's last row never holds one lone card
+      when a spanning or a wider last item avoids it.
+*/
+@media (min-width: 80rem) {
+  /* Text blocks keep the measure in every context; a block in a narrower column is already narrower. */
+  .view :is(p, .plain-list, .point-list, .steps, .tool-notes, .mark-list) { max-width: var(--col); }
+  .view :is(.notice, .notice-group, .tool-reads) { max-width: var(--col); }
+  .site-footer-inner .caption { max-width: var(--col); }
+  /* An empty state is a full-width card whose illustration and words sit together in the middle. */
+  .empty { grid-template-columns: minmax(0, var(--col)); justify-content: center; }
+  .empty-spot { grid-template-columns: auto minmax(0, calc(var(--col) - 11rem)); column-gap: var(--space-8); }
+}
 
 /* --------------------------------------------------------------- motion --- */
 /* Signature: key bars slide in 8px from the left, each one stagger after the last. Once per view. */
