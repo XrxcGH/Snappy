@@ -1,0 +1,17 @@
+{
+  "name": "snappy-export",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "description": "Snappy command line: offline analysis of your Snapchat data export.",
+  "bin": {
+    "snappy-export": "src/main.ts"
+  },
+  "scripts": {
+    "snappy-export": "node --experimental-strip-types --disable-warning=ExperimentalWarning src/main.ts"
+  },
+  "dependencies": {
+    "@snappy-export/core": "*"
+  }
+}
