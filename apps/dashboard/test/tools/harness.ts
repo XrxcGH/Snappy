@@ -38,12 +38,15 @@ export function stateWith(workspace: Partial<Workspace>): State {
 export interface Rendered {
   root: FakeElement;
   store: Store;
+  /** The scope the view was drawn in. Disposing it is what leaving the page does. */
+  scope: Scope;
 }
 
 export function render(view: View, state: State, store: Store = createStore(state)): Rendered {
   installFakeDom();
-  const root = runInScope(new Scope(true), () => view({ store, actions: {} as Actions, terminal: testTerminal() })) as unknown as FakeElement;
-  return { root, store };
+  const scope = new Scope(true);
+  const root = runInScope(scope, () => view({ store, actions: {} as Actions, terminal: testTerminal() })) as unknown as FakeElement;
+  return { root, store, scope };
 }
 
 /** Waits until no result is being computed on the page, so the result can be inspected. */

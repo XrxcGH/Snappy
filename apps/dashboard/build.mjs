@@ -10,7 +10,7 @@
  */
 import { build as esbuild, transform } from "esbuild";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -183,18 +183,38 @@ async function bundleScript(licenses, workerSource, terminalWorkerSource) {
   return output.text;
 }
 
+/**
+ * A tool may carry its own rules in src/tools/<id>/styles.css. They are appended after styles.css, in folder-name
+ * order, so the build stays deterministic. Every selector in one must start with .tool-<id> (a test checks it),
+ * so a tool can only style its own page.
+ */
+async function toolStyles() {
+  const base = path.join(here, "src", "tools");
+  const folders = (await readdir(base, { withFileTypes: true })).filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  const sheets = [];
+  for (const id of folders) {
+    try {
+      sheets.push(await readFile(path.join(base, id, "styles.css"), "utf8"));
+    } catch {
+      // This tool has no sheet of its own.
+    }
+  }
+  return sheets.join("\n");
+}
+
 export async function buildDashboard({ outDir = path.join(here, "dist") } = {}) {
-  const [{ entries, files }, fonts, tokens, own, sprite, template, favicon] = await Promise.all([
+  const [{ entries, files }, fonts, tokens, own, tools, sprite, template, favicon] = await Promise.all([
     licenseData(),
     fontCss(),
     readFile(path.join(repoRoot, "brand", "tokens", "tokens.css"), "utf8"),
     readFile(path.join(here, "src", "styles.css"), "utf8"),
+    toolStyles(),
     spriteMarkup(),
     readFile(path.join(here, "src", "index.html"), "utf8"),
     readFile(path.join(repoRoot, "brand", "logo", "snappy-favicon.svg")),
   ]);
 
-  const style = (await transform(`${fonts}\n${tokens}\n${own}`, { loader: "css", minify: true, legalComments: "none" })).code;
+  const style = (await transform(`${fonts}\n${tokens}\n${own}\n${tools}`, { loader: "css", minify: true, legalComments: "none" })).code;
   const workerSource = await bundleWorker("import-worker.ts");
   const terminalWorkerSource = await bundleTerminalWorker();
   const script = await bundleScript(entries, workerSource, terminalWorkerSource);
