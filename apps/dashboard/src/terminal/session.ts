@@ -8,6 +8,8 @@ import { announce as speak } from "../announce.ts";
 import type { VaultStore } from "../vault.ts";
 import { createTerminalController } from "./controller.ts";
 import type { TerminalController } from "./controller.ts";
+import { createPickedFiles } from "./picked-files.ts";
+import type { PickedFiles } from "./picked-files.ts";
 import { createRunner } from "./runner.ts";
 import type { Channel, RunFile } from "./run-types.ts";
 
@@ -18,6 +20,8 @@ export const OUT_CAP_TOUCH = 96 * MIB;
 
 export interface TerminalSession {
   controller: TerminalController;
+  /** The export files picked for the command blocks, shared by all of them. */
+  picked: PickedFiles;
   /** The virtual folder's size limit for this device, in bytes. */
   outCap: number;
   /** False when this browser cannot start a helper. */
@@ -34,7 +38,7 @@ export interface SessionOptions {
   beforeStoreRun?: () => Promise<void>;
   /** Look at the saved history again after a command saved it. */
   afterStoreRun?: () => Promise<void>;
-  /** The export files the person picked. */
+  /** Replaces the picked files as the source of a Run's files (tests). */
   getFiles?: () => readonly RunFile[];
   columns?: () => number;
   announce?: (message: string, assertive?: boolean) => void;
@@ -55,6 +59,7 @@ const isCoarse = (): boolean => {
 export function createTerminalSession(options: SessionOptions): TerminalSession {
   const coarse = options.coarse ?? isCoarse();
   const outCap = coarse ? OUT_CAP_TOUCH : OUT_CAP_DESKTOP;
+  const picked = createPickedFiles();
   let spawnFailed = false;
   const runner = createRunner({
     spawn: () => {
@@ -76,7 +81,7 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
   });
   const controller = createTerminalController({
     runner,
-    getFiles: options.getFiles ?? (() => []),
+    getFiles: options.getFiles ?? (() => picked.files()),
     announce: options.announce ?? speak,
     columns: options.columns ?? (() => 80),
     beforeStoreRun: options.beforeStoreRun ?? (async () => undefined),
@@ -85,6 +90,7 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
   });
   return {
     controller,
+    picked,
     outCap,
     get supported() {
       return !spawnFailed;

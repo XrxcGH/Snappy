@@ -136,6 +136,16 @@ export class FakeElement extends FakeNode {
   get firstChild(): FakeNode | null {
     return this.childNodes[0] ?? null;
   }
+  /** What a file input holds, set by a test before it fires "change". */
+  files: unknown[] | null = null;
+  /** Run the click listeners, as pressing the element would. */
+  click(): void {
+    for (const fn of this.listeners.get("click") ?? []) fn({ target: this, preventDefault: () => undefined });
+  }
+  /** Run the listeners of any event, for tests. */
+  fire(type: string, event: Record<string, unknown> = {}): void {
+    for (const fn of this.listeners.get(type) ?? []) fn({ target: this, preventDefault: () => undefined, ...event });
+  }
   /** The element that was focused last, for tests of focus management. */
   static lastFocused: FakeElement | null = null;
   focus(): void {
