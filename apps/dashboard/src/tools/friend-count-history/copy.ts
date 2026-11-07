@@ -67,6 +67,7 @@ export const copy = {
   reAddedNote: (n: number) => `${countOf(n, "friend", "friends")} ${n === 1 ? "is" : "are"} in both lists, so you may have added ${them(n)} back.`,
   badSnapshotsNote: (n: number) => `${countOf(n, "saved snapshot", "saved snapshots")} had a missing or odd date. Snappy ignored ${n === 1 ? "it" : "them"}.`,
   noSnapshotsNote: "No saved history was compared. Snapshots are kept only if you turned saving on.",
+  noEarlierNote: "No earlier export is saved yet, so there was nothing to compare.",
   oneSnapshotNote: "Only one snapshot was saved, so the comparison is a single point.",
   agreeNote: (n: number) => `The curve and your saved history are close at ${countOf(n, "snapshot", "snapshots")}.`,
   disagreeNote: (disagreeing: number, compared: number, gap: number) =>

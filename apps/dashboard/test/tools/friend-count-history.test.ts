@@ -3,6 +3,7 @@
  * page shows. Synthetic data only. Crafted usernames carry a canary that must never reach a note, an announcement or
  * the page: this tool has no table of people, so no username belongs anywhere on it.
  */
+import { snapshotFromExport } from "@snappy-export/core";
 import type { Ledger, ParsedExport, Snapshot } from "@snappy-export/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
@@ -53,11 +54,13 @@ interface Lists {
  * A real (not sample) export with only these friends: three friends added Jan, Jan and Mar 2025, and one added
  * Jan 2025 and removed Feb 2025. The curve is 3 at the end of Jan, 2 in Feb, 3 from Mar.
  */
-function real(lists: Lists = {}, ws: Partial<Workspace> = {}): State {
+function real(lists: Lists = {}, ws: Partial<Workspace> = {}, saving = true): State {
   const friends = lists.friends ?? [person("a", at(2025, 1)), person("b", at(2025, 1)), person("c", at(2025, 3))];
   const deletedFriends = lists.deleted ?? [{ ...person("d", at(2025, 1)), deletedAt: at(2025, 2) }];
   const latest: ParsedExport = { ...(base.latest as ParsedExport), friends: { ...(base.latest as ParsedExport).friends, friends, deletedFriends } };
-  return stateWith({ latest, now: NOW, issues: [], parts: 1, ledger: ledgerOf(), ...ws });
+  const state = stateWith({ latest, now: NOW, issues: [], parts: 1, ledger: ledgerOf(), ...ws });
+  // Saving is on and unlocked unless a test says otherwise: only then is the ledger really saved history.
+  return { ...state, vault: { ...state.vault, phase: saving ? "unlocked" : "session" } };
 }
 const dataOf = (state: State) => toolData(state);
 const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
@@ -109,6 +112,27 @@ describe("computeFriendCountHistory", () => {
     const far = computeFriendCountHistory(dataOf(real({}, { ledger: ledgerOf(snapshot("1", at(2025, 5), 9)) }))).history;
     expect(far.comparisons[0]).toMatchObject({ gap: 6, disagrees: true });
     expect(far.notes.find((n) => n.code === "sources-disagree")?.params).toEqual({ compared: 1, disagreeing: 1, largestGap: 6 });
+  });
+
+  it("compares only snapshots that are really saved: with saving off this session's own imports are not history", () => {
+    const earlier = ledgerOf(snapshot("1", at(2025, 5), 8));
+    const off = computeFriendCountHistory(dataOf(real({}, { ledger: earlier }, false)));
+    expect(off.savedHistory).toBe(false);
+    expect(off.history.comparisons).toEqual([]);
+    expect(off.history.notes.map((n) => n.code)).toContain("no-snapshots");
+    expect(computeFriendCountHistory(dataOf(real({}, { ledger: earlier }, true))).history.comparisons).toHaveLength(1);
+  });
+
+  it("never compares the curve with the snapshot of the export it was drawn from", () => {
+    const state = real();
+    const parsed = state.real.latest as ParsedExport;
+    const own = snapshotFromExport(parsed, { takenAt: parsed.exportedAt ?? state.real.now });
+    const alone = computeFriendCountHistory(dataOf({ ...state, real: { ...state.real, ledger: ledgerOf(own) } }));
+    expect(alone.history.comparisons).toEqual([]);
+    expect(alone.history.notes.map((n) => n.code)).toContain("no-snapshots");
+    const withEarlier = computeFriendCountHistory(dataOf({ ...state, real: { ...state.real, ledger: ledgerOf(snapshot("1", at(2025, 5), 3), own) } }));
+    expect(withEarlier.history.comparisons).toHaveLength(1);
+    expect(withEarlier.history.comparisons[0]?.takenAt).toBe(at(2025, 5));
   });
 
   it("notes an export with errors, and passes on nothing else from the issues", () => {
@@ -166,10 +190,20 @@ describe("the page", () => {
   });
 
   it("leaves out the comparison table when nothing was saved, and says so in a note", async () => {
-    const { root } = await renderSettled(view, real());
+    const { root } = await renderSettled(view, real({}, {}, false));
     expect(root.querySelectorAll("table")).toHaveLength(1);
     expect(root.querySelectorAll(".section-title").map((t) => t.textContent)).not.toContain(copy.compareHeading);
     expect(text(root, ".tool-notes li")).toContain(copy.noSnapshotsNote);
+  });
+
+  it("does not call this session's imports saved, and says there is no earlier export when saving is on", async () => {
+    const off = await renderSettled(view, real({}, { ledger: ledgerOf(snapshot("1", at(2025, 5), 3), snapshot("2", at(2025, 9), 30)) }, false));
+    expect(off.root.querySelectorAll("table")).toHaveLength(1);
+    expect(text(off.root, ".tool-notes li")).toEqual(expect.arrayContaining([copy.noSnapshotsNote]));
+    expect(off.root.textContent).not.toMatch(/\d+ saved/);
+    const on = await renderSettled(view, real());
+    expect(text(on.root, ".tool-notes li")).toContain(copy.noEarlierNote);
+    expect(text(on.root, ".tool-notes li")).not.toContain(copy.noSnapshotsNote);
   });
 
   it("shows only the latest 24 months and says how many there are", async () => {

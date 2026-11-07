@@ -36,6 +36,11 @@ export interface ToolData {
   readonly capGiB: number;
   /** The last export that was added was refused. */
   readonly importFailed: boolean;
+  /**
+   * The snapshots in `ledger` are really saved: saving is on and unlocked, or the sample is showing. With saving off the ledger
+   * only holds this session's imports, which are not saved history and must not be described or compared as if they were.
+   */
+  readonly savedHistory: boolean;
 }
 
 let last: { key: readonly unknown[]; data: ToolData } | undefined;
@@ -58,15 +63,16 @@ export function toolData(state: State): ToolData {
   const { parsed, source } = sourceOf(ws.ledger, ws.latest);
   const sample = state.sample !== null;
   const importFailed = state.import.phase === "failed";
-  const key = [parsed, source, sample, ws.now, ws.issues, ws.ledger, ws.parts, state.capGiB, importFailed] as const;
+  const savedHistory = sample || state.vault.phase === "unlocked";
+  const key = [parsed, source, sample, ws.now, ws.issues, ws.ledger, ws.parts, state.capGiB, importFailed, savedHistory] as const;
   if (last && sameKey(last.key, key)) return last.data;
-  const data: ToolData = { parsed, source, sample, now: ws.now, issues: ws.issues, ledger: ws.ledger, parts: ws.parts ?? null, capGiB: state.capGiB, importFailed };
+  const data: ToolData = { parsed, source, sample, now: ws.now, issues: ws.issues, ledger: ws.ledger, parts: ws.parts ?? null, capGiB: state.capGiB, importFailed, savedHistory };
   last = { key, data };
   return data;
 }
 
 /** What a tool page or the hub repaints on: the active data, either workspace, the storage cap and whether an import failed. */
-export const toolDeps = (s: State): readonly unknown[] => [s.sample, s.real, s.capGiB, s.import.phase];
+export const toolDeps = (s: State): readonly unknown[] => [s.sample, s.real, s.capGiB, s.import.phase, s.vault.phase];
 
 /** The first need the data cannot meet, or null when the tool can run. An empty list is always met. */
 export function unmetNeed(data: ToolData, needs: readonly ToolNeed[]): ToolNeed | null {

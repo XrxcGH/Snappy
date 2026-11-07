@@ -54,6 +54,14 @@ describe("toolData", () => {
     expect(data.parsed?.memories).toEqual([]);
   });
 
+  it("knows whether the saved history is really saved: only when unlocked, or for the sample", () => {
+    expect(toolData(sample).savedHistory).toBe(true);
+    const real = stateWith({ latest: sample.sample?.latest ?? null, now: 5, issues: [] });
+    expect(toolData(real).savedHistory).toBe(false);
+    const unlocked = toolData({ ...real, vault: { ...real.vault, phase: "unlocked" } });
+    expect(unlocked.savedHistory).toBe(true);
+  });
+
   it("is empty when nothing is loaded", () => {
     expect(toolData(emptyState())).toMatchObject({ parsed: null, source: "none", sample: false, parts: null });
   });

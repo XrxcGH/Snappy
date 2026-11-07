@@ -28,7 +28,7 @@ function monthText(label: string): string {
 const num = (n: Note, key: string): number => n.params[key] ?? 0;
 
 /** The sentence for one note. Hedged: Snappy infers the curve from the dates in the files. */
-function noteText(n: Note): string {
+function noteText(n: Note, savedHistory: boolean): string {
   switch (n.code) {
     case "no-dated-friendships":
       return copy.noDatesNote;
@@ -47,7 +47,7 @@ function noteText(n: Note): string {
     case "snapshots-ignored":
       return copy.badSnapshotsNote(num(n, "count"));
     case "no-snapshots":
-      return copy.noSnapshotsNote;
+      return savedHistory ? copy.noEarlierNote : copy.noSnapshotsNote;
     case "single-snapshot":
       return copy.oneSnapshotNote;
     case "sources-agree":
@@ -112,7 +112,7 @@ export const view = toolView<FriendCountResult, Record<string, never>>({
   render: (r) => [summarySection(r), monthsSection(r), compareSection(r)],
   notes: (r): ToolNote[] => [
     ...(r.exportHasErrors ? [{ kind: "warning" as const, text: copy.exportErrorsNote }] : []),
-    ...r.history.notes.map((n): ToolNote => ({ kind: WARN.has(n.code) ? "warning" : "info", text: noteText(n) })),
+    ...r.history.notes.map((n): ToolNote => ({ kind: WARN.has(n.code) ? "warning" : "info", text: noteText(n, r.savedHistory) })),
   ],
   command: "friend-count",
 });
