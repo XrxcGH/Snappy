@@ -4,9 +4,10 @@
  * is done. The order here is the order on the hub inside each group.
  */
 import type { Scope } from "../components/category.ts";
+import { descriptor as exportCheck } from "./export-check/index.ts";
 import type { ToolDescriptor, ToolGroupId } from "./types.ts";
 
-export const TOOLS: readonly ToolDescriptor[] = [];
+export const TOOLS: readonly ToolDescriptor[] = [exportCheck];
 
 export interface ToolGroup {
   id: ToolGroupId;
