@@ -6,6 +6,7 @@
 import { anniversariesCommand } from "./commands/anniversaries.ts";
 import { backupCommand } from "./commands/backup.ts";
 import { blockedCommand } from "./commands/blocked.ts";
+import { calendarCommand } from "./commands/calendar.ts";
 import { closestCommand } from "./commands/closest.ts";
 import { exportCheckCommand } from "./commands/export-check.ts";
 import { friendCountCommand } from "./commands/friend-count.ts";
@@ -39,6 +40,7 @@ export const INSIGHT_COMMANDS: readonly InsightCommand[] = [
   replySpeedCommand,
   reachOutCommand,
   habitsCommand,
+  calendarCommand,
   storageCommand,
   onThisDayCommand,
   rescueCommand,
