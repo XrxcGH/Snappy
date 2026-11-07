@@ -1,5 +1,5 @@
 /**
- * Tiny local static server for people who prefer http:// to double-clicking the file.
+ * Tiny local static server for developing the dashboard on http://127.0.0.1. Snappy itself ships as native apps.
  * Binds to 127.0.0.1 only (never the network), serves the files in dist/ and nothing else,
  * and refuses requests whose Host header is not a loopback name (DNS rebinding).
  *

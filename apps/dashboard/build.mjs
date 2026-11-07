@@ -258,5 +258,5 @@ function argValue(flag) {
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const out = argValue("--out");
   const result = await buildDashboard(out ? { outDir: path.resolve(out) } : {});
-  console.log(`Built ${result.file} (${(result.bytes / 1024).toFixed(0)} KB). Open it by double-clicking, or run: npm run serve -w @snappy-export/dashboard`);
+  console.log(`Built ${result.file} (${(result.bytes / 1024).toFixed(0)} KB). For development, run: npm run serve -w @snappy-export/dashboard`);
 }
