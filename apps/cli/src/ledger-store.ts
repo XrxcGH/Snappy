@@ -99,7 +99,11 @@ export async function acquireLedgerLock(ledgerPath: string, opts: { waitMs?: num
       await handle.close();
       break;
     } catch (e) {
-      if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw fsError(e, "lock", ledgerPath);
+      // Windows answers EPERM or EBUSY, not EEXIST, while another command is releasing its lock file (it is
+      // "pending delete" for a moment), so those mean "try again" there.
+      const code = (e as NodeJS.ErrnoException).code;
+      const releasing = process.platform === "win32" && (code === "EPERM" || code === "EBUSY");
+      if (code !== "EEXIST" && !releasing) throw fsError(e, "lock", ledgerPath);
     }
     let stale = false;
     try {

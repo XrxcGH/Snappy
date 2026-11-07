@@ -194,7 +194,7 @@ describe("two commands at once cannot lose each other's changes", () => {
     const env = { SNAPPY_PASSPHRASE: PASS };
     await run(["keep", "seed", "--ledger", ledger], makeIo({ env }));
     const results = await Promise.all([run(["keep", "alice", "--ledger", ledger], makeIo({ env })), run(["keep", "bob", "--ledger", ledger], makeIo({ env }))]);
-    expect(results.map((r) => r.code)).toEqual([0, 0]);
+    expect(results.map((r) => r.code), results.map((r) => r.err).join("|")).toEqual([0, 0]);
     expect(await loadAllowlist(ledger, PASS)).toEqual(["alice", "bob", "seed"]);
     expect(existsSync(`${ledger}.lock`)).toBe(false);
   }, 60_000);
