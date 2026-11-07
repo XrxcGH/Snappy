@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Snappy">
+  <!-- Snappy app icon: the mark on an ink tile, bone bars and a violet spine (the dark-ground violet). Use it as the installed app icon.
+       Tile corner radius is 22% of the width. The mark is scaled 4.5x and centered, so it sits inside the maskable safe zone. -->
+  <rect width="512" height="512" rx="112.64" fill="#1B1816"/>
+  <g transform="translate(256 256) scale(4.5) translate(-32 -32)">
+    <rect x="12" y="4" width="44" height="8" rx="4" fill="#F2F4F5"/>
+    <rect x="8" y="16" width="20" height="8" rx="4" fill="#F2F4F5"/>
+    <rect x="12" y="28" width="40" height="8" rx="4" fill="#9B86FF"/>
+    <rect x="36" y="40" width="20" height="8" rx="4" fill="#F2F4F5"/>
+    <rect x="8" y="52" width="44" height="8" rx="4" fill="#F2F4F5"/>
+  </g>
+</svg>

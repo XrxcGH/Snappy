@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Snappy">
+  <!-- Snappy favicon: the mark on an ink tile so it reads on any browser-tab color. Use it for the browser tab.
+       The mark sits on the tile at full size, centered, so at 16px and 32px every bar lands on whole pixels.
+       Tile corner radius is 14 (22% of 64). -->
+  <rect width="64" height="64" rx="14" fill="#1B1816"/>
+  <rect x="12" y="4" width="44" height="8" rx="4" fill="#F2F4F5"/>
+  <rect x="8" y="16" width="20" height="8" rx="4" fill="#F2F4F5"/>
+  <rect x="12" y="28" width="40" height="8" rx="4" fill="#9B86FF"/>
+  <rect x="36" y="40" width="20" height="8" rx="4" fill="#F2F4F5"/>
+  <rect x="8" y="52" width="44" height="8" rx="4" fill="#F2F4F5"/>
+</svg>

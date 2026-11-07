@@ -1,0 +1,201 @@
+/*
+  Snappy design tokens. Source of truth for color, type, space, radius, elevation and motion.
+  Themes: light is the default; dark follows the OS (prefers-color-scheme) unless the page sets
+  data-theme="light" or data-theme="dark" on the root element, which always wins.
+
+  Fonts are not loaded here. The dashboard blocks all network access, so these OFL fonts are
+  self-hosted as local woff2 files:
+    Bricolage Grotesque 600/700 (display), Atkinson Hyperlegible Next 400/500/600/700 (body),
+    JetBrains Mono 400/500 (usernames, code).
+  The fallback stacks below keep the UI usable if a font file is missing.
+*/
+
+:root {
+  /* ---- Brand (theme-independent) ---- */
+  --brand-ink: #1b1816;
+  --brand-bone: #f2f4f5;
+  --brand-violet: #6b4dff;          /* accent on light grounds */
+  --brand-violet-on-dark: #9b86ff;  /* accent on dark grounds */
+
+  /* ---- Color: light ---- */
+  --bg: #f2f4f5;
+  --surface: #fbfcfc;
+  --surface-raised: #ffffff;
+  --surface-sunken: #e8ebed;
+  --border: #d5d9dc;
+  --border-strong: #7a7f83;
+  --text: #1b1816;
+  --text-muted: #5c5752;
+  --primary: #1b1816;
+  --primary-hover: #3b3531;
+  --primary-text-on: #f2f4f5;
+  --accent: #6b4dff;
+  --accent-hover: #5a3be8;
+  --accent-text-on: #ffffff; /* text on accent fills: white in light, ink in dark */
+  --accent-fg: #5a3be8; /* violet as TEXT or thin lines */
+  --focus-ring: #1b1816;
+  --link: #5a3be8;
+  --scrim: rgba(27, 24, 22, 0.48);
+
+  /* Semantic: always pair with an icon and a text label. */
+  --success-fg: #0b6b43; --success-bg: #e2f4ea; --success-border: #2f8f63;
+  --warning-fg: #7a4300; --warning-bg: #fcefd6; --warning-border: #b26a00;
+  --danger-fg: #a8112b;  --danger-bg: #fbe5e8;  --danger-border: #c8334c;
+  --info-fg: #1b4f9e;    --info-bg: #e3edfa;    --info-border: #2f6fcc;
+
+  /* Confidence: high / medium / low. Meter bars + text label; color is never the only signal. */
+  --conf-high-fg: var(--success-fg); --conf-high-bg: var(--success-bg); --conf-high-border: var(--success-border);
+  --conf-medium-fg: var(--warning-fg); --conf-medium-bg: var(--warning-bg); --conf-medium-border: var(--warning-border);
+  --conf-low-fg: #4a5560; --conf-low-bg: #e8ecef; --conf-low-border: #6b7782;
+
+  /* ---- Typography ---- */
+  --font-display: "Bricolage Grotesque", "Space Grotesk", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+
+  --text-12: 0.75rem;   /* 12px caption, minimum size */
+  --text-14: 0.875rem;  /* 14px secondary */
+  --text-16: 1rem;      /* 16px body */
+  --text-18: 1.125rem;  /* 18px lead */
+  --text-20: 1.25rem;   /* 20px h4 */
+  --text-24: 1.5rem;    /* 24px h3 */
+  --text-30: 1.875rem;  /* 30px h2 */
+  --text-36: 2.25rem;   /* 36px h1 */
+  --text-48: 3rem;      /* 48px display */
+  --text-60: 3.75rem;   /* 60px display XL */
+
+  --leading-tight: 1.1;
+  --leading-snug: 1.25;
+  --leading-body: 1.5;
+  --tracking-display: -0.02em;
+  --tracking-normal: 0;
+  --tracking-label: 0.01em;
+
+  /* ---- Space (4px base) ---- */
+  --space-1: 0.25rem;  --space-2: 0.5rem;   --space-3: 0.75rem;  --space-4: 1rem;
+  --space-5: 1.25rem;  --space-6: 1.5rem;   --space-8: 2rem;     --space-10: 2.5rem;
+  --space-12: 3rem;    --space-16: 4rem;    --space-20: 5rem;    --space-24: 6rem;
+
+  /* ---- Radius ---- */
+  --radius-bar: 4px;      /* half the height of an 8px bar: the logo's pill ends; meters and bar chips */
+  --radius-sm: 4px;       /* badges, tags */
+  --radius-md: 8px;       /* buttons, inputs */
+  --radius-lg: 12px;      /* cards, panels */
+  --radius-xl: 16px;      /* sheets, dialogs */
+  --radius-full: 999px;   /* toggles and pills only */
+
+  /* ---- Elevation: borders first, shadows only for floating layers ---- */
+  --shadow-sm: 0 1px 2px rgba(27, 24, 22, 0.08);
+  --shadow-md: 0 4px 12px rgba(27, 24, 22, 0.1);
+  --shadow-lg: 0 12px 32px rgba(27, 24, 22, 0.16);
+
+  /* ---- Layout ---- */
+  --content-max: 70rem;      /* 1120px */
+  --measure: 65ch;           /* running text */
+  --target-min: 2.75rem;     /* 44px touch target on touch devices */
+  --target-min-pointer: 2.25rem; /* 36px with a mouse */
+  --bp-sm: 30rem; --bp-md: 48rem; --bp-lg: 64rem; --bp-xl: 80rem; /* 480 / 768 / 1024 / 1280 */
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 120ms;   /* hover, press, toggle */
+  --dur-base: 200ms;   /* menus, accordions */
+  --dur-slow: 320ms;   /* page and dialog transitions */
+  --bar-stagger: 40ms; /* signature: bars slide in 8px, each 40ms after the last */
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131110;
+    --surface: #1b1917;
+    --surface-raised: #252220;
+    --surface-sunken: #0d0c0b;
+    --border: #3a3532;
+    --border-strong: #8a837d;
+    --text: #f2efec;
+    --text-muted: #a8a19a;
+    --primary: #f2f4f5;
+    --primary-hover: #ffffff;
+    --primary-text-on: #131110;
+    --accent: #9b86ff;
+    --accent-hover: #b3a3ff;
+    --accent-text-on: #131110;
+    --accent-fg: #b3a3ff;
+    --focus-ring: #f2f4f5;
+    --link: #b3a3ff;
+    --scrim: rgba(0, 0, 0, 0.64);
+
+    --success-fg: #6fd9a3; --success-bg: #0f2a1e; --success-border: #3fa877;
+    --warning-fg: #f2b45a; --warning-bg: #2e2005; --warning-border: #c98a1f;
+    --danger-fg: #ff8fa0;  --danger-bg: #35101a;  --danger-border: #e5586f;
+    --info-fg: #8db8ff;    --info-bg: #10223d;    --info-border: #4f86e0;
+    --conf-low-fg: #b5bec7; --conf-low-bg: #22282e; --conf-low-border: #7c8791;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #131110;
+  --surface: #1b1917;
+  --surface-raised: #252220;
+  --surface-sunken: #0d0c0b;
+  --border: #3a3532;
+  --border-strong: #8a837d;
+  --text: #f2efec;
+  --text-muted: #a8a19a;
+  --primary: #f2f4f5;
+  --primary-hover: #ffffff;
+  --primary-text-on: #131110;
+  --accent: #9b86ff;
+  --accent-hover: #b3a3ff;
+  --accent-text-on: #131110;
+  --accent-fg: #b3a3ff;
+  --focus-ring: #f2f4f5;
+  --link: #b3a3ff;
+  --scrim: rgba(0, 0, 0, 0.64);
+
+  --success-fg: #6fd9a3; --success-bg: #0f2a1e; --success-border: #3fa877;
+  --warning-fg: #f2b45a; --warning-bg: #2e2005; --warning-border: #c98a1f;
+  --danger-fg: #ff8fa0;  --danger-bg: #35101a;  --danger-border: #e5586f;
+  --info-fg: #8db8ff;    --info-bg: #10223d;    --info-border: #4f86e0;
+  --conf-low-fg: #b5bec7; --conf-low-bg: #22282e; --conf-low-border: #7c8791;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* ---- Base ---- */
+html { font-size: 100%; } /* never set px on html: respects the user's font size */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-16);
+  line-height: var(--leading-body);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: var(--tracking-display); text-wrap: balance; margin: 0; }
+h1 { font-size: var(--text-36); line-height: var(--leading-snug); font-weight: 700; }
+h2 { font-size: var(--text-30); line-height: var(--leading-snug); font-weight: 700; }
+h3 { font-size: var(--text-24); line-height: var(--leading-snug); font-weight: 600; }
+h4 { font-size: var(--text-20); line-height: var(--leading-snug); font-weight: 600; }
+code, kbd, samp, .username { font-family: var(--font-mono); font-size: 0.9375em; font-weight: 500; }
+:where(a) { color: var(--link); text-underline-offset: 0.2em; }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

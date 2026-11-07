@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Snappy">
+  <!-- Snappy mark: five pill-ended bars stacked like a tidy list, forming an S. The spine (third bar) is the one highlighted item.
+       64-unit grid. Bars are 8 tall with 4 gaps and fully rounded ends (rx 4), lengths 44, 20, 40, 20, 44.
+       Use it in app chrome, avatars and anywhere the name is already shown. Bars use currentColor; the spine uses the CSS variable named accent, with violet as the fallback.
+       At 16px every bar is exactly 2px with 1px gaps. -->
+  <rect x="12" y="4" width="44" height="8" rx="4" fill="currentColor"/>
+  <rect x="8" y="16" width="20" height="8" rx="4" fill="currentColor"/>
+  <rect x="12" y="28" width="40" height="8" rx="4" fill="var(--accent, #6B4DFF)"/>
+  <rect x="36" y="40" width="20" height="8" rx="4" fill="currentColor"/>
+  <rect x="8" y="52" width="44" height="8" rx="4" fill="currentColor"/>
+</svg>
