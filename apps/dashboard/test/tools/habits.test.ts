@@ -180,9 +180,9 @@ describe("the page", () => {
     const { root } = await renderSettled(view, withChats(crafted()));
     const [busiest, direction] = root.querySelectorAll("table") as [FakeElement, FakeElement];
     expect(rowsOf(busiest)).toEqual([
-      [copy.hourPattern, "Busiest: 9 pm", "57% in the busiest hour", copy.unitNoQuietest],
-      [copy.weekdayPattern, "Busiest: Friday", "57% in the busiest day", copy.unitNoQuietest],
-      [copy.monthPattern, "Busiest: Mar 2026", "57% in the busiest month", copy.unitNoQuietest],
+      [copy.hourPattern, "9 pm is busiest", "57% in the busiest hour", copy.unitNoQuietest],
+      [copy.weekdayPattern, "Friday is busiest", "57% in the busiest day", copy.unitNoQuietest],
+      [copy.monthPattern, "Mar 2026 is busiest", "57% in the busiest month", copy.unitNoQuietest],
     ]);
     expect(rowsOf(direction)).toEqual([
       [copy.sentRow, "20 counted", "57% of the total"],
@@ -240,7 +240,7 @@ describe("the page", () => {
     await settled(r.root);
     expect(r.root.querySelector("select")).toBe(select);
     const busiest = r.root.querySelectorAll("table")[0] as FakeElement;
-    expect(rowsOf(busiest)[0]?.[1]).toBe("Busiest: 11 pm");
+    expect(rowsOf(busiest)[0]?.[1]).toBe("11 pm is busiest");
     // Each result is announced as it lands, and the control is not rebuilt.
     expect(said).toHaveLength(2);
   });

@@ -1,6 +1,6 @@
 /**
- * Habits: the pure step. It hands core's habits module only the direction and the time of each chat and Snap
- * (no conversation, no kind, no username), then shapes its result for the page: plain numbers, keys and counts.
+ * Habits: the pure step. It hands core's habits module the chats and Snaps, of which core reads only the direction and
+ * the time (never a conversation, kind or username), then shapes its result for the page: plain numbers, keys and counts.
  *
  * Peaks follow the same honesty rules as the command: a quietest hour or day is named only when it is the one
  * lowest value, and a quietest month only when it is neither the first nor the last (those may be partial).
@@ -58,8 +58,9 @@ function peakOf<K extends number | string>(busiest: Rank<K>, quietest: Rank<K>, 
 export function computeHabits(data: ToolData, params: HabitsParams = DEFAULT_PARAMS): HabitsView {
   const { parsed } = data;
   if (parsed === null) throw new Error("needs an export");
-  const events = parsed.chats.map((c) => ({ direction: c.direction, at: c.at }));
-  const result = insights.habits.computeHabits(events, { now: data.now, utcOffsetMinutes: params.utcOffsetMinutes });
+  // The chats go in as they are, not copied into new objects first (a large export holds over a million): core reads only
+  // each event's direction and time, and the result holds counts, never a conversation.
+  const result = insights.habits.computeHabits(parsed.chats, { now: data.now, utcOffsetMinutes: params.utcOffsetMinutes });
   const keys = result.byMonth.map((m) => m.month);
   const interior = (m: string): boolean => m !== keys[0] && m !== keys[keys.length - 1];
   return {

@@ -65,8 +65,8 @@ export const copy = {
   /** A busiest or quietest value that other times match. */
   unitTied: (value: string): string => `${value} (tied)`,
   /** Cells of the busiest table. At phone width the column names are not repeated, so each cell says what it is. */
-  unitBusiestAt: (value: string): string => `Busiest: ${value}`,
-  unitQuietestAt: (value: string): string => `Quietest: ${value}`,
+  unitBusiestAt: (value: string): string => `${value} is busiest`,
+  unitQuietestAt: (value: string): string => `${value} is quietest`,
   unitNoQuietest: "Quietest: not named",
   unitPeakShare: (percent: string, noun: string): string => `${percent} in the busiest ${noun}`,
   unitCounted: (count: string): string => `${count} counted`,

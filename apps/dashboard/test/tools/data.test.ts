@@ -7,7 +7,7 @@ import { resetAnalysisCache } from "../../src/analysis.ts";
 import { initialState, reduce } from "../../src/reducer.ts";
 import type { State } from "../../src/reducer.ts";
 import { SAMPLE_NOW } from "../../src/sample.ts";
-import { cachedResult, runTool } from "../../src/tools/run.ts";
+import { PAINT_FIRST_MS, cachedResult, runTool } from "../../src/tools/run.ts";
 import { toolData, unmetNeed } from "../../src/tools/data.ts";
 import { emptyState, sampleState, sampleWorkspace, stateWith } from "./harness.ts";
 
@@ -121,6 +121,15 @@ describe("held results", () => {
     order.push("returned");
     await pending;
     expect(order).toEqual(["returned", "work"]);
+  });
+
+  it("wait long enough for the working line to be painted before a large pass starts", async () => {
+    const started: number[] = [];
+    const begin = performance.now();
+    await runTool("paint", toolData(sample), "{}", () => void started.push(performance.now() - begin));
+    // A timer of 0 can run before the browser has painted anything.
+    expect(PAINT_FIRST_MS).toBeGreaterThanOrEqual(16);
+    expect(started[0]).toBeGreaterThanOrEqual(PAINT_FIRST_MS - 2);
   });
 
   it("reject when the work throws, and remember nothing", async () => {
