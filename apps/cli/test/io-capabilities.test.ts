@@ -47,7 +47,7 @@ describe("a stop request inside a file call", () => {
 describe("stopping a run", () => {
   const files = (dir: string): number => (existsSync(dir) ? readdirSync(dir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).length : 0);
 
-  it("stops before the first file when the signal is already aborted, and writes no report", async () => {
+  it("stops before reading when the signal is already aborted, and writes no report", async () => {
     const dir = tempDir("stop");
     writeSyntheticParts(dir, { memoryCount: 60 });
     const out = join(tempDir("stop-out"), "rescued");
@@ -55,7 +55,8 @@ describe("stopping a run", () => {
     controller.abort();
     const result = await run(["memories", dir, "--out", out], makeIo({ signal: controller.signal }));
     expect(result.code).toBe(130);
-    expect(result.err).toContain("Stopped. Files already saved are kept.");
+    // Stopped while the export is still being read: nothing was saved yet, and the message says so.
+    expect(result.err).toContain("Stopped. Nothing was changed.");
     expect(existsSync(join(out, "memories-report.json"))).toBe(false);
   });
 
