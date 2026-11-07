@@ -13,7 +13,7 @@ import type { ImportHooks, ImportRunner } from "../src/import-pipeline.ts";
 import { BATCH_EVENTS, packChats, unpackChats } from "../src/import-transfer.ts";
 import type { StartRequest, WorkerReply } from "../src/import-transfer.ts";
 import { runWorkerTask } from "../src/worker-task.ts";
-import { ImportWorkerError, spawnBlobWorker, workerRunner } from "../src/worker-runner.ts";
+import { ImportWorkerError, spawnBlobChannel, spawnBlobWorker, workerRunner } from "../src/worker-runner.ts";
 import type { WorkerHandle } from "../src/worker-runner.ts";
 import { partFiles } from "./export-fixtures.ts";
 
@@ -327,5 +327,26 @@ describe("spawnBlobWorker", () => {
     });
     expect(spawnBlobWorker("x")).toBeNull();
     expect(seen.revoked).toEqual(["blob:test/0"]);
+  });
+
+  it("is the generic channel underneath: any message goes out, with a transfer list, and any comes back", async () => {
+    const seen = stubWorkers();
+    const channel = spawnBlobChannel<{ type: string }, { type: string }>("self.onmessage = null;");
+    expect(channel).not.toBeNull();
+    expect(await (seen.blobs[0] as Blob).text()).toBe("self.onmessage = null;");
+    const worker = seen.workers[0] as StubWorker;
+    channel?.post({ type: "cancel" });
+    expect(worker.posted).toEqual([{ type: "cancel" }]);
+    const heard: unknown[] = [];
+    channel?.onMessage((m) => heard.push(m));
+    worker.onmessage?.({ data: { type: "out" } });
+    expect(heard).toEqual([{ type: "out" }]);
+    channel?.stop();
+    expect(worker.terminated).toBe(1);
+    expect(spawnBlobChannel("x")).not.toBeNull();
+  });
+
+  it("gives no channel where there are no workers", () => {
+    expect(spawnBlobChannel("1+1")).toBeNull();
   });
 });

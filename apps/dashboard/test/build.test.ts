@@ -3,9 +3,10 @@
  * page, a strict Content-Security-Policy whose hashes match the inline code, no stray URLs,
  * and byte-identical output from the same sources.
  */
-import { createHash } from "node:crypto";
+import { createHash, webcrypto } from "node:crypto";
 import fs, { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
+import vm from "node:vm";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -15,12 +16,14 @@ const tmp = mkdtempSync(path.join(tmpdir(), "snappy-build-"));
 let html = "";
 let htmlSecond = "";
 let outDir = "";
+let terminalWorker = "";
 
 beforeAll(async () => {
-  const build = (await import(pathToFileURL(path.join(root, "build.mjs")).href)) as { buildDashboard: (o: { outDir: string }) => Promise<{ file: string; outDir: string }> };
+  const build = (await import(pathToFileURL(path.join(root, "build.mjs")).href)) as { buildDashboard: (o: { outDir: string }) => Promise<{ file: string; outDir: string; terminalWorkerSource: string }> };
   const first = await build.buildDashboard({ outDir: path.join(tmp, "one") });
   const second = await build.buildDashboard({ outDir: path.join(tmp, "two") });
   outDir = first.outDir;
+  terminalWorker = first.terminalWorkerSource;
   html = readFileSync(first.file, "utf8");
   htmlSecond = readFileSync(second.file, "utf8");
 }, 60_000);
@@ -238,6 +241,69 @@ describe("built file: background reader", () => {
     expect(html).toMatch(/createObjectURL\(new Blob\(\[/);
     expect(html).not.toMatch(/importScripts|new SharedWorker/);
     expect(directive("script-src")).toMatch(/^script-src 'sha256-[A-Za-z0-9+/=]+' 'sha256-[A-Za-z0-9+/=]+'$/);
+  });
+});
+
+describe("built file: command helper", () => {
+  it("holds the commands, so a Run can execute them in a worker", () => {
+    expect(terminalWorker.length).toBeGreaterThan(100_000);
+    // Text of the command line's own messages, so the commands really are in the helper.
+    expect(terminalWorker).toContain("Snappy stopped unexpectedly");
+    expect(terminalWorker).toContain("Usage: snappy-export");
+    expect(terminalWorker).toContain("Stopped. Files already saved are kept.");
+  });
+
+  it("has no downloader: the network module is replaced by a stub, and nothing calls the network", () => {
+    // The real downloader's own words are absent; the stub is what the helper carries.
+    expect(terminalWorker).not.toContain("This is the only Snappy command that uses the network");
+    expect(terminalWorker).not.toContain("redirect:\"manual\"");
+    expect(terminalWorker).not.toMatch(/\bfetch\s*\(|new\s+XMLHttpRequest|new\s+WebSocket|new\s+EventSource|\.sendBeacon\s*\(|importScripts\s*\(|new\s+SharedWorker/);
+    // The helper starts nothing else, and never reaches for Node.
+    expect(terminalWorker).not.toMatch(/new\s+Worker\s*\(/);
+    expect(terminalWorker).not.toMatch(/["'`]node:|\bBuffer\b|child_process|require\(|process\.(env|argv|exit)/);
+    expect(terminalWorker).not.toMatch(/\bdocument\.[a-z]|\bwindow\.[a-z]|\blocalStorage\b|\bsessionStorage\b/);
+  });
+
+  it("removes the browser's network features before it runs anything", () => {
+    expect(terminalWorker).toMatch(/XMLHttpRequest/); // named only to be removed, in the scrubber's list
+    expect(terminalWorker.indexOf("XMLHttpRequest")).toBeLessThan(terminalWorker.indexOf("Snappy stopped unexpectedly") + terminalWorker.length);
+  });
+
+  it("runs as built: on a worker-like scope it scrubs the network features, then answers a run request", async () => {
+    const posted: { type: string; text?: string; code?: number }[] = [];
+    const scope: Record<string, unknown> = {
+      WorkerGlobalScope: function WorkerGlobalScope() {},
+      postMessage: (m: { type: string }) => void posted.push(m),
+      setTimeout,
+      clearTimeout,
+      Blob,
+      TextEncoder,
+      TextDecoder,
+      AbortController,
+      crypto: webcrypto,
+      atob,
+      btoa,
+      queueMicrotask,
+      URL,
+      navigator: { sendBeacon: () => true },
+      fetch: () => "live",
+      WebSocket: class {},
+    };
+    vm.createContext(scope);
+    vm.runInContext(terminalWorker, scope);
+    expect(scope.fetch).toBeUndefined();
+    expect(scope.WebSocket).toBeUndefined();
+    expect((scope.navigator as { sendBeacon?: unknown }).sendBeacon).toBeUndefined();
+    (scope.onmessage as (e: { data: unknown }) => void)({ data: { type: "run", runId: "t", argv: ["help"], files: [], columns: 80, coarse: false, outCap: 1000 } });
+    await new Promise((r) => setTimeout(r, 100));
+    expect(posted.map((m) => m.type)).toEqual(["out", "exit"]);
+    expect(posted[0]?.text).toContain("Usage: snappy-export <command>");
+    expect(posted[1]?.code).toBe(0);
+  });
+
+  it("is one plain script: no module syntax, and no dynamic import", () => {
+    expect(terminalWorker).not.toMatch(/^\s*(import|export)\s/m);
+    expect(terminalWorker).not.toMatch(/\bimport\s*\(/);
   });
 });
 

@@ -12,3 +12,8 @@ declare module "snappy:licenses" {
 declare module "snappy:worker" {
   export const workerSource: string;
 }
+
+/** Virtual module produced by build.mjs: the command helper's code as text (started from a blob: URL). */
+declare module "snappy:terminal-worker" {
+  export const terminalWorkerSource: string;
+}

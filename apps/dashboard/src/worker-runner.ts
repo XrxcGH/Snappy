@@ -22,8 +22,21 @@ export interface WorkerHandle {
   onFailure(handler: () => void): void;
 }
 
-/** A worker from code held as text, or null when this browser cannot make one. */
-export function spawnBlobWorker(source: string): WorkerHandle | null {
+/** An open line to a worker started from code held as text: messages out, messages and failure back, stop. */
+export interface BlobChannel<Req, Rep> {
+  post(message: Req, transfer?: Transferable[]): void;
+  onMessage(handler: (message: Rep) => void): void;
+  /** The worker could not start, or died. */
+  onFailure(handler: () => void): void;
+  /** Stops the worker and releases its blob: URL. Safe to call twice. */
+  stop(): void;
+}
+
+/**
+ * A worker from code held as text, or null when this browser cannot make one. This is the one place
+ * the page starts a worker: from a blob: URL made from the page's own code, nothing else.
+ */
+export function spawnBlobChannel<Req, Rep>(source: string): BlobChannel<Req, Rep> | null {
   if (typeof Worker === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") return null;
   const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
   let worker: Worker;
@@ -34,13 +47,13 @@ export function spawnBlobWorker(source: string): WorkerHandle | null {
     return null;
   }
   return {
-    start: (request) => worker.postMessage(request),
+    post: (message, transfer) => worker.postMessage(message, transfer ?? []),
     stop() {
       worker.terminate();
       URL.revokeObjectURL(url);
     },
-    onReply(handler) {
-      worker.onmessage = (event: MessageEvent<WorkerReply>) => handler(event.data);
+    onMessage(handler) {
+      worker.onmessage = (event: MessageEvent<Rep>) => handler(event.data);
     },
     onFailure(handler) {
       worker.onerror = (event) => {
@@ -49,6 +62,18 @@ export function spawnBlobWorker(source: string): WorkerHandle | null {
       };
       worker.onmessageerror = () => handler();
     },
+  };
+}
+
+/** The background reader's worker, on top of the generic channel. */
+export function spawnBlobWorker(source: string): WorkerHandle | null {
+  const channel = spawnBlobChannel<StartRequest, WorkerReply>(source);
+  if (channel === null) return null;
+  return {
+    start: (request) => channel.post(request),
+    stop: () => channel.stop(),
+    onReply: (handler) => channel.onMessage(handler),
+    onFailure: (handler) => channel.onFailure(handler),
   };
 }
 

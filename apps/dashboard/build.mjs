@@ -135,26 +135,45 @@ const bundleOptions = {
   alias: { "@snappy-export/core": path.join(repoRoot, "packages", "core", "src", "index.ts") },
 };
 
-/** Bundle the background reader (src/import-worker.ts) into one minified IIFE string. */
-async function bundleWorker() {
-  const result = await esbuild({ ...bundleOptions, entryPoints: [path.join(here, "src", "import-worker.ts")] });
+/** Bundle a worker entry (a file under src/) into one minified IIFE string. */
+async function bundleWorker(entry, plugins = []) {
+  const result = await esbuild({ ...bundleOptions, entryPoints: [path.join(here, "src", entry)], plugins });
   const output = result.outputFiles[0];
-  if (!output) throw new Error("esbuild produced no worker output.");
+  if (!output) throw new Error(`esbuild produced no output for ${entry}.`);
   return output.text;
 }
 
-/** Bundle src/main.ts into one minified IIFE string. The worker's code travels inside it as text. */
-async function bundleScript(licenses, workerSource) {
+/**
+ * The command helper's build leaves the command line's downloader out: that one module is the only
+ * place the command line uses the network, and the app makes no connection at all. Its import is
+ * answered with a stub of the same names that can only refuse (src/terminal/stubs).
+ */
+const stubDownloader = {
+  name: "snappy-stub-downloader",
+  setup(b) {
+    b.onResolve({ filter: /memories-download\.ts$/ }, (args) => {
+      if (!args.resolveDir.replaceAll("\\", "/").includes("/apps/cli/src")) return undefined;
+      return { path: path.join(here, "src", "terminal", "stubs", "memories-download.stub.ts") };
+    });
+  },
+};
+
+/** The command helper (src/terminal/worker.ts): the commands, run in a worker, with no downloader. */
+const bundleTerminalWorker = () => bundleWorker(path.join("terminal", "worker.ts"), [stubDownloader]);
+
+/** Bundle src/main.ts into one minified IIFE string. The workers' code travels inside it as text. */
+async function bundleScript(licenses, workerSource, terminalWorkerSource) {
   // "<" is escaped so the text can never contain a sequence that ends the inline script early.
   const asText = (value) => JSON.stringify(value).replace(/</g, "\\u003c");
   const virtualModules = {
     "snappy:licenses": `export const licenses = ${asText(licenses)};`,
     "snappy:worker": `export const workerSource = ${asText(workerSource)};`,
+    "snappy:terminal-worker": `export const terminalWorkerSource = ${asText(terminalWorkerSource)};`,
   };
   const virtualPlugin = {
     name: "snappy-virtual",
     setup(b) {
-      b.onResolve({ filter: /^snappy:(licenses|worker)$/ }, (args) => ({ path: args.path, namespace: "snappy-virtual" }));
+      b.onResolve({ filter: /^snappy:(licenses|worker|terminal-worker)$/ }, (args) => ({ path: args.path, namespace: "snappy-virtual" }));
       b.onLoad({ filter: /.*/, namespace: "snappy-virtual" }, (args) => ({ contents: virtualModules[args.path], loader: "js" }));
     },
   };
@@ -176,7 +195,9 @@ export async function buildDashboard({ outDir = path.join(here, "dist") } = {}) 
   ]);
 
   const style = (await transform(`${fonts}\n${tokens}\n${own}`, { loader: "css", minify: true, legalComments: "none" })).code;
-  const script = await bundleScript(entries, await bundleWorker());
+  const workerSource = await bundleWorker("import-worker.ts");
+  const terminalWorkerSource = await bundleTerminalWorker();
+  const script = await bundleScript(entries, workerSource, terminalWorkerSource);
   // A tiny script in <head> applies a remembered theme before the first paint. Its hash goes in the policy too.
   const themeBoot = (await transform(await readFile(path.join(here, "src", "theme-boot.js"), "utf8"), { loader: "js", minify: true, legalComments: "none" })).code.trim();
   if (/<\/script|<!--/i.test(themeBoot)) throw new Error("The theme script contains a sequence that could end the inline script early.");
@@ -202,7 +223,7 @@ export async function buildDashboard({ outDir = path.join(here, "dist") } = {}) 
   await writeFile(path.join(outDir, "index.html"), html);
   for (const file of files) await writeFile(path.join(outDir, "licenses", file.name), file.text);
 
-  return { outDir, file: path.join(outDir, "index.html"), bytes: Buffer.byteLength(html), csp: values.CSP };
+  return { outDir, file: path.join(outDir, "index.html"), bytes: Buffer.byteLength(html), csp: values.CSP, workerSource, terminalWorkerSource };
 }
 
 function argValue(flag) {
