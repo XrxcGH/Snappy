@@ -49,7 +49,8 @@ describe("built file", () => {
     expect(html).not.toMatch(/<link[^>]*rel=["']?stylesheet/i);
     expect(html).not.toMatch(/<(img|iframe|object|embed|video|audio|source|form)\b/i);
     expect(html).not.toMatch(/\s(src|srcset|action)="(?!data:)/i);
-    expect(Buffer.byteLength(html)).toBeLessThan(1_000_000);
+    // Raised from 1,000,000 when the fourteen tools came in: see the measurement under "the commands live in the helper".
+    expect(Buffer.byteLength(html)).toBeLessThan(1_100_000);
   });
 
   it("ships the strict Content-Security-Policy as a meta tag, ahead of any script or style", () => {
@@ -261,9 +262,11 @@ describe("built file: the commands live in the helper, not on the page", () => {
     const bytes = Buffer.byteLength(html);
     // Measured when the helper was added: the page was 488 KB before and about 700 KB after. The fourteen
     // insight commands came in with the command line afterwards (the help overview lists them, so their code
-    // travels in the helper even though the app does not run them): about 850 KB. A jump past a quarter more
-    // than that means something large came in by accident.
-    expect(bytes).toBeLessThan(1_050_000);
+    // travels in the helper even though the app does not run them): about 850 KB. The Tools hub and the page
+    // frame brought it to 953,204 bytes, and the thirteen tool pages (their words, models and views, each
+    // about 6 KB) to 1,029,901 bytes. The limit is about seven percent above that: a jump past it means something
+    // large came in by accident. The helper imports no tool, so its own limit below did not move.
+    expect(bytes).toBeLessThan(1_100_000);
     expect(Buffer.byteLength(terminalWorker)).toBeLessThan(420_000);
   });
 });
