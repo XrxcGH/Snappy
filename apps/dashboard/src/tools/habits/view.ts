@@ -1,6 +1,6 @@
 import { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
-import { factList, section, subsection } from "../../components/layout.ts";
+import { columns, factList, section, subsection } from "../../components/layout.ts";
 import { icon } from "../../components/icon.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
@@ -140,20 +140,23 @@ export const view = toolView<HabitsView, HabitsParams>({
       section(copy.glanceHeading, glance(v)),
       busiest(v),
       direction(v),
-      section(copy.hourHeading, barList(result.byHour.map((b) => ({ name: copy.unitHour(b.hour), count: b.total })))),
-      section(copy.weekdayHeading, barList(result.byWeekday.map((b) => ({ name: copy.weekdays[b.weekday] ?? copy.noValue, count: b.total })))),
-      v.months.length > 0
-        ? section(
-            copy.monthHeading,
-            barList(
-              v.months.map((m) => {
-                const [year, month] = m.month.split("-");
-                return { name: copy.unitMonth(Number(year), Number(month)), count: m.total };
-              }),
-            ),
-            v.months.length < v.monthsTotal ? h("p", { class: "caption" }, copy.monthsShownLine(v.months.length, v.monthsTotal)) : null,
-          )
-        : null,
+      // The three bar lists are independent: two columns on a wide screen.
+      columns(
+        section(copy.hourHeading, barList(result.byHour.map((b) => ({ name: copy.unitHour(b.hour), count: b.total })))),
+        section(copy.weekdayHeading, barList(result.byWeekday.map((b) => ({ name: copy.weekdays[b.weekday] ?? copy.noValue, count: b.total })))),
+        v.months.length > 0
+          ? section(
+              copy.monthHeading,
+              barList(
+                v.months.map((m) => {
+                  const [year, month] = m.month.split("-");
+                  return { name: copy.unitMonth(Number(year), Number(month)), count: m.total };
+                }),
+              ),
+              v.months.length < v.monthsTotal ? h("p", { class: "caption" }, copy.monthsShownLine(v.months.length, v.monthsTotal)) : null,
+            )
+          : null,
+      ),
     ];
   },
   notes: ({ result }): ToolNote[] => [

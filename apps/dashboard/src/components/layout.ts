@@ -50,6 +50,15 @@ export function subsection(heading: string, ...children: Child[]): HTMLElement {
 }
 
 /**
+ * Sections that are independent of each other and read in order, top to bottom. On a narrow screen they are one column
+ * like any other blocks; on a wide screen the stylesheet flows them down two balanced columns (CSS columns, so the
+ * reading order stays the document order).
+ */
+export function columns(...children: Child[]): HTMLElement {
+  return h("div", { class: "cols" }, ...children);
+}
+
+/**
  * The content of a <details> after its summary. The browser puts a details' content in one internal
  * slot, so a grid gap on the details never reaches these children: they get a wrapper that owns the gap.
  */
@@ -76,7 +85,8 @@ export function stepSection(n: number, heading: string, ...children: Child[]): H
 export function stepCards(items: readonly string[]): HTMLElement {
   return h(
     "ol",
-    { class: "step-list", role: "list" },
+    // The count picks the rows of the two-column flow on a wide screen.
+    { class: `step-list steps-n-${Math.min(items.length, 12)}`, role: "list" },
     ...items.map((text, i) => h("li", { class: "step-card step-card-compact" }, h("span", { class: "step-num", "aria-hidden": "true" }, String(i + 1)), h("p", {}, text))),
   );
 }
@@ -147,7 +157,8 @@ export function stat(label: string, value: string, options: boolean | StatOption
 
 /** The grid for a set of `stat` tiles: one column on a narrow phone, two from a larger phone, three from 40rem. */
 export function statGrid(...tiles: HTMLElement[]): HTMLElement {
-  return h("dl", { class: "tiles tiles-stats stats" }, ...tiles);
+  // The count picks the columns on a very wide screen, so six counts are one row and three are three across.
+  return h("dl", { class: `tiles tiles-stats stats tiles-n-${Math.min(tiles.length, 6)}` }, ...tiles);
 }
 
 /**
@@ -157,7 +168,8 @@ export function statGrid(...tiles: HTMLElement[]): HTMLElement {
 export function factList(items: readonly { label: string; value: string; icon: IconName; scope?: Scope }[]): HTMLElement {
   return h(
     "dl",
-    { class: "facts" },
+    // The count picks the columns on a wide screen (three across, or two by two), so no row is left with one lone fact.
+    { class: `facts facts-n-${Math.min(items.length, 6)}` },
     ...items.map((item) =>
       h("div", { class: `fact ${scopeClass(item.scope ?? "neutral")}` }, h("dt", {}, chipIcon(item.icon, "sm"), h("span", {}, item.label)), h("dd", {}, item.value)),
     ),

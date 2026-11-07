@@ -9,3 +9,8 @@
   font-size: var(--text-14); color: var(--text-muted); font-variant-numeric: tabular-nums;
 }
 .tool-waiting-on-reply .reply-strong { font-weight: 600; color: var(--text); }
+/* Wide screens: the people are two equal columns of rows, and a last odd row takes the whole line. */
+@media (min-width: 80rem) {
+  .tool-waiting-on-reply .rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tool-waiting-on-reply .rows > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}

@@ -54,7 +54,7 @@ function unlockCard(ctx: ViewContext, s: State): Child {
   const msg = s.vault.message;
   return h(
     "section",
-    { class: "card card-pad card-tint", "aria-labelledby": "unlock-title" },
+    { class: "card card-pad card-tint card-split", "aria-labelledby": "unlock-title" },
     h("h2", { id: "unlock-title", class: "section-title" }, start.unlockHeading),
     h("p", {}, start.unlockBody),
     passphraseForm({
@@ -233,7 +233,7 @@ function importStatus(store: Store, s: State): Child {
 function sampleSection(ctx: ViewContext): HTMLElement {
   return h(
     "section",
-    { class: "card card-tint card-pad" },
+    { class: "card card-tint card-pad card-band" },
     h("h2", { class: "section-title" }, start.sampleHeading),
     h("p", {}, start.sampleBody),
     h(
@@ -262,7 +262,7 @@ function storageNote(s: State): Child {
   if (s.vault.phase === "session") {
     return h(
       "section",
-      { class: "card card-pad card-tint" },
+      { class: "card card-pad card-tint card-band" },
       h("h2", { class: "section-title" }, start.sessionOnlyTitle),
       h("p", {}, start.sessionOnlyBody),
       h("p", {}, routeLink("settings", start.sessionOnlyAction)),

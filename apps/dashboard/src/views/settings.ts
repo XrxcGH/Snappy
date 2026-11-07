@@ -6,7 +6,7 @@ import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button } from "../components/button.ts";
 import { icon } from "../components/icon.ts";
-import { detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
+import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
 import { region } from "../reactive.ts";
@@ -17,9 +17,7 @@ export const settingsView: View = (ctx) =>
     "div",
     { class: "view" },
     pageHeader(routes.settings.title, undefined, { icon: "settings" }),
-    themeSection(ctx),
-    region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }),
-    aboutSection(),
+    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), aboutSection()),
   );
 
 /**

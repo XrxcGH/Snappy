@@ -260,6 +260,8 @@ img, svg { max-width: 100%; }
 .section-title { display: flex; align-items: center; gap: var(--space-3); }
 .section-title .chip-icon { flex: none; }
 .stack { display: grid; gap: var(--gap-card); }
+/* Independent sections in a row of the page: stacked like any blocks here, in balanced columns on a wide screen. */
+.cols { display: grid; gap: var(--gap-section); }
 .plain-list { margin: 0; padding-left: var(--space-5); display: grid; gap: var(--space-2); }
 .steps { margin: 0; padding-left: var(--space-6); display: grid; gap: var(--space-3); }
 .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
@@ -722,6 +724,71 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   /* An empty state is a full-width card whose illustration and words sit together in the middle. */
   .empty { grid-template-columns: minmax(0, var(--col)); justify-content: center; }
   .empty-spot { grid-template-columns: auto minmax(0, calc(var(--col) - 11rem)); column-gap: var(--space-8); }
+
+  /* Overview and counts. The five findings are one row of five equal tiles. A row of six counts is three and three, and
+     six across from the next step up. The notes in Export health are cards in two equal columns, so no note runs past the measure. */
+  .tiles-findings { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .tiles-findings .tile, .tiles-findings .tile:nth-child(n+4) { grid-column: span 1; }
+  .details-body .stack, .details-body .notice-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-card); align-items: start; }
+  .details-body .notice-group { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+  .details-body .notice-group > .notice, .details-body .notice-group > .notice + .notice { border: 1px solid var(--border); border-inline-start: 0.25rem solid var(--c-solid); border-radius: var(--radius-lg); background: var(--surface); }
+  .details-body :is(.stack, .notice-group), .details-body .stack > .notice, .details-body .notice-group > .notice { max-width: none; }
+}
+@media (min-width: 80rem) {
+  /* Start: the three steps side by side, in order, as equal cards. The sample-data card and the notes about saving are
+     bands: the words on the left (at the measure) and the one action on the right, so no card has an empty right third. */
+  div.step-list { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+  /* The title row and the content row are shared by the three cards, so a title of two lines pushes all three bodies down alike. */
+  div.step-list { grid-template-rows: auto 1fr; }
+  div.step-list > .step-card { grid-row: span 2; grid-template-rows: subgrid; }
+  .card-band { grid-template-columns: minmax(0, calc(var(--col) - 2 * var(--pad-card))) auto; column-gap: var(--space-8); align-items: center; justify-content: space-between; }
+  .card-band > :is(h2, p:first-of-type) { grid-column: 1; }
+  .card-band > :is(.actions, p:last-child:not(:nth-child(2))) { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
+  /* The unlock card: the words on the left, the passphrase form on the right. */
+  .card-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--space-8); align-items: start; }
+  .card-split > :is(h2, p) { grid-column: 1; }
+  .card-split > form { grid-column: 2; grid-row: 1 / span 3; }
+  .card-split > .notice { grid-column: 2; }
+  /* A numbered run of one-line steps flows down two columns, in order (1 to 3, then 4 on); --rows is half the count, rounded up. */
+  ol.step-list { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 6), auto); }
+  ol.step-list > .step-card:only-child { grid-column: 1 / -1; }
+  .steps-n-2 { --rows: 1; }
+  .steps-n-3, .steps-n-4 { --rows: 2; }
+  .steps-n-5, .steps-n-6 { --rows: 3; }
+  .steps-n-7, .steps-n-8 { --rows: 4; }
+  .steps-n-9, .steps-n-10 { --rows: 5; }
+}
+@media (min-width: 80rem) {
+  /* Six short counts are one row. */
+  .tiles-stats.tiles-n-6 .tile { grid-column: span 1; }
+  /* Independent sections flow down two balanced columns, in document order. Each one stays whole. */
+  .cols { display: block; columns: 2; column-gap: var(--gap-section); margin-bottom: calc(var(--gap-section) * -1); }
+  .cols > * { break-inside: avoid; padding-bottom: var(--gap-section); }
+  /* Lists of people: two equal columns, a last odd card takes the whole row, and a card that opens does not stretch its neighbor. */
+  .candidate-list, .guided-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .candidate-list > :last-child:nth-child(odd), .guided-list > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* A short list of facts is a row of small cards: three across, two by two for four, three and two for five. */
+  .facts { grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--gap-card); border: 0; border-radius: 0; background: none; overflow: visible; }
+  .fact, .fact + .fact { grid-column: span 6; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+  .facts-n-3 .fact, .facts-n-5 .fact:nth-child(-n+3), .facts-n-6 .fact { grid-column: span 4; }
+  /* A tool page: its header and the card saying what it reads sit side by side, and everything under them uses the full width. */
+  .view.tool { grid-template-columns: minmax(0, 1fr) 24rem; column-gap: var(--gap-section); }
+  .view.tool > * { grid-column: 1 / -1; }
+  .view.tool > .tool-top { grid-column: 1; }
+  .view.tool > .tool-reads { grid-column: 2; align-self: end; }
+  /* The licenses are two columns of frames. */
+  .licenses { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--gap-card); }
+  .licenses > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .step-content .label { text-wrap: balance; }
+}
+@media (min-width: 100rem) {
+  /* The Tools hub: twelve columns, so a group of four is four across (three across before; five stay three and two). */
+  .tiles-tools { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .tiles-tools .tile, .tiles-tools.tiles-n-3 .tile { grid-column: span 4; }
+  .tiles-tools.tiles-n-1 .tile { grid-column: 1 / -1; }
+  .tiles-tools.tiles-n-2 .tile, .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 6; }
+  .tiles-tools.tiles-n-4 .tile { grid-column: span 3; }
+  .facts-n-4 .fact { grid-column: span 3; }
 }
 
 /* --------------------------------------------------------------- motion --- */
