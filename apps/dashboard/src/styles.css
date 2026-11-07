@@ -608,7 +608,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .t-log {
   position: relative; background: var(--surface-sunken); color: var(--text); border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4); font-family: var(--font-mono); font-size: var(--text-14); line-height: 1.5;
-  white-space: pre; overflow: auto; max-height: 24rem; overscroll-behavior: contain;
+  white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: min(24rem, 70vh); scrollbar-gutter: stable;
 }
 .t-line { min-height: 1.5em; }
 .t-trimmed { color: var(--text-muted); font-style: italic; }

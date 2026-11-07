@@ -246,6 +246,21 @@ describe("a finished Run", () => {
     expect(without.el.querySelectorAll(".command-hint").map((n) => n.textContent)).not.toContain(terminal.downloadNote);
   });
 
+  it("follows the output while it runs and shows the first line again when it ends", async () => {
+    const { el, controller, started } = await panelFor("help");
+    controller.request("help");
+    await tick();
+    const log = el.querySelector(".t-log") as FakeElement;
+    log.clientHeight = 100;
+    log.scrollHeight = 900;
+    started[0]?.hooks.onOut("Commands\n".repeat(40));
+    await tick(80);
+    expect(log.scrollTop).toBe(900);
+    started[0]?.finish({ end: "done", code: 0, ms: 5 });
+    await tick(80);
+    expect(log.scrollTop).toBe(0);
+  });
+
   it("leaves focus alone when the person has moved on to something else", async () => {
     focusReset();
     const s = await panelFor("inspect");

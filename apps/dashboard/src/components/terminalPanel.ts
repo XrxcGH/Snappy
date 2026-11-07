@@ -168,6 +168,8 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
         // The output may tell the person to add --download. Run never downloads, so say where that works.
         const download = NETWORK_HINT.test(view.plainText()) ? h("p", { class: "command-hint" }, terminal.downloadNote) : null;
         root.replaceChildren(...[view.element, chip(state.result), download, saved, h("div", { class: "command-toolbar" }, copy, close)].filter((n): n is HTMLElement => n !== null));
+        // The reading starts at the top, not at the last line.
+        view.finish();
         // Back to the Run button, unless the person has moved on to something else.
         if (moved && hadFocus) focusRun();
         return;

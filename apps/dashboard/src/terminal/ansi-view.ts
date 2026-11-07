@@ -3,7 +3,8 @@
  * with h() only: the text goes in as text, the only attribute is class, and the classes come from the
  * closed list in ansi.ts (plus the two structural names t-line and t-run). No markup string, no style
  * attribute. Drawing is batched on a short timer, not on animation frames (a hidden tab runs none), and
- * only the lines that changed are touched. The view follows new output unless the person scrolled up.
+ * only the lines that changed are touched. While a command runs the view follows new output unless the
+ * person scrolled up; when it ends the view goes back to the first line, so the reading starts at the top.
  */
 import { h } from "../dom.ts";
 import { TerminalBuffer } from "./ansi.ts";
@@ -27,11 +28,16 @@ export interface LogView {
   refresh(): void;
   /** Draw what is waiting now. */
   flush(): void;
+  /** The command ended: draw the rest and start at the first line, unless the person scrolled away from the end. */
+  finish(): void;
   clear(): void;
   /** The output as plain text, for Copy output. */
   plainText(): string;
   dispose(): void;
 }
+
+/** The narrowest output area the commands are asked to fit: a phone at 320 px holds about 30 characters. */
+export const MIN_COLUMNS = 24;
 
 /** Output is drawn at most this often. */
 export const DRAW_MS = 50;
@@ -113,6 +119,12 @@ export function createLogView(options: LogViewOptions): LogView {
     },
     refresh: schedulePaint,
     flush,
+    finish() {
+      flush();
+      // Still following the end (or short enough that it does not matter): show the beginning, and stop following.
+      if (stick) element.scrollTop = 0;
+      stick = false;
+    },
     clear() {
       cancelDraw?.();
       cancelDraw = undefined;
@@ -132,8 +144,9 @@ export function createLogView(options: LogViewOptions): LogView {
 
 /**
  * How many characters fit across an output area placed in `host`, measured with a hidden probe of ten
- * characters in the area's own font and the area's own padding. Clamped to 40 to 100: a narrow screen
- * scrolls sideways instead of wrapping.
+ * characters in the area's own font and the area's own padding. One column is kept free for the scrollbar
+ * the finished output may gain, and the result is clamped to 24 to 100. A line the command did not fit to that width (its help text)
+ * wraps in the area, so nothing is cut off at the edge.
  */
 export function measureColumns(host: HTMLElement, fallback = 80): number {
   const probe = h("span", { class: "t-probe", "aria-hidden": "true" }, "0000000000");
@@ -144,7 +157,7 @@ export function measureColumns(host: HTMLElement, fallback = 80): number {
     const style = getComputedStyle(area);
     const width = area.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
     if (!(char > 0) || !(width > 0)) return fallback;
-    return Math.max(40, Math.min(100, Math.floor(width / char)));
+    return Math.max(MIN_COLUMNS, Math.min(100, Math.floor(width / char) - 1));
   } catch {
     return fallback;
   } finally {
