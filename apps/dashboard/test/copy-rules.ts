@@ -401,3 +401,25 @@ export function renderedKind(el: FakeElement): Kind {
   if (tag === "p" || tag === "li" || tag === "dd" || tag === "td") return /[.?!](\s|$)/.test(textOf(el)) ? "text" : /^[a-z]/.test(textOf(el)) ? "fragment" : "label";
   return "label";
 }
+
+/**
+ * The strings a rendered page shows, as lint entries: each text block with its kind, and every aria-label and title.
+ * `where` names the page in the failure message. Text in code or a username counts as code.
+ */
+export function renderedEntries(root: FakeElement, where: string): Entry[] {
+  const entries: Entry[] = [];
+  for (const el of textBlocks(root)) {
+    const text = textOf(el);
+    if (text === "" || /^\d[\d,.%]*$/.test(text)) continue;
+    const userText = el.descendants().some((d) => hasClass(d, "username") || d.tagName === "code");
+    const parts = partsOf(el);
+    entries.push({ id: `${where}: ${renderedKind(el)} <${el.tagName}${el.className ? `.${el.className.split(" ")[0]}` : ""}>`, text, kind: userText ? "code" : renderedKind(el), parts });
+  }
+  for (const el of root.descendants()) {
+    for (const attr of ["aria-label", "title"]) {
+      const v = el.getAttribute(attr);
+      if (v) entries.push({ id: `${where}: ${attr} of <${el.tagName}>`, text: v, kind: "aria" });
+    }
+  }
+  return entries;
+}

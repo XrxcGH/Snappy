@@ -51,7 +51,7 @@ const srcDir = path.join(dashboardRoot, "src");
 
 import {
   ACRONYMS, LIMITS, RULES, TITLE_MAY_DIFFER, ancestors, clip, collectCopy, hasClass, lint, partsOf, renderedKind, sentences, strayCapitals, textBlocks, textOf, useNames, words,
-  americanProblems, punctuationProblems, quoteProblems, whitespaceProblems, capitalizationProblems, lengthProblems,
+  americanProblems, punctuationProblems, quoteProblems, whitespaceProblems, capitalizationProblems, lengthProblems, renderedEntries,
 } from "./copy-rules.ts";
 import type { Entry, Kind } from "./copy-rules.ts";
 
@@ -126,18 +126,7 @@ function renderAll(): RenderedView[] {
   for (const [state, label] of [[sampleState, "sample"], [emptyState, "empty"]] as const) {
     for (const name of ALL_VIEWS) {
       const root = render(name, state);
-      const entries: Entry[] = [];
-      for (const el of textBlocks(root)) {
-        const text = textOf(el);
-        if (text === "" || /^\d[\d,.%]*$/.test(text)) continue;
-        const userText = el.descendants().some((d) => hasClass(d, "username") || d.tagName === "code");
-        const parts = partsOf(el);
-        entries.push({ id: `${name} (${label}): ${renderedKind(el)} <${el.tagName}${el.className ? `.${el.className.split(" ")[0]}` : ""}>`, text, kind: userText ? "code" : renderedKind(el), parts });
-      }
-      for (const el of root.descendants()) for (const attr of ["aria-label", "title"]) {
-        const v = el.getAttribute(attr);
-        if (v) entries.push({ id: `${name} (${label}): ${attr} of <${el.tagName}>`, text: v, kind: "aria" });
-      }
+      const entries = renderedEntries(root, `${name} (${label})`);
       out.push({ name, state: label, root, entries });
     }
   }
