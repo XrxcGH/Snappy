@@ -25,7 +25,7 @@ const conf = JSON.parse(read("src-tauri", "tauri.conf.json")) as {
     security: { csp: string; dangerousDisableAssetCspModification?: unknown; assetProtocol?: unknown; dangerousRemoteDomainIpcAccess?: unknown };
     withGlobalTauri?: boolean;
   };
-  bundle: { license: string; shortDescription?: string; longDescription?: string; createUpdaterArtifacts?: unknown };
+  bundle: { license: string; publisher?: string; icon?: string[]; shortDescription?: string; longDescription?: string; createUpdaterArtifacts?: unknown; windows?: { nsis?: { installMode?: string; languages?: string[]; displayLanguageSelector?: boolean } } };
   plugins?: Record<string, unknown>;
 };
 const capability = JSON.parse(read("src-tauri", "capabilities", "main.json")) as { windows: string[]; permissions: string[]; remote?: unknown };
@@ -46,6 +46,14 @@ describe("desktop shell config", () => {
     expect(conf.app.windows.map((w) => w.title)).toEqual(["Snappy"]);
     expect(conf.bundle.license).toBe("Apache-2.0");
     expect(cargo).toMatch(/license = "Apache-2\.0"/);
+  });
+
+  it("builds a per-user English installer with a publisher and an icon (no administrator rights)", () => {
+    expect(conf.bundle.windows?.nsis?.installMode).toBe("currentUser");
+    expect(conf.bundle.windows?.nsis?.languages).toEqual(["English"]);
+    expect(conf.bundle.windows?.nsis?.displayLanguageSelector).toBe(false);
+    expect(conf.bundle.publisher).toBe("Snappy contributors");
+    expect(conf.bundle.icon).toContain("icons/icon.ico");
   });
 
   it("makes no unqualified privacy claim in the installer descriptions", () => {
