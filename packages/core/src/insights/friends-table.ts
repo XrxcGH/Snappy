@@ -1,5 +1,5 @@
 import type { ChatEvent, FriendRecord, ParsedExport } from "../types.ts";
-import { DAY_MS, normUser } from "../util.ts";
+import { DAY_MS, neutralizeCell, normUser } from "../util.ts";
 import { WAITING_DEFAULTS } from "./waiting-on-reply.ts";
 
 /**
@@ -428,16 +428,16 @@ export const FRIENDS_CSV_HEADER = [
 ] as const;
 
 /**
- * One CSV cell. Text that a spreadsheet could read as a formula (first character = + - @, tab or
- * carriage return, per OWASP) gets a leading apostrophe, so it shows as text and never runs. The
- * cell is quoted when it holds a comma, quote or line break, with quotes doubled (RFC 4180).
+ * One CSV cell. Text is neutralized first (see neutralizeCell): control and direction-changing characters are
+ * replaced and a cell a spreadsheet could read as a formula (first character = + - @) gets a leading
+ * apostrophe. The cell is quoted when it holds a comma or quote, with quotes doubled (RFC 4180).
  */
 export function csvCell(value: string | number | boolean | null): string {
   if (value === null) return "";
   if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
   if (typeof value === "boolean") return value ? "yes" : "no";
-  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
-  return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  const safe = neutralizeCell(value);
+  return /[",]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
 /** The rows as CSV text: a header, then one line per row, CRLF line endings, a final CRLF. */

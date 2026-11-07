@@ -402,8 +402,8 @@ describe("toCsv", () => {
   it("quotes commas, quotes and line breaks, and doubles quotes", () => {
     expect(csvCell("a,b")).toBe('"a,b"');
     expect(csvCell('say "hi"')).toBe('"say ""hi"""');
-    expect(csvCell("a\nb")).toBe('"a\nb"');
-    expect(csvCell("a\r\nb")).toBe('"a\r\nb"');
+    expect(csvCell("a\nb")).toBe("a b");
+    expect(csvCell("a\r\nb")).toBe("a  b");
     expect(csvCell("plain_name.1")).toBe("plain_name.1");
     expect(csvCell(null)).toBe("");
     expect(csvCell(7)).toBe("7");
@@ -411,7 +411,7 @@ describe("toCsv", () => {
     expect(csvCell(true)).toBe("yes");
   });
 
-  it.each(["=1+1", "+1", "-1", "@SUM(A1)", "\t=1", "\r=1", "=HYPERLINK(\"http://x\",\"y\")", "-2+3", "@a"])(
+  it.each(["=1+1", "+1", "-1", "@SUM(A1)", "=HYPERLINK(\"http://x\",\"y\")", "-2+3", "@a"])(
     "neutralizes a formula-like cell %j",
     (cell) => {
       const out = csvCell(cell);
@@ -420,6 +420,35 @@ describe("toCsv", () => {
       expect(inner.startsWith("'")).toBe(true);
     },
   );
+
+  it.each(["\t=1", "\r=1", "\n=1", "\u0085=1", "\u0000=1", "\u009f+1", " \u001b-1", "\u00a0@a", "\u2003=1"])(
+    "sees past leading control and blank characters when it looks for a formula: %j",
+    (cell) => {
+      const out = csvCell(cell);
+      expect(out.startsWith("'")).toBe(true);
+      expect(out).toMatch(/^'[=+\-@]/);
+    },
+  );
+
+  it("replaces control characters with spaces, and direction or zero-width characters with ?", () => {
+    expect(csvCell("\u001b]0;pwned\u0007x")).toBe("]0;pwned x");
+    expect(csvCell("\u202eevil")).toBe("?evil");
+    expect(csvCell("a\u200bb\u200ec\u2066d\u2069e\ufeff")).toBe("a?b?c?d?e?");
+    expect(csvCell("soft\u00adhyphen")).toBe("soft?hyphen");
+    // A leading bidi override is not blank, so it stays visible as "?" and does not hide a formula.
+    expect(csvCell("\u202e=1")).toBe("?=1");
+  });
+
+  it("writes no control, C1 or bidi character anywhere in a file made from hostile usernames", () => {
+    const names = ["\u001b]0;pwned\u0007x", "\u0085=1", "\u202e=cmd", "a\u200bb", "=1+1", "ok_name", "line\nbreak", "tab\tname", "\u007fdel", "\u009bcsi"];
+    const csv = toCsv(names.map(rowFor));
+    // The only control characters left are the CRLF line ends.
+    expect(csv.replace(/\r\n/g, "")).not.toMatch(/[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/);
+    const lines = csv.split("\r\n");
+    expect(lines).toHaveLength(names.length + 2);
+    for (const line of lines.slice(1, -1)) expect(line).not.toMatch(/^[=+\-@]/);
+    expect(lines[2]?.startsWith("'=1,")).toBe(true);
+  });
 
   it("neutralizes a username that starts with a formula character, in the whole file", () => {
     const csv = toCsv([rowFor("=cmd|' /C calc'!A0"), rowFor("+x"), rowFor("-x"), rowFor("@x"), rowFor("fine")]);

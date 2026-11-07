@@ -5,7 +5,7 @@
  * direction and a time per event. Usernames appear only in the result tables (and in the CSV the
  * person asked for); notes, errors and verbose codes never name anyone.
  */
-import { insights } from "@snappy-export/core";
+import { insights, neutralizeCell } from "@snappy-export/core";
 import { intOption } from "../args.ts";
 import { formatCount, formatDate, hasHave, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
@@ -260,10 +260,9 @@ const CSV_HEADER = [
   "Their 90% within (seconds)",
 ] as const;
 
-/** One quoted field. A cell a spreadsheet would run as a formula gets a leading apostrophe. */
+/** One quoted field, neutralized by core: control and direction-changing characters replaced, formulas given a leading apostrophe. */
 function csvCell(value: string): string {
-  const flat = value.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").trim();
-  return `"${(/^[=+\-@]/.test(flat) ? `'${flat}` : flat).replace(/"/g, '""')}"`;
+  return `"${neutralizeCell(value).replace(/"/g, '""')}"`;
 }
 
 const seconds = (ms: number | undefined): string => (ms === undefined ? "" : String(Math.round(ms / 1000)));

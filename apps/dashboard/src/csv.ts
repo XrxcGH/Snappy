@@ -5,16 +5,10 @@
  * overrides, zero-width spaces) become "?", exactly as they do on screen, so a spreadsheet shows the
  * same name the page did and two lookalike names stay distinguishable.
  */
-import { hideInvisible } from "./safe.ts";
+import { neutralizeCell } from "@snappy-export/core";
 
-const FORMULA_START = /^[=+\-@\t\r]/;
-const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
-
-/** Make a value safe as a spreadsheet cell: no control or invisible characters, no leading formula character. */
-export function neutralizeCell(value: string): string {
-  const flat = hideInvisible(String(value).replace(CONTROL, " ")).trim();
-  return FORMULA_START.test(flat) ? `'${flat}` : flat;
-}
+/** Make a value safe as a spreadsheet cell: no control or invisible characters, no leading formula character. The one rule lives in core. */
+export { neutralizeCell };
 
 /** One quoted CSV field. Every field is quoted, so commas, quotes and apostrophes never need guessing. */
 export function csvCell(value: string): string {

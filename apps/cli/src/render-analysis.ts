@@ -1,4 +1,5 @@
 /** Text, JSON and CSV renderings of an analysis. Usernames are the only personal values in any of them. */
+import { neutralizeCell } from "@snappy-export/core";
 import type { Candidate } from "@snappy-export/core";
 import { CATEGORY, evidenceSummary } from "./analysis.ts";
 import type { AnalysisResult } from "./analysis.ts";
@@ -162,13 +163,13 @@ export function analysisToJson(result: AnalysisResult, opts: JsonOptions): strin
 }
 
 /**
- * One CSV cell. Spreadsheets run a cell that begins with = + - @ (or tab / carriage return) as a
- * formula, and usernames are attacker-influenced, so such cells get a leading single quote.
+ * One CSV cell. Usernames are attacker-influenced, so every cell goes through core's neutralizeCell first:
+ * control and direction-changing characters are replaced (a file shown with cat cannot retitle a terminal) and
+ * a cell a spreadsheet would run as a formula (= + - @) gets a leading single quote.
  */
 export function csvCell(value: string | number): string {
-  let text = String(value);
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
-  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  const text = neutralizeCell(String(value));
+  return /[",]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
 /** The removable queue as CSV: username, category, confidence, score. */

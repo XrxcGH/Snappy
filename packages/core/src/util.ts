@@ -6,6 +6,25 @@ export function normUser(name: string): string {
   return String(name ?? "").trim().toLowerCase();
 }
 
+/** Control characters (C0, DEL, C1), which become spaces in a spreadsheet cell. */
+const CELL_CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
+/** Characters that reorder or hide text (soft hyphen, zero-width, bidi marks and overrides, BOM). They become "?". */
+const CELL_INVISIBLE = /[\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff]/g;
+
+/**
+ * Text made safe as one spreadsheet or CSV cell, for names that came from an export (a friend picks their own).
+ * Control characters (ESC, BEL, a bare line feed, the C1 range) become spaces and the text is trimmed, so the
+ * formula test sees the first real character. Characters that reorder or hide text become "?", so the file shows
+ * the same name as the screen. A cell that would start with = + - @ then gets a leading apostrophe (OWASP).
+ */
+export function neutralizeCell(value: string): string {
+  const flat = String(value ?? "")
+    .replace(CELL_CONTROL, " ")
+    .replace(CELL_INVISIBLE, "?")
+    .trim();
+  return /^[=+\-@]/.test(flat) ? `'${flat}` : flat;
+}
+
 /**
  * Longest username Snappy accepts. Snapchat's own limit is far lower; the cap keeps a crafted
  * export from putting a megabyte-long "name" into the ledger, the page and every spreadsheet.

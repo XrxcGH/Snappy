@@ -284,7 +284,9 @@ describe("analyze output formats", () => {
     expect(csvCell("+1")).toBe("'+1");
     expect(csvCell("-bob")).toBe("'-bob");
     expect(csvCell("@sum")).toBe("'@sum");
-    expect(csvCell("\tx")).toBe("'\tx");
+    expect(csvCell("\t=x")).toBe("'=x");
+    expect(csvCell("\u0085=1")).toBe("'=1");
+    expect(csvCell("a\u001b]0;pwned\u0007")).toBe("a ]0;pwned");
     expect(csvCell("plain_name")).toBe("plain_name");
     expect(csvCell("0.62")).toBe("0.62");
     expect(csvCell('a,"b"')).toBe('"a,""b"""');
