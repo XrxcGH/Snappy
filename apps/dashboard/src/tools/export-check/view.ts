@@ -1,6 +1,6 @@
 import { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
-import type { PillKind } from "../../components/dataTable.ts";
+import type { PillKind, TableCell } from "../../components/dataTable.ts";
 import { section, stepCards } from "../../components/layout.ts";
 import { notice } from "../../components/notice.ts";
 import type { NoticeKind } from "../../components/notice.ts";
@@ -8,7 +8,7 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { common } from "../../copy.ts";
 import { h } from "../../dom.ts";
-import { formatDate } from "../../format.ts";
+import { formatCount, formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeExportCheck } from "./model.ts";
@@ -104,7 +104,7 @@ function pillOf(s: insights.exportCheck.SectionCheck): PillKind {
 }
 
 function foundSection({ check, partsKnown }: ExportCheckResult): HTMLElement {
-  const rows = check.sections.map((s) => [copy.sections[s.id], copy.statuses[s.status], copy.unitItems(s.count)]);
+  const rows = check.sections.map((s): TableCell[] => [copy.sections[s.id], copy.statuses[s.status], { text: formatCount(s.count), label: copy.unitItems(s.count) }]);
   return section(
     copy.foundHeading,
     partsKnown && check.parts.count > 0 ? h("p", { class: "caption" }, copy.partsLine(check.parts.count)) : null,
@@ -126,7 +126,12 @@ function datesSection(check: ExportCheck): HTMLElement {
       ? dataTable(
           copy.datesCaption,
           [copy.recordsHeader, copy.fromHeader, copy.toHeader, copy.spanHeader],
-          covered.map(([label, c]) => [label, c.oldest === null ? common.noFigure : copy.unitFrom(dateCell(c.oldest)), c.newest === null ? common.noFigure : copy.unitTo(dateCell(c.newest)), c.spanDays === null ? common.noFigure : copy.span(c.spanDays)]),
+          covered.map(([label, c]): TableCell[] => [
+            label,
+            c.oldest === null ? common.noFigure : { text: dateCell(c.oldest), label: copy.unitFrom(dateCell(c.oldest)) },
+            c.newest === null ? common.noFigure : { text: dateCell(c.newest), label: copy.unitTo(dateCell(c.newest)) },
+            c.spanDays === null ? common.noFigure : { text: copy.unitDays(c.spanDays), label: copy.span(c.spanDays) },
+          ]),
         )
       : null,
     h("p", {}, ageLine(check.age)),

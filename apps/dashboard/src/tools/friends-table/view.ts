@@ -1,6 +1,6 @@
 import { announce } from "../../announce.ts";
 import { button } from "../../components/button.ts";
-import { cellAround, cellNodes, scrollRegion } from "../../components/dataTable.ts";
+import { cellNodes, scrollRegion } from "../../components/dataTable.ts";
 import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -56,14 +56,15 @@ function noteText(n: FriendsTableNote): ToolNote {
 }
 
 /** The hints on one row in words, as a sentence-case phrase, or the dash for none. */
-function hintsCell(r: FriendRow): string {
+function hintsCell(r: FriendRow): TableCell {
   const parts: string[] = [];
   if (r.quiet) parts.push(copy.unitQuiet);
   if (r.oneSided) parts.push(copy.unitOneSided);
   if (r.waitingOn === "you") parts.push(copy.unitWaitingYou);
   if (r.waitingOn === "them") parts.push(copy.unitWaitingThem);
   const text = parts.join(", ");
-  return text === "" ? copy.noHintsCell : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+  // No hint is the empty value on a wide page, under a header that already says Hints; a phone has no header, so it says it in words.
+  return text === "" ? { text: common.noFigure, label: copy.noHintsCell } : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
 /** The cells after the username. Each says what it holds, since a phone shows no column names. */
@@ -71,11 +72,11 @@ const cellsOf = (r: FriendRow): TableCell[] => {
   const added = r.addedAt === null ? null : formatDate(r.addedAt);
   const last = r.lastAt === null ? null : formatDate(r.lastAt);
   return [
-    added === null ? copy.noAddedCell : cellAround(copy.addedCell(added), added),
-    last === null ? copy.noLastCell : cellAround(copy.lastCell(last), last),
-    cellAround(copy.totalCell(r.total), formatCount(r.total)),
-    cellAround(copy.sentCell(r.sent), formatCount(r.sent)),
-    cellAround(copy.receivedCell(r.received), formatCount(r.received)),
+    added === null ? copy.noAddedCell : { text: added, label: copy.addedCell(added) },
+    last === null ? copy.noLastCell : { text: last, label: copy.lastCell(last) },
+    { text: formatCount(r.total), label: copy.totalCell(r.total) },
+    { text: formatCount(r.sent), label: copy.sentCell(r.sent) },
+    { text: formatCount(r.received), label: copy.receivedCell(r.received) },
     hintsCell(r),
   ];
 };

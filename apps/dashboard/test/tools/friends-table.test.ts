@@ -17,6 +17,7 @@ import { DEFAULT_PARAMS, SORT_ORDERS, SHOW_FILTERS, computeFriendsTable, csvFile
 import { view } from "../../src/tools/friends-table/view.ts";
 import { RULES, collectCopy, lint, useNames } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase, shown } from "./cell-text.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -87,7 +88,7 @@ function crafted(): State {
   return real(friends, chats);
 }
 
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 /** The usernames in the table, in order: each names its row. */
 const rowNames = (el: FakeElement): string[] => text(el, "tbody th");
 const cellsOf = (el: FakeElement, name: string): string[] => {
@@ -437,16 +438,23 @@ describe("the page", () => {
     expect(rowNames(r.root)).toHaveLength(6);
   });
 
-  it("marks the value in each cell so a wide table can show the value alone, with the full words still in the text", async () => {
+  it("shows the bare value in each cell and keeps the full phrase for assistive technology, which hears it once", async () => {
     const r = await renderSettled(view, crafted());
     const row = r.root.querySelectorAll("tbody tr").find((tr) => tr.textContent.includes(NAMES.ann)) as FakeElement;
     const cells = row.querySelectorAll("td");
-    // Added, Last, Total, Sent and Received carry words around a value; the hints do not.
-    for (const i of [0, 1, 2, 3, 4]) expect(cells[i]?.querySelectorAll(".cell-extra").length, `cell ${i}`).toBeGreaterThan(0);
-    expect(cells[5]?.querySelectorAll(".cell-extra")).toHaveLength(0);
-    expect(cells[0]?.textContent).toBe(copy.addedCell("Feb 29, 2024"));
-    expect(cells[2]?.textContent).toBe(copy.totalCell(2));
-    expect(cells[2]?.querySelector(".cell-extra")?.textContent).toBe(" total");
+    // Added, Last, Total, Sent and Received carry a value and a phrase; the hints are words and do not.
+    for (const i of [0, 1, 2, 3, 4]) {
+      const short = cells[i]?.querySelector(".cell-short") as FakeElement;
+      const long = cells[i]?.querySelector(".cell-long") as FakeElement;
+      expect(short.getAttribute("aria-hidden"), `cell ${i}`).toBe("true");
+      expect(long.classList.contains("sr-only"), `cell ${i}`).toBe(true);
+      expect(long.textContent, `cell ${i}`).toContain(short.textContent);
+    }
+    expect(cells[5]?.querySelectorAll(".cell-short")).toHaveLength(0);
+    expect(shown(cells[0] as FakeElement)).toBe("Feb 29, 2024");
+    expect(phrase(cells[0] as FakeElement)).toBe(copy.addedCell("Feb 29, 2024"));
+    expect(shown(cells[2] as FakeElement)).toBe("2");
+    expect(phrase(cells[2] as FakeElement)).toBe(copy.totalCell(2));
   });
 
   it("announces the counts politely once, and without a name", async () => {

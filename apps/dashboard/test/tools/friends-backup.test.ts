@@ -18,6 +18,7 @@ import { backupFileName, computeFriendsBackup } from "../../src/tools/friends-ba
 import { view } from "../../src/tools/friends-backup/view.ts";
 import { RULES, collectCopy, lint, useNames } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase, shown } from "./cell-text.ts";
 import { render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -52,7 +53,7 @@ function real(lists: Partial<ParsedExport["friends"]>): State {
   return stateWith({ latest: { ...latest, friends: { ...latest.friends, ...lists } }, now: base.now, issues: [], parts: 1 });
 }
 const dataOf = (state: State) => toolData(state);
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 
 /** Names that must appear only in the file. */
 const CANARIES = ["zqcanary_ann", "zqcanary_bo", "zqcanary_cy", "zqcanary_di"];
@@ -142,7 +143,8 @@ describe("the page", () => {
     const { friends } = computeFriendsBackup(dataOf(sample)).counts;
     // At phone width the column names are not repeated, so each cell says what it counts.
     expect(text(first, "td")).toEqual([copy.unitPeople(friends.people), copy.unitDated(friends.dated)]);
-    expect(Number(first.querySelectorAll("td")[0]?.textContent.replace(/[^0-9]/g, ""))).toBe(friends.people);
+    // A wide page shows the bare number; the words stay for assistive technology and for a phone.
+    expect(first.querySelectorAll("td").map(shown)).toEqual([friends.people.toLocaleString("en-US"), friends.dated.toLocaleString("en-US")]);
     expect(root.textContent).toMatch(/Made [A-Z][a-z]{2} \d{1,2}, \d{4}\./);
     expect(text(root, ".step-list li p")).toEqual([copy.saveStep, copy.keepStep, copy.compareStep]);
     expect(root.textContent).toContain(copy.downloadNote);

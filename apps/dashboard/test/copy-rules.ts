@@ -365,6 +365,8 @@ export const isInline = (el: FakeElement): boolean => !BLOCK_TAGS.has(el.tagName
 export function rawText(n: FakeNode): string {
   if (n instanceof FakeText) return n.data;
   if (!(n instanceof FakeElement) || n.tagName === "svg") return "";
+  // A table cell with a bare value and a full phrase draws one of them at a time: the lint reads the phrase, which holds the value.
+  if (n.classList.contains("cell-short")) return "";
   let out = "";
   let prevWasElement = false;
   for (const c of n.childNodes) {

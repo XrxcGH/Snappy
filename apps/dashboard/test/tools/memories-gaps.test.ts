@@ -17,6 +17,7 @@ import { DEFAULT_PARAMS, computeMemoriesGaps, oldestFriendDate } from "../../src
 import { view } from "../../src/tools/memories-gaps/view.ts";
 import { RULES, collectCopy, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase } from "./cell-text.ts";
 import { render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -189,7 +190,7 @@ describe("computeMemoriesGaps", () => {
   });
 });
 
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 const tableRows = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((r) => [...text(r, "th"), ...text(r, "td")]);
 
 describe("the page", () => {

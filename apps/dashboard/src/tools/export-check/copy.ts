@@ -47,6 +47,8 @@ export const copy = {
   unitTo: (date: string) => `To ${date}`,
   span: (days: number) => `Span of ${countOf(days, "day", "days")}`,
   unitItems: (n: number) => countOf(n, "item", "items"),
+  /** "2,012 days": the span as a cell shows it. */
+  unitDays: (n: number) => countOf(n, "day", "days"),
   unitAgo: (days: number) => (days === 0 ? "today" : `${countOf(days, "day", "days")} ago`),
   madeLine: (date: string, ago: string) => `Made ${date}, ${ago}.`,
   madeOnlyLine: (date: string) => `Made ${date}.`,

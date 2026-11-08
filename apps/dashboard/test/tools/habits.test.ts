@@ -17,6 +17,7 @@ import { OFFSETS } from "../../src/tools/timezone.ts";
 import { view } from "../../src/tools/habits/view.ts";
 import { RULES, collectCopy, lint, sentences, words } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase } from "./cell-text.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -156,7 +157,7 @@ describe("computeHabits", () => {
   });
 });
 
-const cells = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const cells = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 const rowsOf = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((tr) => [...cells(tr, "th"), ...cells(tr, "td")]);
 const headings = (root: FakeElement): string[] => root.querySelectorAll(".section-title").map((t) => t.textContent);
 

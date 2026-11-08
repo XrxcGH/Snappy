@@ -17,6 +17,7 @@ import { computeFriendCountHistory } from "../../src/tools/friend-count-history/
 import { view } from "../../src/tools/friend-count-history/view.ts";
 import { RULES, collectCopy, lint, useNames } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase } from "./cell-text.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -63,7 +64,7 @@ function real(lists: Lists = {}, ws: Partial<Workspace> = {}, saving = true): St
   return { ...state, vault: { ...state.vault, phase: saving ? "unlocked" : "session" } };
 }
 const dataOf = (state: State) => toolData(state);
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 
 describe("the tool", () => {
   it("is a Friends tool that needs an export with friends and shows the friend-count command", () => {

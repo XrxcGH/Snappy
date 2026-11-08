@@ -1,6 +1,7 @@
 import { insights } from "@snappy-export/core";
 import { button } from "../../components/button.ts";
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
@@ -67,12 +68,12 @@ function glanceSection(r: ClosestFadingResult): HTMLElement {
 
 /** Each cell says what it is ("49 sent"), because on a phone the table is a stack of cards with no column names. */
 function closestSection(r: ClosestFadingResult): HTMLElement {
-  const rows = r.closest.map((f) => [
+  const rows = r.closest.map((f): TableCell[] => [
     f.key,
-    copy.activityCell(formatPercent(f.relativeScore)),
-    copy.sentCell(f.events.sent),
-    copy.receivedCell(f.events.received),
-    copy.lastCell(formatDate(f.lastAt)),
+    { text: formatPercent(f.relativeScore), label: copy.activityCell(formatPercent(f.relativeScore)) },
+    { text: formatCount(f.events.sent), label: copy.sentCell(f.events.sent) },
+    { text: formatCount(f.events.received), label: copy.receivedCell(f.events.received) },
+    { text: formatDate(f.lastAt), label: copy.lastCell(formatDate(f.lastAt)) },
   ]);
   return section(
     copy.closestHeading,
@@ -88,12 +89,12 @@ function closestSection(r: ClosestFadingResult): HTMLElement {
 
 function fadingSection(r: ClosestFadingResult): HTMLElement {
   const shown = r.fading.slice(0, FADING_SHOWN);
-  const rows = shown.map((f) => [
+  const rows = shown.map((f): TableCell[] => [
     f.key,
-    copy.earlierCell(f.earlierEvents),
-    copy.recentCell(f.recentEvents),
+    { text: formatCount(f.earlierEvents), label: copy.earlierCell(f.earlierEvents) },
+    { text: formatCount(f.recentEvents), label: copy.recentCell(f.recentEvents) },
     copy.changeCell(formatPercent(f.dropFraction)),
-    copy.lastCell(formatDate(f.lastAt)),
+    { text: formatDate(f.lastAt), label: copy.lastCell(formatDate(f.lastAt)) },
   ]);
   return section(
     copy.fadingHeading,

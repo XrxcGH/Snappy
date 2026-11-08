@@ -1,5 +1,6 @@
 import { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { columns, factList, section, subsection } from "../../components/layout.ts";
 import { icon } from "../../components/icon.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -50,14 +51,16 @@ function monthText(key: string | number | null): string {
 const hourText = (key: number | string | null): string => (typeof key === "number" ? copy.unitHour(key) || copy.noValue : copy.noValue);
 const weekdayText = (key: number | string | null): string => (typeof key === "number" ? (copy.weekdays[key] ?? copy.noValue) : copy.noValue);
 
-function peakRow(pattern: string, noun: string, peak: Peak, text: (key: number | string | null) => string): string[] {
+function peakRow(pattern: string, noun: string, peak: Peak, text: (key: number | string | null) => string): TableCell[] {
   const busiest = text(peak.busiest);
+  const named = peak.tied ? copy.unitTied(busiest) : busiest;
   const quietest = text(peak.quietest);
+  const share = formatPercent(peak.share);
   return [
     pattern,
-    copy.unitBusiestAt(peak.tied ? copy.unitTied(busiest) : busiest),
-    copy.unitPeakShare(formatPercent(peak.share), noun),
-    quietest === copy.noValue ? copy.unitNoQuietest : copy.unitQuietestAt(quietest),
+    { text: named, label: copy.unitBusiestAt(named) },
+    { text: share, label: copy.unitPeakShare(share, noun) },
+    quietest === copy.noValue ? { text: copy.noQuietestCell, label: copy.unitNoQuietest } : { text: quietest, label: copy.unitQuietestAt(quietest) },
   ];
 }
 
@@ -86,7 +89,7 @@ function glance({ result }: HabitsView): HTMLElement {
 }
 
 function busiest(v: HabitsView): HTMLElement {
-  const rows: string[][] = [];
+  const rows: TableCell[][] = [];
   if (v.hour) rows.push(peakRow(copy.hourPattern, copy.unitHourNoun, v.hour, hourText));
   if (v.weekday) rows.push(peakRow(copy.weekdayPattern, copy.unitWeekdayNoun, v.weekday, weekdayText));
   if (v.month) rows.push(peakRow(copy.monthPattern, copy.unitMonthNoun, v.month, monthText));
@@ -96,7 +99,10 @@ function busiest(v: HabitsView): HTMLElement {
 function direction({ result }: HabitsView): HTMLElement {
   const { totals } = result;
   const used = totals.used;
-  const row = (name: string, n: number): string[] => [name, copy.unitCounted(formatCount(n)), copy.unitOfTotal(formatPercent(used > 0 ? n / used : 0))];
+  const row = (name: string, n: number): TableCell[] => {
+    const share = formatPercent(used > 0 ? n / used : 0);
+    return [name, { text: formatCount(n), label: copy.unitCounted(formatCount(n)) }, { text: share, label: copy.unitOfTotal(share) }];
+  };
   return section(
     copy.directionHeading,
     dataTable(copy.directionCaption, [copy.directionHeader, copy.countHeader, copy.shareHeader], [row(copy.sentRow, totals.sent), row(copy.receivedRow, totals.received), row(copy.unknownRow, totals.unknown)]),

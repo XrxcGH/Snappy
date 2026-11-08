@@ -1,5 +1,5 @@
 import { insights } from "@snappy-export/core";
-import { cellAround, dataTable } from "../../components/dataTable.ts";
+import { dataTable } from "../../components/dataTable.ts";
 import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section, subsection } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -140,9 +140,9 @@ function yearSection(v: CalendarView): HTMLElement | null {
   const y = v.year;
   if (y === null) return null;
   const cal = y.calendar;
-  const rows: string[][] = [
-    [copy.countedRow, copy.unitCounted(formatCount(cal.total))],
-    [copy.activeDaysRow, copy.unitDays(cal.activeDays)],
+  const rows: TableCell[][] = [
+    [copy.countedRow, { text: formatCount(cal.total), label: copy.unitCounted(formatCount(cal.total)) }],
+    [copy.activeDaysRow, { text: formatCount(cal.activeDays), label: copy.unitDays(cal.activeDays) }],
   ];
   if (cal.total > 0) rows.push([copy.busiestWeekRow, weekCell(cal.busiestWeek)], [copy.quietestWeekRow, weekCell(cal.quietestWeek)]);
   return section(
@@ -167,7 +167,9 @@ function monthsSection(v: CalendarView): HTMLElement | null {
 }
 
 function runRow(name: string, run: Run): TableCell[] {
-  return run === null ? [name, copy.unitNoRun, copy.noValue, copy.noValue] : [name, copy.unitDays(run.days), cellAround(copy.unitFrom(dayText(run.start)), dayText(run.start)), cellAround(copy.unitTo(dayText(run.end)), dayText(run.end))];
+  if (run === null) return [name, copy.unitNoRun, copy.noValue, copy.noValue];
+  const [from, to] = [dayText(run.start), dayText(run.end)];
+  return [name, { text: formatCount(run.days), label: copy.unitDays(run.days) }, { text: from, label: copy.unitFrom(from) }, { text: to, label: copy.unitTo(to) }];
 }
 
 /** A run table under its own small heading, so the all-time table and the year's can be told apart. */
@@ -197,10 +199,10 @@ function kindsSection(v: CalendarView): HTMLElement {
   const rows = insights.activityCalendar.KIND_ORDER.map((kind) => {
     const count = formatCount(mix[kind]);
     const share = formatPercent(mix.total > 0 ? mix[kind] / mix.total : 0);
-    const row: TableCell[] = [copy.kindNames[kind], cellAround(copy.unitCounted(count), count), cellAround(copy.unitOfTotal(share), share)];
+    const row: TableCell[] = [copy.kindNames[kind], { text: count, label: copy.unitCounted(count) }, { text: share, label: copy.unitOfTotal(share) }];
     if (showYear) {
       const inYear = formatCount((cal.mix as Mix)[kind]);
-      row.push(cellAround(copy.unitInYear(cal.year, inYear), inYear));
+      row.push({ text: inYear, label: copy.unitInYear(cal.year, inYear) });
     }
     return row;
   });
@@ -213,8 +215,8 @@ function kindsByYearSection(v: CalendarView): HTMLElement | null {
   const headers = [copy.yearHeader, ...kinds.map((k) => copy.kindNames[k]), copy.totalHeader];
   const rows = v.yearsShown.map((m): TableCell[] => [
     String(m.year),
-    ...kinds.map((k) => cellAround(copy.unitKindCount(formatCount(m[k]), copy.kindNames[k].toLowerCase()), formatCount(m[k]))),
-    cellAround(copy.unitInAll(formatCount(m.total)), formatCount(m.total)),
+    ...kinds.map((k) => ({ text: formatCount(m[k]), label: copy.unitKindCount(formatCount(m[k]), copy.kindNames[k].toLowerCase()) })),
+    { text: formatCount(m.total), label: copy.unitInAll(formatCount(m.total)) },
   ]);
   return section(
     copy.kindsByYearHeading,

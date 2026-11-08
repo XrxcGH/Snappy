@@ -25,6 +25,7 @@ import { copy as lookalikeUsernames } from "../../src/tools/lookalike-usernames/
 import { copy as memoriesGaps } from "../../src/tools/memories-gaps/copy.ts";
 
 import { textOf } from "../copy-rules.ts";
+import { shown } from "./cell-text.ts";
 import { renderSettled, sampleState, sampleWorkspace } from "./harness.ts";
 
 const toolsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "tools");
@@ -193,6 +194,35 @@ describe("formats", () => {
     expect(habits.unitGap(500)).toBe("Under 1 second");
     expect(habits.unitGap(Number.NaN)).toBe("");
   });
+});
+
+describe("table cells", () => {
+  it("never repeat their column header on a wide page: the bare value is shown and the full phrase is kept for assistive technology", async () => {
+    const repeats: string[] = [];
+    let labeled = 0;
+    for (const id of Object.keys(COPIES)) {
+      const root = await pageOf(id);
+      for (const table of root.querySelectorAll("table")) {
+        const heads = table.querySelectorAll("thead th").map((th) => th.textContent);
+        for (const row of table.querySelectorAll("tbody tr")) {
+          row.querySelectorAll("td").forEach((td, i) => {
+            const word = (heads[i + 1] ?? "").split(/\s+/)[0] ?? "";
+            const seen = shown(td);
+            if (td.querySelector(".cell-short") !== null) {
+              labeled++;
+              const long = td.querySelector(".cell-long") as FakeElement;
+              expect(td.querySelector(".cell-short")?.getAttribute("aria-hidden"), `${id} ${seen}`).toBe("true");
+              expect(long.classList.contains("sr-only"), `${id} ${seen}`).toBe(true);
+              if (seen !== common.noFigure) expect(long.textContent.toLowerCase(), `${id} ${seen}`).toContain(seen.toLowerCase());
+            }
+            if (word.length >= 3 && new RegExp(`\\b${word}`, "i").test(seen)) repeats.push(`${id}: "${seen}" under ${heads[i + 1]}`);
+          });
+        }
+      }
+    }
+    expect(labeled).toBeGreaterThan(60);
+    expect(repeats).toEqual([]);
+  }, 60_000);
 });
 
 describe("the note for something a page cannot describe, and the word for what is left out", () => {

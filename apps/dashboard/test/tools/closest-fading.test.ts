@@ -17,6 +17,7 @@ import { view } from "../../src/tools/closest-fading/view.ts";
 import { toolData } from "../../src/tools/data.ts";
 import { RULES, collectCopy, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase } from "./cell-text.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -89,7 +90,7 @@ function crafted(extra: { friends?: string[]; chats?: ChatEvent[] } = {}, ws: Pa
 }
 
 const sampleNames = (): string[] => [...new Set((base.latest as ParsedExport).friends.friends.map((f) => f.username))].filter((n) => n.length >= 5);
-const texts = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const texts = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 const cellsOf = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((tr) => [tr.querySelector("th")?.textContent ?? "", ...texts(tr, "td")]);
 
 describe("the tool", () => {

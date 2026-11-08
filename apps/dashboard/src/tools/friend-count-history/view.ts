@@ -1,6 +1,6 @@
 import type { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
-import type { PillKind } from "../../components/dataTable.ts";
+import type { PillKind, TableCell } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
@@ -78,11 +78,11 @@ function summarySection({ history }: FriendCountResult): HTMLElement {
 
 function monthsSection({ history }: FriendCountResult): HTMLElement {
   const shown = history.months.slice(-MAX_MONTHS);
-  const rows = shown.map((m) => [
+  const rows = shown.map((m): TableCell[] => [
     m.partial ? copy.unitSoFar(monthText(m.month)) : monthText(m.month),
-    copy.unitAdded(m.joined),
-    copy.unitRemoved(m.left),
-    copy.unitFriends(m.count ?? 0),
+    { text: formatCount(m.joined), label: copy.unitAdded(m.joined) },
+    { text: formatCount(m.left), label: copy.unitRemoved(m.left) },
+    { text: formatCount(m.count ?? 0), label: copy.unitFriends(m.count ?? 0) },
   ]);
   return section(
     copy.monthsHeading,
@@ -94,7 +94,13 @@ function monthsSection({ history }: FriendCountResult): HTMLElement {
 function compareSection({ history }: FriendCountResult): HTMLElement | null {
   if (history.comparisons.length === 0) return null;
   const shown = history.comparisons.slice(-MAX_COMPARISONS);
-  const rows = shown.map((c) => [formatDate(c.takenAt), copy.unitSaved(c.snapshotCount), copy.unitCurve(c.curveCount), copy.unitGap(c.gap), c.disagrees ? copy.statuses.differs : copy.statuses.close]);
+  const rows = shown.map((c): TableCell[] => [
+    formatDate(c.takenAt),
+    { text: formatCount(c.snapshotCount), label: copy.unitSaved(c.snapshotCount) },
+    { text: formatCount(c.curveCount), label: copy.unitCurve(c.curveCount) },
+    copy.unitGap(c.gap),
+    c.disagrees ? copy.statuses.differs : copy.statuses.close,
+  ]);
   const kinds: PillKind[] = shown.map((c) => (c.disagrees ? "no" : "yes"));
   return section(
     copy.compareHeading,

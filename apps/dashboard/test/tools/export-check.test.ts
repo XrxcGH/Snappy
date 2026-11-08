@@ -16,6 +16,7 @@ import { descriptor } from "../../src/tools/export-check/index.ts";
 import { computeExportCheck } from "../../src/tools/export-check/model.ts";
 import { view } from "../../src/tools/export-check/view.ts";
 import type { FakeElement } from "../fake-dom.ts";
+import { phrase } from "./cell-text.ts";
 import { render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
@@ -139,7 +140,7 @@ describe("computeExportCheck", () => {
   });
 });
 
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 
 describe("the page", () => {
   it("shows the verdict, what was found as a table with a pill for each section, the dates and the command", async () => {

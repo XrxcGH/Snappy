@@ -1,4 +1,5 @@
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { icon } from "../../components/icon.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -115,13 +116,17 @@ function gapsSection(r: GapsResult): HTMLElement {
 }
 
 function busiestSection(r: GapsResult): HTMLElement {
-  const rows: string[][] = [];
+  const rows: TableCell[][] = [];
   const month = r.busiestMonth;
-  if (month !== null) rows.push([copy.busiestMonthCell, monthText(month), copy.unitMemories(month.count), copy.unitShare(`${Math.round((month.count / r.counts.dated) * 100)}%`)]);
+  if (month !== null) {
+    const share = `${Math.round((month.count / r.counts.dated) * 100)}%`;
+    rows.push([copy.busiestMonthCell, monthText(month), { text: formatCount(month.count), label: copy.unitMemories(month.count) }, { text: share, label: copy.unitShare(share) }]);
+  }
   const stretch = r.busiestStretch;
   // A one-month stretch is the busiest month again.
   if (stretch !== null && stretch.months > 1) {
-    rows.push([copy.stretchCell(stretch.months), copy.unitSpan(monthText(stretch.from), monthText(stretch.to)), copy.unitMemories(stretch.count), copy.unitShare(`${stretch.sharePercent}%`)]);
+    const share = `${stretch.sharePercent}%`;
+    rows.push([copy.stretchCell(stretch.months), copy.unitSpan(monthText(stretch.from), monthText(stretch.to)), { text: formatCount(stretch.count), label: copy.unitMemories(stretch.count) }, { text: share, label: copy.unitShare(share) }]);
   }
   return section(copy.busiestHeading, dataTable(copy.busiestCaption, [copy.highlightHeader, copy.whenHeader, copy.memoriesHeader, copy.shareHeader], rows));
 }
