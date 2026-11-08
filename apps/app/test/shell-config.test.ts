@@ -14,6 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { PAGE_SIZE_LIMIT } from "../../dashboard/test/page-size-limit.ts";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (...p: string[]): string => readFileSync(path.join(root, ...p), "utf8");
@@ -227,7 +228,7 @@ describe("the desktop frontend", () => {
   });
 
   it("stays under the dashboard's own page size limit (apps/dashboard/test/build.test.ts), which this build does not raise", () => {
-    expect(Buffer.byteLength(frontendBuild(undefined))).toBeLessThan(1_330_000); // the same limit as apps/dashboard/test/build.test.ts
+    expect(Buffer.byteLength(frontendBuild(undefined))).toBeLessThan(PAGE_SIZE_LIMIT); // the same limit as apps/dashboard/test/build.test.ts
   });
 
   it("tells the dashboard it runs in the desktop app before the dashboard starts, and hides the profile links", () => {

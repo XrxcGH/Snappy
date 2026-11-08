@@ -11,6 +11,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { innerTexts, removeElements } from "./markup.ts";
+import { PAGE_SIZE_LIMIT } from "./page-size-limit.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tmp = mkdtempSync(path.join(tmpdir(), "snappy-build-"));
@@ -52,8 +53,9 @@ describe("built file", () => {
     expect(html).not.toMatch(/<link[^>]*rel=["']?stylesheet/i);
     expect(html).not.toMatch(/<(img|iframe|object|embed|video|audio|source|form)\b/i);
     expect(html).not.toMatch(/\s(src|srcset|action)="(?!data:)/i);
-    // Raised from 1,000,000 when the fourteen tools came in, and to 1,330,000 for the twenty-two: see the measurement under "the commands live in the helper".
-    expect(Buffer.byteLength(html)).toBeLessThan(1_330_000);
+    // Raised from 1,000,000 when the fourteen tools came in, to 1,330,000 for the twenty-two, and to PAGE_SIZE_LIMIT after the six tracks of
+    // work on the import flow, the shell, Settings and the words: see the measurement under "the commands live in the helper".
+    expect(Buffer.byteLength(html)).toBeLessThan(PAGE_SIZE_LIMIT);
   });
 
   it("ships the strict Content-Security-Policy as a meta tag, ahead of any script or style", () => {
@@ -270,9 +272,19 @@ describe("built file: the commands live in the helper, not on the page", () => {
     // about 6 KB) to 1,029,901 bytes. Eight more tools and their eight commands then took the page to 1,243,124
     // bytes and the helper from 338,060 to 432,902 (measured against main before and after, building both):
     // about 26 KB a feature on the page (the core module, the tool and its words) and 12 KB in the helper (the
-    // core module and the command). The limits are about seven percent above those: a jump past them means
-    // something large came in by accident. The helper imports no tool, so it only carries the commands and core.
-    expect(bytes).toBeLessThan(1_330_000);
+    // core module and the command). Six tracks of work then took the page from 1,296,781 bytes (the second beta,
+    // built from main before them) to 1,338,016, 41 KB in all (measured by building main at the last commit of each
+    // track): the words and docs 2,665 bytes, the tool plumbing (Find a tool, the command line section, the Close all
+    // button, the sample-data Run) 4,578, the import flow (folder import with its ZIP wrapper, Cancel, drop anywhere,
+    // the part checks) 17,756, the shell and Settings (the saved history list and file, diagnostics, What is new, the
+    // shortcuts and their dialog) 14,791, and the styles 1,445. The desktop shell added nothing to the web page. The
+    // desktop page carries its update banner on top, 14.8 KB more, and grew 43 KB the same way, to 1,354,724 bytes.
+    // The helper grew only 2.3 KB (445,825 to 448,131), the folder reader's stub keeping the folder ZIP code out of it.
+    // A clean-up of unused strings and a duplicate CRC table took 278 bytes back, so the desktop page is 1,354,446
+    // bytes. PAGE_SIZE_LIMIT (page-size-limit.ts, shared with the shell tests) is that, the larger of the two, plus
+    // about two percent; the helper's is about four percent above its size. A jump past them means something large
+    // came in by accident. The helper imports no tool, so it only carries the commands and core.
+    expect(bytes).toBeLessThan(PAGE_SIZE_LIMIT);
     expect(Buffer.byteLength(terminalWorker)).toBeLessThan(465_000);
   });
 });

@@ -14,6 +14,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { PAGE_SIZE_LIMIT } from "../../dashboard/test/page-size-limit.ts";
 import { updateCopy } from "../src/update-copy.ts";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -98,6 +99,6 @@ describe("the desktop build", () => {
   });
 
   it("stays under the size limit that the shell tests hold", () => {
-    expect(Buffer.byteLength(desktop)).toBeLessThan(1_330_000);
+    expect(Buffer.byteLength(desktop)).toBeLessThan(PAGE_SIZE_LIMIT);
   });
 });
