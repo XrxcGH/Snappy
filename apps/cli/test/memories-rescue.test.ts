@@ -176,10 +176,12 @@ describe("memories rescue of a three-part export", () => {
   it("explains Memories that have no file, in the words core gives, and counts them", async () => {
     const { folder, out } = await rescue("rescue-unmatched");
     const report = reportOf(folder);
-    expect(flat(out)).toContain(`${report.counts.unmatchedItems} of ${report.counts.planned} saved Memories have no file in your ZIP files.`);
+    // The pairing sentence gives the count once, and one line of advice follows it.
+    expect(flat(out)).toContain(`${report.counts.unmatchedItems} have no matching file.`);
     expect(flat(out)).toContain("If part of your export is missing, add it and run again.");
-    // Said once, in the Memories section, not again under the export check.
-    expect(flat(out).match(/have no file in your ZIP files/g)).toHaveLength(1);
+    expect(flat(out)).not.toContain("saved Memories have no file in your ZIP files");
+    expect(flat(out).match(new RegExp(`${report.counts.unmatchedItems} (?:of \\d+ )?(?:saved )?Memories have no (?:matching )?file`, "g"))).toBeNull();
+    expect(flat(out).match(/If part of your export is missing, add it and run again\./g)).toHaveLength(1);
     expect(out).toContain(`${report.counts.unmatchedItems} Memories had no file or link, so they were not saved.`);
   });
 

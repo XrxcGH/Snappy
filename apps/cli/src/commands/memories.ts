@@ -272,7 +272,12 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
       out.push(`  ${plural(plan.duplicates.length, "probable duplicate")} skipped, matched by metadata only.`);
       out.push(`  ${formatCount(counts.bundled)} ${isAre(counts.bundled)} in your ZIP files, ${formatCount(counts.links)} ${isAre(counts.links)} only ${noun(counts.links, "a link", "links")}${counts.neither > 0 && parsed.memoriesPairing === undefined ? `, ${formatCount(counts.neither)} ${hasHave(counts.neither)} no file or link` : ""}.`);
       if (parsed.memoriesPairing !== undefined) for (const line of wrapText(describePairing(parsed.memoriesPairing), width)) out.push(`  ${line}`);
-      if (unmatchedAdvice !== undefined) for (const line of wrapText(`${unmatchedAdvice} If part of your export is missing, add it and run again.`, width)) out.push(`  ${line}`);
+      if (unmatchedAdvice !== undefined) {
+        // The pairing sentence above already says how many have no file, so then only the advice follows.
+        const said = parsed.memoriesPairing !== undefined && parsed.memoriesPairing.unmatchedItems > 0;
+        const advice = "If part of your export is missing, add it and run again.";
+        for (const line of wrapText(said ? advice : `${unmatchedAdvice} ${advice}`, width)) out.push(`  ${line}`);
+      }
       if (flags.download === true && !parsed.memories.some((m) => m.downloadUrl !== undefined)) {
         for (const line of wrapText(NO_LINKS, width)) out.push(`  ${line}`);
       }
