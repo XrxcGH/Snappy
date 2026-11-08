@@ -157,12 +157,13 @@ What is macOS-specific, and where:
 | Version strings: macOS accepts only dotted numbers, so `CFBundleShortVersionString` and `CFBundleVersion` are `0.1.0` and the beta tag is in the custom key `SnappyReleaseVersion` | `src-tauri/Info.plist` (merged by Tauri), `bundleVersion` in `tauri.macos.conf.json` |
 | Menu bar: Tauri's default menu on macOS (app menu with Hide and Quit, standard Edit menu, Window, Help). No menu code of our own | none |
 | Navigation lock and new-window refusal: the same two handlers as Windows (`on_navigation`, `on_new_window`), which wry applies to the WKWebView delegates. The Windows-only `WebResourceRequested` filter has no macOS counterpart | `lib.rs` |
+| Save buttons: wry cancels every download click on macOS unless a download handler exists, so the shell registers one (`allow_download`, macOS only; WebKit saves into Downloads, for the page's own `blob:` links only). WebView2 saves by itself, so Windows has none | `lib.rs` |
 | The page's address: `tauri://localhost` (Windows uses `http://tauri.localhost`); both are in the allow-list | `lib.rs` |
 | Platform flag: `desktopKind` reads the user agent; `macos` shows the macOS Privacy note, which names no WebView2 | `src/desktop-platform.ts`, `copy.ts` (`privacy.desktopMac*`) |
 | No updater: the update check is Windows only (`updater::for_app` returns `None` elsewhere, and the update interface mounts only when `desktop` is `windows`), so the macOS app makes no connection of its own | `src-tauri/src/updater/mod.rs`, `src/update-entry.ts` |
-| CI build and smoke test: `smoke.sh` (bundle, launch, window, menu, 60-second network watch with a positive control, quit), `netwatch.py` (the sampler; it counts the WebKit helper processes too, because they are not children of the app), `windows.swift`, and a WebKit stand-in (`webkit-probe.swift`, `probe.sh`, `probe-server.py`) that tries to reach a loopback server from a plain WKWebView | `.github/workflows/desktop-smoke.yml` job `macos-universal-build`, `tools/macos/` |
+| CI build and smoke test: `smoke.sh` (bundle, launch, window, menu, 60-second network watch with a positive control, quit), `netwatch.py` (the sampler; it counts the WebKit helper processes too, because they are not children of the app, and fails if it counted no new networking helper), `windows.swift`, and a WebKit stand-in (`webkit-probe.swift`, `probe.sh`, `probe-server.py`) that tries 13 ways to reach a loopback server from a plain WKWebView, one page load each, checks that the sampler can list the networking helper's sockets, and clicks a Save link | `.github/workflows/desktop-smoke.yml` job `macos-universal-build`, `tools/macos/` |
 
-`test/macos-config.test.ts` guards the config and the `cfg(windows)` gates. The smoke test needs a macOS runner
+`test/macos-config.test.ts` guards the config, the `cfg(windows)` gates and the Safari 16.4 floor of the page script. The smoke test needs a macOS runner
 and is described in [docs/RELEASES.md](../../docs/RELEASES.md) (what CI checks, and what it cannot).
 
 ## Notes for contributors
