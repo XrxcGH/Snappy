@@ -102,3 +102,20 @@ describe("the phone menu (A11Y-09)", () => {
     expect((root.querySelector("nav#site-nav") as FakeElement).dataset.open).toBe("true");
   });
 });
+
+describe("the header theme toggle (A11Y-13)", () => {
+  it("keeps one name whichever theme is on, says the state with aria-pressed, and announces the result", () => {
+    const { root, store } = openShell();
+    const toggle = root.querySelector("header .theme-toggle") as FakeElement;
+    const state = (): [string | null, string | null] => [toggle.getAttribute("aria-label"), toggle.getAttribute("aria-pressed")];
+    expect(state()).toEqual([shellCopy.themeToggleName, "true"]);
+    toggle.click();
+    expect(store.get().theme).toBe("light");
+    expect(state()).toEqual([shellCopy.themeToggleName, "false"]);
+    expect(announce).toHaveBeenLastCalledWith(shell.themeChangedLight);
+    toggle.click();
+    expect(state()).toEqual([shellCopy.themeToggleName, "true"]);
+    expect(announce).toHaveBeenLastCalledWith(shell.themeChangedDark);
+    expect(shellCopy.themeToggleName).toBe("Dark theme");
+  });
+});

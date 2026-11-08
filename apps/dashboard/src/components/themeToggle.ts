@@ -1,6 +1,7 @@
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { shell } from "../copy.ts";
+import { shellCopy } from "../copy-shell.ts";
 import { h } from "../dom.ts";
 import type { State, Theme } from "../reducer.ts";
 import type { Store } from "../store.ts";
@@ -22,9 +23,9 @@ export const resolveTheme = (theme: Theme, prefersDark: boolean): ResolvedTheme 
 
 /**
  * Header button that flips between the dark and light themes. It shows the icon of the theme it
- * switches to, and its accessible name says what pressing it does ("Switch to light theme").
- * The current theme is stated through aria-pressed (pressed means the dark theme is on), and the
- * name stays the action. It shares the store with the Settings control: both
+ * switches to. It is a toggle button with one fixed name, "Dark theme", and aria-pressed says whether it is on, so a
+ * screen reader reads "Dark theme, toggle button, pressed" and never two opposite things. Pressing it announces
+ * the result ("Light theme on."). It shares the store with the Settings control: both
  * call actions.setTheme, and both repaint from the same state.
  */
 export function themeToggle(store: Store, actions: Pick<Actions, "setTheme">): HTMLButtonElement {
@@ -33,11 +34,11 @@ export function themeToggle(store: Store, actions: Pick<Actions, "setTheme">): H
   const paint = (s: State): void => {
     const current = resolveTheme(s.theme, devicePrefersDark());
     const next: ResolvedTheme = current === "dark" ? "light" : "dark";
-    toggle.setAttribute("aria-label", next === "light" ? shell.themeToLight : shell.themeToDark);
+    toggle.setAttribute("aria-label", shellCopy.themeToggleName);
     toggle.dataset.theme = current;
-    // Pressed means "the dark theme is on"; the name says what pressing does.
+    // Pressed means "the dark theme is on"; the name never changes.
     toggle.setAttribute("aria-pressed", String(current === "dark"));
-    toggle.setAttribute("title", next === "light" ? shell.themeToLight : shell.themeToDark);
+    toggle.setAttribute("title", shellCopy.themeToggleName);
     toggle.replaceChildren(icon(next === "light" ? "sun" : "moon", 24));
   };
 

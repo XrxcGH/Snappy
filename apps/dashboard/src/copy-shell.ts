@@ -17,6 +17,9 @@ export const shellCopy = {
   addressCopiedAnnounce: "Address copied.",
   whatsNewHeading: "What’s new",
 
+  // The header's theme toggle has one fixed name; whether it is on is said by the button's pressed state.
+  themeToggleName: "Dark theme",
+
   // Keyboard shortcuts: the dialog, the buttons that open it, and the short status after "g".
   shortcutsTitle: "Keyboard shortcuts",
   showShortcutsButton: "Show shortcuts",

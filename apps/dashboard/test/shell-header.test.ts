@@ -10,6 +10,7 @@ import { createActions } from "../src/actions.ts";
 import { buildShell, followTheme } from "../src/app-shell.ts";
 import type { Shell } from "../src/app-shell.ts";
 import { brand, routes, shell as shellCopy } from "../src/copy.ts";
+import { shellCopy as words } from "../src/copy-shell.ts";
 import type { RouteId } from "../src/copy.ts";
 import { setPlatform } from "../src/platform.ts";
 import { initialState } from "../src/reducer.ts";
@@ -107,7 +108,7 @@ describe("header", () => {
       .map((k) => (k.classList.contains("theme-toggle") ? "toggle" : k.classList.contains("menu-button") ? "menu" : "other"));
     expect(kinds).toEqual(["toggle", "menu"]);
     const toggle = toggleOf(page);
-    expect(toggle.getAttribute("aria-label")).toBe(shellCopy.themeToLight);
+    expect(toggle.getAttribute("aria-label")).toBe(words.themeToggleName);
     expect(toggle.getAttribute("type")).toBe("button");
     expect(toggle.querySelectorAll("svg")).toHaveLength(1);
     // The session and lock badges are gone from the header on every route.
@@ -120,7 +121,7 @@ describe("header", () => {
     prefersDark = false;
     const page = openPage();
     expect(page.html.getAttribute("data-theme")).toBe("dark");
-    expect(toggleOf(page).getAttribute("aria-label")).toBe(shellCopy.themeToLight);
+    expect(toggleOf(page).getAttribute("aria-label")).toBe(words.themeToggleName);
     prefersDark = true;
     const again = openPage();
     expect(again.html.getAttribute("data-theme")).toBe("dark");
@@ -129,21 +130,22 @@ describe("header", () => {
   it("switches the theme attribute, the icon and the accessible name when pressed, and says the current theme", () => {
     const page = openPage();
     const toggle = toggleOf(page);
-    // aria-pressed states the current theme: pressed means the dark theme is on.
+    // One fixed name, "Dark theme"; aria-pressed states the current theme: pressed means the dark theme is on.
     const state = (): string | null => toggle.getAttribute("aria-pressed");
     expect(state()).toBe("true");
     expect(toggle.querySelector("use")?.getAttribute("href")).toBe("#i-sun");
 
     click(toggle);
     expect(page.html.getAttribute("data-theme")).toBe("light");
-    expect(toggle.getAttribute("aria-label")).toBe(shellCopy.themeToDark);
+    expect(toggle.getAttribute("aria-label")).toBe("Dark theme");
+    expect(toggle.getAttribute("title")).toBe("Dark theme");
     expect(state()).toBe("false");
     expect(toggle.querySelector("use")?.getAttribute("href")).toBe("#i-moon");
     expect(page.saved).toEqual(["light"]);
 
     click(toggle);
     expect(page.html.getAttribute("data-theme")).toBe("dark");
-    expect(toggle.getAttribute("aria-label")).toBe(shellCopy.themeToLight);
+    expect(toggle.getAttribute("aria-label")).toBe(words.themeToggleName);
     expect(page.saved).toEqual(["light", "dark"]);
   });
 
@@ -165,7 +167,7 @@ describe("header", () => {
     expect(page.html.hasAttribute("data-theme")).toBe(false);
     expect(pressed()).toEqual(["Match device"]);
     // With "Match device" on a dark device, the toggle offers the light theme.
-    expect(toggleOf(page).getAttribute("aria-label")).toBe(shellCopy.themeToLight);
+    expect(toggleOf(page).getAttribute("aria-label")).toBe(words.themeToggleName);
 
     click(group().querySelectorAll("button")[0] as FakeElement);
     expect(page.html.getAttribute("data-theme")).toBe("dark");
