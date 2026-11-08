@@ -172,7 +172,9 @@ and is described in [docs/RELEASES.md](../../docs/RELEASES.md) (what CI checks, 
 - `Cargo.lock` is committed. Builds and CI use `--locked`. A new Rust dependency must pass
   `node apps/app/tools/check-no-network-deps.mjs`, and a crate that can reach the network needs an owner decision.
 - A new version goes in three places that must match: `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and
-  `package.json` here. The release workflow refuses a tag that disagrees.
+  `package.json` here. The release workflow refuses a tag that disagrees. The macOS files repeat the number
+  (`src-tauri/Info.plist` and `bundleVersion` in `src-tauri/tauri.macos.conf.json`, without a pre-release suffix),
+  and `test/macos-config.test.ts` fails when they disagree.
 - The page size limit in `apps/dashboard/test/build.test.ts` applies to the desktop frontend too. Do not raise it
   to make room for shell code.
 - Regenerate icons with `npm run icons -w @snappy-export/app` after the brand icon changes.
