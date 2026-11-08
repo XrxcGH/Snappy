@@ -10,6 +10,7 @@ import vm from "node:vm";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { innerTexts, removeElements } from "./markup.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tmp = mkdtempSync(path.join(tmpdir(), "snappy-build-"));
@@ -33,7 +34,9 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 const sha = (text: string): string => `'sha256-${createHash("sha256").update(text, "utf8").digest("base64")}'`;
 const csp = (): string => /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(html)?.[1] ?? "";
 /** The inline scripts, in page order: the theme script in <head>, then the app. */
-const scripts = (page: string): string[] => [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1] ?? "");
+const scripts = (page: string): string[] => innerTexts(page, "script");
+/** The one inline style block. */
+const styleOf = (page: string): string => innerTexts(page, "style")[0] ?? "";
 const directive = (name: string): string => csp().split(";").map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? "";
 
 describe("built file", () => {
@@ -73,7 +76,7 @@ describe("built file", () => {
 
   it("pins the inline script and style by hash, matching the exact inlined text", () => {
     const [boot = "", script = ""] = scripts(html);
-    const style = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
+    const style = styleOf(html);
     expect(scripts(html)).toHaveLength(2);
     expect(script.length).toBeGreaterThan(10_000);
     expect(boot.length).toBeGreaterThan(50);
@@ -84,7 +87,7 @@ describe("built file", () => {
   });
 
   it("has no inline style attributes anywhere in the markup or the sprite", () => {
-    const body = html.replace(/<style>[\s\S]*?<\/style>/, "").replace(/<script>[\s\S]*?<\/script>/g, "");
+    const body = removeElements(html, "style", "script");
     expect(body).not.toMatch(/\sstyle\s*=/i);
     expect(body).not.toMatch(/\son[a-z]+\s*=/i);
   });
@@ -345,7 +348,7 @@ describe("the dist/index.html that is checked in", () => {
     const page = fs.readFileSync(shipped, "utf8");
     const policy = /<meta http-equiv="Content-Security-Policy" content="([^"]*)"/.exec(page)?.[1] ?? "";
     const [boot = "", script = ""] = scripts(page);
-    const style = /<style>([\s\S]*?)<\/style>/.exec(page)?.[1] ?? "";
+    const style = styleOf(page);
     expect(policy).toContain(`script-src ${sha(boot)} ${sha(script)}`);
     expect(policy).toContain(`style-src ${sha(style)}`);
     expect(policy).toContain("worker-src blob:");

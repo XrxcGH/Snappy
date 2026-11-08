@@ -39,6 +39,7 @@ import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
 import { TOOLS } from "../src/tools/registry.ts";
+import { stripTags } from "./markup.ts";
 import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, FakeText, installFakeDom } from "./fake-dom.ts";
 import type { FakeNode } from "./fake-dom.ts";
@@ -201,6 +202,11 @@ describe("copy module: the real strings", () => {
 /* Tests on what the views render                                                              */
 /* ------------------------------------------------------------------------------------------ */
 
+/** True when the sentence holds the whole number, such as "1,234", and not a longer one that contains it. The count is digits and commas only, so it is safe in a pattern as it stands. */
+function repeatsCount(sentence: string, count: string): boolean {
+  return new RegExp(`(^|[^\\d,.])${count}([^\\d]|$)`).test(sentence);
+}
+
 describe("rendered views: the words people actually see", () => {
   let rendered: RenderedView[] = [];
   beforeAll(() => {
@@ -306,7 +312,7 @@ describe("rendered views: the words people actually see", () => {
         for (const el of textBlocks(v.root)) {
           if (ancestors(el).some((a) => hasClass(a, "stat") || hasClass(a, "stat-card")) || el.tagName === "button") continue;
           const t = textOf(el);
-          if (words(t).length >= 4 && new RegExp(`(^|[^\\d,.])${s.value.replace(/,/g, ",")}([^\\d]|$)`).test(t)) bad.push(`${v.name} (${v.state}): "${clip(t)}" repeats the ${s.value} that the "${s.label}" card shows`);
+          if (words(t).length >= 4 && repeatsCount(t, s.value)) bad.push(`${v.name} (${v.state}): "${clip(t)}" repeats the ${s.value} that the "${s.label}" card shows`);
         }
       }
     }
@@ -366,7 +372,7 @@ describe("the HTML shell", () => {
   it("has noscript and description text that follows the rules", () => {
     const texts: Entry[] = [];
     const noscript = /<noscript>([\s\S]*?)<\/noscript>/.exec(html)?.[1] ?? "";
-    texts.push({ id: "index.html noscript", text: noscript.replace(/<[^>]+>/g, "").trim(), kind: "note" });
+    texts.push({ id: "index.html noscript", text: stripTags(noscript).trim(), kind: "note" });
     texts.push({ id: "index.html description", text: /name="description" content="([^"]*)"/.exec(html)?.[1] ?? "", kind: "note" });
     const bad = texts.flatMap((e) => [whitespaceProblems, punctuationProblems, quoteProblems, americanProblems, capitalizationProblems, lengthProblems].flatMap((r) => r(e).map((p) => `${e.id}: "${clip(e.text)}" ${p}`)));
     expect(bad).toEqual([]);
@@ -443,7 +449,19 @@ function renderAllCached(): RenderedView[] {
 /* ------------------------------------------------------------------------------------------ */
 
 describe("the lint rules catch what they should", () => {
-  const e = (text: string, kind: Kind = "text"): Entry => ({ id: "x", text, kind });
+  it("finds a repeated count only as a whole number", () => {
+    expect(repeatsCount("You have 1,234 friends in all.", "1,234")).toBe(true);
+    expect(repeatsCount("1,234 friends are shown.", "1,234")).toBe(true);
+    expect(repeatsCount("About 11,234 friends.", "1,234")).toBe(false);
+    expect(repeatsCount("About 1,2345 friends.", "1,234")).toBe(false);
+    expect(repeatsCount("Version 2.1,234 shipped.", "1,234")).toBe(false);
+    expect(repeatsCount("You have 1234 friends.", "1,234")).toBe(false);
+  });
+  it("reads the page shell's text with every tag removed, even tags that nest", () => {
+    expect(stripTags("<p>Turn on <b>JavaScript</b>.</p>")).toBe("Turn on JavaScript.");
+    expect(stripTags("<scr<script>ipt>alert(1)")).not.toContain("<");
+  });
+  const e =(text: string, kind: Kind = "text"): Entry => ({ id: "x", text, kind });
   const problems = (text: string, kind: Kind = "text"): string => RULES.flatMap(([, fn, skip]) => (skip?.(e(text, kind)) ? [] : fn(e(text, kind)))).join(" | ");
 
   it("flags capitalization", () => {
