@@ -23,6 +23,8 @@ export interface WorkerIoOptions {
   /** A touch device: smaller memory limits. */
   coarse: boolean;
   signal?: AbortSignal;
+  /** The release label the desktop app shows, passed to the commands as SNAPPY_RELEASE (the one way a version label reaches them). */
+  release?: string;
   /** Sends a batch of output text to the page. */
   sendOut(text: string): void;
   /** Asks the person for a secret; null means they canceled. */
@@ -69,7 +71,7 @@ export function createWorkerIo(options: WorkerIoOptions): WorkerIo {
     err: { write },
     // A fixed list. The helper never sees the page's environment, so a passphrase cannot be slipped
     // in through it and no debug switch can be turned on.
-    env: { SNAPPY_APP: "1", COLORTERM: "truecolor" },
+    env: { SNAPPY_APP: "1", COLORTERM: "truecolor", ...(options.release === undefined ? {} : { SNAPPY_RELEASE: options.release }) },
     interactive: true,
     columns: options.columns,
     now: options.now ?? (() => Date.now()),
