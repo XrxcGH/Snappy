@@ -41,6 +41,18 @@ describe("Start page words", () => {
   });
 });
 
+describe("which app a sentence means", () => {
+  it("never says in the app: inside Snappy that means Snappy, and the person is being sent to Snapchat", () => {
+    expect(hits(/\b(in|from) the app\b/i)).toEqual([]);
+    expect(copy.memories.pairingWhy[1]).toBe("Snapchat may leave out Memories it keeps only in its own app, or saved after your export.");
+  });
+
+  it("sends the person to Snapchat, by name, wherever a count or a check is meant to happen there", () => {
+    expect(copy.cleanup.noChatProtection(false)).toMatch(/Check Snapchat before you remove anyone/);
+    expect(copy.memories.pairingTodo).toMatch(/from the Snapchat app/);
+  });
+});
+
 describe("one name for what a passphrase protects: the saved history", () => {
   it("saves a history, and never seals one", () => {
     expect(copy.settings.setButton).toBe("Save history");

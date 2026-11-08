@@ -83,6 +83,11 @@ describe.each([...DOCS.filter((f) => !/MACOS/.test(f)), "CONTRIBUTING.md", "SECU
     const bad = lines.filter((l) => /\b(ledger|sealed|snapshots?|saved data)\b|\bseals\b/i.test(l.text) || /turned saving on|saving turned on|turn saving on/i.test(l.text));
     expect(bad.map((l) => `${file}:${l.n}: ${l.text.slice(0, 90)}`)).toEqual([]);
   });
+
+  it("sends the reader to Snapchat by name, not to “the app”, which is Snappy in these documents", () => {
+    const bad = lines.filter((l) => /\b(check|look|see|count|note)\b[^.]*\b(in|from) the app\b[^.]*\b(Profile|Friends)\b|check in the app/i.test(l.text));
+    expect(bad.map((l) => `${file}:${l.n}: ${l.text.slice(0, 90)}`)).toEqual([]);
+  });
 });
 
 /**

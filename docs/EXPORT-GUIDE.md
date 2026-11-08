@@ -21,7 +21,7 @@ Snappy only reads **your own** official “Download My Data” export, on your o
 1. Snapchat prepares the export and emails you a link. A large export comes as **several ZIP files**, such as `mydata~1234567890123.zip`, `mydata~1234567890123-2.zip` and `mydata~1234567890123-3.zip`. Your own number replaces the digits.
 2. Download every part, keep the original names, and put them in one folder. Do not unzip them.
 3. The first file, without a number at the end, holds your JSON files. The others hold photos and videos, including your Memories files.
-4. Note your **current friend count** from the app (Profile, then Friends). Snappy can warn you if the export’s count differs.
+4. Note your **current friend count** in Snapchat (Profile, then Friends). Snappy can warn you if the export’s count differs.
 5. Never send these files to anyone, including Snappy’s developers. Delete them when you are done, if you do not need them.
 6. If something does not read correctly, share only the *shape* of the export, using the command in the next section. It prints field names, types and rough counts, and masks anything it does not recognize.
 

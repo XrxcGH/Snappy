@@ -419,7 +419,7 @@ export const memories = {
   pairingWhyHeading: "Why some may be missing",
   pairingWhy: [
     "A part may be missing or still downloading. This is the most common reason.",
-    "Snapchat may leave out Memories it keeps only in the app, or saved after your export.",
+    "Snapchat may leave out Memories it keeps only in its own app, or saved after your export.",
     "Snappy matches files to Memories by saved time and never guesses. No clear match counts as not included.",
   ],
   pairingTodoHeading: "What you can do",
