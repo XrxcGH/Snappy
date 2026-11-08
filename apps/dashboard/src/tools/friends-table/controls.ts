@@ -66,6 +66,8 @@ export function controls(ui: ToolUi<FriendsTableParams>): HTMLElement {
     onclick: () => {
       input.value = "";
       showSelect.value = "all";
+      // This button hides itself next, so focus goes to the first filter first: a keyboard user keeps their place instead of falling to the top of the page.
+      showSelect.focus();
       ui.set({ show: "all", prefix: "" });
       syncClear();
     },

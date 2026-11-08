@@ -16,7 +16,7 @@ import { descriptor } from "../../src/tools/friends-table/index.ts";
 import { DEFAULT_PARAMS, SORT_ORDERS, SHOW_FILTERS, computeFriendsTable, csvFileName, csvText, orderIdOf } from "../../src/tools/friends-table/model.ts";
 import { view } from "../../src/tools/friends-table/view.ts";
 import { RULES, collectCopy, lint, useNames } from "../copy-rules.ts";
-import type { FakeElement } from "../fake-dom.ts";
+import { FakeElement } from "../fake-dom.ts";
 import { phrase, shown } from "./cell-text.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
@@ -407,6 +407,29 @@ describe("the page", () => {
     await settled(r.root);
     expect(said).toEqual([copy.doneAnnounce(6, 2, 2)]);
     for (const line of said) for (const name of Object.values(NAMES)) expect(line).not.toContain(name);
+  });
+
+  it("moves focus to the first filter before Clear filters hides itself, so a keyboard user does not fall to the top of the page", async () => {
+    const r = await renderSettled(view, crafted());
+    const clear = r.root.querySelectorAll("button").find((b) => b.textContent === copy.clearButton) as FakeElement;
+    const show = r.root.querySelector("select#friends-table-show") as FakeElement;
+    show.value = "quiet";
+    show.fire("change");
+    await settled(r.root);
+    expect(clear.hasAttribute("hidden")).toBe(false);
+    // What had focus at the moment the button was hidden: a hidden button cannot keep focus, so it must already be elsewhere.
+    let focusWhenHidden: FakeElement | null | undefined;
+    const setAttribute = clear.setAttribute.bind(clear);
+    clear.setAttribute = (name: string, value: string): void => {
+      if (name === "hidden") focusWhenHidden = FakeElement.lastFocused;
+      setAttribute(name, value);
+    };
+    FakeElement.lastFocused = clear;
+    clear.click();
+    await settled(r.root);
+    expect(clear.hasAttribute("hidden")).toBe(true);
+    expect(focusWhenHidden).toBe(show);
+    expect(FakeElement.lastFocused).toBe(show);
   });
 
   it("offers Clear filters only while a filter is on, and it resets both filters and the controls", async () => {
