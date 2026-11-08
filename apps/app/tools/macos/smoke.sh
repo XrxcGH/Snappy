@@ -7,7 +7,8 @@
 # It reads no secret and signs nothing. It checks the finished files (Info.plist, architectures, ad-hoc signature, no
 # entitlements, the disk image), then installs the app into a temporary folder, starts it, and checks that it stays alive,
 # has a window, makes no connection outside this computer for OBSERVE_SECONDS (default 60), and exits when asked.
-# Then probe.sh runs a stand-in (a plain WKWebView, not the app) that tries to reach a loopback test server.
+# Then probe.sh runs a stand-in (a plain WKWebView, not the app): it tries to reach a loopback test server, checks that the
+# sampler can list the sockets of the web view's networking helper, and clicks a Save link.
 # Every check writes its raw output into $OUT, which the job uploads. A failed check does not stop the script: it keeps
 # collecting evidence and exits 1 at the end if anything failed.
 #
@@ -193,9 +194,9 @@ sed -n '1,6p' "$OUT/gatekeeper.txt" | tee -a "$SUMMARY"
 
 # ------------------------------------------------------------------------------------------------
 say ""
-say "== 5. Positive control for the connection sampler =="
+say "== 5. Positive control for the connection sampler (an ordinary process; the web view's helper is checked in section 7) =="
 if python3 -I "$HERE/netwatch.py" --control --log "$OUT/control.log"; then
-  ok "the sampler saw a connection that a child process held to the outside (control.log)"
+  ok "lsof listed a held connection of an ordinary child process (control.log); this does not show it can list the web view's helper (section 7)"
 else
   fail "the sampler did NOT see the control connection, so its silence proves nothing (control.log)"
 fi
@@ -310,16 +311,17 @@ case "$WATCH_RC" in
   0) ok "no connection to a non-loopback address from the app's processes (connections.log)" ;;
   3) fail "the app's processes had a connection to a non-loopback address (connections.log)" ;;
   5) fail "the sampler never saw the app (connections.log)" ;;
+  6) fail "no WebKit networking helper that started after the watch was counted as the app's, so its connections could not have been seen (connections.log)" ;;
   *) fail "the sampler stopped with code $WATCH_RC (connections.log)" ;;
 esac
-grep -E '^(samples|the app first appeared|connections to a non-loopback|loopback-only|sockets those)' "$OUT/connections.log" | tee -a "$SUMMARY"
+grep -E '^(samples|the app first appeared|WebKit networking|sockets of any kind|connections to a non-loopback|loopback-only|sockets those)' "$OUT/connections.log" | tee -a "$SUMMARY"
 
 # ------------------------------------------------------------------------------------------------
 say ""
-say "== 7. A WebKit stand-in: web features under a custom scheme, and a blocked address on WKWebView =="
-say "(Not the Snappy app: a plain WKWebView that applies the same two hooks. See webkit-probe.swift.)"
+say "== 7. A WebKit stand-in: the sampler on the web view's helper, blocked addresses, web features, a Save click =="
+say "(Not the Snappy app: a plain WKWebView that applies the same WebKit hooks. See webkit-probe.swift.)"
 OUT="$OUT" bash "$HERE/probe.sh" 2>&1 | tee -a "$SUMMARY"
-if [ "${PIPESTATUS[0]}" != "0" ]; then fail "the WebKit stand-in let a request through to the test server (see the lines above)"; fi
+if [ "${PIPESTATUS[0]}" != "0" ]; then fail "a WebKit stand-in check failed (see the FAIL lines above)"; fi
 
 # ------------------------------------------------------------------------------------------------
 say ""

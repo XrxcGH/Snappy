@@ -601,24 +601,42 @@ describe("the macOS build and smoke job in desktop-smoke.yml", () => {
   it("watches the app's WebKit helper processes too, because they are not children of the app, and proves the sampler works first", () => {
     expect(netwatch).toContain("com.apple.WebKit.");
     expect(netwatch).toMatch(/def control\(/);
+    // The watch fails when no WebKit networking helper that started after it began is counted as the app's (exit 6), so a helper
+    // that a newer macOS reuses from before cannot silently leave the app's connections out; smoke.sh fails on that code.
+    expect(netwatch).toContain('WEBKIT_NETWORKING = "com.apple.WebKit.Networking"');
+    expect(netwatch).toMatch(/if not networking_pids\(r\):[\s\S]*?return 6/);
+    expect(smokeScript).toMatch(/\n  6\) fail "no WebKit networking helper/);
     // The positive control runs before the app is started.
     expect(smokeScript.indexOf("--control")).toBeLessThan(smokeScript.indexOf('open -n "$APPS/Snappy.app"'));
     // Loopback is the only address that is not counted.
     expect(netwatch).toContain('LOOPBACK = re.compile(r"^(127\\.|::1$|::ffff:127\\.|localhost$)"');
   });
 
-  it("also runs a WebKit stand-in that only talks to a loopback server, and fails only if it got a request through after a control run saw the server work", () => {
+  it("also runs a WebKit stand-in that only talks to a loopback server, judges every channel on its own page load, and fails if a locked run got any request through", () => {
     const dir = path.join(repo, "apps", "app", "tools", "macos");
     const probe = readFileSync(path.join(dir, "probe.sh"), "utf8");
     const swift = readFileSync(path.join(dir, "webkit-probe.swift"), "utf8");
     const server = readFileSync(path.join(dir, "probe-server.py"), "utf8");
     expect(smokeScript).toMatch(/bash "\$HERE\/probe\.sh"/);
-    expect(probe).toMatch(/for mode in locked control/);
-    expect(probe).toMatch(/\[ "\$CONTROL_HITS" = "0" \]/); // no verdict when the control saw nothing
+    // Every channel is judged one by one, and one page load per navigation, so one channel cannot hide another.
+    expect(probe).toMatch(/for scenario in \$SCENARIOS; do run_probe locked/);
+    expect(probe).toMatch(/run_probe control "\$scenario"/);
+    expect(probe).toMatch(/\[ "\$SHOWN" = "0" \]/); // no verdict when the control showed no channel
+    expect(probe).toMatch(/\[ -n "\$LEAKED" \]/); // a locked-run request on any channel is a failure
+    expect(probe).toContain("SCENARIOS=\"subresources link-self form location-replace location-href\"");
+    // The sampler must list a socket of the WebKit networking helper while the stand-in's control run talks to the server.
+    expect(probe).toMatch(/netwatch\.py" --log "\$OUT\/webkit-control-sockets\.log" .*--require-webkit-socket/);
     expect(server).toContain('("127.0.0.1", 0)');
+    expect(server).toContain('"/hold"');
     expect(swift).toContain("decidePolicyFor");
     expect(swift).toContain("createWebViewWith");
     expect(swift).toContain("tauri://localhost");
+    // The new-window refusal applies only to the locked run; the control opens the window for real.
+    expect(swift).toMatch(/if locked \{\s*print\("refused new window/);
+    // The Save click: the same decision wry makes, with and without a download handler.
+    expect(swift).toContain("shouldPerformDownload");
+    expect(probe).toContain("download-handler");
+    expect(probe).toContain("download-nohandler");
     // No address in these files except the loopback test server (netwatch.py's control connection is the one deliberate exception).
     for (const text of [probe, swift, server]) {
       const hosts = [...text.matchAll(/(?:https?|wss?):\/\/([A-Za-z0-9.-]+)/g)].map((m) => m[1]);
