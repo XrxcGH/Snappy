@@ -16,6 +16,7 @@
 //! Nothing here opens a network connection.
 
 mod readonly;
+pub mod updater;
 
 use std::sync::Mutex;
 
@@ -66,6 +67,12 @@ fn read_range(state: State<'_, PickedState>, id: String, offset: u64, length: u6
 fn close_file(state: State<'_, PickedState>, id: String) -> Result<(), String> {
     lock(&state)?.close(&id);
     Ok(())
+}
+
+/// What the page may know about updates (see `updater`).
+#[tauri::command]
+fn update_status() -> updater::Status {
+    updater::Status::inert()
 }
 
 /// True only for the app's own bundled page. Windows and Android serve it from
@@ -186,7 +193,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(PickedState::default())
-        .invoke_handler(tauri::generate_handler![pick_zips, read_range, close_file])
+        .invoke_handler(tauri::generate_handler![pick_zips, read_range, close_file, update_status])
         .setup(|app| {
             // The window is created here, not from the config alone, so it can carry the handlers.
             let config = app

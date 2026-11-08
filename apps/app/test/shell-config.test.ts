@@ -116,16 +116,22 @@ describe("navigation lock", () => {
   });
 });
 
+/** The commands of the native reader, then the update commands. Nothing else may be callable from the page. */
+const READER_COMMANDS = ["pick_zips", "read_range", "close_file"];
+const UPDATE_COMMANDS = ["update_status"];
+const permissionOf = (command: string): string => `allow-${command.replaceAll("_", "-")}`;
+
 describe("read-only guarantee", () => {
-  it("grants the page only three read-only commands of our own, and no fs, dialog or core permission", () => {
-    expect([...capability.permissions].sort()).toEqual(["allow-close-file", "allow-pick-zips", "allow-read-range"]);
+  it("grants the page exactly the three read-only commands and the update commands, and no fs, dialog or core permission", () => {
+    expect([...capability.permissions].sort()).toEqual([...READER_COMMANDS, ...UPDATE_COMMANDS].map(permissionOf).sort());
     for (const p of capability.permissions) expect(p).not.toMatch(/^(fs|dialog|shell|http|opener|updater|process|os|core):/);
     expect(JSON.stringify(capability)).not.toMatch(/"allow"\s*:|"path"\s*:/); // no static path scope
   });
 
   it("puts exactly those commands under the permission system, so a page the window might show cannot call them", () => {
-    expect(buildRs).toMatch(/AppManifest::new\(\)\.commands\(&\["pick_zips", "read_range", "close_file"\]\)/);
-    expect(production(lib)).toMatch(/generate_handler!\[pick_zips, read_range, close_file\]/);
+    const all = [...READER_COMMANDS, ...UPDATE_COMMANDS];
+    expect(buildRs).toContain(`AppManifest::new().commands(&[${all.map((c) => `"${c}"`).join(", ")}])`);
+    expect(production(lib)).toContain(`generate_handler![${all.join(", ")}]`);
   });
 
   it("has no file-system plugin, no command that takes a path, and no grant_* command", () => {
@@ -133,7 +139,7 @@ describe("read-only guarantee", () => {
     expect(c).not.toMatch(/tauri_plugin_fs/);
     expect(c).not.toMatch(/fn grant_/);
     const commands = [...c.matchAll(/#\[tauri::command\][\s\S]*?\bfn (\w+)\(([^)]*)\)/g)];
-    expect(commands.map((m) => m[1])).toEqual(["pick_zips", "read_range", "close_file"]);
+    expect(commands.map((m) => m[1])).toEqual([...READER_COMMANDS, ...UPDATE_COMMANDS]);
     for (const m of commands) expect(m[2]).not.toMatch(/\b(path|file_path|dir|folder)\b|PathBuf|&Path/i);
   });
 
