@@ -1,5 +1,6 @@
 import { announce } from "../announce.ts";
 import { terminal } from "../copy.ts";
+import { startFlow } from "../copy-start.ts";
 import { h } from "../dom.ts";
 import { onDispose } from "../reactive.ts";
 import type { TerminalSession } from "../terminal/session.ts";
@@ -29,7 +30,8 @@ export function fileChip(session: TerminalSession, options: { key: string }): HT
 
   const show = (): void => {
     const n = picked.count();
-    if (label) label.textContent = n === 0 ? terminal.chooseButton : terminal.filesChosen(n);
+    // Files that came from Start say so; once the person chose another file here, the plain count says how many there are.
+    if (label) label.textContent = n === 0 ? terminal.chooseButton : picked.fromStart() === n ? startFlow.filesFromStart(n) : terminal.filesChosen(n);
     clear.hidden = n === 0;
   };
 

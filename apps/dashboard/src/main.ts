@@ -36,6 +36,8 @@ function boot(): void {
     runImport: importRunner(browserImport),
     // Lock and Delete data clear the command output and the picked export files too.
     onWipe: () => terminal.reset(),
+    // The ZIP files of an export read on Start are handed to the command blocks, so they do not ask for the same export again.
+    onImported: (files) => void terminal.picked.add(files, { from: "start" }),
   });
   // The command blocks: each Run starts its own helper, from the same blob: rule as the background reader.
   const terminal = createTerminalSession({

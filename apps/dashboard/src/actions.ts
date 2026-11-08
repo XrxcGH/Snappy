@@ -42,6 +42,11 @@ export interface Deps {
   runImport?: ImportRunner;
   /** Everything held on screen was forgotten (Lock or Delete data): the command output and picked files go too. */
   onWipe?: () => void;
+  /**
+   * An export was read and kept: its ZIP files, so the command blocks can use them without asking again. Real files only
+   * (a shell's own file handles are not), never the sample, never a folder. Memory only, like the files picked there.
+   */
+  onImported?: (files: readonly Blob[]) => void;
 }
 
 /** "canceled": the person stopped it. "busy": another import was running, so this one was not started. */
@@ -148,6 +153,8 @@ export function createActions(store: Store, deps: Deps): Actions {
     parts: number;
     /** Notes to add to the export's issues when it is kept (what the reader could not know). */
     notes: ExportIssue[];
+    /** The ZIP files that were read, in export order. Empty for a folder. */
+    files: readonly NamedBlob[];
   }
   let held: Read | null = null;
 
@@ -191,7 +198,7 @@ export function createActions(store: Store, deps: Deps): Actions {
     }
 
     // Parts are read in export order: the part with the lists first, then -2, -3, whatever order they were chosen in.
-    return readParts(check.ordered.length, async () => check.ordered, files.length - zips.length, []);
+    return readParts(check.ordered.length, async () => check.ordered, files.length - zips.length, [], check.ordered);
   }
 
   /**
@@ -209,7 +216,7 @@ export function createActions(store: Store, deps: Deps): Actions {
         return "failed";
       }
       const note: ExportIssue = { severity: "info", code: "folder-no-media", message: startFlow.folderNoMedia };
-      return await readParts(1, async () => [await wrapAsZip(data, deps.clock())], 0, [note]);
+      return await readParts(1, async () => [await wrapAsZip(data, deps.clock())], 0, [note], []);
     } finally {
       working = false;
       stopping = null;
@@ -217,7 +224,7 @@ export function createActions(store: Store, deps: Deps): Actions {
   }
 
   /** Read the parts that `prepare` gives, with progress and Cancel, then check and keep what was read. */
-  async function readParts(steps: number, prepare: () => Promise<readonly NamedBlob[]>, skipped: number, notes: ExportIssue[]): Promise<ImportResult> {
+  async function readParts(steps: number, prepare: () => Promise<readonly NamedBlob[]>, skipped: number, notes: ExportIssue[], kept: readonly NamedBlob[]): Promise<ImportResult> {
     const stop = new AbortController();
     stopping = stop;
     store.dispatch({ type: "import-started", steps, sample: false, at: deps.clock() });
@@ -241,7 +248,7 @@ export function createActions(store: Store, deps: Deps): Actions {
       if (stop.signal.aborted) throw new ImportCanceled();
       // Whichever reader ran (the worker or this page), file locations and links are forgotten before
       // anything is kept: nothing here opens a file, so nothing needs them.
-      return conclude({ combined: forgetMediaHandles(read), skipped, parts: steps, notes }, false);
+      return conclude({ combined: forgetMediaHandles(read), skipped, parts: steps, notes, files: kept }, false);
     } catch (e) {
       if (stop.signal.aborted || e instanceof ImportCanceled) {
         store.dispatch({ type: "import-canceled", message: startFlow.stopped });
@@ -283,6 +290,7 @@ export function createActions(store: Store, deps: Deps): Actions {
     issues.push(...read.notes);
     const snapshot = snapshotOf(merged, now, issues, futureDated);
     store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now, parts: read.parts });
+    deps.onImported?.(read.files.filter((f): f is NamedBlob => f instanceof Blob));
     return "done";
   }
 
