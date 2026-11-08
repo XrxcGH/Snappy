@@ -62,9 +62,9 @@ describe("progress wording", () => {
     expect(copy.start.reading(0, 2, -1)).toBe("Part 1 of 2: reading, 0% done");
   });
 
-  it("explains that part 1 holds the lists", () => {
-    expect(copy.start.laterPartsOnly).toMatch(/part 1/);
-    expect(copy.start.laterPartsOnly).toMatch(/no number/);
+  it("explains that the file with no number holds the lists, without calling it part 1", () => {
+    expect(copy.start.laterPartsOnly).toMatch(/file that has no number at the end of its name/);
+    expect(copy.start.laterPartsOnly).not.toMatch(/part 1/);
     expect(copy.start.addBody).toMatch(/any order/);
   });
 });

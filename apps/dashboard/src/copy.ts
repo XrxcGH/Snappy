@@ -151,7 +151,7 @@ export const start = {
     return ["Stays on this device", "Reads names and dates only", onDesktop("Works without internet", "Works offline")];
   },
   exportHeading: "Get your export from Snapchat",
-  exportBody: "In Snapchat, open Settings, then My Data, and request your data. Snapchat emails you a link.",
+  exportBody: "In Snapchat, open Settings, then My Data, and request your data. Snapchat prepares it, which can take a while, and emails you a link.",
   exportPoints: [
     "Select JSON files and User information.",
     "Set the date range to “All Time”.",
@@ -176,7 +176,10 @@ export const start = {
   progressLabel: "Reading progress",
   readingPercent: (fraction: number) => `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}% done`,
   skippedFiles: (n: number) => `${n === 1 ? "1 file was skipped because it is not a ZIP file." : `${n} files were skipped because they are not ZIP files.`} Your results may be incomplete.`,
-  laterPartsOnly: "These are numbered parts, which hold photos and videos. Add part 1, the file with no number.",
+  laterPartsOnly: "These are the numbered parts, which hold photos and videos. Add the file that has no number at the end of its name.",
+  // An unzipped export (a folder, or JSON files) instead of the ZIP files. The Mac tip is a second line because Safari does the unzipping.
+  unzipped: "This looks like an unzipped export. Choose the ZIP files instead.",
+  unzippedMacTip: "On a Mac, turn off “Open safe files after downloading” in Safari’s settings, then download again.",
   readDone: "Export read. Opening your overview.",
   readDoneShort: "Export read.",
   notAdded: "This export has no friends list, so it was not added to your history.",

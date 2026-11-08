@@ -94,7 +94,7 @@ describe("importing the parts of an export", () => {
     expect(await actions.importZips([second as File, third as File])).toBe("failed");
     expect(ran).toBe(0);
     expect(store.get().import).toMatchObject({ phase: "failed", message: start.laterPartsOnly });
-    expect(start.laterPartsOnly).toMatch(/part 1/);
+    expect(start.laterPartsOnly).toMatch(/no number/);
     expect(store.get().real.latest).toBeNull();
     expect(store.get().real.ledger.snapshots).toHaveLength(0);
   });
