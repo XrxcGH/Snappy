@@ -358,12 +358,20 @@ impl Updater {
     /// The background check: waits a few seconds, then checks if allowed. When the setting is off no
     /// thread is started at all, so no connection is opened.
     pub fn schedule(&self) {
-        if !self.state().auto {
+        self.schedule_after(START_DELAY);
+    }
+
+    /// A launch checks only when it STARTS with the setting on and the first-run notice already shown. The launch that
+    /// shows the notice does not: the page reports the notice within a second of opening, and looking at the setting
+    /// again after the delay would count that and send the first request while the person is still reading it.
+    fn schedule_after(&self, delay: Duration) {
+        let st = self.state();
+        if !st.auto || !st.notice_seen {
             return;
         }
         let me = self.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(START_DELAY);
+            std::thread::sleep(delay);
             if me.automatic_check_allowed() {
                 me.run_check(false);
             }

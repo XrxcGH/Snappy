@@ -286,6 +286,29 @@ fn nothing_is_sent_before_the_first_run_notice_was_shown() {
 }
 
 #[test]
+fn the_launch_that_shows_the_notice_sends_nothing_even_though_the_page_reports_it_during_the_delay() {
+    // Found by the update drill (scenario first-launch) and seen on an installed copy: the page reports the notice within a
+    // second of opening, the background check waits a few seconds and then looked at the setting again, so the very first
+    // launch sent its request while the notice was still on screen. A launch checks only when it STARTS with the notice seen.
+    let rig = Rig::new("0.1.5");
+    rig.up.startup();
+    assert!(rig.up.status().notice_pending);
+    rig.up.schedule_after(std::time::Duration::from_millis(100)); // launch 1: the notice has not been shown yet
+    rig.up.set_auto(true); // the page reports it a moment later
+    std::thread::sleep(std::time::Duration::from_millis(600));
+    assert_eq!(rig.server.requests().len(), 0, "nothing is sent on the launch that shows the notice");
+    // launch 2, in the same data folder: the notice was shown, so the check runs after its delay
+    let second = rig.make("0.1.5");
+    second.startup();
+    second.schedule_after(std::time::Duration::from_millis(50));
+    let end = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while rig.manifests() == 0 && std::time::Instant::now() < end {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
+    assert_eq!(rig.manifests(), 1, "the next launch checks");
+}
+
+#[test]
 fn check_now_works_before_the_notice() {
     let rig = Rig::new("0.1.5");
     rig.up.run_check(true);
