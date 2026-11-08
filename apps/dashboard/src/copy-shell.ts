@@ -17,8 +17,13 @@ export const shellCopy = {
   addressCopiedAnnounce: "Address copied.",
   whatsNewHeading: "What’s new",
 
+  /** The first words of the name of a license's scrolling text, which a keyboard can reach; the library's name follows. */
+  licenseTextLabel: "License text for",
+
   // The header's theme toggle has one fixed name; whether it is on is said by the button's pressed state.
   themeToggleName: "Dark theme",
+  /** Said when Settings turns on "Match device"; the other two say "Dark theme on." and "Light theme on." (copy.ts). */
+  themeMatchAnnounce: "Theme follows your device.",
 
   // Keyboard shortcuts: the dialog, the buttons that open it, and the short status after "g".
   shortcutsTitle: "Keyboard shortcuts",

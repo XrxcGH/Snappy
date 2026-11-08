@@ -40,7 +40,18 @@ function themeSection(ctx: ViewContext): HTMLElement {
         h(
           "div",
           { class: "segmented segmented-theme", role: "group", "aria-label": settings.themeHeading },
-          ...options.map((theme) => button({ label: settings.themes[theme], key: `theme:${theme}`, pressed: s.theme === theme, onclick: () => ctx.actions.setTheme(theme) })),
+          ...options.map((theme) =>
+            button({
+              label: settings.themes[theme],
+              key: `theme:${theme}`,
+              pressed: s.theme === theme,
+              // The buttons are drawn again when the theme changes (the key keeps focus on the same one), so the change is said here, as the header toggle says it.
+              onclick: () => {
+                ctx.actions.setTheme(theme);
+                announce(theme === "dark" ? shell.themeChangedDark : theme === "light" ? shell.themeChangedLight : shellCopy.themeMatchAnnounce);
+              },
+            }),
+          ),
         ),
         h("p", {}, settings.themeNote),
       ),
@@ -104,36 +115,39 @@ function deleteSection(ctx: ViewContext): HTMLElement {
   };
 
   const showConfirm = (): void => {
-    const cancel = button({
-      label: settings.deleteCancel,
-      key: "delete-cancel",
-      onclick: () => {
-        showStart();
-        box.querySelector<HTMLElement>("[data-key=delete-start]")?.focus();
-      },
-    });
-    box.replaceChildren(
+    const cancelDelete = (): void => {
+      showStart();
+      box.querySelector<HTMLElement>("[data-key=delete-start]")?.focus();
+    };
+    const cancel = button({ label: settings.deleteCancel, key: "delete-cancel", onclick: cancelDelete });
+    const confirm = h(
+      "div",
+      { class: "confirm", role: "group", "aria-labelledby": "delete-confirm-title" },
+      h("h3", { id: "delete-confirm-title", class: "subheading" }, settings.deleteConfirmTitle),
+      h("p", {}, settings.deleteConfirmBody),
       h(
         "div",
-        { class: "confirm", role: "group", "aria-labelledby": "delete-confirm-title" },
-        h("h3", { id: "delete-confirm-title", class: "subheading" }, settings.deleteConfirmTitle),
-        h("p", {}, settings.deleteConfirmBody),
-        h(
-          "div",
-          { class: "actions" },
-          button({
-            label: settings.deleteConfirm,
-            variant: "danger",
-            icon: "remove",
-            key: "delete-confirm",
-            onclick: () => {
-              void ctx.actions.deleteAll().then((ok) => announce(ok ? settings.deleted : settings.deleteFailed, !ok));
-            },
-          }),
-          cancel,
-        ),
+        { class: "actions" },
+        button({
+          label: settings.deleteConfirm,
+          variant: "danger",
+          icon: "remove",
+          key: "delete-confirm",
+          onclick: () => {
+            void ctx.actions.deleteAll().then((ok) => announce(ok ? settings.deleted : settings.deleteFailed, !ok));
+          },
+        }),
+        cancel,
       ),
     );
+    // Escape cancels, as it does on the terminal's confirm card and the passphrase prompt.
+    confirm.addEventListener("keydown", (e) => {
+      if ((e as KeyboardEvent).key === "Escape") {
+        e.preventDefault();
+        cancelDelete();
+      }
+    });
+    box.replaceChildren(confirm);
     // Cancel is the safe default: focus lands there, not on the destructive button.
     cancel.focus();
   };
@@ -175,14 +189,22 @@ function aboutSection(): HTMLElement {
       h(
         "div",
         { class: "licenses" },
-        ...licenses.map((lib) =>
-          h(
+        ...licenses.map((lib, i) => {
+          const summary = disclosureSummary(lib.name);
+          summary.setAttribute("id", `license-${i}-name`);
+          return h(
             "details",
             { class: "license" },
-            disclosureSummary(lib.name),
-            detailsBody(h("p", { class: "caption" }, `${lib.license}. ${lib.copyright}`), h("pre", { class: "code code-wrap" }, h("code", {}, lib.text))),
-          ),
-        ),
+            summary,
+            detailsBody(
+              h("p", { class: "caption" }, `${lib.license}. ${lib.copyright}`),
+              h("span", { class: "sr-only", id: `license-${i}-for` }, shellCopy.licenseTextLabel),
+              // The text scrolls inside a fixed height, so a keyboard must reach it and it needs a name (WebKit does not make scrollers
+              // focusable by itself). The name is "License text for" and the library's name from the summary above it.
+              h("pre", { class: "code code-wrap", tabindex: "0", role: "region", "aria-labelledby": `license-${i}-for license-${i}-name` }, h("code", {}, lib.text)),
+            ),
+          );
+        }),
       ),
     ),
   );
