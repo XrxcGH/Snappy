@@ -90,14 +90,17 @@ describe("Memories pairing wording", () => {
   it("says the links are empty and that the command line tool copies the files and restores the exact capture time", () => {
     expect(copy.memories.pairingLinksEmpty).toMatch(/no download links/);
     expect(copy.memories.rescueBody).toMatch(/command line tool/);
-    expect(copy.memories.rescueBody).toMatch(/restores dates/);
+    expect(copy.memories.rescueBody).toMatch(/dates restored/);
     expect(copy.memories.rescueBody).toMatch(/copies your Memories/);
+    // The page has to say that the tool is a separate download: the installed app does not hold it.
+    expect(copy.memories.rescueBody).toMatch(/separate download/);
   });
 
   it("shows the exact command with the person's folder as a placeholder, never a real path", () => {
     const command = displayText(COMMANDS["memories-rescue"]);
     expect(command).toBe('npm run snappy-export -- memories "<your export folder>" --out "<folder for rescued Memories>"');
-    expect(copy.memories.rescueCommandLabel).toMatch(/placeholders/);
+    expect(copy.memories.rescueCommandLabel).toMatch(/angle brackets/);
+    expect(copy.memories.rescueCommandLabel).not.toMatch(/Snappy folder|placeholders/);
     expect(copy.memories.rescueCommandLabel).toMatch(/press Run/);
     expect(command).not.toMatch(/[A-Z]:\\|\/home\/|\/Users\//);
   });

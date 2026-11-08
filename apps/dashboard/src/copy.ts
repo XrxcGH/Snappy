@@ -422,11 +422,11 @@ export const memories = {
   pairingNone: "No Memories files were found in your ZIP files. Add every part of your export together.",
   pairingLinksEmpty: "This export has no download links. Snapchat now puts the files inside the ZIP parts.",
   rescueHeading: "Rescue your files",
-  rescueBody: "The Snappy command line tool copies your Memories into year and month folders. It restores dates and skips likely duplicates.",
+  rescueBody: "Memories rescue copies your Memories into year and month folders, with dates restored. It runs in the Snappy command line tool, a separate download.",
   get rescueCommandLabel(): string {
     return onDesktop(
-      "Copy a command to run in a terminal, in the Snappy folder, and replace its placeholders. Or press Run to try it here.",
-      "Replace the placeholders, then press Run to try it here. Copy is for the command line tool.",
+      "Replace the parts in angle brackets, then copy the command into a terminal. Or press Run to try it here.",
+      "For your real folder, copy the command into a terminal where the command line tool is installed. Replace the parts in angle brackets.",
     );
   },
 };
@@ -458,7 +458,7 @@ export const guide = {
   shapeBody: "Run this if an export will not read. It prints only names and counts.",
   tryHeading: "Try the command line",
   get tryBody(): string {
-    return onDesktop("Press Run to try a command here, or copy it to run in a terminal, in the Snappy folder.", "Press Run to try a command here. Copy is for the separate command line tool.");
+    return onDesktop("Press Run to try a command here, or copy it into a terminal with the command line tool.", "Press Run to try a command here. Copy is for the separate command line tool.");
   },
   storingHeading: "Saved history",
   storingBody: "Snappy can keep past friend lists to spot who disappeared. They hold usernames, so seal them with a passphrase.",

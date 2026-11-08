@@ -78,10 +78,10 @@ const DIFFERENCES: readonly (readonly [path: string, web: string, desktop: strin
   ["tools.downloadFailedNote", "Snappy could not save the file. Your browser may block downloads.", "Snappy could not save the file. Try again."],
   [
     "memories.rescueCommandLabel",
-    "Copy a command to run in a terminal, in the Snappy folder, and replace its placeholders. Or press Run to try it here.",
-    "Replace the placeholders, then press Run to try it here. Copy is for the command line tool.",
+    "Replace the parts in angle brackets, then copy the command into a terminal. Or press Run to try it here.",
+    "For your real folder, copy the command into a terminal where the command line tool is installed. Replace the parts in angle brackets.",
   ],
-  ["guide.tryBody", "Press Run to try a command here, or copy it to run in a terminal, in the Snappy folder.", "Press Run to try a command here. Copy is for the separate command line tool."],
+  ["guide.tryBody", "Press Run to try a command here, or copy it into a terminal with the command line tool.", "Press Run to try a command here. Copy is for the separate command line tool."],
   [
     "privacy.networkUnknown",
     "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",
