@@ -460,6 +460,25 @@ export const guide = {
     "Note your friend count under Profile, then Friends. Snappy warns you if it differs.",
     "Never send these files to anyone, including Snappy’s developers. Delete them when you are done.",
   ],
+  // How to request the export, with the wait said once. Not a time: Snappy does not know how long Snapchat takes or when a link expires.
+  requestHeading: "Request it",
+  requestSteps: [
+    "In Snapchat, open Settings, then My Data.",
+    "Choose what to include (see “What to select”), then submit the request.",
+    "Snapchat prepares your export, which can take a while. Download it soon after the email arrives.",
+  ],
+  // The words Snappy uses for what it shows, one hedged line each. A term with a guess in it says so.
+  glossaryHeading: "Words we use",
+  glossary: [
+    ["Quiet", "No chat or Snap for six months or more in the history Snappy read."],
+    ["May have removed you", "In an earlier export and missing from the latest. A deleted or renamed account looks the same."],
+    ["Protected", "Chatted or sent a Snap in the last 30 days, or on your keep list."],
+    ["Keep list", "People you chose to keep. They stay out of the Cleanup queue."],
+    ["Confidence", "How many signals agree. It is a guess, not a fact."],
+    ["Guided removal", "The queue one person at a time. You remove people yourself, in Snapchat."],
+    ["Saved history", "Your past exports, keep list and marks, kept on this device with a passphrase."],
+    ["Locked", "Your saved history is closed until you enter your passphrase."],
+  ] as const,
   shapeHeading: "Share the shape, never the contents",
   shapeBody: "Run this if an export will not read. It prints only names and counts.",
   tryHeading: "Try the command line",

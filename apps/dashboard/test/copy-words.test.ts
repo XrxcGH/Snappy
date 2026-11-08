@@ -42,6 +42,40 @@ describe("Start page words", () => {
   });
 });
 
+describe("the Export guide's request steps and glossary", () => {
+  it("has a Request it list that says the wait once and gives no number of hours", () => {
+    expect(copy.guide.requestHeading).toBe("Request it");
+    expect(copy.guide.requestSteps).toHaveLength(3);
+    expect(copy.guide.requestSteps[0]).toBe("In Snapchat, open Settings, then My Data.");
+    expect(copy.guide.requestSteps[2]).toBe("Snapchat prepares your export, which can take a while. Download it soon after the email arrives.");
+    expect(copy.guide.requestSteps.join(" ")).not.toMatch(/\d+ ?(hours?|days?)/i);
+  });
+
+  it("explains the seven words of the glossary, and the hedged claim, one line each", () => {
+    expect(copy.guide.glossaryHeading).toBe("Words we use");
+    const terms = copy.guide.glossary.map(([term]) => term);
+    for (const term of ["Quiet", "Protected", "Keep list", "Saved history", "Locked", "Confidence", "Guided removal"]) expect(terms, term).toContain(term);
+    for (const [term, meaning] of copy.guide.glossary) {
+      expect(meaning.split(/\s+/).length, term).toBeLessThanOrEqual(20);
+      expect(meaning, term).toMatch(/\.$/);
+    }
+  });
+
+  it("states no guess as a fact: the confidence and removal entries say guess and look the same", () => {
+    const entry = Object.fromEntries(copy.guide.glossary.map(([term, meaning]) => [term, meaning]));
+    expect(entry.Confidence).toMatch(/guess, not a fact/);
+    expect(entry["May have removed you"]).toMatch(/looks the same/);
+    expect(copy.guide.glossary.map(([term]) => term)).not.toContain("Removed you");
+  });
+
+  it("uses only the names the rest of the app uses", () => {
+    const entry = Object.fromEntries(copy.guide.glossary.map(([term, meaning]) => [term, meaning]));
+    expect(entry["Guided removal"]).toContain("You remove people yourself, in Snapchat");
+    expect(entry["Keep list"]).toContain("Cleanup queue");
+    expect(entry.Protected).toContain("keep list");
+  });
+});
+
 describe("one tagline and one spelling of the list", () => {
   const TAGLINE = "Tidy your Snapchat friends list and rescue your Memories, from your own data export.";
 
