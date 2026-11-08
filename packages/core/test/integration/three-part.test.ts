@@ -154,7 +154,7 @@ describe("Memories across the three zips", () => {
     const codes = merged.issues.map((i) => i.code);
     expect(codes).toContain("memories-links-empty");
     expect(codes).toContain("memories-unmatched-items");
-    for (const gone of ["memories-no-media-source", "memories-pairing-fallback", "memories-time-offset"]) expect(codes).not.toContain(gone);
+    for (const gone of ["memories-no-media-source", "memories-list-only", "memories-pairing-fallback", "memories-time-offset"]) expect(codes).not.toContain(gone);
     expect(merged.issues.find((i) => i.code === "memories-unmatched-items")).toEqual({
       severity: "warning",
       code: "memories-unmatched-items",
@@ -169,7 +169,9 @@ describe("Memories across the three zips", () => {
     expect(first.memories).toHaveLength(memoryEntries.length);
     expect(first.bundledMedia).toBeUndefined();
     expect(first.memoriesPairing).toBeUndefined();
-    expect(first.issues.map((i) => i.code)).toContain("memories-no-media-source");
+    // Part 1 alone has the list and no files: a note about what it holds, not a warning that files are lost.
+    expect(first.issues.map((i) => i.code)).toContain("memories-list-only");
+    expect(first.issues.map((i) => i.code)).not.toContain("memories-no-media-source");
     for (const [p, n] of [[second, 2], [third, 3]] as const) {
       expect(p.memories).toEqual([]);
       expect(p.bundledMedia?.length).toBeGreaterThan(0);

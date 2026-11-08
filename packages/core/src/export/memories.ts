@@ -98,6 +98,7 @@ export function parseMemoriesJson(obj: unknown): { memories: MemoryItem[]; issue
 /** Issue codes that describe how items and bundled files fit together; recomputed whenever they are paired. */
 export const PAIRING_ISSUE_CODES: ReadonlySet<string> = new Set([
   "memories-no-media-source",
+  "memories-list-only",
   "memories-links-empty",
   "memories-time-offset",
   "memories-pairing-fallback",

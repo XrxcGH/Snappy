@@ -217,6 +217,17 @@ export function combineMediaNotOpened(issues: ExportIssue[]): ExportIssue[] {
   return issues.flatMap((i, at) => (i.code !== "media-not-opened" ? [i] : at === first ? [mediaNotOpenedIssue(counts)] : []));
 }
 
+/**
+ * With no photos or videos in the ZIP files at all, "no file or link" is not a sign that part of the
+ * export is missing: the export holds the list and nothing else (the minimal request in the guide).
+ * That is a note about what the export holds, not a warning.
+ */
+function listOnlyNote(i: ExportIssue): ExportIssue {
+  return i.code === "memories-no-media-source"
+    ? issue("info", "memories-list-only", "Your ZIP files hold the Memories list but no photos or videos. Choose Export your Memories to rescue them.")
+    : i;
+}
+
 /** @internal */
 export function emptyParsed(issues: ExportIssue[]): ParsedExport {
   return { friends: emptyFriends(), chats: [], memories: [], fileList: [], issues };
@@ -420,7 +431,8 @@ export function finishExport(
     const r = attachBundledMedia(memories, bundled);
     memories = r.memories;
     pairing = r.pairing;
-    pairingIssues.push(...r.issues);
+    // No Memories folder in this part: entries with no link are not lost files, the export just holds the list.
+    pairingIssues.push(...(bundled.length === 0 ? r.issues.map(listOnlyNote) : r.issues));
   }
 
   if (media.length > 0) issues.push(mediaNotOpenedIssue({ [part]: media.length }));
