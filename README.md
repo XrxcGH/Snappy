@@ -41,6 +41,9 @@ These were made in a headless browser, and the iPhone sizes in Safari’s engine
 
 The Windows beta shows this same dashboard in its own window. [docs/BETA.md](docs/BETA.md) says how to install it and what to expect.
 
+![The Windows app showing the Overview page in the dark theme](docs/images/windows-app-overview-dark.webp)
+![The Windows app showing the Tools page in the light theme](docs/images/windows-app-tools-light.webp)
+
 ## Privacy model
 
 1. Snappy is content-blind. It never views messages, photos, videos, or locations.

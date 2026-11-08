@@ -70,6 +70,15 @@ These are Safari’s engine at three iPhone screen sizes, not a real iPhone: the
 
 ![Light and dark side by side: the Overview page in a desktop window, with the Cleanup queue on a phone in front of it](readme-header.webp)
 
+## Windows app
+
+The installed Windows beta, captured as its own window (title bar included) at its default size, showing the sample data. These four are captured by hand from the running app with a small PowerShell window-capture script, not by `npm run screenshots`.
+
+![The Windows app showing the Overview page in the dark theme](windows-app-overview-dark.webp)
+![The Windows app showing the Tools page in the light theme](windows-app-tools-light.webp)
+![The Windows app showing the Friends table tool in the dark theme](windows-app-friends-table-dark.webp)
+![The Windows app showing the in-app terminal after a finished command](windows-app-terminal-dark.webp)
+
 ## Not captured yet
 
 These need a screen or a device, so a headless run cannot make them. When they exist they take these names and the same rules (sample data only, no window chrome).
@@ -77,5 +86,4 @@ These need a screen or a device, so a headless run cannot make them. When they e
 | Picture | Planned names | Needs |
 |---|---|---|
 | Android phone app | `android-overview-light.webp`, `android-overview-dark.webp`, `android-tool-light.webp`, `android-tool-dark.webp` | An Android emulator, with `tools/mobile/android-capture.mjs` |
-| Windows app window | `windows-app-overview-light.webp`, `windows-app-overview-dark.webp` | The installed Windows beta, captured as its own window |
 | iPhone in the Simulator | `ios-simulator-overview-light.webp`, `ios-simulator-overview-dark.webp` | Xcode’s Simulator on a Mac |
