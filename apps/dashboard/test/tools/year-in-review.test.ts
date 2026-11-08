@@ -324,6 +324,17 @@ describe("the page", () => {
     expect(copy.zoneHelp).not.toContain("starts with UTC");
   });
 
+  it("writes a one-day quiet stretch once: On Mar 2, 2025 (1 day), not the same date twice", async () => {
+    const MAR_3 = Date.UTC(2025, 2, 3, 12);
+    const { root } = await renderSettled(view, withExport({ chats: [...run(10, MAR_1), ...run(10, MAR_3)] }));
+    const quiet = root.querySelectorAll(".fact").find((f) => f.querySelector("dt")?.textContent === copy.quietLabel);
+    expect(quiet?.querySelector("dd")?.textContent).toBe("On Mar 2, 2025 (1 day)");
+    expect(copy.unitOneDay("Jan 21, 2026", 1)).toBe("On Jan 21, 2026 (1 day)");
+    expect(root.textContent).not.toContain("Mar 2, 2025 to Mar 2, 2025");
+    // A longer stretch keeps its two dates (the page test of the key dates checks "Mar 2, 2025 to Mar 13, 2025").
+    expect(copy.unitRange("Mar 2, 2025", "Mar 13, 2025")).toBe("Mar 2, 2025 to Mar 13, 2025");
+  });
+
   it("recomputes for another time zone, repaints only the result and keeps the control", async () => {
     const { root, select } = await year2025();
     const zone = root.querySelector("#year-in-review-zone") as FakeElement;

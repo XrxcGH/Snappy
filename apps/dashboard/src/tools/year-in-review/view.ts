@@ -108,7 +108,11 @@ function dates({ activity }: YearView): HTMLElement | null {
   if (activity.firstDay !== null) facts.push({ label: copy.firstLabel, value: dayText(activity.firstDay), icon: "calendar" });
   if (activity.lastDay !== null) facts.push({ label: copy.lastLabel, value: dayText(activity.lastDay), icon: "calendar" });
   const gap = activity.longestQuietGap;
-  if (gap !== null) facts.push({ label: copy.quietLabel, value: copy.unitRange(dayText(gap.startDay), dayText(gap.endDay)), icon: "queue" });
+  // A stretch that starts and ends on one date is written once ("On Mar 2, 2025 (1 day)"), not as "Mar 2, 2025 to Mar 2, 2025".
+  if (gap !== null) {
+    const value = gap.startDay === gap.endDay ? copy.unitOneDay(dayText(gap.startDay), gap.days) : copy.unitRange(dayText(gap.startDay), dayText(gap.endDay));
+    facts.push({ label: copy.quietLabel, value, icon: "queue" });
+  }
   return facts.length === 0 ? null : section(copy.datesHeading, factList(facts));
 }
 

@@ -66,6 +66,8 @@ export const copy = {
   quietLabel: "Longest quiet stretch",
   /** "Mar 2, 2025 to Mar 13, 2025". */
   unitRange: (start: string, end: string): string => `${start} to ${end}`,
+  /** A stretch of one day or more that starts and ends on the same date: "On Jan 21, 2026 (1 day)". */
+  unitOneDay: (date: string, days: number): string => `On ${date} (${countOf(days, "day", "days")})`,
 
   directionHeading: "Sent and received",
   directionCaption: "Snaps and saved chats by direction",
