@@ -9,7 +9,7 @@ import { resetAnalysisCache } from "./analysis.ts";
 import { settings, start, vaultMessages } from "./copy.ts";
 import { startFlow } from "./copy-start.ts";
 import { checkParts, scanPart } from "./export-parts.ts";
-import { runImport } from "./import-pipeline.ts";
+import { ImportCanceled, runImport } from "./import-pipeline.ts";
 import type { ImportRunner } from "./import-pipeline.ts";
 import { exportHealth } from "./issues.ts";
 import { estimateStrength } from "./passphrase.ts";
@@ -35,11 +35,14 @@ export interface Deps {
   onWipe?: () => void;
 }
 
-export type ImportResult = "done" | "failed";
+/** "canceled": the person stopped it. "busy": another import was running, so this one was not started. */
+export type ImportResult = "done" | "failed" | "canceled" | "busy";
 
 export interface Actions {
   init(savedTheme: string | null): Promise<void>;
   importZips(files: readonly NamedBlob[]): Promise<ImportResult>;
+  /** Stop the import that is being read. Nothing is added to the history. Does nothing when none is running. */
+  cancelImport(): void;
   loadSample(): Promise<ImportResult>;
   clearSample(): void;
   keep(username: string): void;
@@ -117,7 +120,29 @@ export function createActions(store: Store, deps: Deps): Actions {
 
   // ---------------------------------------------------------------- import ---
 
+  /** True from the moment an import or a sample build is accepted until it has ended: a second one is refused, not queued. */
+  let working = false;
+  /** Aborted by Cancel. Lives only for the import in progress. */
+  let stopping: AbortController | null = null;
+
   async function importZips(files: readonly NamedBlob[]): Promise<ImportResult> {
+    if (working || store.get().import.phase === "reading") return "busy";
+    working = true;
+    try {
+      return await readZips(files);
+    } finally {
+      working = false;
+      stopping = null;
+    }
+  }
+
+  function cancelImport(): void {
+    // A sample is built in a moment and holds nothing worth stopping.
+    if (store.get().import.sample) return;
+    stopping?.abort();
+  }
+
+  async function readZips(files: readonly NamedBlob[]): Promise<ImportResult> {
     const zips = files.filter((f) => ZIP_NAME.test(f.name ?? ""));
     if (zips.length === 0) {
       store.dispatch({ type: "import-failed", message: start.notZip });
@@ -139,17 +164,26 @@ export function createActions(store: Store, deps: Deps): Actions {
 
     // Parts are read in export order: the part with the lists first, then -2, -3, whatever order they were chosen in.
     const ordered = check.ordered;
-    store.dispatch({ type: "import-started", steps: ordered.length, sample: false });
+    const stop = new AbortController();
+    stopping = stop;
+    store.dispatch({ type: "import-started", steps: ordered.length, sample: false, at: deps.clock() });
     try {
       await deps.yieldToUi(); // lets "Part 1 of N" paint before the first read
+      // Cancel ends the wait at once, even for a reader that does not look at the signal: its late result is dropped.
+      const stopped = new Promise<never>((_, reject) => stop.signal.addEventListener("abort", () => reject(new ImportCanceled()), { once: true }));
+      const reading = (deps.runImport ?? runImport)(ordered, {
+        yieldToUi: deps.yieldToUi,
+        signal: stop.signal,
+        onProgress: ({ step, fraction }) => {
+          if (!stop.signal.aborted) store.dispatch({ type: "import-progress", step, fraction });
+        },
+      });
+      reading.catch(() => undefined); // nobody waits for it after a Cancel
+      const read = await Promise.race([reading, stopped]);
+      if (stop.signal.aborted) throw new ImportCanceled();
       // Whichever reader ran (the worker or this page), file locations and links are forgotten before
       // anything is kept: nothing here opens a file, so nothing needs them.
-      const combined = forgetMediaHandles(
-        await (deps.runImport ?? runImport)(ordered, {
-          yieldToUi: deps.yieldToUi,
-          onProgress: ({ step, fraction }) => store.dispatch({ type: "import-progress", step, fraction }),
-        }),
-      );
+      const combined = forgetMediaHandles(read);
 
       const now = deps.clock();
       // The export date comes from the newest file time inside the zip, which anyone can set. A
@@ -170,7 +204,11 @@ export function createActions(store: Store, deps: Deps): Actions {
       const snapshot = snapshotOf(merged, now, issues, futureDated);
       store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now, parts: ordered.length });
       return "done";
-    } catch {
+    } catch (e) {
+      if (stop.signal.aborted || e instanceof ImportCanceled) {
+        store.dispatch({ type: "import-canceled", message: startFlow.stopped });
+        return "canceled";
+      }
       store.dispatch({ type: "import-failed", message: start.readFailed });
       return "failed";
     }
@@ -203,7 +241,9 @@ export function createActions(store: Store, deps: Deps): Actions {
   }
 
   async function loadSample(): Promise<ImportResult> {
-    store.dispatch({ type: "import-started", steps: 3, sample: true });
+    if (working || store.get().import.phase === "reading") return "busy";
+    working = true;
+    store.dispatch({ type: "import-started", steps: 3, sample: true, at: deps.clock() });
     try {
       const workspace = await buildSampleWorkspace(async (step) => {
         store.dispatch({ type: "import-step", step });
@@ -214,6 +254,8 @@ export function createActions(store: Store, deps: Deps): Actions {
     } catch {
       store.dispatch({ type: "import-failed", message: start.readFailed });
       return "failed";
+    } finally {
+      working = false;
     }
   }
 
@@ -374,6 +416,7 @@ export function createActions(store: Store, deps: Deps): Actions {
   return {
     init,
     importZips,
+    cancelImport,
     loadSample,
     clearSample() {
       store.dispatch({ type: "sample-cleared" });

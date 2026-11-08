@@ -33,18 +33,34 @@ export const startView: View = (ctx) => {
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
     // The progress and any problem sit here, full width above the three steps: inside the third card they
     // were a narrow column below the fold, and a failed import looked like a click that did nothing.
-    region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory], (s) => importStatus(store, s)),
+    region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory], (s) => importStatus(ctx, s)),
     h("div", { class: "step-list" }, getExportSection(), countSection(ctx), addSection(ctx)),
   );
+  // The chooser, the drop zone and the sample button wait while a read is going, so a second run cannot start on top of it.
+  syncBusy(view, store.get());
   // Registered after the status region above, so its repaint has happened when this runs.
   onDispose(
     store.subscribe((s, previous) => {
       if (s.import.phase === previous.import.phase) return;
-      if (s.import.phase === "reading" || s.import.phase === "failed") bringIntoView(view);
+      syncBusy(view, s);
+      // Stopped by the person (reading to idle): the note that nothing was added is shown and focused, as the progress was.
+      const stopped = previous.import.phase === "reading" && s.import.phase === "idle";
+      if (s.import.phase === "reading" || s.import.phase === "failed" || stopped) bringIntoView(view);
     }),
   );
   return view;
 };
+
+function syncBusy(view: HTMLElement, s: State): void {
+  const busy = s.import.phase === "reading";
+  for (const key of ["choose-files", "try-sample"]) {
+    for (const control of view.querySelectorAll<HTMLElement>(`[data-key=${key}]`)) {
+      if (busy) control.setAttribute("disabled", "");
+      else control.removeAttribute("disabled");
+    }
+  }
+  for (const zone of view.querySelectorAll<HTMLElement>(".dropzone")) zone.classList.toggle("dropzone-busy", busy);
+}
 
 /**
  * Move the person to the import status: scrolled into view and focused. The chooser and the drop zone are
@@ -159,12 +175,21 @@ function addSection(ctx: ViewContext): HTMLElement {
 
   const run = async (files: NamedBlob[]): Promise<void> => {
     if (files.length === 0) return;
+    // A read is already going: say so, and leave it alone.
+    if (store.get().import.phase === "reading") {
+      announce(startFlow.busy);
+      return;
+    }
     announce(start.reading(0, files.length));
     const result = await actions.importZips(files);
     const s = store.get();
     if (result === "done") {
       announce(s.import.addedToHistory === false ? start.notAdded : start.readDone);
       navigate("overview");
+    } else if (result === "canceled") {
+      announce(startFlow.stopped);
+    } else if (result === "busy") {
+      announce(startFlow.busy);
     } else {
       announce(s.import.message ?? start.readFailed, true);
     }
@@ -226,10 +251,14 @@ function addSection(ctx: ViewContext): HTMLElement {
  * reports a change. The spoken line changes only with the part being read; the percentage is shown
  * but not spoken, and the bar carries it for assistive technology through aria-valuenow.
  */
-function readingStatus(store: Store): HTMLElement {
+function readingStatus(ctx: ViewContext): HTMLElement {
+  const { store } = ctx;
   const spoken = h("p", { role: "status" });
   const percent = h("p", { class: "caption muted", "aria-hidden": "true" });
   const bar = progressBar({ label: start.progressLabel, value: null });
+  // After a few seconds: large exports take minutes, and the time that has passed (never a guess of what is left).
+  const hint = h("p", { class: "caption muted", hidden: true }, startFlow.slowHint);
+  const elapsed = h("p", { class: "caption muted", "aria-hidden": "true", hidden: true });
   const update = (s: State): void => {
     const imp = s.import;
     if (imp.phase !== "reading") return;
@@ -244,19 +273,52 @@ function readingStatus(store: Store): HTMLElement {
   };
   update(store.get());
   onDispose(store.subscribe((s) => update(s)));
-  return h("div", { class: "status" }, spoken, percent, bar);
+
+  const sample = store.get().import.sample;
+  if (!sample) {
+    const begun = store.get().import.startedAt;
+    const startedAt = begun !== undefined && begun <= Date.now() ? begun : Date.now();
+    let shown = false;
+    const tick = (): void => {
+      const ms = Date.now() - startedAt;
+      if (ms < SLOW_AFTER_MS) return;
+      elapsed.textContent = startFlow.elapsed(ms / 1000);
+      if (shown) return;
+      shown = true;
+      hint.removeAttribute("hidden");
+      elapsed.removeAttribute("hidden");
+      announce(startFlow.slowHint);
+    };
+    const timer = setInterval(tick, 1000);
+    onDispose(() => clearInterval(timer));
+  }
+  return h(
+    "div",
+    { class: "status" },
+    spoken,
+    percent,
+    bar,
+    hint,
+    elapsed,
+    sample ? null : h("div", { class: "actions" }, button({ label: startFlow.cancelButton, key: "cancel-import", onclick: () => ctx.actions.cancelImport() })),
+  );
 }
+
+/** How long a read runs before the page says that large exports take a while. */
+const SLOW_AFTER_MS = 5000;
 
 /** One block for every state of an import. It takes focus, so a failure cannot go unseen. */
 function statusBlock(...children: Child[]): HTMLElement {
   return h("div", { class: "import-status", id: "import-status", tabindex: "-1", role: "group", "aria-label": startFlow.statusLabel }, ...children);
 }
 
-function importStatus(store: Store, s: State): Child {
+function importStatus(ctx: ViewContext, s: State): Child {
   const imp = s.import;
   // Not repainted on every progress tick: the reading status updates itself in place.
-  if (imp.phase === "reading") return statusBlock(readingStatus(store));
+  if (imp.phase === "reading") return statusBlock(readingStatus(ctx));
   if (imp.phase === "failed") return statusBlock(...failureNotices(imp));
+  // Stopped by the person: the chooser is back, and nothing was added.
+  if (imp.phase === "idle" && imp.message !== undefined) return statusBlock(notice("info", imp.message));
   if (imp.phase === "done" && !imp.sample) {
     return statusBlock(notice("success", imp.addedToHistory === false ? start.notAdded : start.readDoneShort));
   }

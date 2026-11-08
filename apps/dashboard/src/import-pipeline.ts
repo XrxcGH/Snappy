@@ -19,8 +19,18 @@ export interface ImportProgress {
   fraction: number | null;
 }
 
+/** The import was stopped by the person. Not a failure: nothing was read into the history. */
+export class ImportCanceled extends Error {
+  constructor() {
+    super("The import was stopped.");
+    this.name = "ImportCanceled";
+  }
+}
+
 export interface ImportHooks {
   onProgress(progress: ImportProgress): void;
+  /** Aborted when the person presses Cancel. A reader that sees it stops at the next read and rejects with ImportCanceled. */
+  signal?: AbortSignal;
   /** Lets the page paint. Called between reads, at most every 40 ms, so work on the page stays responsive. */
   yieldToUi(): Promise<void>;
   /** Clock in ms, replaceable under test. */
@@ -77,7 +87,13 @@ export const runImport: ImportRunner = async (blobs, hooks) => {
 
   // Measure first, so the bar can show a true percentage of the work. A damaged part lists as empty.
   const plans: Plan[] = [];
-  for (const reader of readers) plans.push(planOf((await listZipEntries(reader)).entries));
+  const stopIfAsked = (): void => {
+    if (hooks.signal?.aborted === true) throw new ImportCanceled();
+  };
+  for (const reader of readers) {
+    stopIfAsked();
+    plans.push(planOf((await listZipEntries(reader)).entries));
+  }
   const total = plans.reduce((n, p) => n + p.bytes, 0);
 
   let done = 0;
@@ -95,6 +111,7 @@ export const runImport: ImportRunner = async (blobs, hooks) => {
   const tracked = (inner: RandomAccessReader, plan: Plan): RandomAccessReader => ({
     size: inner.size,
     async read(start, end) {
+      stopIfAsked();
       if (now() - lastYield >= YIELD_AFTER_MS) {
         await hooks.yieldToUi();
         lastYield = now();
@@ -108,10 +125,13 @@ export const runImport: ImportRunner = async (blobs, hooks) => {
 
   const parts: ParsedExport[] = [];
   for (const [index, reader] of readers.entries()) {
+    stopIfAsked();
     step = index;
     report(true);
     parts.push(await parseExportFromReader(tracked(reader, plans[index] as Plan), { part: index + 1 }));
   }
+  // The parser turns a read that was cut off into a note about a damaged file, so a stop has to be checked here too.
+  stopIfAsked();
   step = readers.length;
   done = total;
   report(true);

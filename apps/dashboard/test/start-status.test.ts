@@ -39,10 +39,11 @@ beforeEach(() => {
   doc.activeElement = null;
 });
 
-function page(): { view: FakeElement; store: Store } {
+function page(actions: Partial<Actions> = {}): { view: FakeElement; store: Store; scope: Scope } {
   const store = createStore(initialState());
-  const view = runInScope(new Scope(true), () => startView({ store, actions: {} as Actions, terminal: testTerminal() })) as unknown as FakeElement;
-  return { view, store };
+  const scope = new Scope(true);
+  const view = runInScope(scope, () => startView({ store, actions: actions as Actions, terminal: testTerminal() })) as unknown as FakeElement;
+  return { view, store, scope };
 }
 
 const issue = (severity: ExportIssue["severity"], code: string, message: string): ExportIssue => ({ severity, code, message });

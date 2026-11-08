@@ -903,4 +903,6 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 /* track T2 */
 /* The import status sits full width above the three steps, so a failure or the progress is the first thing seen. */
 .import-status { display: grid; gap: var(--gap-card); min-width: 0; scroll-margin-block: var(--space-4); }
+/* The drop zone while a read is going: quiet and solid, so it no longer looks like an open invitation. */
+.dropzone-busy { border-style: solid; border-color: var(--border); background: var(--surface-sunken); }
 /* end track T2 */

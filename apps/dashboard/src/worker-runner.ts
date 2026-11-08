@@ -8,6 +8,7 @@
  * network any more than the page can.
  */
 import type { ChatEvent } from "@snappy-export/core";
+import { ImportCanceled } from "./import-pipeline.ts";
 import type { ImportHooks, ImportRunner } from "./import-pipeline.ts";
 import { unpackChats } from "./import-transfer.ts";
 import type { StartRequest, WorkerReply } from "./import-transfer.ts";
@@ -112,6 +113,18 @@ export function workerRunner(spawn: () => WorkerHandle | null, fallback: ImportR
         over = true;
         handle.stop();
       };
+      // Cancel: the worker is stopped on the spot, which ends whatever it was reading.
+      const signal = hooks.signal;
+      const stopped = (): void => {
+        if (over) return;
+        end();
+        reject(new ImportCanceled());
+      };
+      if (signal?.aborted === true) {
+        stopped();
+        return;
+      }
+      signal?.addEventListener("abort", stopped, { once: true });
       handle.onReply((reply) => {
         if (over) return;
         heard = true;

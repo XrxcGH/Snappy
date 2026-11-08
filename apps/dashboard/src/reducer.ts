@@ -49,6 +49,10 @@ export interface ImportStatus {
   issues?: ExportIssue[];
   /** Set when done: did the export enter the history? */
   addedToHistory?: boolean;
+  /** When the import started, by the clock the actions were given (ms). For the elapsed time shown on a long read. */
+  startedAt?: number;
+  /** Set when an export was refused for a reason the person may choose to go on with: the page then offers "Use anyway". */
+  canOverride?: boolean;
 }
 
 export type VaultPhase = "session" | "locked" | "unlocked";
@@ -105,10 +109,12 @@ export type Action =
   | { type: "expected-friend-count"; count: number | null }
   | { type: "cap"; gib: number }
   | { type: "cleanup-view"; patch: Partial<CleanupView> }
-  | { type: "import-started"; steps: number; sample: boolean }
+  | { type: "import-started"; steps: number; sample: boolean; at?: number }
   | { type: "import-step"; step: number }
   | { type: "import-progress"; step: number; fraction: number | null }
-  | { type: "import-failed"; message: string; issues?: ExportIssue[] }
+  | { type: "import-failed"; message: string; issues?: ExportIssue[]; canOverride?: boolean }
+  /** The person stopped the import: nothing was added. The message says so. */
+  | { type: "import-canceled"; message: string }
   | { type: "import-finished"; latest: ParsedExport; issues: ExportIssue[]; snapshot: Snapshot | null; now: number; parts?: number }
   | { type: "import-reset" }
   | { type: "sample-loaded"; workspace: Workspace }
@@ -150,14 +156,16 @@ export function reduce(state: State, action: Action): State {
       return { ...state, cleanup: { ...state.cleanup, ...action.patch } };
 
     case "import-started":
-      return { ...state, import: { phase: "reading", step: 0, steps: action.steps, sample: action.sample } };
+      return { ...state, import: { phase: "reading", step: 0, steps: action.steps, sample: action.sample, startedAt: action.at } };
     case "import-step":
       return { ...state, import: { ...state.import, step: action.step } };
     case "import-progress":
       // A late report after the import ended must not bring the progress bar back.
       return state.import.phase === "reading" ? { ...state, import: { ...state.import, step: action.step, fraction: action.fraction } } : state;
     case "import-failed":
-      return { ...state, import: { ...state.import, phase: "failed", message: action.message, issues: action.issues, fraction: undefined } };
+      return { ...state, import: { ...state.import, phase: "failed", message: action.message, issues: action.issues, fraction: undefined, canOverride: action.canOverride } };
+    case "import-canceled":
+      return { ...state, import: { phase: "idle", step: 0, steps: 0, sample: false, message: action.message } };
     case "import-reset":
       return { ...state, import: { phase: "idle", step: 0, steps: 0, sample: false } };
 
