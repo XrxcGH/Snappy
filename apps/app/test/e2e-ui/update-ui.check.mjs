@@ -94,6 +94,8 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   ok(!(await calls(page)).includes('update_set_auto{"auto":false}'), "OK does not turn the check off");
   await page.close();
   const off = await open({ notice_pending: true });
+  ok((await off.locator('.update-slot [data-key="update:turnOff"]').getAttribute("aria-label")) === "Turn off update checks", "the Turn off button is named for what it turns off");
+  ok((await off.locator('.update-slot [data-key="update:ok"]').getAttribute("aria-label")) === null, "and OK keeps its own name");
   await off.getByRole("button", { name: "Turn off" }).click();
   ok((await calls(off)).includes('update_set_auto{"auto":false}'), "Turn off switches the check off");
   await off.context().close();

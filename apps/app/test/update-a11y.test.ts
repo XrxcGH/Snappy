@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { RULES, collectCopy, lint } from "../../dashboard/test/copy-rules.ts";
 import { updateA11yCopy } from "../src/update-copy-a11y.ts";
-import { bannerFor, bannerSignature, crossedHalfway, freshLocal, sanitizeStatus } from "../src/update-model.ts";
+import { actionAriaLabel, bannerFor, bannerSignature, crossedHalfway, freshLocal, sanitizeStatus } from "../src/update-model.ts";
 import type { UpdateStatus } from "../src/update-model.ts";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -66,6 +66,17 @@ describe("the words only assistive technology hears", () => {
 
   it("keep the visible label inside the accessible name of the button they name", () => {
     expect(updateA11yCopy.turnOffName).toContain("Turn off");
+  });
+});
+
+describe("the names of the banner buttons", () => {
+  it("say what the first-run notice's Turn off button turns off, and leave the self-explaining buttons alone", () => {
+    expect(actionAriaLabel("turnOff")).toBe("Turn off update checks");
+    for (const action of ["updateNow", "restartNow", "getFromGitHub", "cancel", "later", "ok"] as const) expect(actionAriaLabel(action), action).toBeUndefined();
+  });
+
+  it("are given to the buttons by update-ui.ts", () => {
+    expect(source("update-ui.ts")).toMatch(/ariaLabel: actionAriaLabel\(action\)/);
   });
 });
 

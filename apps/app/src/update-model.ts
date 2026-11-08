@@ -7,6 +7,7 @@
  * reach it either.
  */
 import { updateCopy as copy } from "./update-copy.ts";
+import { updateA11yCopy as spoken } from "./update-copy-a11y.ts";
 
 export type UpdateState = "idle" | "checking" | "downloading" | "staged" | "installing" | "failed";
 export type UpdateError = "offline" | "timeout" | "status" | "policy" | "tls" | "manifest" | "size" | "signature" | "disk" | "install" | "busy" | "unsupported" | "keys";
@@ -126,6 +127,14 @@ export function bannerFor(status: UpdateStatus, local: Local, idle: boolean): Ba
   if (!status.supported && v) return { kind: "unsupported", text: `${copy.availableBanner(v)} ${copy.unsupportedNote}`, actions: status.linkEnabled ? ["getFromGitHub"] : [] };
   if (v && local.dismissed !== v) return { kind: "available", text: copy.availableBanner(v), actions: ["updateNow", "later"] };
   return null;
+}
+
+/**
+ * The accessible name of a banner button whose visible label needs context, or undefined when the label is enough
+ * ("Update now", "Restart now", "Check now" say what they do). A name always contains the visible label.
+ */
+export function actionAriaLabel(action: BannerAction): string | undefined {
+  return action === "turnOff" ? spoken.turnOffName : undefined;
 }
 
 /**

@@ -18,7 +18,7 @@ import { h, setVar } from "../../dashboard/src/dom.ts";
 import { announce } from "../../dashboard/src/announce.ts";
 import { updateCopy as copy } from "./update-copy.ts";
 import { updateA11yCopy as spoken } from "./update-copy-a11y.ts";
-import { bannerFor, bannerSignature, checkResult, crossedHalfway, freshLocal, isQuietRoute, pageIsIdle, sanitizeStatus } from "./update-model.ts";
+import { actionAriaLabel, bannerFor, bannerSignature, checkResult, crossedHalfway, freshLocal, isQuietRoute, pageIsIdle, sanitizeStatus } from "./update-model.ts";
 import type { Banner, BannerAction, UpdateStatus } from "./update-model.ts";
 
 /** The shell's `invoke`, narrowed to what is used here (and replaceable in tests). */
@@ -159,7 +159,7 @@ export function mountUpdates(bridge: Bridge): Mounted {
   const actionButton = (action: BannerAction): HTMLElement => {
     const label = { ok: copy.noticeOkButton, turnOff: copy.noticeTurnOffButton, later: copy.laterButton, cancel: copy.cancelButton, updateNow: copy.updateNowButton, restartNow: copy.restartNowButton, getFromGitHub: copy.getFromGitHubButton }[action];
     const primary = action === "updateNow" || action === "restartNow" || action === "ok";
-    return button({ label, variant: primary ? "primary" : "secondary", key: `update:${action}`, className: "update-action", onclick: () => void act(action) });
+    return button({ label, variant: primary ? "primary" : "secondary", key: `update:${action}`, className: "update-action", ariaLabel: actionAriaLabel(action), onclick: () => void act(action) });
   };
 
   /** The parts of the download banner that change while it stays on screen (see paintBanner). */
