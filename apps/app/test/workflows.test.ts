@@ -342,9 +342,31 @@ describe("workflow trust boundaries (the real files)", () => {
     const body = code(text.split(/\r?\n/)).join("\n");
     expect(body).not.toMatch(/secrets\.(?!GITHUB_TOKEN)|environment:|contents: write|permissions:\s*\n\s+\w+: write/);
     expect(body).toMatch(/cargo run --locked --release --example verify_manifest/);
+    // The verifier is built from the shell, which embeds the built page (not committed): the page is built first, or the
+    // daily check could never compile.
+    const at = (re: RegExp): number => body.search(re);
+    expect(at(/actions\/setup-node@/)).toBeGreaterThan(-1);
+    expect(at(/npm ci --ignore-scripts/)).toBeGreaterThan(at(/actions\/setup-node@/));
+    expect(at(/node apps\/app\/scripts\/build-frontend\.mjs/)).toBeGreaterThan(at(/npm ci --ignore-scripts/));
+    expect(at(/cargo run --locked --release --example verify_manifest/)).toBeGreaterThan(at(/node apps\/app\/scripts\/build-frontend\.mjs/));
     expect(body).toMatch(/highest published/);
     expect(body).toMatch(/LATEST_URL: https:\/\/github\.com\/XrxcGH\/Snappy\/releases\/latest\/download\/latest\.json/);
     expect(body).toMatch(/ProductVersion/);
+  });
+
+  it("runs a dry run of the verifier in CI, after the page is built, so the daily check cannot rot", () => {
+    const ci = code(workflow("ci.yml").split(/\r?\n/)).join("\n");
+    const rust = ci.slice(ci.indexOf("rust-tests:"), ci.indexOf("no-network-deps:"));
+    const build = rust.search(/node apps\/app\/scripts\/build-frontend\.mjs/);
+    expect(build).toBeGreaterThan(-1);
+    expect(rust.search(/node apps\/app\/tools\/verify-dry-run\.mjs/)).toBeGreaterThan(build);
+  });
+
+  it("makes the owner the required reviewer of the files that pin the tool run with the signing passphrase", () => {
+    const owners = readFileSync(path.join(repo, ".github", "CODEOWNERS"), "utf8");
+    for (const file of ["/package.json", "/package-lock.json", "/apps/app/package.json", "/apps/app/tools/", "/apps/app/src-tauri/Cargo.lock"]) {
+      expect(owners, file).toMatch(new RegExp(`^${file.replace(/[./]/g, "\\$&")}\\s+@XrxcGH$`, "m"));
+    }
   });
 
   it("builds with locked dependencies", () => {

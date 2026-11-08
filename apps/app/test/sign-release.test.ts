@@ -10,13 +10,15 @@
  *   SNAPPY_RUN_CARGO_TESTS=1 npx vitest run apps/app/test/sign-release.test.ts
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error plain JavaScript module without types
-import { REPO, buildLatestJson, checksumFor, installerName, parseArgs, sha256File } from "../tools/sign-release.mjs";
+import { REPO, assertHigherThanPublished, assertIsDraft, assertProductVersion, attestationArgs, buildLatestJson, checksumFor, ensureFrontend, installerName, parseArgs, sha256File, signerCli } from "../tools/sign-release.mjs";
+// @ts-expect-error plain JavaScript module without types
+import { prepareDryRun } from "../tools/verify-dry-run.mjs";
 
 const appDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -52,6 +54,105 @@ describe("the signing tool's pure parts", () => {
     const json = JSON.parse(buildLatestJson({ repo: REPO, version: "0.2.0", signature: "c2ln", now: new Date("2026-11-07T10:20:30.456Z") }));
     expect(json).toEqual({ version: "0.2.0", pub_date: "2026-11-07T10:20:30Z", platforms: { "windows-x86_64": { signature: "c2ln", url: "https://github.com/XrxcGH/Snappy/releases/download/v0.2.0/Snappy_0.2.0_x64-setup.exe" } } });
     expect(installerName("1.2.3")).toBe("Snappy_1.2.3_x64-setup.exe");
+  });
+});
+
+describe("the signing tool's checks before it signs", () => {
+  const rel = (tagName: string, over: Record<string, boolean> = {}) => ({ tagName, isDraft: false, isPrerelease: false, ...over });
+
+  it("refuses a version that is not strictly higher than every published release", () => {
+    const published = [rel("v0.1.0"), rel("v0.3.0"), rel("v0.2.0")];
+    for (const tag of ["v0.2.5", "v0.3.0", "v0.1.9", "v0.0.1"]) expect(() => assertHigherThanPublished(tag, published), tag).toThrow(/not higher/);
+    expect(() => assertHigherThanPublished("v0.3.1", published)).not.toThrow();
+    expect(() => assertHigherThanPublished("v0.10.0", [rel("v0.9.0")]), "compared as numbers, not text").not.toThrow();
+    expect(() => assertHigherThanPublished("v0.9.0", [rel("v0.10.0")])).toThrow(/not higher/);
+  });
+
+  it("ignores drafts, pre-releases and odd tags when comparing, but not a published release with the same tag", () => {
+    const others = [rel("v9.0.0", { isDraft: true }), rel("v9.1.0", { isPrerelease: true }), rel("nightly"), rel("v0.2.0-beta.1")];
+    expect(() => assertHigherThanPublished("v0.2.0", others)).not.toThrow();
+    expect(() => assertHigherThanPublished("v0.2.0", [...others, rel("v0.2.0")])).toThrow(/not higher/);
+  });
+
+  it("only ever adds files to a draft", () => {
+    expect(() => assertIsDraft("v0.2.0", [rel("v0.2.0", { isDraft: true })])).not.toThrow();
+    expect(() => assertIsDraft("v0.2.0", [rel("v0.2.0")])).toThrow(/already published/);
+    expect(() => assertIsDraft("v0.2.0", [rel("v0.1.0", { isDraft: true })])).toThrow(/no release/);
+  });
+
+  it("makes the build provenance name this repository's release workflow and this tag", () => {
+    expect(attestationArgs(REPO, "v0.2.0")).toEqual(["--repo", REPO, "--signer-workflow", `${REPO}/.github/workflows/release.yml`, "--source-ref", "refs/tags/v0.2.0"]);
+    const source = readFileSync(path.join(appDir, "tools", "sign-release.mjs"), "utf8");
+    expect(source).toMatch(/\["attestation", "verify", installer, \.\.\.attestationArgs\(repo, tag\)\]/);
+  });
+
+  it("requires the installer's own product version to be readable and equal to the tag", () => {
+    expect(() => assertProductVersion("0.2.0", "0.2.0")).not.toThrow();
+    expect(() => assertProductVersion("0.1.9", "0.2.0")).toThrow(/0\.1\.9/);
+    for (const unreadable of ["", null, undefined, "(not shown)"]) expect(() => assertProductVersion(unreadable, "0.2.0")).toThrow(/could not be read/);
+  });
+
+  it("shows the signing tool as pinned and refuses one that differs from the lock file", () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "snappy-lock-test-"));
+    try {
+      const lock = (entry: unknown) => writeFileSync(path.join(dir, "package-lock.json"), JSON.stringify({ packages: { "node_modules/@tauri-apps/cli": entry } }));
+      const installed = (version: string) => {
+        mkdirSync(path.join(dir, "node_modules", "@tauri-apps", "cli"), { recursive: true });
+        writeFileSync(path.join(dir, "node_modules", "@tauri-apps", "cli", "package.json"), JSON.stringify({ version }));
+      };
+      lock({ version: "2.12.0", integrity: "sha512-abc" });
+      expect(() => signerCli(dir)).toThrow(/not installed/);
+      installed("2.11.0");
+      expect(() => signerCli(dir)).toThrow(/pins 2\.12\.0/);
+      installed("2.12.0");
+      expect(signerCli(dir)).toEqual({ version: "2.12.0", integrity: "sha512-abc" });
+      lock({ version: "2.12.0" });
+      expect(() => signerCli(dir)).toThrow(/integrity/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("builds the page the verifier embeds when the checkout has none, and says what to do when that fails", () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "snappy-frontend-test-"));
+    try {
+      let built = 0;
+      expect(ensureFrontend(dir, () => built++)).toBe(true);
+      expect(built).toBe(1);
+      mkdirSync(path.join(dir, "apps", "app", "frontend"), { recursive: true });
+      writeFileSync(path.join(dir, "apps", "app", "frontend", "index.html"), "<!doctype html>");
+      expect(ensureFrontend(dir, () => built++)).toBe(false);
+      expect(built).toBe(1);
+      rmSync(path.join(dir, "apps", "app", "frontend"), { recursive: true });
+      expect(() =>
+        ensureFrontend(dir, () => {
+          throw new Error("no esbuild");
+        }),
+      ).toThrow(/npm ci --ignore-scripts/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("checks the releases, the signing tool and the page before it downloads or asks for anything", () => {
+    const source = readFileSync(path.join(appDir, "tools", "sign-release.mjs"), "utf8");
+    const main = source.slice(source.indexOf("async function main()"));
+    const order = ["assertHigherThanPublished(tag", "signerCli(repoRoot)", "ensureFrontend(repoRoot", '"release", "download"', "assertProductVersion(product", 'askHidden("Passphrase'].map((needle) => main.indexOf(needle));
+    expect(order.every((i) => i >= 0), JSON.stringify(order)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("has a dry run of the verifier that covers a good release and each way to break one", () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "snappy-dry-test-"));
+    try {
+      const cases = prepareDryRun(dir) as { name: string; args: string[]; status: number }[];
+      expect(cases.filter((c) => c.status === 0).map((c) => c.name)).toEqual(["a good release"]);
+      expect(cases.length).toBeGreaterThanOrEqual(7);
+      for (const c of cases) for (const a of c.args.filter((x) => x.endsWith(".json") || x.endsWith(".exe"))) expect(existsSync(a), `${c.name}: ${a}`).toBe(true);
+      expect(JSON.stringify(cases)).not.toMatch(/secret|passphrase/i);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

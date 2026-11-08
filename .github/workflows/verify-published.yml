@@ -45,6 +45,15 @@ jobs:
           set -euo pipefail
           rustup toolchain install "$RUST_VERSION" --profile minimal --no-self-update
           rustup default "$RUST_VERSION"
+      # The verifier is built from the desktop shell, which embeds the built page (apps/app/frontend, not committed).
+      # Without it the shell does not compile and this check would fail every day for no reason.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build the page the shell embeds
+        run: node apps/app/scripts/build-frontend.mjs
       - name: Download latest.json from the public address
         shell: bash
         run: |

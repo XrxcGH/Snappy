@@ -12,3 +12,7 @@
 /apps/app/src-tauri/Cargo.toml             @XrxcGH
 /apps/app/src-tauri/Cargo.lock             @XrxcGH
 /apps/app/tools/                           @XrxcGH
+# The signing tool runs the npm-delivered @tauri-apps/cli on the maintainer's computer with the passphrase in its environment.
+/package.json                              @XrxcGH
+/package-lock.json                         @XrxcGH
+/apps/app/package.json                     @XrxcGH

@@ -78,6 +78,11 @@ jobs:
       - name: Unit and loopback tests
         working-directory: apps/app/src-tauri
         run: cargo test --lib --locked
+      # The offline verifier that the daily check and the signing tool run, against files made with a throwaway TEST key:
+      # a good release passes, and a changed installer, a wrong version and a wrong address fail. This keeps that
+      # check from rotting between releases.
+      - name: Verifier dry run
+        run: node apps/app/tools/verify-dry-run.mjs
 
   # The desktop and phone shells must not gain a way to reach the network. This reads Cargo's
   # dependency tree for every release target (desktop and mobile) and fails if an HTTP client, a TLS
