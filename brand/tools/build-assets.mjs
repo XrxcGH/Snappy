@@ -13,6 +13,7 @@ import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripComments } from './strip-comments.mjs';
 
 const require = createRequire(join(process.cwd(), 'noop.js'));
 const opentype = require('opentype.js');
@@ -238,9 +239,7 @@ write('tokens/palette.png', png(paletteSvg, W * 2));
 
 // ---------- social preview ----------
 const lockup = read('logo/snappy-lockup.svg');
-const lockupInner = lockup
-  .replace(/<svg[^>]*>/, '')
-  .replace(/<!--[\s\S]*?-->/, '')
+const lockupInner = stripComments(lockup.replace(/<svg[^>]*>/, ''))
   .replace('</svg>', '')
   .replaceAll('currentColor', B.bone)
   .replaceAll('var(--accent, #6B4DFF)', B['violet-on-dark']);

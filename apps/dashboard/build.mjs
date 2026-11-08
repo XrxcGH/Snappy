@@ -14,6 +14,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { stripComments } from "../../brand/tools/strip-comments.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "..", "..");
@@ -85,8 +86,7 @@ async function licenseData() {
 /** The shared icon sprite, without its inline <style> and style attribute (the CSP forbids both), plus the logo mark. */
 async function spriteMarkup() {
   let sprite = await readFile(path.join(repoRoot, "brand", "icons", "icons.svg"), "utf8");
-  sprite = sprite
-    .replace(/<!--[\s\S]*?-->/g, "")
+  sprite = stripComments(sprite)
     .replace(/<defs>[\s\S]*?<\/defs>/, "")
     // Rules must match the symbol content itself: inside <use>, ancestors such as .sprite are invisible to selectors.
     .replace(/class="s"/g, 'class="ic-s"')
