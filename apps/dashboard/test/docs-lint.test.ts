@@ -112,3 +112,32 @@ describe("network claims", () => {
     expect(texts.filter((t) => CLAIM.test(t) && !/update check/i.test(t))).toEqual([]);
   });
 });
+
+/**
+ * Someone who installed the app has no Snappy folder, no Node and no npm. The guides say where the command line tool
+ * comes from, what it needs, and that the app covers everything but a full Memories rescue.
+ */
+describe("the command line tool, for people who installed the app", () => {
+  const text = (file: string): string => prose(file).map((l) => l.raw).join("\n");
+
+  it("is a section of the beta guide and of the export guide, with its Node version", () => {
+    for (const file of [path.join("docs", "BETA.md"), path.join("docs", "EXPORT-GUIDE.md")]) {
+      expect(text(file), file).toMatch(/^## Command line tool$/m);
+      expect(text(file), file).toMatch(/separate download/);
+      expect(text(file), file).toMatch(/Node 22\.18 or later/);
+    }
+    expect(text(path.join("docs", "BETA.md"))).toMatch(/real Memories rescue/);
+  });
+
+  it("opens the export guide with the in-app route and never sends a reader to a Snappy folder", () => {
+    const guide = text(path.join("docs", "EXPORT-GUIDE.md"));
+    expect(guide).toMatch(/If you installed the Snappy app, you can skip the terminal/);
+    expect(guide.indexOf("If you installed the Snappy app")).toBeLessThan(guide.indexOf("## What to select"));
+    expect(guide).not.toMatch(/Go to the Snappy folder/);
+    expect(guide).toMatch(/Open a terminal in the folder where you downloaded the Snappy command line tool/);
+  });
+
+  it("says in the README that the command line tool is a separate download", () => {
+    expect(text("README.md")).toMatch(/The command line tool is a separate download/);
+  });
+});

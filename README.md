@@ -71,7 +71,7 @@ Open Snappy and choose Choose ZIP files on the Start page (or drop your ZIP file
 
 ### 4. Use the command line
 
-You need Node 22.18 or later (Node 24 works). Then, from this folder:
+The command line tool is a separate download: it is in this repository, and the installed app does not include it. A full Memories rescue needs it. You need Node 22.18 or later (Node 24 works). Then, from this folder:
 
 ```
 npm install

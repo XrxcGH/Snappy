@@ -2,6 +2,8 @@
 
 Snappy only reads **your own** official “Download My Data” export, on your own device. It never logs in to Snapchat and never uploads anything.
 
+**If you installed the Snappy app, you can skip the terminal.** Open **Export guide** in the app and press **Run** on the inspect command, then choose your ZIP files. A real Memories rescue is the one job that needs the command line tool, which is a separate download (see [Command line tool](#command-line-tool) below).
+
 ## What to select
 
 | Option | Select? | Why |
@@ -23,6 +25,10 @@ Snappy only reads **your own** official “Download My Data” export, on your o
 5. Never send these files to anyone, including Snappy’s developers. Delete them when you are done, if you do not need them.
 6. If something does not read correctly, share only the *shape* of the export, using the command in the next section. It prints field names, types and rough counts, and masks anything it does not recognize.
 
+## Command line tool
+
+The commands in this guide run in `snappy-export`, the Snappy command line tool. The Snappy app does not include it. It is a separate download from the Snappy repository on GitHub, it needs Node 22.18 or later, and the README in its `apps/cli` folder says how to install and run it. Open a terminal in the folder where you downloaded it before you run a command below.
+
 ## Memories in a newer export
 
 In a newer export the Memories list has no download links. The files are in the ZIP files instead, and each one is stored with its exact capture time. `snappy-export memories` pairs every list entry with the file stored at exactly that second, and says how it matched. If the ZIP file program wrote its times in local time, Snappy detects the whole-hour shift. Only if the times cannot be used does it fall back to the date and type, and it says so. Some entries may have no file in your ZIP files. Snappy counts those and does not guess. Give it every part in one command:
@@ -40,7 +46,7 @@ The `inspect` command opens the ZIP files in place, reads their JSON structure, 
 Run it on **all your ZIP files in one command**. The steps below are for Windows with PowerShell. Replace `you` with your Windows user name and the digits with the ones in your file names.
 
 1. Open the Start menu, type `PowerShell`, and press Enter.
-2. Go to the Snappy folder:
+2. Open a terminal in the folder where you downloaded the Snappy command line tool:
 
    ```powershell
    cd C:\Users\you\Documents\Snappy
