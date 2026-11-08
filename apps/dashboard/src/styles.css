@@ -500,7 +500,8 @@ img, svg { max-width: 100%; }
   display: inline-block; max-width: 100%; padding: var(--space-1) var(--space-2); background: var(--surface-sunken);
   border-radius: var(--radius-sm); font-size: var(--text-14); overflow-wrap: anywhere;
 }
-.chip .username { font-size: inherit; }
+.chip .username { font-size: inherit; display: inline-block; max-width: 22ch; vertical-align: top; }
+.username { overflow-wrap: anywhere; }
 .conf {
   display: inline-flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-2); border: 1px solid;
   border-radius: var(--radius-sm); font-size: var(--text-14); font-weight: 600; line-height: 1.5;
@@ -607,6 +608,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   /* The first column names the row and never wraps; the pill column fits its pill. */
   .table tbody th { white-space: nowrap; }
   .table td.cell-pill { white-space: nowrap; width: 1%; }
+  /* A username is the one name that may wrap: a long one breaks inside its cell instead of pushing the other columns off the frame. */
+  .table tbody th .username { display: inline-block; max-width: 22ch; white-space: normal; vertical-align: top; }
   /* Real column headers say what a cell holds, so the words a stacked card needs ("Added ", " total") are hidden here. */
   .table .cell-extra { display: none; }
 }

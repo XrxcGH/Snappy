@@ -154,6 +154,25 @@ describe("the Overview findings below the wide layout", () => {
   });
 });
 
+describe("a very long username", () => {
+  it("breaks anywhere in a username, and a username in a table's name column or in a chip is at most 22 characters wide", () => {
+    expect(declared(".username")).toMatch(/overflow-wrap:\s*anywhere/);
+    const cell = rules.filter((r) => r.selector === ".table tbody th .username");
+    expect(cell).toHaveLength(1);
+    // The name column never wraps (dates and short names), so the username inside it must opt in to wrapping.
+    expect(cell[0]?.body).toMatch(/max-width:\s*22ch/);
+    expect(cell[0]?.body).toMatch(/white-space:\s*normal/);
+    expect(cell[0]?.body).toMatch(/display:\s*inline-block/);
+    expect(cell[0]?.media.join(" ")).toMatch(/min-width:\s*40\.01rem/);
+    expect(declared(".chip .username")).toMatch(/max-width:\s*22ch/);
+    expect(declared(".chip .username")).toMatch(/display:\s*inline-block/);
+  });
+
+  it("does not let table cells break ordinary words, which would squeeze a column instead of scrolling the table", () => {
+    for (const selector of [".table th", ".table td", ".table th, .table td"]) expect(declared(selector)).not.toMatch(/overflow-wrap:\s*anywhere/);
+  });
+});
+
 describe("forced colors (Windows high contrast)", () => {
   const forced = (selector: string): string => rules.filter((r) => r.selector === selector && r.media.length === 1 && /forced-colors:\s*active/.test(r.media[0] ?? "")).map((r) => r.body).join(" ");
 
