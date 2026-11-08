@@ -555,10 +555,8 @@ describe("the macOS build and smoke job in desktop-smoke.yml", () => {
     expect(body()).not.toMatch(/^ {4}environment:/m);
     expect(body()).toMatch(/^ {4}permissions:\n {6}contents: read$/m);
     expect(body()).not.toMatch(/\bwrite\b/);
-    // Ad hoc signing only: the one APPLE_ name is the identity "-", which is not a secret. No certificate, no notarization.
-    const apple = [...body().matchAll(/\bAPPLE_[A-Z_]+/g)].map((m) => m[0]);
-    expect([...new Set(apple)]).toEqual(["APPLE_SIGNING_IDENTITY"]);
-    expect(body()).toMatch(/APPLE_SIGNING_IDENTITY: "-"/);
+    // Ad hoc signing only, from the "-" in tauri.macos.conf.json: no Apple variable at all, no certificate, no notarization.
+    expect(body()).not.toMatch(/\bAPPLE_[A-Z_]+/);
     expect(body()).not.toMatch(/notarytool|stapler|security import|create-keychain|\.p12|\bcurl\b|\bwget\b/);
   });
 

@@ -88,9 +88,10 @@ jobs:
           ls -l "$exe"
 
   # The macOS beta: builds the UNSIGNED universal (Apple silicon + Intel) app and its disk image on an Apple silicon
-  # runner, then starts the finished app and checks it. No secret, no signing identity (the "-" below is the name
-  # of the ad-hoc signature, not a secret), read-only token. The checks are in apps/app/tools/macos/smoke.sh and
-  # what they can and cannot show is in docs/RELEASES.md.
+  # runner, then starts the finished app and checks it. No secret, no signing identity and no Apple variable at
+  # all: the ad-hoc signature (an Apple silicon app must carry some signature to run) comes from the "-" in
+  # tauri.macos.conf.json, and the smoke test fails if the result is anything but ad hoc. Read-only token. The
+  # checks are in apps/app/tools/macos/smoke.sh and what they can and cannot show is in docs/RELEASES.md.
   macos-universal-build:
     name: macOS universal build and smoke test
     runs-on: macos-latest
@@ -100,8 +101,6 @@ jobs:
     env:
       BUNDLE_ROOT: apps/app/src-tauri/target/universal-apple-darwin/release/bundle
       OUT: macos-evidence
-      # An Apple silicon app must carry some signature to run. "-" means ad hoc: no identity, no certificate.
-      APPLE_SIGNING_IDENTITY: "-"
       OBSERVE_SECONDS: "60"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

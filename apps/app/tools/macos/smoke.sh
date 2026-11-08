@@ -103,6 +103,9 @@ fi
 EXE_NAME="$(plist_value CFBundleExecutable)"
 EXE="$APP_BUILT/Contents/MacOS/$EXE_NAME"
 [ -f "$EXE" ] && ok "executable $EXE_NAME exists" || fail "executable $EXE_NAME is missing"
+for f in LICENSE NOTICE; do
+  [ -s "$APP_BUILT/Contents/Resources/$f" ] && ok "$f is inside the app (Contents/Resources)" || fail "$f is missing from Contents/Resources"
+done
 ICON="$(plist_value CFBundleIconFile)"
 if [ -f "$APP_BUILT/Contents/Resources/$ICON" ] || [ -f "$APP_BUILT/Contents/Resources/$ICON.icns" ]; then ok "icon $ICON is in the bundle"; else fail "icon $ICON is missing from Resources"; fi
 
@@ -151,7 +154,10 @@ say "== 4. The disk image =="
 if hdiutil verify "$DMG" > "$OUT/dmg-verify.txt" 2>&1; then ok "hdiutil verify passes"; else fail "hdiutil verify fails (see dmg-verify.txt)"; fi
 MNT="$(mktemp -d)/mount"
 mkdir -p "$MNT"
-if hdiutil attach -nobrowse -readonly -mountpoint "$MNT" "$DMG" > "$OUT/dmg-attach.txt" 2>&1; then
+hdiutil imageinfo "$DMG" > "$OUT/dmg-imageinfo.txt" 2>&1
+if grep -q 'Software License Agreement: false' "$OUT/dmg-imageinfo.txt"; then ok "opening the disk image shows no license agreement"; else fail "the disk image carries a license agreement that opening it would show (see dmg-imageinfo.txt)"; fi
+# printf answers "Y" to a license prompt, if one is there, so the rest of the checks can still run.
+if printf 'Y\n' | hdiutil attach -nobrowse -readonly -mountpoint "$MNT" "$DMG" > "$OUT/dmg-attach.txt" 2>&1; then
   ls -la "$MNT" > "$OUT/dmg-contents.txt" 2>&1
   [ -d "$MNT/Snappy.app" ] && ok "the disk image holds Snappy.app" || fail "the disk image has no Snappy.app"
   if [ -L "$MNT/Applications" ]; then
@@ -226,7 +232,7 @@ else
   elif [ "$TOTAL" = "0" ]; then
     note "the window server lists no windows at all in this session, so a window for Snappy cannot be confirmed or denied"
   elif [ "${MINE:-0}" -ge 1 ]; then
-    BIG="$(awk '/^window / { for (i = 1; i <= NF; i++) { if ($i ~ /^w=/) { w = substr($i, 3) } if ($i ~ /^h=/) { h = substr($i, 3) } if ($i ~ /^layer=/) { l = substr($i, 7) } } if (l == 0 && w >= 400 && h >= 300) { print w "x" h; exit } }' "$OUT/windows.txt")"
+    BIG="$(awk '/^window / { for (i = 1; i <= NF; i++) { if ($i ~ /^w=/) { w = substr($i, 3) + 0 } if ($i ~ /^h=/) { h = substr($i, 3) + 0 } if ($i ~ /^layer=/) { l = substr($i, 7) + 0 } } if (l == 0 && w >= 400 && h >= 300) { print w "x" h; exit } }' "$OUT/windows.txt")"
     if [ -n "$BIG" ]; then ok "the window server lists a Snappy window of $BIG points (layer 0), among $TOTAL windows"; else fail "Snappy owns $MINE window(s) but none is a normal window of at least 400 x 300 (see windows.txt)"; fi
   else
     fail "the window server lists $TOTAL windows but none belongs to Snappy (see windows.txt)"
