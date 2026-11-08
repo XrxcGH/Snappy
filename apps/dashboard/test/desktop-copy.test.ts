@@ -66,6 +66,11 @@ function allText(p: Platform): Map<string, string> {
  * desktop text. Nothing else may differ.
  */
 const DIFFERENCES: readonly (readonly [path: string, web: string, desktop: string])[] = [
+  [
+    "privacy.networkOk",
+    "Snappy’s page cannot connect to the internet. Open profile opens snapchat.com, with that friend’s username in the address.",
+    "Snappy’s page cannot connect to the internet. A built-in rule blocks every connection.",
+  ],
   ["start.trustChips[2]", "Works without internet", "Works offline"],
   ["start.sampleBody", "Builds two made-up exports in your browser so you can see every screen. The sample is never saved.", "Builds two made-up exports in this window so you can see every screen. The sample is never saved."],
   ["start.sessionOnlyBody", "Closing this tab clears your results. To keep your history, save it with a passphrase in Settings.", "Closing Snappy clears your results. To keep your history, save it with a passphrase in Settings."],

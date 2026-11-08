@@ -477,7 +477,8 @@ export const privacy = {
   lead: brand.privacyLine,
   readsHeading: "What Snappy reads",
   neverHeading: "What Snappy skips",
-  neverBody: "Snappy skips these while it reads, and never keeps them.",
+  // Group chat titles are decoded in memory to make a short code, so they are not "skipped" like the rest.
+  neverBody: "Snappy never keeps these. It skips them while it reads, except group chat titles, which it turns into a short code.",
   readsRows: [
     ["Friend usernames", "The only identifier Snappy keeps, so you can act on a person."],
     ["Friend and request dates", "When a friendship or request began, and when you removed someone."],
@@ -498,7 +499,13 @@ export const privacy = {
   whatHeader: "What",
   detailHeader: "Details",
   networkHeading: "Network",
-  networkOk: "Snappy’s page cannot connect to the internet. A built-in rule blocks every connection.",
+  // On the web the profile link is the one place a username goes to snapchat.com, by the person pressing it. The app draws no profile link.
+  get networkOk(): string {
+    return onDesktop(
+      "Snappy’s page cannot connect to the internet. Open profile opens snapchat.com, with that friend’s username in the address.",
+      "Snappy’s page cannot connect to the internet. A built-in rule blocks every connection.",
+    );
+  },
   get networkUnknown(): string {
     return onDesktop(
       "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",

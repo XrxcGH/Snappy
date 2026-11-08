@@ -5,6 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import * as copy from "../src/copy.ts";
+import { setPlatform } from "../src/platform.ts";
 import { SAMPLE_ARGS } from "./copy-rules.ts";
 
 /** Every string reachable from copy.ts with the path it came from; functions are called with sample values. */
@@ -38,6 +39,25 @@ describe("Start page words", () => {
   it("has a message for an unzipped export and a separate Mac tip about Safari", () => {
     expect(copy.start.unzipped).toBe("This looks like an unzipped export. Choose the ZIP files instead.");
     expect(copy.start.unzippedMacTip).toMatch(/^On a Mac, turn off “Open safe files after downloading” in Safari’s settings/);
+  });
+});
+
+describe("what the Privacy page says about group titles and the profile link", () => {
+  it("does not say group chat titles are skipped: it says they become a short code", () => {
+    expect(copy.privacy.neverBody).toBe("Snappy never keeps these. It skips them while it reads, except group chat titles, which it turns into a short code.");
+  });
+
+  it("says on the web, once, that Open profile opens snapchat.com with the username in the address", () => {
+    expect(copy.privacy.networkOk).toBe("Snappy’s page cannot connect to the internet. Open profile opens snapchat.com, with that friend’s username in the address.");
+  });
+
+  it("says nothing about a profile link in the desktop app, which draws none", () => {
+    setPlatform({ desktop: "windows", profileLinks: false });
+    try {
+      expect(copy.privacy.networkOk).not.toMatch(/Open profile|snapchat\.com/);
+    } finally {
+      setPlatform({});
+    }
   });
 });
 
