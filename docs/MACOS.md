@@ -18,11 +18,11 @@ The file is `Snappy_0.1.0-beta.1_universal.dmg`.
 
 - **`.dmg` (a disk image) holding `Snappy.app`.** You open it and drag Snappy to Applications. That is how most Mac apps are shared, and removing the app later means dragging it to the Trash.
 - **Universal.** One app that runs natively on Apple silicon (M1 and later) and on Intel Macs. You do not choose.
-- **No `.pkg` installer.** A package runs installer scripts as part of the install. Snappy needs none, and a package is only needed for the App Store or for putting files outside the app. The release also carries an `Snappy_0.1.0-beta.1_universal.app.tar.gz`, the same app in an archive. It is for the updater that a later version may have, and you do not need it.
+- **No `.pkg` installer.** A package runs installer scripts as part of the install. Snappy needs none, and a package is only needed for the App Store or for putting files outside the app. The release also carries a `Snappy_0.1.0-beta.1_universal.app.tar.gz`, the same app in an archive. It is for the updater that a later version may have, and you do not need it.
 
 ## What it needs
 
-macOS 12.3 (Monterey) or newer. The app is a single page that macOS draws with its own WebKit web view, and the page uses features that came with Safari 15.4, which is the WebKit in macOS 12.3. Nothing older than the maintainers’ test computer has been tried, so this is the oldest version that could work, not one that was run.
+macOS 12.3 (Monterey) or newer. The app is a single page that macOS draws with its own WebKit web view, and the page uses features that came with Safari 15.4, which is the WebKit in macOS 12.3. The automated test ran on macOS 26 and nothing older has been tried, so 12.3 is the oldest version that could work, not one that was run.
 
 ## Install
 
@@ -39,7 +39,7 @@ The app does carry an **ad-hoc signature**, which is a signature with no identit
 
 To open it anyway, use one of these:
 
-- **System Settings.** Try to open Snappy once and choose **Done**. Then open **System Settings**, **Privacy & Security**, scroll to the Security section and choose **Open Anyway** next to Snappy. Confirm, and macOS remembers your choice. This works on macOS 13 and later, and it is the way on macOS 15 and later: on macOS 15 the old Control-click, **Open** shortcut no longer gets past the warning.
+- **System Settings.** Try to open Snappy once and choose **Done**. Then open **System Settings**, **Privacy & Security**, scroll to the Security section and choose **Open Anyway** next to Snappy. Confirm, and macOS remembers your choice. This is the way on macOS 15 and later: there the old Control-click, **Open** shortcut no longer gets past the warning. On macOS 14 and earlier, Control-click, **Open** also works.
 - **Terminal.** The warning comes from a quarantine mark that your browser puts on downloaded files. To remove the mark from the app, run `xattr -dr com.apple.quarantine /Applications/Snappy.app` and open it again. Only do this for a file whose checksum matched.
 
 These steps have not been tried on a real Mac. If macOS words something differently, please say so in your report.
