@@ -30,6 +30,14 @@ describe("snappy-export demo", () => {
     expect(ran.out).toMatch(/Disappeared friends: [1-9]/);
   });
 
+  it("ends the list of commands with a pointer to the rest", async () => {
+    const dir = tempDir("demo");
+    const { out } = await run(["demo", "--dir", dir]);
+    expect(out.trimEnd().split("\n").at(-1)).toBe("Run snappy-export help for the rest.");
+    const viaNpm = await run(["demo", "--dir", dir], makeIo({ env: { npm_lifecycle_event: "snappy-export" } }));
+    expect(viaNpm.out.trimEnd().split("\n").at(-1)).toBe("Run npm run snappy-export -- help for the rest.");
+  });
+
   it("--run also runs the analysis", async () => {
     const dir = tempDir("demo");
     const { code, out } = await run(["demo", "--dir", dir, "--run"]);

@@ -26,6 +26,8 @@ export const RESCUE_USAGE = `Usage: snappy-export rescue <ZIP files or folder...
 Lists the Memories your rescue saves, and checks a rescue folder against that list later. It
 compares names, sizes and file dates only, and never opens a photo or video.
 
+This command only checks. To save your Memories into folders, use snappy-export memories.
+
 Options
   --folder <folder>   The rescue folder. Lists the files saved there.
   --out <file>        Save the manifest as a .json file. Needs the ZIP files.
@@ -430,7 +432,7 @@ export async function runRescue(args: string[], io: Io): Promise<number> {
 export const rescueCommand: InsightCommand = {
   name: "rescue",
   synopsis: "rescue <ZIP files...>",
-  summary: "List a Memories rescue and check its folder.",
+  summary: "Check a Memories rescue against a list.",
   group: "Memories",
   usage: RESCUE_USAGE,
   run: runRescue,

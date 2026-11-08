@@ -6,7 +6,7 @@ import { insights, syntheticExportZip } from "@snappy-export/core";
 import { renderRescueManifest, rescueCommand } from "../src/commands/rescue.ts";
 import type { RescueView } from "../src/commands/rescue.ts";
 import { createTerm } from "../src/term.ts";
-import { LATER, NOW, makeIo, stripPaths, tempDir, writeSyntheticParts, writeSyntheticZip } from "./helpers.ts";
+import { LATER, NOW, makeIo, run, stripPaths, tempDir, writeSyntheticParts, writeSyntheticZip } from "./helpers.ts";
 import { expectBrandSafe, expectNoLeaks, expectValidDescriptor, runInsight } from "./insights-helpers.ts";
 
 const term = createTerm({ env: {}, isTTY: false, columns: 100 });
@@ -39,6 +39,17 @@ async function sampleRescue(label: string): Promise<{ dir: string; zip: string; 
   populate(folder, manifest);
   return { dir, zip, manifestPath, manifest, folder };
 }
+
+describe("what the overview says rescue is", () => {
+  it("calls it a check against a list, and points to memories for the real rescue", async () => {
+    expect(rescueCommand.summary).toBe("Check a Memories rescue against a list.");
+    const overview = (await run(["help"])).out;
+    expect(overview).toMatch(/^ {2}rescue <ZIP files\.\.\.> +Check a Memories rescue against a list$/m);
+    expect(overview).toMatch(/^ {2}memories <ZIP files\.\.\.> +Save your Memories with their dates restored$/m);
+    expect(rescueCommand.usage).toContain("To save your Memories into folders, use snappy-export memories.");
+    expect((await run(["help", "rescue"])).out).toContain("use snappy-export memories");
+  });
+});
 
 describe("the command", () => {
   it("is a valid descriptor", async () => {

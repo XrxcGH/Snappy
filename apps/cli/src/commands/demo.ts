@@ -88,6 +88,8 @@ export async function demoCommand(args: string[], io: Io): Promise<number> {
       "Preview a Memories rescue (writes nothing):",
       `  ${memories}`,
       "",
+      `Run ${snappy} help for the rest.`,
+      "",
     ].join("\n") + "\n",
   );
 
