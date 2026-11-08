@@ -2,12 +2,14 @@ import type { Candidate } from "@snappy-export/core";
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { categories, common, protection } from "../copy.ts";
+import { lists } from "../copy-lists.ts";
 import { h } from "../dom.ts";
 import { headlineEvidence } from "../evidence.ts";
 import { categoryOfCandidate, categoryTag } from "./category.ts";
 import { confidenceBadge } from "./confidenceBadge.ts";
 import { button, profileLink } from "./button.ts";
 import { disclosureSummary, slideIn } from "./layout.ts";
+import { showToast } from "./toast.ts";
 import { usernameChip } from "./usernameChip.ts";
 import { displayUsername } from "../safe.ts";
 
@@ -23,6 +25,14 @@ export interface CandidateRowOptions {
   profileLinks?: boolean;
   /** Show the category tag (icon and label) after the confidence badge: for lists that mix categories, such as the cleanup queue. */
   showCategory?: boolean;
+}
+
+/** After an Undo the person is back in the list: focus their Keep button again, if the page shows that row. */
+function focusKeepButton(host: HTMLElement, key: string): void {
+  const scope = host.parentNode as ParentNode | null;
+  const wanted = `keep:${key}`;
+  const target = [...(scope?.querySelectorAll<HTMLElement>("[data-key]") ?? [])].find((el) => el.dataset.key === wanted);
+  target?.focus();
 }
 
 /**
@@ -60,6 +70,17 @@ export function candidateRow(options: CandidateRowOptions): HTMLElement {
           onclick: () => {
             actions.keep(candidate.key);
             announce(common.kept(user));
+            // The sentence is spoken above; the toast is the visible confirmation, with Undo beside it for eight seconds.
+            showToast({
+              text: (count) => (count === 1 ? common.kept(user) : lists.keptCount(count)),
+              actionLabel: lists.undoButton,
+              actionAriaLabel: common.unkeepFor(user),
+              onAction: () => {
+                actions.unkeep(candidate.key);
+                announce(common.unkept(user));
+              },
+              afterAction: (host) => focusKeepButton(host, candidate.key),
+            });
           },
         });
 

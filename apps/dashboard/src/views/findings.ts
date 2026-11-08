@@ -14,6 +14,7 @@ import { candidateRow } from "../components/candidateRow.ts";
 import { emptyState, factList, pageHeader, section } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pagedList } from "../components/pagedList.ts";
+import { toastHost } from "../components/toast.ts";
 import { region } from "../reactive.ts";
 import { dataDeps } from "./context.ts";
 import type { View, ViewContext } from "./context.ts";
@@ -41,6 +42,7 @@ function view(id: CategoryId, title: string, lead: string, inference: string, bo
       { class: `view cat-${id}` },
       pageHeader(title, lead, { icon: CATEGORY_ICON[id], category: id }),
       notice("info", inference),
+      toastHost(),
       region(ctx.store, dataDeps, (s) => render(analyze(s))),
     );
   };

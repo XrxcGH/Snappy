@@ -19,6 +19,7 @@ import { icon } from "../components/icon.ts";
 import { disclosureSummary, emptyState, pageHeader, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pagedList } from "../components/pagedList.ts";
+import { toastHost } from "../components/toast.ts";
 import { progressBar } from "../components/progressBar.ts";
 import { usernameChip } from "../components/usernameChip.ts";
 import { displayUsername } from "../safe.ts";
@@ -35,6 +36,7 @@ export const cleanupView: View = (ctx) =>
     "div",
     { class: "view cat-cleanup" },
     pageHeader(routes.cleanup.title, cleanup.lead, { icon: "queue", category: "cleanup" }),
+    toastHost(),
     region(ctx.store, (s) => [...dataDeps(s), s.cleanup], (s) => render(ctx, analyze(s), s.cleanup), { className: "region region-tight" }),
   );
 
@@ -59,7 +61,7 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     // page holds the one warning that matters before any action (two notices at most above the fold).
     a.hasChats ? null : notice("warning", cleanup.noChatProtection(a.source === "ledger")),
     controls(actions, view),
-    h("p", { class: "summary", role: "status" }, cleanup.summary(shown.length, total)),
+    h("p", { class: "summary", role: "status" }, summaryLine(shown.length, total, a.workspace.allowlist.length)),
     // The consequence is stated before any action, in both modes.
     notice("warning", cleanup.removalWarning),
     listActions(shown),
@@ -72,6 +74,9 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     protectedItems.length > 0 ? protectedSection(actions, protectedItems, !a.sample) : null,
   ];
 }
+
+/** "43 people to review", and once someone is on the keep list, ", 1 kept". */
+const summaryLine = (shown: number, total: number, kept: number): string => (kept > 0 ? lists.summaryKept(cleanup.summary(shown, total), kept) : cleanup.summary(shown, total));
 
 function selectField(id: string, label: string, key: string, value: string, options: [string, string][], onChange: (value: string) => void): HTMLElement {
   const select = h(
