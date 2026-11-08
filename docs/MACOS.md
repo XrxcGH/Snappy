@@ -18,7 +18,7 @@ The file is `Snappy_0.1.0-beta.1_universal.dmg`.
 
 - **`.dmg` (a disk image) holding `Snappy.app`.** You open it and drag Snappy to Applications. That is how most Mac apps are shared, and removing the app later means dragging it to the Trash.
 - **Universal.** One app that runs natively on Apple silicon (M1 and later) and on Intel Macs. You do not choose.
-- **No `.pkg` installer.** A package runs installer scripts as part of the install. Snappy needs none, and a package is only needed for the App Store or for putting files outside the app. The release also carries a `Snappy_0.1.0-beta.1_universal.app.tar.gz`, the same app in an archive. It is for the updater that a later version may have, and you do not need it.
+- **No `.pkg` installer.** A package runs installer scripts as part of the install. Snappy needs none, and a package is only needed for the App Store or for putting files outside the app. The same app is also packed as `Snappy_0.1.0-beta.1_universal.app.tar.gz`, for the updater that a later version may have. For now that archive is only a file kept by the automated build for 14 days, not part of a release, and you do not need it.
 
 ## What it needs
 
@@ -26,8 +26,8 @@ macOS 13.3 (Ventura) or newer. The app is a single page that macOS draws with it
 
 ## Install
 
-1. Download the `.dmg` and its `.sha256` file from the Releases page of the Snappy repository.
-2. Check the file. In Terminal, run `shasum -a 256 ~/Downloads/Snappy_0.1.0-beta.1_universal.dmg` and compare the result with the text in the `.sha256` file. A match shows the file is complete and is the one that was published with that checksum.
+1. Download the `.dmg` and the `SHA256SUMS` file from the Releases page of the Snappy repository.
+2. Check the file. In Terminal, run `shasum -a 256 ~/Downloads/Snappy_0.1.0-beta.1_universal.dmg` and compare the result with the `universal.dmg` line of `SHA256SUMS` (`grep universal.dmg ~/Downloads/SHA256SUMS`). A match shows the file is complete and is the one that was published with that checksum.
 3. Open the `.dmg`, and drag **Snappy** onto **Applications**. Then eject the disk image.
 4. Open Snappy from Applications. The first time, macOS will not open it (see the next section).
 
