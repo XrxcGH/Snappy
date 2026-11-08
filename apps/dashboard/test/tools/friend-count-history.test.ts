@@ -172,10 +172,10 @@ describe("the page", () => {
   it("says what each cell counts, so a stacked card on a phone still reads", async () => {
     const { root } = await renderSettled(view, real());
     const first = (root.querySelectorAll("table")[0] as FakeElement).querySelectorAll("tbody tr")[0] as FakeElement;
-    expect([first.querySelector("th")?.textContent, ...text(first, "td")]).toEqual(["January 2025", "3 added", "0 removed", "3 friends"]);
+    expect([first.querySelector("th")?.textContent, ...text(first, "td")]).toEqual(["Jan 2025", "3 added", "0 removed", "3 friends"]);
     const summary = text(root, ".fact");
-    expect(summary.join(" ")).toContain("January 2025, up 3");
-    expect(summary.join(" ")).toContain("February 2025, down 1");
+    expect(summary.join(" ")).toContain("Jan 2025, up 3");
+    expect(summary.join(" ")).toContain("Feb 2025, down 1");
   });
 
   it("marks a snapshot that differs from the curve with a no pill and one that is close with a yes pill", async () => {

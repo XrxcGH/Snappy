@@ -25,7 +25,7 @@ describe("table cells on the tool pages", () => {
             const text = textOf(cell);
             cells++;
             // A word of three letters or more, or a size with its unit, says what the cell is.
-            if (text !== "-" && !/[A-Za-z]{3,}|\d (KB|MB|GB|TB)\b/.test(text)) bare.push(`${page.id}: "${text}"`);
+            if (text !== "-" && text !== "–" && !/[A-Za-z]{3,}|\d (KB|MB|GB|TB)\b/.test(text)) bare.push(`${page.id}: "${text}"`);
           }
         }
       }

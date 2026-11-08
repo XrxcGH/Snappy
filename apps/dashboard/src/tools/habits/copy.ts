@@ -4,8 +4,8 @@
  * Nothing here holds an export value: counts, percentages and dates come in as arguments, and nothing
  * takes or returns a username (this tool reads times and directions only, so it has none).
  */
-import { tools } from "../../copy.ts";
-import { countOf, formatCount } from "../../format.ts";
+import { common, tools } from "../../copy.ts";
+import { countOf, formatCount, formatDuration } from "../../format.ts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
@@ -23,14 +23,6 @@ export const copy = {
 
   zoneLabel: "Time zone",
   zoneHelp: "Hours, days and months follow this time zone. Snappy starts with UTC.",
-  /** "UTC", "UTC+2:00", "UTC-5:30". A piece that code joins into a sentence is a "unit" key. */
-  unitOffset: (minutes: number): string => {
-    if (!Number.isFinite(minutes)) return "";
-    if (minutes === 0) return "UTC";
-    const abs = Math.abs(minutes);
-    return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-  },
-
   summaryAnnounce: (used: number, days: number) => `Habits counted ${things(used)} on ${countOf(days, "day", "days")}.`,
   emptyAnnounce: "Habits found nothing with a usable date.",
 
@@ -40,18 +32,8 @@ export const copy = {
   firstLabel: "First",
   lastLabel: "Last",
   gapLabel: "Typical gap",
-  /** The typical time between two chats or Snaps, in words. */
-  unitGap: (ms: number): string => {
-    if (!Number.isFinite(ms) || ms < 0) return "";
-    if (ms < 1000) return "Under 1 second";
-    const seconds = Math.round(ms / 1000);
-    if (seconds < 60) return countOf(seconds, "second", "seconds");
-    const minutes = Math.round(ms / 60_000);
-    if (minutes < 60) return countOf(minutes, "minute", "minutes");
-    const hours = Math.round(ms / 3_600_000);
-    if (hours < 48) return countOf(hours, "hour", "hours");
-    return countOf(Math.round(ms / 86_400_000), "day", "days");
-  },
+  /** The typical time between two chats or Snaps, in words: the same rule as every duration on the pages. */
+  unitGap: formatDuration,
 
   busiestHeading: "Busiest times",
   busiestCaption: "Busiest and quietest times",
@@ -62,7 +44,7 @@ export const copy = {
   hourPattern: "Hour of day",
   weekdayPattern: "Day of week",
   monthPattern: "Month",
-  noValue: "-",
+  noValue: common.noFigure,
   /** A busiest or quietest value that other times match. */
   unitTied: (value: string): string => `${value} (tied)`,
   /** Cells of the busiest table. At phone width the column names are not repeated, so each cell says what it is. */
@@ -89,8 +71,8 @@ export const copy = {
   weekdayHeading: "By day of week",
   monthHeading: "By month",
   monthsShownLine: (shown: number, total: number) => `Showing the latest ${countOf(shown, "month", "months")} of ${formatCount(total)}.`,
-  /** "9 am", "12 pm". */
-  unitHour: (hour: number): string => (Number.isInteger(hour) && hour >= 0 && hour < 24 ? `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "am" : "pm"}` : ""),
+  /** "9 AM", "12 PM". */
+  unitHour: (hour: number): string => (Number.isInteger(hour) && hour >= 0 && hour < 24 ? `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "AM" : "PM"}` : ""),
   weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
   /** "Mar 2026", from a year and a month number (1 to 12). */
   unitMonth: (year: number, month: number): string => {

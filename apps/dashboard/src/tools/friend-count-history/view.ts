@@ -5,7 +5,7 @@ import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
-import { formatCount, formatDate, formatMonth } from "../../format.ts";
+import { formatCount, formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeFriendCountHistory, hasCurve } from "./model.ts";
@@ -19,10 +19,10 @@ const MAX_COMPARISONS = 12;
 
 type Note = insights.friendCountHistory.FriendCountNote;
 
-/** "2026-03" as "March 2026". Month labels from core are UTC. */
+/** "2026-03" as "Mar 2026". Month labels from core are UTC. */
 function monthText(label: string): string {
   const [year, month] = label.split("-").map(Number);
-  return formatMonth(Date.UTC(year ?? 1970, (month ?? 1) - 1, 1));
+  return copy.unitMonth(year ?? 1970, month ?? 1);
 }
 
 const num = (n: Note, key: string): number => n.params[key] ?? 0;

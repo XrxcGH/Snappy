@@ -12,7 +12,8 @@ import { COMMANDS, displayText } from "../../src/terminal/commands.ts";
 import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/activity-calendar/copy.ts";
 import { descriptor } from "../../src/tools/activity-calendar/index.ts";
-import { computeCalendar, heatLevel, OFFSETS, yearChoices, YEARS_SHOWN } from "../../src/tools/activity-calendar/model.ts";
+import { computeCalendar, heatLevel, yearChoices, YEARS_SHOWN } from "../../src/tools/activity-calendar/model.ts";
+import { OFFSETS } from "../../src/tools/timezone.ts";
 import { view } from "../../src/tools/activity-calendar/view.ts";
 import { RULES, collectCopy, lint, sentences, words } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
@@ -501,8 +502,6 @@ describe("the copy", () => {
     expect(copy.fewNote(1)).toBe("Only 1 chat or Snap was counted, so this picture may be weak.");
     expect(copy.unitMonth(2026, 3)).toBe("Mar 2026");
     expect(copy.unitMonth(2026, 13)).toBe("");
-    expect(copy.unitOffset(-330)).toBe("UTC-5:30");
-    expect(copy.unitOffset(0)).toBe("UTC");
     expect(copy.yearHeading(2026)).toBe("Year 2026");
     expect(copy.yearHeading(Number.NaN)).toBe("");
     expect(copy.unitWeek("Mar 2, 2026", 1, false)).toBe("Week of Mar 2, 2026, 1 chat or Snap");

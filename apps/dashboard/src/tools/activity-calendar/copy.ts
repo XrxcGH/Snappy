@@ -4,7 +4,7 @@
  * Nothing here holds an export value: counts, years and dates come in as arguments, and nothing takes or returns a
  * username (this tool reads kinds and times only, so it has none).
  */
-import { tools } from "../../copy.ts";
+import { common, tools } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -23,13 +23,6 @@ export const copy = {
 
   zoneLabel: "Time zone",
   zoneHelp: "Days follow this time zone. Snappy starts with UTC.",
-  /** "UTC", "UTC+2:00", "UTC-5:30". A piece that code joins into a sentence is a "unit" key. */
-  unitOffset: (minutes: number): string => {
-    if (!Number.isFinite(minutes)) return "";
-    if (minutes === 0) return "UTC";
-    const abs = Math.abs(minutes);
-    return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-  },
   yearLabel: "Year",
   yearHelp: "The year to list. Snappy starts with your latest.",
   latestOption: "Latest year",
@@ -88,7 +81,7 @@ export const copy = {
   unitNoRun: "None found",
   unitFrom: (date: string): string => `From ${date}`,
   unitTo: (date: string): string => `To ${date}`,
-  noValue: "-",
+  noValue: common.noFigure,
   runsNote: "Runs cover your whole account, never one friend. A quiet run has an active day on both sides.",
 
   kindsHeading: "Kinds",

@@ -5,6 +5,7 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
 import { formatCount } from "../../format.ts";
+import { OFFSETS, offsetLabel } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { DEFAULT_PARAMS, computeMemoriesGaps } from "./model.ts";
@@ -18,10 +19,6 @@ const ROW_LIMIT = 50;
 const MIN_GAPS = [1, 2, 3, 6, 12] as const;
 /** Busiest-stretch widths to offer, in months. */
 const STRETCHES = [1, 3, 6, 12] as const;
-/** UTC offsets to offer, in minutes: every whole hour from -12 to +14, and the common half and quarter hours. */
-const OFFSETS: readonly number[] = [
-  -720, -660, -600, -570, -540, -480, -420, -360, -300, -240, -210, -180, -120, -60, 0, 60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420, 480, 525, 540, 570, 600, 630, 660, 720, 765, 780, 840,
-];
 
 const num = (n: GapNote, key: string): number => n.params[key] ?? 0;
 
@@ -87,7 +84,7 @@ function controls(ui: ToolUi<GapsParams>): HTMLElement {
     { class: "filters" },
     selectField("gaps-min", copy.minGapLabel, MIN_GAPS.map((n): [string, string] => [String(n), copy.unitMonths(n)]), String(ui.params.minGapMonths), (v) => ui.set({ minGapMonths: Number(v) })),
     selectField("gaps-stretch", copy.stretchLabel, STRETCHES.map((n): [string, string] => [String(n), copy.unitMonths(n)]), String(ui.params.stretchMonths), (v) => ui.set({ stretchMonths: Number(v) })),
-    selectField("gaps-offset", copy.offsetLabel, OFFSETS.map((m): [string, string] => [String(m), copy.unitOffset(m)]), String(ui.params.offsetMinutes), (v) => ui.set({ offsetMinutes: Number(v) })),
+    selectField("gaps-offset", copy.zoneLabel, OFFSETS.map((m): [string, string] => [String(m), offsetLabel(m)]), String(ui.params.offsetMinutes), (v) => ui.set({ offsetMinutes: Number(v) })),
   );
 }
 
@@ -139,7 +136,7 @@ export const view = toolView<GapsResult, GapsParams>({
   controls,
   render: (r) => [glanceSection(r), gapsSection(r), busiestSection(r)],
   notes: (r): ToolNote[] => [
-    { kind: "info", text: copy.offsetNote(copy.unitOffset(r.utcOffsetMinutes)) },
+    { kind: "info", text: copy.offsetNote(offsetLabel(r.utcOffsetMinutes)) },
     ...r.notes.map(noteOf).filter((n): n is ToolNote => n !== null),
     ...(r.gaps.some((g) => g.kind === "start") ? [{ kind: "info", text: copy.startNote } as const] : []),
   ],

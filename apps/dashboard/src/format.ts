@@ -35,6 +35,22 @@ export function formatBytes(bytes: number): string {
   return `${NUMBER.format(Number(value.toFixed(digits)))} ${units[unit]}`;
 }
 
+/**
+ * A length of time in words, with one rule for every page: seconds under a minute, minutes under two hours, hours under two days,
+ * then days. "40 seconds", "83 minutes", "5 hours", "3 days". Nothing for a time that is not a length.
+ */
+export function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  if (ms < 1000) return "Under 1 second";
+  const seconds = Math.round(ms / 1000);
+  if (seconds < 60) return countOf(seconds, "second", "seconds");
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 120) return countOf(minutes, "minute", "minutes");
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 48) return countOf(hours, "hour", "hours");
+  return countOf(Math.round(ms / 86_400_000), "day", "days");
+}
+
 export function plural(n: number, one: string, many: string): string {
   return n === 1 ? one : many;
 }

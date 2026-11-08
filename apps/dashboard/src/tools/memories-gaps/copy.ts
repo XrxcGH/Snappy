@@ -4,6 +4,7 @@
  * Nothing here holds an export value: counts and month names come in as arguments, and no function takes or returns a username.
  */
 import { tools } from "../../copy.ts";
+import { zone } from "../../copy-tools.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -22,16 +23,9 @@ export const copy = {
 
   minGapLabel: "Shortest gap",
   stretchLabel: "Busiest stretch",
-  offsetLabel: "UTC offset",
+  zoneLabel: zone.selectLabel,
   /** "1 month", "6 months". */
   unitMonths: (n: number): string => countOf(n, "month", "months"),
-  /** "UTC", "UTC-5", "UTC+5:30". */
-  unitOffset: (minutes: number): string => {
-    if (minutes === 0) return "UTC";
-    const abs = Math.abs(minutes);
-    const rest = abs % 60;
-    return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}${rest === 0 ? "" : `:${String(rest).padStart(2, "0")}`}`;
-  },
   /** "Mar 2021". */
   unitMonthYear: (month: number, year: number): string => `${months[month - 1]} ${year}`,
   /** "Mar 2021 to May 2021". */

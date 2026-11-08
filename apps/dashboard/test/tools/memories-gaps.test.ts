@@ -292,11 +292,11 @@ describe("the page", () => {
 describe("the controls", () => {
   it("offers the shortest gap, the busiest stretch and a UTC offset, labeled, with 2 months, 3 months and UTC as the start", async () => {
     const { root } = await renderSettled(view, real());
-    expect(text(root, "label.label")).toEqual([copy.minGapLabel, copy.stretchLabel, copy.offsetLabel]);
+    expect(text(root, "label.label")).toEqual([copy.minGapLabel, copy.stretchLabel, copy.zoneLabel]);
     expect(text(root.querySelector("#gaps-min") as FakeElement, "option")).toEqual(["1 month", "2 months", "3 months", "6 months", "12 months"]);
     expect(text(root.querySelector("#gaps-stretch") as FakeElement, "option")).toEqual(["1 month", "3 months", "6 months", "12 months"]);
     const offsets = text(root.querySelector("#gaps-offset") as FakeElement, "option");
-    expect(offsets).toEqual(expect.arrayContaining(["UTC", "UTC-5", "UTC+1", "UTC+5:30", "UTC-12", "UTC+14"]));
+    expect(offsets).toEqual(expect.arrayContaining(["UTC", "UTC-5:00", "UTC+1:00", "UTC+5:30", "UTC-12:00", "UTC+14:00"]));
     expect(root.querySelector("#gaps-min option[selected]")?.textContent).toBe("2 months");
     expect(root.querySelector("#gaps-stretch option[selected]")?.textContent).toBe("3 months");
     expect(root.querySelector("#gaps-offset option[selected]")?.textContent).toBe("UTC");
@@ -430,8 +430,7 @@ describe("its words", () => {
     expect(copy.minGapNote(1)).toBe("The shortest gap was changed to 1 month.");
   });
 
-  it("names the offsets and months the way the command does", () => {
-    expect([0, -300, 330, 345, 840].map(copy.unitOffset)).toEqual(["UTC", "UTC-5", "UTC+5:30", "UTC+5:45", "UTC+14"]);
+  it("names the months the way the command does", () => {
     expect(copy.unitMonthYear(3, 2021)).toBe("Mar 2021");
     expect(copy.unitMonthYear(12, 1999)).toBe("Dec 1999");
   });

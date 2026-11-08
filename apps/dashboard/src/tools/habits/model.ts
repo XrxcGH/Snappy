@@ -17,10 +17,8 @@ export interface HabitsParams {
 
 export const DEFAULT_PARAMS: HabitsParams = { utcOffsetMinutes: 0 };
 
-/** The time zones the page offers, in minutes east of UTC: every whole hour, plus the half and quarter hours in common use. */
-export const OFFSETS: readonly number[] = [
-  -720, -660, -600, -570, -540, -480, -420, -360, -300, -240, -210, -180, -120, -60, 0, 60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420, 480, 525, 540, 570, 600, 630, 660, 720, 765, 780, 840,
-];
+/** The time zones the page offers. They come from the shared list; the reply speed tool still reads them from here. */
+export { OFFSETS } from "../timezone.ts";
 
 /** How many recent months the page lists. */
 export const MONTHS_SHOWN = 12;

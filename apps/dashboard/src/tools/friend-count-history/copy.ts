@@ -9,6 +9,8 @@
 import { tools } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
 const them = (n: number): string => (n === 1 ? "that friend" : "them");
 
 export const copy = {
@@ -30,6 +32,11 @@ export const copy = {
   removedHeader: "Removed by you",
   gainHeader: "Biggest gain",
   dropHeader: "Biggest drop",
+  /** "Mar 2026", from a year and a month number (1 to 12): a short month, because it sits in a table or a fact. */
+  unitMonth: (year: number, month: number): string => {
+    const name = MONTHS[month - 1];
+    return name === undefined || !Number.isFinite(year) ? "" : `${name} ${year}`;
+  },
   unitGain: (month: string, n: number) => `${month}, up ${formatCount(n)}`,
   unitDrop: (month: string, n: number) => `${month}, down ${formatCount(n)}`,
 

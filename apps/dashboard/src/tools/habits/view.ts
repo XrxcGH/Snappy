@@ -6,9 +6,10 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h, setVar } from "../../dom.ts";
 import { formatCount, formatDate, formatPercent } from "../../format.ts";
+import { zoneOptions } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
-import { computeHabits, DEFAULT_PARAMS, OFFSETS } from "./model.ts";
+import { computeHabits, DEFAULT_PARAMS } from "./model.ts";
 import type { HabitsParams, HabitsView, Peak } from "./model.ts";
 
 export const meta: ToolMeta = { id: "habits", group: "chats", category: "quiet", icon: "snapshots", needs: ["chats"] };
@@ -108,7 +109,7 @@ function offsetField(ui: ToolUi<HabitsParams>): HTMLElement {
   const select = h(
     "select",
     { id, class: "input", "data-key": "habits-zone", "aria-describedby": `${id}-help` },
-    ...OFFSETS.map((minutes) => h("option", { value: String(minutes), selected: minutes === ui.params.utcOffsetMinutes }, copy.unitOffset(minutes))),
+    ...zoneOptions(ui.params.utcOffsetMinutes),
   );
   select.addEventListener("change", () => {
     const minutes = Number(select.value);

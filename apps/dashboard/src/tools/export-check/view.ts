@@ -6,6 +6,7 @@ import { notice } from "../../components/notice.ts";
 import type { NoticeKind } from "../../components/notice.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
+import { common } from "../../copy.ts";
 import { h } from "../../dom.ts";
 import { formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
@@ -88,7 +89,7 @@ function stepText(a: insights.exportCheck.CheckAction): string {
   }
 }
 
-const dateCell = (ms: number | null): string => (ms === null ? "-" : formatDate(ms));
+const dateCell = (ms: number | null): string => (ms === null ? common.noFigure : formatDate(ms));
 
 function ageLine(age: insights.exportCheck.ExportAge): string {
   if (age.at === null) return copy.unknownDateLine;
@@ -125,7 +126,7 @@ function datesSection(check: ExportCheck): HTMLElement {
       ? dataTable(
           copy.datesCaption,
           [copy.recordsHeader, copy.fromHeader, copy.toHeader, copy.spanHeader],
-          covered.map(([label, c]) => [label, c.oldest === null ? "-" : copy.unitFrom(dateCell(c.oldest)), c.newest === null ? "-" : copy.unitTo(dateCell(c.newest)), c.spanDays === null ? "-" : copy.span(c.spanDays)]),
+          covered.map(([label, c]) => [label, c.oldest === null ? common.noFigure : copy.unitFrom(dateCell(c.oldest)), c.newest === null ? common.noFigure : copy.unitTo(dateCell(c.newest)), c.spanDays === null ? common.noFigure : copy.span(c.spanDays)]),
         )
       : null,
     h("p", {}, ageLine(check.age)),

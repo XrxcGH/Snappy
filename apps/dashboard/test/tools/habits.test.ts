@@ -12,7 +12,8 @@ import { COMMANDS, displayText } from "../../src/terminal/commands.ts";
 import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/habits/copy.ts";
 import { descriptor } from "../../src/tools/habits/index.ts";
-import { computeHabits, MONTHS_SHOWN, OFFSETS } from "../../src/tools/habits/model.ts";
+import { computeHabits, MONTHS_SHOWN } from "../../src/tools/habits/model.ts";
+import { OFFSETS } from "../../src/tools/timezone.ts";
 import { view } from "../../src/tools/habits/view.ts";
 import { RULES, collectCopy, lint, sentences, words } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
@@ -180,7 +181,7 @@ describe("the page", () => {
     const { root } = await renderSettled(view, withChats(crafted()));
     const [busiest, direction] = root.querySelectorAll("table") as [FakeElement, FakeElement];
     expect(rowsOf(busiest)).toEqual([
-      [copy.hourPattern, "9 pm is busiest", "57% in the busiest hour", copy.unitNoQuietest],
+      [copy.hourPattern, "9 PM is busiest", "57% in the busiest hour", copy.unitNoQuietest],
       [copy.weekdayPattern, "Friday is busiest", "57% in the busiest day", copy.unitNoQuietest],
       [copy.monthPattern, "Mar 2026 is busiest", "57% in the busiest month", copy.unitNoQuietest],
     ]);
@@ -192,7 +193,7 @@ describe("the page", () => {
     expect(root.textContent).toContain(copy.sentLine(57));
     const hours = root.querySelectorAll(".hbars")[0] as FakeElement;
     const nine = hours.querySelectorAll("li")[21] as FakeElement;
-    expect(cells(nine, ".hbar-name")).toEqual(["9 pm"]);
+    expect(cells(nine, ".hbar-name")).toEqual(["9 PM"]);
     expect(cells(nine, ".hbar-count")).toEqual(["20"]);
     expect((nine.querySelector(".meter-fill") as FakeElement).styleProps.get("width")).toBe("100%");
     const midnight = hours.querySelectorAll("li")[0] as FakeElement;
@@ -240,7 +241,7 @@ describe("the page", () => {
     await settled(r.root);
     expect(r.root.querySelector("select")).toBe(select);
     const busiest = r.root.querySelectorAll("table")[0] as FakeElement;
-    expect(rowsOf(busiest)[0]?.[1]).toBe("11 pm is busiest");
+    expect(rowsOf(busiest)[0]?.[1]).toBe("11 PM is busiest");
     // Each result is announced as it lands, and the control is not rebuilt.
     expect(said).toHaveLength(2);
   });
@@ -326,14 +327,12 @@ describe("the copy", () => {
   it("never takes a name: its functions take counts, hours, months and milliseconds", () => {
     expect(copy.undatedNote(2)).toBe("2 chats and Snaps have no usable date. Snappy leaves them out.");
     expect(copy.undatedNote(1)).toBe("1 chat or Snap has no usable date. Snappy leaves it out.");
-    expect(copy.unitHour(0)).toBe("12 am");
-    expect(copy.unitHour(12)).toBe("12 pm");
-    expect(copy.unitHour(23)).toBe("11 pm");
+    expect(copy.unitHour(0)).toBe("12 AM");
+    expect(copy.unitHour(12)).toBe("12 PM");
+    expect(copy.unitHour(23)).toBe("11 PM");
     expect(copy.unitHour(24)).toBe("");
     expect(copy.unitMonth(2026, 3)).toBe("Mar 2026");
     expect(copy.unitMonth(2026, 13)).toBe("");
-    expect(copy.unitOffset(-330)).toBe("UTC-5:30");
-    expect(copy.unitOffset(0)).toBe("UTC");
     expect(copy.unitGap(500)).toBe("Under 1 second");
     expect(copy.unitGap(40_000)).toBe("40 seconds");
     expect(copy.unitGap(12 * 60_000)).toBe("12 minutes");

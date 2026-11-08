@@ -4,8 +4,13 @@
  * lookalike usernames and memories gaps). One assertion per rule, so a later edit cannot bring an old wording back.
  * Synthetic data only.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
-import { tools } from "../../src/copy.ts";
+import { common, tools } from "../../src/copy.ts";
+import { OFFSETS } from "../../src/tools/timezone.ts";
+import type { FakeElement } from "../fake-dom.ts";
 import { TOOLS } from "../../src/tools/registry.ts";
 import { copy as activityCalendar } from "../../src/tools/activity-calendar/copy.ts";
 import { copy as anniversaries } from "../../src/tools/anniversaries/copy.ts";
@@ -21,6 +26,8 @@ import { copy as memoriesGaps } from "../../src/tools/memories-gaps/copy.ts";
 
 import { textOf } from "../copy-rules.ts";
 import { renderSettled, sampleState, sampleWorkspace } from "./harness.ts";
+
+const toolsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "tools");
 
 // A page announces its result; what it says is checked in each tool's own test.
 vi.mock("../../src/announce.ts", () => ({ announce: () => undefined }));
@@ -129,6 +136,63 @@ describe("counts", () => {
     const { root } = await renderSettled((TOOLS.find((t) => t.id === "export-check") as (typeof TOOLS)[number]).view, sample);
     expect(root.textContent).toMatch(/\b\d{1,3}(,\d{3})+\b/);
   }, 60_000);
+});
+
+const pageOf = async (id: string): Promise<FakeElement> => {
+  await sampleWorkspace();
+  return (await renderSettled((TOOLS.find((t) => t.id === id) as (typeof TOOLS)[number]).view, await sampleState())).root;
+};
+
+describe("formats", () => {
+  it("write a clock as AM or PM", () => {
+    expect(habits.unitHour(0)).toBe("12 AM");
+    expect(habits.unitHour(12)).toBe("12 PM");
+    expect(habits.unitHour(19)).toBe("7 PM");
+    expect(hits(/\b\d{1,2}(:\d\d)? ?(am|pm)\b/)).toEqual([]);
+  });
+
+  it("write the empty value as the one en dash, never a hyphen", () => {
+    expect(common.noFigure).toBe("–");
+    expect(habits.noValue).toBe(common.noFigure);
+    expect(activityCalendar.noValue).toBe(common.noFigure);
+    for (const id of Object.keys(COPIES)) {
+      for (const file of ["view.ts", "copy.ts"]) {
+        const text = readFileSync(path.join(toolsDir, id, file), "utf8");
+        expect(text, `${id}/${file}`).not.toMatch(/noValue: "-"|\? "-" :|: "-"\)/);
+      }
+    }
+  });
+
+  it("name every time zone as UTC, UTC+2:00 or UTC-5:30 under the label Time zone, in all three tools that offer one", async () => {
+    for (const [id, selectId] of [["habits", "habits-zone"], ["activity-calendar", "calendar-zone"], ["memories-gaps", "gaps-offset"]] as const) {
+      const root = await pageOf(id);
+      const select = root.querySelector(`#${selectId}`) as FakeElement;
+      expect(select, id).not.toBeNull();
+      const labels = select.querySelectorAll("option").map((o) => o.textContent);
+      expect(labels.length, id).toBe(OFFSETS.length);
+      expect(labels.filter((l) => !/^UTC([+-]\d{1,2}:\d{2})?$/.test(l)), id).toEqual([]);
+      expect(root.querySelector(`label[for=${selectId}]`)?.textContent, id).toBe("Time zone");
+    }
+  });
+
+  it("write a month as a short month in a table and in a fact: Jan 2025, never January 2025", async () => {
+    const long = /\b(January|February|March|April|June|July|August|September|October|November|December) \d{4}\b/;
+    expect(hits(long)).toEqual([]);
+    for (const id of Object.keys(COPIES)) {
+      const root = await pageOf(id);
+      const cells = root.querySelectorAll("td, th, dd").map((c) => c.textContent).filter((t) => long.test(t));
+      expect(cells, id).toEqual([]);
+    }
+  });
+
+  it("write a length of time by one rule: minutes up to two hours, hours up to two days", () => {
+    expect(habits.unitGap(83 * 60_000)).toBe("83 minutes");
+    expect(habits.unitGap(120 * 60_000)).toBe("2 hours");
+    expect(habits.unitGap(47 * 3_600_000)).toBe("47 hours");
+    expect(habits.unitGap(48 * 3_600_000)).toBe("2 days");
+    expect(habits.unitGap(500)).toBe("Under 1 second");
+    expect(habits.unitGap(Number.NaN)).toBe("");
+  });
 });
 
 describe("the note for something a page cannot describe, and the word for what is left out", () => {

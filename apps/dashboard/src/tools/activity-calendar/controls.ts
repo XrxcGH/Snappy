@@ -5,8 +5,9 @@
 import { icon } from "../../components/icon.ts";
 import type { ToolUi } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
+import { zoneOptions } from "../timezone.ts";
 import { copy } from "./copy.ts";
-import { OFFSETS, yearChoices } from "./model.ts";
+import { yearChoices } from "./model.ts";
 import type { CalendarParams } from "./model.ts";
 
 function field(id: string, label: string, help: string, select: HTMLElement): HTMLElement {
@@ -27,7 +28,7 @@ export function calendarControls(ui: ToolUi<CalendarParams>): HTMLElement {
   const zone = h(
     "select",
     { id: zoneId, class: "input", "data-key": zoneId, "aria-describedby": `${zoneId}-help` },
-    ...OFFSETS.map((minutes) => h("option", { value: String(minutes), selected: minutes === ui.params.utcOffsetMinutes }, copy.unitOffset(minutes))),
+    ...zoneOptions(ui.params.utcOffsetMinutes),
   );
   zone.addEventListener("change", () => {
     const minutes = Number(zone.value);
