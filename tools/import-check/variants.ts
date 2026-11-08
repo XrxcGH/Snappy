@@ -177,6 +177,7 @@ export function buildVariants(): Variant[] {
   add("v24", "chat only", [part({ "json/chat_history.json": chatJson() })], ["memories-missing","no-friends-section","snap-history-missing"], 0);
   add("v28", "saved_chat_history.json", [part({ "json/friends.json": friendsJson(), "json/saved_chat_history.json": chatJson() })], ["chat-history-missing","memories-missing","snap-history-missing"], 30);
   add("v29", "a stray chat_history.json in chat_media", [part({ ...baseFiles(), "chat_media/chat_history.json": { stray: [{ From: "x", "Media Type": "TEXT", Created: "2024-01-01 10:00:00 UTC", Content: "x", IsSender: true }] } })], [], 30);
+  last().events = { sent: 60, received: 60, unknown: 0, groups: 0 };
   add("v30", "unicode, short and spaced usernames", [part(withFriends({ Friends: ["zoë", "я_друг", "a", "two words", "名前"].map((n, i) => friendEntry(n, i)) }))], [], 5);
   // Display names where the layout expects usernames: the friends list settles who each chat is with.
   const byName = (titled: boolean, keyed: boolean): Record<string, unknown> =>

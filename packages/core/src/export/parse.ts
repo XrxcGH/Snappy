@@ -90,17 +90,27 @@ function isMedia(path: string): boolean {
   return ext !== undefined && MEDIA_EXTENSIONS.has(ext);
 }
 
-/** Shallowest match wins (then alphabetical) so a stray nested copy never shadows the real file. */
+/** True when a path runs through a folder named "json": where Snapchat puts the data files. */
+const underJsonFolder = (path: string): boolean => path.split("/").slice(0, -1).some((d) => d.toLowerCase() === "json");
+
+/**
+ * A file under a "json" folder wins, then the shallowest, then the alphabetically first, so a stray
+ * copy of a data file name elsewhere (in the chat media, say) never shadows the real file.
+ */
 function pickTargets(entries: Entry[]): Map<Target, Entry> {
   const chosen = new Map<Target, Entry>();
+  const rank = (e: Entry): [number, number, string] => [underJsonFolder(e.path) ? 0 : 1, e.path.split("/").length, e.path];
+  const before = (a: Entry, b: Entry): boolean => {
+    const [aj, ad, ap] = rank(a);
+    const [bj, bd, bp] = rank(b);
+    return aj !== bj ? aj < bj : ad !== bd ? ad < bd : ap < bp;
+  };
   for (const e of entries) {
     const base = baseName(e.path).toLowerCase();
     for (const target of Object.keys(TARGET_NAMES) as Target[]) {
       if (base !== TARGET_NAMES[target]) continue;
       const cur = chosen.get(target);
-      const depth = e.path.split("/").length;
-      const curDepth = cur ? cur.path.split("/").length : Infinity;
-      if (!cur || depth < curDepth || (depth === curDepth && e.path < cur.path)) chosen.set(target, e);
+      if (!cur || before(e, cur)) chosen.set(target, e);
     }
   }
   return chosen;
