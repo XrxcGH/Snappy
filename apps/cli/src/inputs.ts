@@ -7,6 +7,7 @@ import type { ParsedExport } from "@snappy-export/core";
 import { CliError, fsError } from "./errors.ts";
 import { checkParts, expandWildcards, isLaterPartsOnly, orderExportParts, scanNames } from "./export-parts.ts";
 import type { PartScan } from "./export-parts.ts";
+import { folderReader, looksLikeExportFolder } from "./folder-zip.ts";
 import { openFileReader } from "./fs-reader.ts";
 import type { FileReader } from "./fs-reader.ts";
 import type { Io } from "./io.ts";
@@ -15,8 +16,18 @@ type FsIo = Pick<Io, "fs" | "path">;
 
 const isZip = (name: string): boolean => name.toLowerCase().endsWith(".zip");
 const isJson = (name: string): boolean => name.toLowerCase().endsWith(".json");
-/** A folder with json/ inside, or a .json file: the export was unzipped (Safari does that after a download). */
-const UNZIPPED = "This looks like an unzipped export. Point Snappy at the ZIP files instead.";
+/** A single JSON file is a piece of an export that was unzipped (Safari does that after a download). */
+const UNZIPPED = "This is a file from an unzipped export. Point Snappy at the whole export folder, or at the ZIP files.";
+/** Readers made from a folder, so the notes that only apply to a folder can be added. */
+const folderReaders = new WeakSet<object>();
+
+async function isFolder(io: Pick<Io, "fs">, path: string): Promise<boolean> {
+  try {
+    return (await io.fs.stat(path)).isDirectory;
+  } catch {
+    return false;
+  }
+}
 /** In a folder of parts, skip the "._name.zip" sidecars macOS leaves next to files copied to other drives. */
 const isPart = (name: string): boolean => isZip(name) && !name.startsWith("._");
 const byName = (a: string, b: string): number => a.localeCompare(b, "en", { numeric: true });
@@ -67,8 +78,11 @@ export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[
       }
       const names = entries.filter((d) => d.isFile && isPart(d.name)).map((d) => d.name);
       if (names.length === 0) {
-        // A browser that unzips downloads (Safari does) leaves a folder with json/ inside, not the ZIP files.
-        if (entries.some((d) => (d.isDirectory && d.name.toLowerCase() === "json") || (d.isFile && isJson(d.name)))) throw new CliError("unzipped-export", UNZIPPED);
+        // A browser that unzips downloads (Safari does) leaves a folder with json/ inside, not the ZIP files: read that folder.
+        if (await looksLikeExportFolder(io, path)) {
+          found.push(path);
+          continue;
+        }
         throw new CliError("no-zips", `No .zip files in "${arg}". Put your export parts there, or name the files.`);
       }
       found.push(...names.sort(byName).map((n) => io.path.join(path, n)));
@@ -81,6 +95,10 @@ export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[
     }
   }
   const unique = [...new Set(found)];
+  // A folder is a whole export on its own: read together with ZIP files it would be a second copy of the lists.
+  if (unique.length > 1 && (await Promise.all(unique.map((path) => isFolder(io, path)))).some(Boolean)) {
+    throw new CliError("mixed-inputs", "Give Snappy either the ZIP files or the unzipped folder, not both.");
+  }
   const scans = await Promise.all(unique.map((path) => scanPath(io, path)));
   const check = checkParts(unique, scans);
   if (check.kind === "mixed") {
@@ -114,10 +132,19 @@ export function throwIfStopped(io: Pick<Io, "signal">): void {
 }
 
 /** Open every path, run `fn`, and always close the handles. A stop request during `fn` ends in a calm stop, not in its result. */
-export async function withReaders<T>(io: Pick<Io, "fs" | "signal">, paths: string[], fn: (readers: FileReader[]) => Promise<T>): Promise<T> {
+export async function withReaders<T>(io: Pick<Io, "fs" | "path" | "signal">, paths: string[], fn: (readers: FileReader[]) => Promise<T>): Promise<T> {
   const readers: FileReader[] = [];
   try {
-    for (const path of paths) readers.push(await openFileReader(io, path));
+    for (const path of paths) {
+      // A folder is an unzipped export: its few JSON files are read as if they were one ZIP file.
+      if (await isFolder(io, path)) {
+        const reader = await folderReader(io, path).catch((e: unknown) => {
+          throw fsError(e, "read the folder", path);
+        });
+        folderReaders.add(reader);
+        readers.push(reader);
+      } else readers.push(await openFileReader(io, path));
+    }
     const result = await fn(readers);
     throwIfStopped(io);
     return result;
@@ -133,7 +160,11 @@ export async function parseParts(readers: FileReader[], io: Pick<Io, "signal">):
     parts.push(await parseExportFromReader(reader, { part: i + 1 }));
     throwIfStopped(io);
   }
-  return parts.length === 1 ? (parts[0] as ParsedExport) : mergeParsedExports(parts);
+  const merged = parts.length === 1 ? (parts[0] as ParsedExport) : mergeParsedExports(parts);
+  // A folder holds no photos or videos, and a rescue needs them: say so next to the Memories notes.
+  return readers.some((r) => folderReaders.has(r))
+    ? { ...merged, issues: [...merged.issues, { severity: "info", code: "folder-no-media", message: "This export was read from an unzipped folder, so it has no photos or videos. To rescue Memories, use the ZIP files." }] }
+    : merged;
 }
 
 /** Newest modification time among the files, a fallback when an export carries no date. */

@@ -9,6 +9,8 @@ import { resetAnalysisCache } from "./analysis.ts";
 import { settings, start, vaultMessages } from "./copy.ts";
 import { startFlow } from "./copy-start.ts";
 import { checkParts, looksUnzipped, scanPart } from "./export-parts.ts";
+import { pickDataFiles, wrapAsZip } from "./folder-import.ts";
+import type { FolderFile } from "./folder-import.ts";
 import { ImportCanceled, runImport } from "./import-pipeline.ts";
 import type { ImportRunner } from "./import-pipeline.ts";
 import { exportHealth } from "./issues.ts";
@@ -48,6 +50,8 @@ export type ImportResult = "done" | "failed" | "canceled" | "busy";
 export interface Actions {
   init(savedTheme: string | null): Promise<void>;
   importZips(files: readonly NamedBlob[], options?: ImportOptions): Promise<ImportResult>;
+  /** An export that a browser unzipped: the files of its folder. Only the JSON files are read, so there are no Memories files in it. */
+  importFolder(files: readonly FolderFile[]): Promise<ImportResult>;
   /**
    * Go on with the export that was just refused for a reason the person may override (an empty friends list with removed
    * friends), when there is no saved history and no earlier export this session. Reads nothing again. Otherwise "failed".
@@ -142,6 +146,8 @@ export function createActions(store: Store, deps: Deps): Actions {
     /** Files chosen that were not ZIP files. */
     skipped: number;
     parts: number;
+    /** Notes to add to the export's issues when it is kept (what the reader could not know). */
+    notes: ExportIssue[];
   }
   let held: Read | null = null;
 
@@ -185,27 +191,57 @@ export function createActions(store: Store, deps: Deps): Actions {
     }
 
     // Parts are read in export order: the part with the lists first, then -2, -3, whatever order they were chosen in.
-    const ordered = check.ordered;
+    return readParts(check.ordered.length, async () => check.ordered, files.length - zips.length, []);
+  }
+
+  /**
+   * An export that a browser unzipped. Only its few JSON files are read: they are wrapped into one small ZIP file that
+   * goes through the same reader as a downloaded part. There are no photos or videos in it, and the person is told.
+   */
+  async function importFolder(files: readonly FolderFile[]): Promise<ImportResult> {
+    if (working || store.get().import.phase === "reading") return "busy";
+    working = true;
+    held = null;
+    try {
+      const data = pickDataFiles(files);
+      if (data.length === 0) {
+        store.dispatch({ type: "import-failed", message: startFlow.folderEmpty });
+        return "failed";
+      }
+      const note: ExportIssue = { severity: "info", code: "folder-no-media", message: startFlow.folderNoMedia };
+      return await readParts(1, async () => [await wrapAsZip(data, deps.clock())], 0, [note]);
+    } finally {
+      working = false;
+      stopping = null;
+    }
+  }
+
+  /** Read the parts that `prepare` gives, with progress and Cancel, then check and keep what was read. */
+  async function readParts(steps: number, prepare: () => Promise<readonly NamedBlob[]>, skipped: number, notes: ExportIssue[]): Promise<ImportResult> {
     const stop = new AbortController();
     stopping = stop;
-    store.dispatch({ type: "import-started", steps: ordered.length, sample: false, at: deps.clock() });
+    store.dispatch({ type: "import-started", steps, sample: false, at: deps.clock() });
     try {
       await deps.yieldToUi(); // lets "Part 1 of N" paint before the first read
       // Cancel ends the wait at once, even for a reader that does not look at the signal: its late result is dropped.
       const stopped = new Promise<never>((_, reject) => stop.signal.addEventListener("abort", () => reject(new ImportCanceled()), { once: true }));
-      const reading = (deps.runImport ?? runImport)(ordered, {
-        yieldToUi: deps.yieldToUi,
-        signal: stop.signal,
-        onProgress: ({ step, fraction }) => {
-          if (!stop.signal.aborted) store.dispatch({ type: "import-progress", step, fraction });
-        },
-      });
+      const run = async (): Promise<ParsedExport> => {
+        const ordered = await prepare();
+        return (deps.runImport ?? runImport)(ordered, {
+          yieldToUi: deps.yieldToUi,
+          signal: stop.signal,
+          onProgress: ({ step, fraction }) => {
+            if (!stop.signal.aborted) store.dispatch({ type: "import-progress", step, fraction });
+          },
+        });
+      };
+      const reading = run();
       reading.catch(() => undefined); // nobody waits for it after a Cancel
       const read = await Promise.race([reading, stopped]);
       if (stop.signal.aborted) throw new ImportCanceled();
       // Whichever reader ran (the worker or this page), file locations and links are forgotten before
       // anything is kept: nothing here opens a file, so nothing needs them.
-      return conclude({ combined: forgetMediaHandles(read), skipped: files.length - zips.length, parts: ordered.length }, false);
+      return conclude({ combined: forgetMediaHandles(read), skipped, parts: steps, notes }, false);
     } catch (e) {
       if (stop.signal.aborted || e instanceof ImportCanceled) {
         store.dispatch({ type: "import-canceled", message: startFlow.stopped });
@@ -244,6 +280,7 @@ export function createActions(store: Store, deps: Deps): Actions {
     held = null;
     // A file that is not a .zip was left out. If it was a part of the export, what was read is incomplete.
     if (read.skipped > 0) issues.push({ severity: "warning", code: "files-skipped-not-zip", message: start.skippedFiles(read.skipped) });
+    issues.push(...read.notes);
     const snapshot = snapshotOf(merged, now, issues, futureDated);
     store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now, parts: read.parts });
     return "done";
@@ -466,6 +503,7 @@ export function createActions(store: Store, deps: Deps): Actions {
   return {
     init,
     importZips,
+    importFolder,
     importAnyway,
     cancelImport,
     loadSample,

@@ -2,18 +2,11 @@
  * An export that a browser unzipped (Safari does, after a download) is a folder or JSON files. Saying "Snappy can only
  * read ZIP files" gives no way forward, so the page says what it looks like and what to do. Synthetic data only.
  */
-import { beforeAll, describe, expect, it, vi } from "vitest";
-import type { Actions, ImportOptions, NamedBlob } from "../src/actions.ts";
+import { describe, expect, it, vi } from "vitest";
 import { start } from "../src/copy.ts";
 import { startFlow } from "../src/copy-start.ts";
 import { looksUnzipped } from "../src/export-parts.ts";
-import { Scope, runInScope } from "../src/reactive.ts";
-import { initialState } from "../src/reducer.ts";
-import { createStore } from "../src/store.ts";
-import { startView } from "../src/views/start.ts";
-import { FakeElement, installFakeDom } from "./fake-dom.ts";
 import { partFiles, setup } from "./export-fixtures.ts";
-import { testTerminal } from "./terminal-fixture.ts";
 
 vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
@@ -52,29 +45,5 @@ describe("importing what looks unzipped", () => {
     expect(await actions.importZips([file("notes.txt")])).toBe("failed");
     expect(store.get().import.message).toBe(start.notZip);
     expect(await actions.importZips([...partFiles(2), file("friends.json")])).toBe("done");
-  });
-});
-
-describe("dropping a folder on the drop zone", () => {
-  beforeAll(() => void installFakeDom());
-
-  function drop(items: unknown[], files: NamedBlob[]): { files: readonly NamedBlob[]; options: ImportOptions | undefined }[] {
-    const calls: { files: readonly NamedBlob[]; options: ImportOptions | undefined }[] = [];
-    const actions: Partial<Actions> = { importZips: async (f, options) => (calls.push({ files: f, options }), "failed") };
-    const store = createStore(initialState());
-    const view = runInScope(new Scope(true), () => startView({ store, actions: actions as Actions, terminal: testTerminal() })) as unknown as FakeElement;
-    (view.querySelector(".dropzone") as FakeElement).fire("drop", { dataTransfer: { files, items } });
-    return calls;
-  }
-
-  it("tells the import that a folder was dropped", () => {
-    const calls = drop([{ kind: "file", webkitGetAsEntry: () => ({ isDirectory: true }) }], [file("mydata~1700000000000")]);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]?.options).toEqual({ folder: true });
-  });
-
-  it("does not, for ordinary files", () => {
-    const calls = drop([{ kind: "file", webkitGetAsEntry: () => ({ isDirectory: false }) }, { kind: "file" }], [file("a.zip")]);
-    expect(calls[0]?.options).toEqual({ folder: false });
   });
 });

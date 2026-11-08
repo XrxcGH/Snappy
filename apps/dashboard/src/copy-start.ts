@@ -19,6 +19,12 @@ export const startFlow = {
   // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
   unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
 
+  // An unzipped folder read directly (a browser's folder chooser, or a folder dropped on the drop zone).
+  chooseFolder: "Choose a folder",
+  folderHint: "Browser unzipped it? Choose its folder instead.",
+  folderEmpty: "Snappy found no export files in that folder. Choose the folder that holds the json folder, or choose the ZIP files.",
+  folderNoMedia: "This export was read from an unzipped folder, so it has no photos or videos. To rescue Memories, choose the ZIP files.",
+
   // An export refused only because its friends list is empty although removed friends are listed: the person may go on.
   useAnyway: "Use anyway",
 

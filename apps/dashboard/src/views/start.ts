@@ -1,4 +1,5 @@
-import type { ImportOptions, NamedBlob } from "../actions.ts";
+import { createImportFlow } from "../import-flow.ts";
+import { folderFilesFromInput } from "../folder-import.ts";
 import { announce } from "../announce.ts";
 import { failureClass, visibleIssues } from "@snappy-export/core";
 import { common, routes, settings, start } from "../copy.ts";
@@ -171,43 +172,29 @@ function countSection(ctx: ViewContext): HTMLElement {
 }
 
 function addSection(ctx: ViewContext): HTMLElement {
-  const { store, actions } = ctx;
-
-  const run = async (files: NamedBlob[], options: ImportOptions = {}): Promise<void> => {
-    if (files.length === 0) return;
-    // A read is already going: say so, and leave it alone.
-    if (store.get().import.phase === "reading") {
-      announce(startFlow.busy);
-      return;
-    }
-    announce(start.reading(0, files.length));
-    const result = await actions.importZips(files, options);
-    const s = store.get();
-    if (result === "done") {
-      announce(s.import.addedToHistory === false ? start.notAdded : start.readDone);
-      navigate("overview");
-    } else if (result === "canceled") {
-      announce(startFlow.stopped);
-    } else if (result === "busy") {
-      announce(startFlow.busy);
-    } else {
-      announce(s.import.message ?? start.readFailed, true);
-    }
-  };
+  const flow = createImportFlow(ctx);
 
   // A native shell opens its own dialog. A plain browser, or a shell that declines (null or an error), uses the file input.
   const choose = async (): Promise<void> => {
     const pick = platform().pickZips;
     const native = pick ? await pick().catch(() => null) : null;
     if (native === null) picker.click();
-    else void run(native);
+    else void flow.files(native);
   };
 
   const picker = h("input", { type: "file", accept: ".zip,application/zip", multiple: true, hidden: true, "aria-hidden": "true", tabindex: "-1" });
   picker.addEventListener("change", () => {
     const files = [...(picker.files ?? [])];
     picker.value = ""; // lets the same file be chosen again
-    void run(files);
+    void flow.files(files);
+  });
+
+  // An export a browser unzipped is a folder: this chooser takes the folder, and Snappy reads only its few JSON files.
+  const folderPicker = h("input", { type: "file", webkitdirectory: true, multiple: true, hidden: true, "aria-hidden": "true", tabindex: "-1" });
+  folderPicker.addEventListener("change", () => {
+    const files = folderFilesFromInput([...(folderPicker.files ?? [])]);
+    folderPicker.value = "";
+    void flow.folder(files);
   });
 
   const dropzone = h(
@@ -233,10 +220,8 @@ function addSection(ctx: ViewContext): HTMLElement {
   dropzone.addEventListener("drop", (e) => {
     e.preventDefault();
     setActive(false);
-    const transfer = e.dataTransfer;
-    // A folder dropped from Finder or Explorer arrives as one empty file; only its directory entry says what it is.
-    const folder = [...(transfer?.items ?? [])].some((item) => item.kind === "file" && item.webkitGetAsEntry?.()?.isDirectory === true);
-    void run([...(transfer?.files ?? [])], { folder });
+    // ZIP files, JSON files or a folder: the flow looks at what the drop holds, before it waits for anything.
+    void flow.drop(e.dataTransfer);
   });
 
   return stepSection(
@@ -245,6 +230,13 @@ function addSection(ctx: ViewContext): HTMLElement {
     h("p", {}, start.addBody),
     dropzone,
     picker,
+    h(
+      "div",
+      { class: "folder-row" },
+      h("p", { class: "caption muted" }, startFlow.folderHint),
+      button({ label: startFlow.chooseFolder, variant: "quiet", key: "choose-folder", onclick: () => folderPicker.click() }),
+      folderPicker,
+    ),
   );
 }
 
