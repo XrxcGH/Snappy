@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged into the macOS app's Info.plist by tauri build (Tauri also looks for a file of this name beside tauri.conf.json).
+	     macOS accepts only dotted numbers in CFBundleShortVersionString, so the beta tag lives in SnappyReleaseVersion,
+	     in the disk image name and in the in-app Beta label. Keep these in step with tauri.conf.json:
+	     apps/app/test/macos-config.test.ts fails when they differ. -->
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>SnappyReleaseVersion</key>
+	<string>0.1.0-beta.1</string>
+</dict>
+</plist>
