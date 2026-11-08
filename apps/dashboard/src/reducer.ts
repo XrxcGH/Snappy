@@ -119,6 +119,7 @@ export type Action =
   | { type: "import-reset" }
   | { type: "sample-loaded"; workspace: Workspace }
   | { type: "sample-cleared" }
+  | { type: "snapshot-removed"; id: string }
   | { type: "keep"; username: string }
   | { type: "unkeep"; username: string }
   | { type: "toggle-checked"; username: string }
@@ -194,6 +195,13 @@ export function reduce(state: State, action: Action): State {
       return { ...state, sample: action.workspace, import: { phase: "done", step: state.import.steps, steps: state.import.steps, sample: true } };
     case "sample-cleared":
       return { ...state, sample: null, import: { phase: "idle", step: 0, steps: 0, sample: false } };
+
+    // One export taken out of the history (Settings, Saved history). It touches the real workspace only: the sample has no history to edit.
+    case "snapshot-removed": {
+      const snapshots = state.real.ledger.snapshots.filter((snap) => snap.id !== action.id);
+      if (snapshots.length === state.real.ledger.snapshots.length) return state;
+      return { ...state, real: { ...state.real, ledger: { ...state.real.ledger, snapshots } } };
+    }
 
     case "keep":
       return editActive(state, (ws) => ({ ...ws, allowlist: sortedUnique([...ws.allowlist, action.username]) }));

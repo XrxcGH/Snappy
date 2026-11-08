@@ -7,6 +7,8 @@ import { openShortcuts } from "../keys.ts";
 import type { Theme, State } from "../reducer.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
+import { formatDate } from "../format.ts";
+import type { Snapshot } from "@snappy-export/core";
 import { button } from "../components/button.ts";
 import { icon } from "../components/icon.ts";
 import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
@@ -22,7 +24,7 @@ export const settingsView: View = (ctx) =>
     "div",
     { class: "view" },
     pageHeader(routes.settings.title, undefined, { icon: "settings" }),
-    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), helpSection(ctx), aboutSection()),
+    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), historySection(ctx), helpSection(ctx), aboutSection()),
   );
 
 /**
@@ -154,6 +156,66 @@ function deleteSection(ctx: ViewContext): HTMLElement {
 
   showStart();
   return section(settings.deleteHeading, box);
+}
+
+/**
+ * The saved history as a list of the exports in it: the date and how many friends, never a name. Each can be deleted
+ * in two steps, like Delete data. It shows the real history (the sample has none), and nothing while the history is locked.
+ */
+function historySection(ctx: ViewContext): HTMLElement {
+  return region(
+    ctx.store,
+    (s) => [s.real.ledger, s.vault.phase],
+    (s) => {
+      if (s.vault.phase === "locked") return null;
+      const snapshots = [...s.real.ledger.snapshots].sort((a, b) => b.takenAt - a.takenAt);
+      return section(
+        shellCopy.historyHeading,
+        h("p", {}, shellCopy.historyNote),
+        snapshots.length === 0 ? h("p", {}, shellCopy.historyEmpty) : h("ul", { class: "history-list" }, ...snapshots.map((snap) => historyRow(ctx, snap))),
+      );
+    },
+    { className: "region region-section" },
+  );
+}
+
+function historyRow(ctx: ViewContext, snap: Snapshot): HTMLElement {
+  const date = formatDate(snap.takenAt);
+  const slot = h("div", { class: "history-actions" });
+  // Set while the confirmation is showing, so Escape knows there is something to cancel.
+  let asking = false;
+  const showDelete = (focus: boolean): void => {
+    asking = false;
+    const start = button({ label: shellCopy.historyDeleteButton, ariaLabel: shellCopy.historyDeleteFor(date), icon: "remove", key: `history-delete:${snap.id}`, onclick: showConfirm });
+    slot.replaceChildren(start);
+    if (focus) start.focus();
+  };
+  const showConfirm = (): void => {
+    asking = true;
+    const cancel = button({ label: shellCopy.historyCancelButton, key: `history-cancel:${snap.id}`, onclick: () => showDelete(true) });
+    const confirm = button({
+      label: shellCopy.historyConfirmButton,
+      variant: "danger",
+      icon: "remove",
+      key: `history-confirm:${snap.id}`,
+      onclick: () => {
+        ctx.store.dispatch({ type: "snapshot-removed", id: snap.id });
+        announce(shellCopy.historyDeletedAnnounce);
+      },
+    });
+    slot.replaceChildren(h("p", { class: "caption" }, shellCopy.historyConfirmNote(date)), h("div", { class: "actions" }, confirm, cancel));
+    // Cancel is the safe default, as in Delete data.
+    cancel.focus();
+  };
+  // Escape cancels, as it does everywhere else a confirmation asks.
+  slot.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Escape" && asking) {
+      e.preventDefault();
+      showDelete(true);
+    }
+  });
+  showDelete(false);
+  return h("li", { class: "history-row" }, h("span", { class: "history-what" }, shellCopy.historyRow(date, snap.friends.length)), slot);
 }
 
 /**

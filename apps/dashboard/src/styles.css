@@ -936,4 +936,9 @@ dialog.shortcuts::backdrop { background: var(--scrim); }
 .shortcut-list dt { display: flex; align-items: center; gap: var(--space-2); }
 .shortcut-list dd { margin: 0; }
 .keys-pending { position: fixed; inset-inline-start: var(--space-4); bottom: var(--space-4); z-index: 30; display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: var(--surface-raised); box-shadow: var(--shadow-lg); font-weight: 600; }
+/* Settings, Saved history: one row per export, the date and friend count on the left, its Delete on the right. */
+.history-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.history-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--pad-card); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.history-what { font-weight: 600; min-width: 0; }
+.history-actions { display: grid; gap: var(--space-2); min-width: 0; }
 /* end track T4 */

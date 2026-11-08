@@ -5,6 +5,8 @@
  * file). Text here never contains export values; views insert counts and dates with textContent.
  */
 
+import { countOf } from "./format.ts";
+
 export const shellCopy = {
   // Settings: help and feedback. The diagnostics hold the version, the system and counts, never names, files or dates.
   helpHeading: "Help and feedback",
@@ -27,6 +29,18 @@ export const shellCopy = {
   themeToggleName: "Dark theme",
   /** Said when Settings turns on "Match device"; the other two say "Dark theme on." and "Light theme on." (copy.ts). */
   themeMatchAnnounce: "Theme follows your device.",
+
+  // Settings: the saved history as a list of exports, by date and friend count, never by name.
+  historyHeading: "Saved history",
+  historyNote: "Exports Snappy has read are listed by date, with a friend count and no names. Deleting one cannot be undone.",
+  historyEmpty: "No exports are in your history yet. Add one on Start.",
+  historyRow: (date: string, friends: number) => `${date}, ${countOf(friends, "friend", "friends")}`,
+  historyDeleteButton: "Delete",
+  historyDeleteFor: (date: string) => `Delete the export from ${date}`,
+  historyConfirmNote: (date: string) => `Delete the export from ${date} from your history?`,
+  historyConfirmButton: "Delete export",
+  historyCancelButton: "Cancel",
+  historyDeletedAnnounce: "Export deleted from your history.",
 
   // Keyboard shortcuts: the dialog, the buttons that open it, and the short status after "g".
   shortcutsTitle: "Keyboard shortcuts",
