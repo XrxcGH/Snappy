@@ -16,6 +16,7 @@
  */
 import { LedgerFormatError, SealError, emptyLedger, hasSavedLists, normUser, openLedger, openText, packSaved, sealLedger, sortedUnique, unpackSaved } from "@snappy-export/core";
 import type { Ledger, Saved } from "@snappy-export/core";
+import type { OptionSpec } from "./args.ts";
 import { CliError, fsError } from "./errors.ts";
 import type { Io } from "./io.ts";
 
@@ -23,6 +24,25 @@ type FsIo = Pick<Io, "fs">;
 
 export function defaultLedgerPath(io: Pick<Io, "homedir" | "path">): string {
   return io.path.join(io.homedir(), ".snappy", "ledger.sealed");
+}
+
+/**
+ * The option that names the saved history file. --history is the name people see; --ledger is
+ * the older name, still accepted so scripts keep working, and it is left out of every help text.
+ */
+export const HISTORY_PATH_OPTIONS: OptionSpec = {
+  history: { type: "string" },
+  ledger: { type: "string" },
+};
+
+export interface HistoryPathFlags {
+  history?: string;
+  ledger?: string;
+}
+
+/** The file the person named with --history (or the older --ledger), if they named one. --history wins. */
+export function historyPathFlag(flags: HistoryPathFlags): string | undefined {
+  return flags.history ?? flags.ledger;
 }
 
 /**
@@ -35,7 +55,7 @@ export function allowlistPathFor(ledgerPath: string): string {
 
 const WRONG_PASSPHRASE = new CliError(
   "wrong-passphrase",
-  "Snappy could not unlock your ledger and changed nothing. The passphrase may be wrong, or the file damaged.",
+  "Snappy could not unlock your saved history and changed nothing. The passphrase may be wrong, or the file damaged.",
 );
 
 const codeOf = (e: unknown): string | undefined => (typeof e === "object" && e !== null && "code" in e ? String((e as { code: unknown }).code) : undefined);
@@ -84,7 +104,7 @@ export async function fileExists(io: FsIo, path: string): Promise<boolean> {
 
 function unsealError(e: unknown): CliError {
   if (e instanceof LedgerFormatError) {
-    return new CliError("ledger-version", "This ledger was written by a newer Snappy, so nothing was changed. Update Snappy to open it.");
+    return new CliError("ledger-version", "This saved history was written by a newer Snappy, so nothing was changed. Update Snappy to open it.");
   }
   if (e instanceof SealError) return WRONG_PASSPHRASE;
   throw e;

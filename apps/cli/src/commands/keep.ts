@@ -7,7 +7,7 @@ import { parseFlags } from "../args.ts";
 import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
-import { defaultLedgerPath, isFreshStore, loadStore, normalizeAllowlist, saveStore, withLedgerLock } from "../ledger-store.ts";
+import { defaultLedgerPath, HISTORY_PATH_OPTIONS, historyPathFlag, isFreshStore, loadStore, normalizeAllowlist, saveStore, withLedgerLock } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS } from "../render.ts";
 import { plural } from "../format.ts";
@@ -16,10 +16,10 @@ export const KEEP_USAGE = `Usage: snappy-export keep <username...> [options]
        snappy-export unkeep <username...> [options]
 
 keep adds friends to your keep list, so they never appear in the cleanup queue.
-unkeep takes them off. The keep list is saved inside your sealed ledger file.
+unkeep takes them off. The keep list is saved inside your saved history.
 
 Options
-  --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
+  --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
 
 The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
@@ -27,12 +27,13 @@ The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidd
 
 /** The options this command accepts, shared with the in-app command catalog's checks. */
 export const KEEP_OPTIONS: OptionSpec = {
-  ledger: { type: "string" },
+  ...HISTORY_PATH_OPTIONS,
   "passphrase-file": { type: "string" },
   help: { type: "boolean", short: "h" },
 };
 
 interface Flags {
+  history?: string;
   ledger?: string;
   "passphrase-file"?: string;
   help?: boolean;
@@ -52,7 +53,7 @@ export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: I
     throw new CliError("usage", "Usernames have no spaces. Check the names and try again.");
   }
 
-  const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
+  const ledgerPath = historyPathFlag(flags) ?? defaultLedgerPath(io);
   const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(io, ledgerPath) });
   // Unlock, change and save under one lock, so a second `keep` running at the same time is not lost.
   const { current, changed } = await withLedgerLock(io, ledgerPath, async () => {

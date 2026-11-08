@@ -33,14 +33,14 @@ async function collect(): Promise<Record<string, string>> {
   };
 
   await capture("help", ["help"]);
-  for (const c of ["analyze", "memories", "inspect", "keep", "ledger", "demo"]) await capture(`help ${c}`, ["help", c]);
+  for (const c of ["analyze", "memories", "inspect", "keep", "history", "demo"]) await capture(`help ${c}`, ["help", c]);
   await capture("analyze", ["analyze", later, "--earlier", earlier, "--no-save"]);
   await capture("analyze one export", ["analyze", later, "--no-save"]);
-  await capture("analyze saved", ["analyze", later, "--ledger", ledger]);
-  await capture("keep", ["keep", "ghost_1", "--ledger", ledger]);
-  await capture("unkeep", ["unkeep", "ghost_1", "--ledger", ledger]);
-  await capture("ledger", ["ledger", "status", "--ledger", ledger]);
-  await capture("ledger none", ["ledger", "status", "--ledger", join(dir, "none.sealed")]);
+  await capture("analyze saved", ["analyze", later, "--history", ledger]);
+  await capture("keep", ["keep", "ghost_1", "--history", ledger]);
+  await capture("unkeep", ["unkeep", "ghost_1", "--history", ledger]);
+  await capture("history", ["history", "status", "--history", ledger]);
+  await capture("history none", ["history", "status", "--history", join(dir, "none.sealed")]);
   await capture("memories dry run", ["memories", later, "--dry-run"]);
   await capture("memories", ["memories", later, "--out", join(dir, "out")]);
   // The real export shape: three zips, no links, overlay files, Memories with no file.
@@ -86,6 +86,13 @@ describe("terminal copy follows the brand guide", () => {
       const copy = removeAll(removeAll(text, USERNAMES), /\bunadds?\b|\bunadded\b/gi);
       const hit = banned.exec(copy);
       expect(hit?.[0], `${name}: ${hit?.[0]}`).toBeUndefined();
+    }
+  });
+
+  it("never uses the word ledger, which people do not see anywhere else (the file name is not a word)", async () => {
+    for (const [name, text] of Object.entries(await everything())) {
+      const copy = text.replaceAll("ledger.sealed", "").replaceAll("--ledger", "");
+      expect(copy, name).not.toMatch(/ledger/i);
     }
   });
 

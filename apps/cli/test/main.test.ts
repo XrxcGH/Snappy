@@ -18,7 +18,7 @@ describe("help and version", () => {
       expect(err).toBe("");
       expect(out).toContain("▐█████████▌");
       expect(out).toContain("Snappy");
-      for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "ledger status", "demo", "help"]) expect(out).toContain(name);
+      for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "history status", "demo", "help"]) expect(out).toContain(name);
       expect(out).toContain("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
       expect(out).toContain(NOT_AFFILIATED);
       expect(NOT_AFFILIATED).toBe(
@@ -52,7 +52,21 @@ describe("help and version", () => {
       }
     }
     expect((await run(["help", "unkeep"])).out).toContain("snappy-export unkeep <username...>");
-    expect((await run(["ledger"])).out).toContain("snappy-export ledger status");
+    expect((await run(["history"])).out).toContain("snappy-export history status");
+  });
+
+  it("does not use the word ledger in the overview or in any help", async () => {
+    const pages = [["help"], ...Object.keys(CLI_ENTRY_HELP).map((c) => ["help", c]), ["help", "since"], ["help", "friend-count"], ["help", "unkeep"]];
+    for (const args of pages) {
+      const { out } = await run(args);
+      expect(out, args.join(" ")).not.toMatch(/ledger(?!\.sealed)/i);
+    }
+  });
+
+  it("still answers to the older ledger command and --ledger option, which help leaves out", async () => {
+    expect((await run(["ledger"])).out).toContain("snappy-export history status");
+    expect((await run(["help", "ledger"])).out).toContain("snappy-export history status");
+    expect((await run(["help"])).out).not.toMatch(/^ {2}ledger /m);
   });
 });
 
@@ -78,10 +92,12 @@ describe("mistakes", () => {
     expect(surplus.err).toContain("The option --show-keys does not take a value.");
   });
 
-  it("asks for usernames when keep gets none, and for a known ledger command", async () => {
+  it("asks for usernames when keep gets none, and for a known history command", async () => {
     expect((await run(["keep"])).err).toContain("Name at least one friend");
+    expect((await run(["unkeep", "--history", "x"])).err).toContain("Name at least one friend");
     expect((await run(["unkeep", "--ledger", "x"])).err).toContain("Name at least one friend");
-    expect((await run(["ledger", "history"])).err).toContain('"snappy-export ledger status"');
+    expect((await run(["history", "ledger"])).err).toContain('The only history command is "snappy-export history status".');
+    expect((await run(["ledger", "history"])).err).not.toMatch(/ledger/i);
   });
 
   it("turns unexpected failures into a calm message with a code and no stack by default", async () => {

@@ -206,8 +206,10 @@ describe("analyze with a sealed ledger", () => {
     await run(["analyze", later, "--ledger", ledger], makeIo({ env }));
     await run(["keep", "ghost_1", "--ledger", ledger], makeIo({ env }));
 
-    const { code, out } = await run(["ledger", "status", "--ledger", ledger], makeIo({ env }));
+    const { code, out } = await run(["history", "status", "--history", ledger], makeIo({ env }));
     expect(code).toBe(0);
+    expect(out).toMatch(/^Saved history$/m);
+    expect(out).not.toMatch(/ledger(?!\.sealed)/i);
     expect(out).toContain("2 exports in your history.");
     expect(out).toMatch(/Jul 4, 2026 +\d+ +\d+\s*$/m);
     expect(out).toMatch(/Nov 1, 2026 +40 +\d+\s*$/m);
@@ -216,10 +218,33 @@ describe("analyze with a sealed ledger", () => {
     expect(out).not.toMatch(/ghost_|oneway_|dormant_/);
   });
 
-  it("says so when there is no ledger yet", async () => {
-    const { code, out } = await run(["ledger", "status", "--ledger", join(tempDir("an"), "none.sealed")], makeIo({ env }));
+  it("says so when there is no saved history yet", async () => {
+    const { code, out } = await run(["history", "status", "--history", join(tempDir("an"), "none.sealed")], makeIo({ env }));
     expect(code).toBe(0);
-    expect(out).toContain("No ledger yet.");
+    expect(out).toBe("No saved history yet. Run snappy-export analyze on your export to start one.\n");
+  });
+
+  it("reads and writes the same file whether it is named with --history or the older --ledger", async () => {
+    const dir = tempDir("an");
+    const file = join(dir, "ledger.sealed");
+    const { earlier, later } = writeDemoPair(dir);
+    expect((await run(["analyze", earlier, "--history", file], makeIo({ env }))).code).toBe(0);
+    expect((await run(["analyze", later, "--ledger", file], makeIo({ env }))).code).toBe(0);
+    for (const flag of ["--history", "--ledger"]) {
+      const status = await run(["ledger", "status", flag, file], makeIo({ env }));
+      expect(status.out, flag).toContain("2 exports in your history.");
+    }
+    expect(readdirSync(dir).filter((f) => f.endsWith(".sealed"))).toEqual(["ledger.sealed"]);
+  });
+
+  it("says saved history, not ledger, when the passphrase is wrong", async () => {
+    const dir = tempDir("an");
+    const file = join(dir, "h.sealed");
+    const { earlier } = writeDemoPair(dir);
+    await run(["analyze", earlier, "--history", file], makeIo({ env }));
+    const bad = await run(["history", "status", "--history", file], makeIo({ env: { SNAPPY_PASSPHRASE: "not it" } }));
+    expect(bad.err).toContain("Snappy could not unlock your saved history and changed nothing.");
+    expect(bad.err).not.toMatch(/ledger/i);
   });
 });
 

@@ -13,6 +13,7 @@ import { formatCount, formatDate, hasHave, isAre, noun, plural } from "../format
 import type { InsightCommand } from "../insights-command.ts";
 import { checkOutputPath, saveInsightFile } from "../insights-output.ts";
 import { insightTerm, LEDGER_OPTIONS, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
+import { historyPathFlag } from "../ledger-store.ts";
 import type { CommonFlags, InsightInput, LedgerFlags } from "../insights-input.ts";
 import type { Io } from "../io.ts";
 import { csvCell } from "../render-analysis.ts";
@@ -26,20 +27,20 @@ export const SINCE_USAGE = `Usage: snappy-export since <ZIP files or folder...> 
 Shows what changed since your last export: friends added, friends who may have left, and how your
 requests went. It also counts new Memories, chats and Snaps when your export has them.
 
-Your last export comes from your sealed history (the ledger) or from --earlier. Both are only read,
+Your last export comes from your saved history or from --earlier. Both are only read,
 never changed.
 
 Give it every part of your export, or a folder or wildcard such as "mydata*.zip".
 
 Options
-  --earlier <path>          Compare with this earlier export instead of your sealed history.
+  --earlier <path>          Compare with this earlier export instead of your saved history.
   --utc-offset <hours>      Hours from UTC for counting days, such as 2 or 5:30.
   --limit <n>               Rows to show per list in text, from 1 to 1000. Default 25.
   --counts                  Show counts only, with no usernames.
   --out <file.csv>          Also save the friend and request changes as a CSV file.
   --force                   Replace the file named by --out if it exists.
-  --no-save                 Skip the ledger. Nothing is read, no passphrase asked.
-  --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
+  --no-save                 Skip your saved history. Nothing is read, no passphrase asked.
+  --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
   --json                    Print JSON instead of text.
   --verbose                 Add a short code to each note, for bug reports.
@@ -343,7 +344,7 @@ export async function runSince(args: string[], io: Io): Promise<number> {
   }
 
   const useLedger = flags.earlier === undefined && !noSave;
-  const input = await loadInsightInput(positionals, io, useLedger ? { ledger: { path: flags.ledger, passphraseFile: flags["passphrase-file"] } } : {});
+  const input = await loadInsightInput(positionals, io, useLedger ? { ledger: { path: historyPathFlag(flags), passphraseFile: flags["passphrase-file"] } } : {});
   const earlierInput: InsightInput | undefined = flags.earlier === undefined ? undefined : await loadInsightInput([flags.earlier], io);
   const generatedAt = new Date(input.now).toISOString();
 

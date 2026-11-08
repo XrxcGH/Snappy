@@ -1,23 +1,24 @@
 /**
- * snappy-export ledger status: which exports are on record. Snapshot dates and friend counts only;
- * usernames are never printed.
+ * snappy-export history status: which exports are in your saved history. Dates and friend counts
+ * only; usernames are never printed. `ledger status` is the older name and still works; it is left
+ * out of the help.
  */
 import { parseFlags } from "../args.ts";
 import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import { formatDate, plural } from "../format.ts";
 import type { Io } from "../io.ts";
-import { defaultLedgerPath, isFreshStore, loadStore } from "../ledger-store.ts";
+import { defaultLedgerPath, HISTORY_PATH_OPTIONS, historyPathFlag, isFreshStore, loadStore } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS } from "../render.ts";
 import { createTerm } from "../term.ts";
 
-export const LEDGER_USAGE = `Usage: snappy-export ledger status [options]
+export const HISTORY_USAGE = `Usage: snappy-export history status [options]
 
-Shows which exports are in your sealed ledger: dates and friend counts, never usernames.
+Shows which exports are in your saved history: dates and friend counts, never usernames.
 
 Options
-  --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
+  --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
   --no-color                Plain text.
 
@@ -25,34 +26,35 @@ The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidd
 `;
 
 /** The options this command accepts, shared with the in-app command catalog's checks. */
-export const LEDGER_OPTIONS: OptionSpec = {
-  ledger: { type: "string" },
+export const HISTORY_OPTIONS: OptionSpec = {
+  ...HISTORY_PATH_OPTIONS,
   "passphrase-file": { type: "string" },
   "no-color": { type: "boolean" },
   help: { type: "boolean", short: "h" },
 };
 
 interface Flags {
+  history?: string;
   ledger?: string;
   "passphrase-file"?: string;
   "no-color"?: boolean;
   help?: boolean;
 }
 
-export async function ledgerCommand(args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseFlags<Flags>("ledger", args, LEDGER_OPTIONS);
+export async function historyCommand(args: string[], io: Io): Promise<number> {
+  const { values: flags, positionals } = parseFlags<Flags>("history", args, HISTORY_OPTIONS);
   if (flags.help || (positionals.length === 0 && args.length === 0)) {
-    io.out.write(LEDGER_USAGE);
+    io.out.write(HISTORY_USAGE);
     return 0;
   }
   if (positionals[0] !== "status" || positionals.length > 1) {
-    throw new CliError("usage", 'The only ledger command is "snappy-export ledger status".');
+    throw new CliError("usage", 'The only history command is "snappy-export history status".');
   }
 
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
-  const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
+  const ledgerPath = historyPathFlag(flags) ?? defaultLedgerPath(io);
   if (await isFreshStore(io, ledgerPath)) {
-    io.out.write("No ledger yet. Run snappy-export analyze on your export to start one.\n");
+    io.out.write("No saved history yet. Run snappy-export analyze on your export to start one.\n");
     return 0;
   }
 
@@ -60,7 +62,7 @@ export async function ledgerCommand(args: string[], io: Io): Promise<number> {
   // Real snapshots only: the keep list and the checkmarks are kept apart from them.
   const { ledger, allowlist } = await loadStore(io, ledgerPath, passphrase);
 
-  const lines: string[] = [term.bold("Ledger"), `  File: ${ledgerPath}`];
+  const lines: string[] = [term.bold("Saved history"), `  File: ${ledgerPath}`];
   if (ledger.snapshots.length === 0) {
     lines.push("  No exports saved yet.");
   } else {

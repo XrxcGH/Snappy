@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
 import { COMMAND_NAMES } from "../src/main.ts";
+import { COMMAND_ALIASES } from "../src/cli.ts";
 import { run } from "./helpers.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -38,8 +39,21 @@ describe("the command list", () => {
   it("registers the 22 insight commands next to the earlier ones", () => {
     expect(INSIGHT_COMMANDS).toHaveLength(22);
     for (const c of INSIGHT_COMMANDS) expect(COMMAND_NAMES, c.name).toContain(c.name);
-    for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "ledger", "demo"]) expect(COMMAND_NAMES, name).toContain(name);
+    for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "history", "demo"]) expect(COMMAND_NAMES, name).toContain(name);
     expect(new Set(COMMAND_NAMES).size, "no name is registered twice").toBe(COMMAND_NAMES.length);
+  });
+});
+
+describe("older command names", () => {
+  it("run a documented command and stay out of the help overview", async () => {
+    for (const [from, to] of Object.entries(COMMAND_ALIASES)) {
+      expect(COMMAND_NAMES, from).not.toContain(from);
+      expect(COMMAND_NAMES, to).toContain(to);
+      expect(rowNames, from).not.toContain(from);
+      const { code, out } = await run([from, "--help"]);
+      expect(code, from).toBe(0);
+      expect(out, from).toContain(`snappy-export ${to}`);
+    }
   });
 });
 
@@ -76,8 +90,11 @@ describe("every registered command has a help line", () => {
 });
 
 describe("every registered command is in the README", () => {
+  // An entry names the command, or the older name it stands for until the README catches up.
+  const namesFor = (name: string): string => [name, ...Object.entries(COMMAND_ALIASES).filter(([, to]) => to === name).map(([from]) => from)].join("|");
+
   it.each(ALL)("%s has an entry", (name) => {
-    expect(README, name).toMatch(new RegExp(`snappy-export (?:-- )?${name}\\b`));
+    expect(README, name).toMatch(new RegExp(`snappy-export (?:-- )?(?:${namesFor(name)})\\b`));
   });
 
   it("gives each insight command an example in the form the repo uses", () => {

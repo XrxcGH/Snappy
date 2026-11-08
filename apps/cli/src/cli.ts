@@ -10,9 +10,9 @@ import type { OptionSpec } from "./args.ts";
 import { ANALYZE_OPTIONS, analyzeCommand } from "./commands/analyze.ts";
 import { DEMO_OPTIONS, demoCommand } from "./commands/demo.ts";
 import { helpCommand } from "./commands/help.ts";
+import { HISTORY_OPTIONS, historyCommand } from "./commands/history.ts";
 import { INSPECT_OPTIONS, inspectCommand } from "./commands/inspect.ts";
 import { KEEP_OPTIONS, keepCommand } from "./commands/keep.ts";
-import { LEDGER_OPTIONS, ledgerCommand } from "./commands/ledger.ts";
 import { MEMORIES_OPTIONS, memoriesCommand } from "./commands/memories.ts";
 import { CliError } from "./errors.ts";
 import { INSIGHT_COMMANDS } from "./insight-commands.ts";
@@ -27,7 +27,9 @@ const COMMANDS: Record<string, Command> = {
   inspect: inspectCommand,
   keep: (args, io) => keepCommand("keep", args, io),
   unkeep: (args, io) => keepCommand("unkeep", args, io),
-  ledger: ledgerCommand,
+  history: historyCommand,
+  // The older name, kept so scripts keep working. Help does not list it.
+  ledger: historyCommand,
   demo: demoCommand,
   // The insight commands carry their own name, so adding one is a line in insight-commands.ts.
   ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, c.run])),
@@ -40,7 +42,8 @@ export const COMMAND_OPTIONS: Readonly<Record<string, OptionSpec>> = {
   inspect: INSPECT_OPTIONS,
   keep: KEEP_OPTIONS,
   unkeep: KEEP_OPTIONS,
-  ledger: LEDGER_OPTIONS,
+  history: HISTORY_OPTIONS,
+  ledger: HISTORY_OPTIONS,
   demo: DEMO_OPTIONS,
   // The insight commands: the options all of them share, plus the two the app's command catalog passes.
   // Each command's other options are declared beside it, and the app does not run them.
@@ -49,8 +52,11 @@ export const COMMAND_OPTIONS: Readonly<Record<string, OptionSpec>> = {
   "friend-count": { ...COMMON_OPTIONS, "no-save": { type: "boolean" } },
 };
 
-/** The names that run a command (help and version are answered before this table). */
-export const COMMAND_NAMES: readonly string[] = Object.keys(COMMANDS);
+/** Older names that still run a command but are left out of help and the docs, with the name they stand for. */
+export const COMMAND_ALIASES: Readonly<Record<string, string>> = { ledger: "history" };
+
+/** The names that run a command and are documented (help and version are answered before this table). */
+export const COMMAND_NAMES: readonly string[] = Object.keys(COMMANDS).filter((name) => !Object.hasOwn(COMMAND_ALIASES, name));
 
 export interface CliMeta {
   version: string;

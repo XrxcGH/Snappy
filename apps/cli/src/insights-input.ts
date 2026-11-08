@@ -14,7 +14,7 @@ import type { OptionSpec, Parsed } from "./args.ts";
 import { CliError } from "./errors.ts";
 import type { Io } from "./io.ts";
 import { newestMtime, parseParts, requireFirstPart, resolveZipPaths, withReaders } from "./inputs.ts";
-import { defaultLedgerPath, isFreshStore, loadLedger } from "./ledger-store.ts";
+import { defaultLedgerPath, HISTORY_PATH_OPTIONS, historyPathFlag, isFreshStore, loadLedger } from "./ledger-store.ts";
 import { resolvePassphrase } from "./prompt.ts";
 import { createTerm } from "./term.ts";
 import type { Term } from "./term.ts";
@@ -41,11 +41,12 @@ export const FRIEND_COUNT_OPTIONS: OptionSpec = { "friend-count": { type: "strin
 
 /** For the one command that reads the sealed ledger. */
 export interface LedgerFlags {
+  history?: string;
   ledger?: string;
   "passphrase-file"?: string;
 }
 export const LEDGER_OPTIONS: OptionSpec = {
-  ledger: { type: "string" },
+  ...HISTORY_PATH_OPTIONS,
   "passphrase-file": { type: "string" },
 };
 

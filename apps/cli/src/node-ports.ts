@@ -180,7 +180,7 @@ async function acquire(name: string, waitMs: number): Promise<() => Promise<void
     if (attempt >= retries) {
       throw new CliError(
         "ledger-busy",
-        `Another command is using this ledger, so nothing was changed. Wait and try again, or delete "${lockPath}" if none is running.`,
+        `Another command is using your saved history, so nothing was changed. Wait and try again, or delete "${lockPath}" if none is running.`,
       );
     }
     await new Promise((r) => setTimeout(r, 100));

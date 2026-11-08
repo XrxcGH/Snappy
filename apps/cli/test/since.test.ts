@@ -89,7 +89,7 @@ describe("the command", () => {
   });
 
   it("documents every option it accepts", () => {
-    for (const flag of ["--earlier", "--utc-offset", "--limit", "--counts", "--out", "--force", "--no-save", "--ledger", "--passphrase-file", "--json", "--verbose", "--no-color"]) {
+    for (const flag of ["--earlier", "--utc-offset", "--limit", "--counts", "--out", "--force", "--no-save", "--history", "--passphrase-file", "--json", "--verbose", "--no-color"]) {
       expect(sinceCommand.usage, flag).toContain(flag);
     }
     for (const line of sinceCommand.usage.split("\n")) expect(line.length, line).toBeLessThanOrEqual(100);

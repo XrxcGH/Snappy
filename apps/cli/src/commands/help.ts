@@ -7,9 +7,9 @@ import { NOT_AFFILIATED, PRIVACY_IMPORT } from "../render.ts";
 import { createTerm } from "../term.ts";
 import { ANALYZE_USAGE } from "./analyze.ts";
 import { DEMO_USAGE } from "./demo.ts";
+import { HISTORY_USAGE } from "./history.ts";
 import { INSPECT_USAGE } from "./inspect.ts";
 import { KEEP_USAGE } from "./keep.ts";
-import { LEDGER_USAGE } from "./ledger.ts";
 import { MEMORIES_USAGE } from "./memories.ts";
 
 const HELP_USAGE = `Usage: snappy-export help [command]
@@ -23,7 +23,9 @@ const USAGE: Record<string, string> = {
   analyze: ANALYZE_USAGE,
   keep: KEEP_USAGE,
   unkeep: KEEP_USAGE,
-  ledger: LEDGER_USAGE,
+  history: HISTORY_USAGE,
+  // The older name still shows its help, but the overview does not list it.
+  ledger: HISTORY_USAGE,
   memories: MEMORIES_USAGE,
   demo: DEMO_USAGE,
   ...Object.fromEntries(INSIGHT_COMMANDS.map((c) => [c.name, c.usage])),
@@ -42,7 +44,7 @@ const GROUPS: readonly (InsightGroup | "More")[] = ["Your export", "Friends", "C
 const CORE_ROWS: Record<InsightGroup | "More", Row[]> = {
   "Your export": [
     { synopsis: "inspect <ZIP files...>", summary: "Show your export's shape, never its contents." },
-    { synopsis: "ledger status", summary: "Show which exports are saved." },
+    { synopsis: "history status", summary: "Show which exports are saved." },
   ],
   Friends: [
     { synopsis: "analyze <ZIP files...>", summary: "Find friends to review, and save your history." },
@@ -91,7 +93,6 @@ export function helpCommand(args: string[], io: Io, version: string): number {
       "",
       ...listing,
       "<ZIP files...> means .zip files, or a folder with every part of one export.",
-      'The "ledger" is your saved history: the sealed file that holds your past exports.',
       'Run "snappy-export help <command>" for its options. Add --verbose to see short codes for bug reports.',
       "",
       PRIVACY_IMPORT,

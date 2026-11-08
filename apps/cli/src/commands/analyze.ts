@@ -12,7 +12,7 @@ import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
 import { newestMtime, parseParts, requireFirstPart, resolveZipPaths, withReaders } from "../inputs.ts";
-import { atomicWrite, defaultLedgerPath, isFreshStore, loadStore, saveStore, withLedgerLock } from "../ledger-store.ts";
+import { atomicWrite, defaultLedgerPath, HISTORY_PATH_OPTIONS, historyPathFlag, isFreshStore, loadStore, saveStore, withLedgerLock } from "../ledger-store.ts";
 import { resolvePassphrase } from "../prompt.ts";
 import { PRIVACY_RESULTS, renderIssues, wrapText } from "../render.ts";
 import type { LabeledIssue } from "../render.ts";
@@ -21,13 +21,13 @@ import { createTerm } from "../term.ts";
 
 export const ANALYZE_USAGE = `Usage: snappy-export analyze <ZIP files or folder...> [options]
 
-Finds friends worth reviewing and saves your export to your sealed history (the ledger).
+Finds friends worth reviewing and saves your export to your saved history.
 Several ZIP files, or a folder of them, are the parts of one export.
 
 Options
   --earlier <path>          An earlier export to compare with. Repeatable.
-  --no-save                 Skip the ledger. Nothing is written, no passphrase asked.
-  --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
+  --no-save                 Skip your saved history. Nothing is written, no passphrase asked.
+  --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
   --friend-count <n>        The friend count in the app, to catch a short export.
   --min-confidence <level>  Hide results below low, medium, or high. Default: low.
@@ -47,7 +47,7 @@ Exit codes: 0 done, 1 could not run, 2 the export has errors.
 export const ANALYZE_OPTIONS: OptionSpec = {
   earlier: { type: "string", multiple: true },
   "no-save": { type: "boolean" },
-  ledger: { type: "string" },
+  ...HISTORY_PATH_OPTIONS,
   "passphrase-file": { type: "string" },
   "friend-count": { type: "string" },
   "min-confidence": { type: "string" },
@@ -63,6 +63,7 @@ export const ANALYZE_OPTIONS: OptionSpec = {
 interface Flags {
   earlier?: string[];
   "no-save"?: boolean;
+  history?: string;
   ledger?: string;
   "passphrase-file"?: string;
   "friend-count"?: string;
@@ -171,7 +172,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
   }
 
   // The ledger: read and updated unless --no-save, in which case it exists only in memory.
-  const ledgerPath = flags.ledger ?? defaultLedgerPath(io);
+  const ledgerPath = historyPathFlag(flags) ?? defaultLedgerPath(io);
   const passphrase = noSave ? undefined : await resolvePassphrase(io, { file: flags["passphrase-file"], creating: await isFreshStore(io, ledgerPath) });
   const update = async (): Promise<AnalysisResult> => {
     let store: Saved = { ledger: emptyLedger(), allowlist: [], checkedOff: [] };
@@ -185,7 +186,7 @@ export async function analyzeCommand(args: string[], io: Io): Promise<number> {
       issues.push({
         severity: "warning",
         code: "older-than-ledger",
-        message: "This export is older than one in your ledger, so Snappy compares with the newer one.",
+        message: "This export is older than one in your saved history, so Snappy compares with the newer one.",
         source: "your export",
       });
     }

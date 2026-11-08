@@ -9,6 +9,7 @@ import { intOption } from "../args.ts";
 import { formatCount, formatDate, hasHave, isAre, noun, plural } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, LEDGER_OPTIONS, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
+import { historyPathFlag } from "../ledger-store.ts";
 import type { CommonFlags, LedgerFlags } from "../insights-input.ts";
 import type { Io } from "../io.ts";
 import { finish, jsonText, renderNotes, section } from "../render-insights.ts";
@@ -18,12 +19,12 @@ import type { Term } from "../term.ts";
 export const FRIEND_COUNT_USAGE = `Usage: snappy-export friend-count <ZIP files or folder...> [options]
 
 Shows how your friend count grew and shrank, month by month, from the dates in your export. If you
-have a sealed history (the ledger), it also compares the two. The ledger is read, never changed.
+have a saved history, it also compares the two. Your saved history is read, never changed.
 
 Options
   --months <n>              Months to print. Default: 24. Use 0 for all.
-  --no-save                 Skip the ledger. Nothing is written, no passphrase asked.
-  --ledger <path>           Sealed ledger file. Default: ~/.snappy/ledger.sealed
+  --no-save                 Skip your saved history. Nothing is read, no passphrase asked.
+  --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
   --json                    Print JSON instead of text.
   --verbose                 Add a short code to each note, for bug reports.
@@ -183,7 +184,7 @@ export async function runFriendCount(args: string[], io: Io): Promise<number> {
   const noSave = flags["no-save"] === true;
 
   // The ledger is opened read-only and only after the export is read; --no-save leaves it alone.
-  const input = await loadInsightInput(positionals, io, noSave ? {} : { ledger: { path: flags.ledger, passphraseFile: flags["passphrase-file"] } });
+  const input = await loadInsightInput(positionals, io, noSave ? {} : { ledger: { path: historyPathFlag(flags), passphraseFile: flags["passphrase-file"] } });
   const history = insights.friendCountHistory.buildFriendCountHistory({
     friends: input.parsed.friends.friends,
     deletedFriends: input.parsed.friends.deletedFriends,
