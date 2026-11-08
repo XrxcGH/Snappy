@@ -377,6 +377,9 @@ describe("the words rules that hold for every copy file", () => {
   it("says this page only where it was read in the app and kept", () => {
     const REVIEWED = new Set([
       "terminal.confirmFolderBody()", // the web text; the app says Snappy
+      "cliTool.appLine", // the web text; the app says this window
+      "cliTool.prefixLine()", // the Export guide page of Snappy, on the web and in the app (the prefix differs)
+      "startFlow.reloaded", // the web text; the app says the app
       "privacy.networkUnknown", // the web text names the page whose policy could not be read
       "privacy.policyLabel", // inside Technical details
     ]);

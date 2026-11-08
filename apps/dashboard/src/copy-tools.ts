@@ -13,14 +13,14 @@ const onDesktop = (web: string, desktop: string): string => (platform().desktop 
 
 export const cliTool = {
   heading: "Command line tool",
-  body: "Some jobs need the Snappy command line tool. It is a separate program that runs in a terminal. Node 22.18 or later must be installed.",
+  body: "Some jobs need the Snappy command line tool, a separate program that runs in a terminal. Node 22.18 or later must be installed.",
   where: "You get it from the Snappy repository on GitHub, which has the install steps.",
   /** Which words every command here starts with, so a person knows what to type after installing. */
   prefixLine: (prefix: string): string => `Commands on this page start with ${prefix}.`,
   get appLine(): string {
     return onDesktop(
-      "Run tries a command in this page, on a small virtual folder. Copy is for the terminal.",
-      "Run tries a command in this window, on a small virtual folder. Copy is for the terminal.",
+      "Run tries a command in this page, using a small temporary space for its files. Copy is for the terminal.",
+      "Run tries a command in this window, using a small temporary space for its files. Copy is for the terminal.",
     );
   },
   /** The link under a command block that leads to the section above. */

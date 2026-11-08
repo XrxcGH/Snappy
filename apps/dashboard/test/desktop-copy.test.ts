@@ -108,6 +108,12 @@ const DIFFERENCES: readonly (readonly [path: string, web: string, desktop: strin
   ],
   ["terminal.noWorkerNote", "This browser cannot run commands here.", "This window cannot run commands here."],
   [
+    "cliTool.appLine",
+    "Run tries a command in this page, using a small temporary space for its files. Copy is for the terminal.",
+    "Run tries a command in this window, using a small temporary space for its files. Copy is for the terminal.",
+  ],
+  ["startFlow.reloaded", "Your results were cleared when this page reloaded.", "Your results were cleared when the app reloaded."],
+  [
     "terminal.confirmStoreBody",
     "This changes the saved history in this browser. It locks the dashboard until you unlock it again.",
     "This changes the saved history on this device. It locks the dashboard until you unlock it again.",
@@ -157,6 +163,9 @@ describe("desktop wording versus web wording", () => {
       "vaultMessages.saveFailed", // "on screen"
       "vaultMessages.savedElsewhere", // "another window"
       "terminal.noWorkerNote", // "This window cannot run commands here."
+      "cliTool.appLine", // "this window" is Snappy's own window
+      "cliTool.prefixLine", // "this page" is the Export guide page of Snappy, as on the web; only the prefix after it differs
+      "startFlow.unzipped", // "your browser" is the one that downloaded the export, which the app never opens itself
     ]);
     const found = [...new Set([...allText(DESKTOP)].filter(([p, t]) => !p.startsWith("toolcopy.") && /\b(page|pages|window|windows|screen|tab|tabs|browser)\b/.test(t)).map(([p]) => p.replace(/\(.*\)$/, "")))].sort();
     expect(found).toEqual([...REVIEWED].sort());
@@ -188,7 +197,8 @@ describe("desktop wording versus web wording", () => {
 
   it("passes the same writing rules as the rest of the interface", () => {
     setPlatform(DESKTOP);
-    const entries: Entry[] = [...collectCopy(copy as unknown as Record<string, unknown>)];
+    // The strings that differ may sit in a copy-<name>.ts file beside copy.ts (cliTool, startFlow), so those are read too.
+    const entries: Entry[] = [...collectCopy(copy as unknown as Record<string, unknown>), ...copyModules.flatMap((m) => collectCopy(m))];
     setPlatform({});
     useNames(entries.filter((e) => e.kind === "button" || e.kind === "menu" || e.kind === "title").map((e) => e.text).sort((a, b) => b.length - a.length));
     const desktopEntries = entries.filter((e) => DIFFERENCES.some(([, , text]) => text === e.text || e.text === "Works offline"));
