@@ -9,7 +9,11 @@
  * context is set to offline, so any attempt by the page to reach the network fails and is reported.
  *
  *   npm run build:dashboard
- *   node tools/mobile/ios-webkit.mjs [--out out/mobile] [--port 4317]
+ *   node tools/mobile/ios-webkit.mjs [--out out/mobile] [--port 4317] [--phones "iPhone SE,iPhone 15"] [--tool year-in-review] [--tool-scroll "At a glance"]
+ *
+ * By default it checks four iPhone sizes. --phones picks others by Playwright's device names. --tool adds a picture of
+ * that tool's page (#/tools/<id>) after the sample data is loaded, named "<phone>-<scheme>-tool.png", and --tool-scroll
+ * scrolls it so the heading with that text sits under the top edge, so the picture shows results and not only controls.
  *
  * Playwright is not a dependency of this repository. Install it anywhere and point at it:
  *   mkdir ~/pw && cd ~/pw && npm init -y && npm i playwright && npx playwright install webkit
@@ -25,14 +29,17 @@ import { fileURLToPath } from "node:url";
 import { showTheme } from "../screenshots/theme.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const PHONES = ["iPhone SE", "iPhone 13", "iPhone 15", "iPhone 15 Pro Max"];
+const DEFAULT_PHONES = ["iPhone SE", "iPhone 13", "iPhone 15", "iPhone 15 Pro Max"];
 const SCHEMES = ["light", "dark"];
 
 function parseArgs(argv) {
-  const out = { out: path.join(root, "out", "mobile"), port: 4317 };
+  const out = { out: path.join(root, "out", "mobile"), port: 4317, phones: DEFAULT_PHONES, tool: undefined, toolScroll: undefined };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--out") out.out = path.resolve(argv[++i]);
     else if (argv[i] === "--port") out.port = Number(argv[++i]);
+    else if (argv[i] === "--phones") out.phones = argv[++i].split(",").map((s) => s.trim());
+    else if (argv[i] === "--tool") out.tool = argv[++i];
+    else if (argv[i] === "--tool-scroll") out.toolScroll = argv[++i];
     else throw new Error(`Unknown option: ${argv[i]}`);
   }
   if (!Number.isInteger(out.port) || out.port < 1024 || out.port > 65535) throw new Error("--port must be 1024 to 65535");
@@ -71,7 +78,7 @@ async function main() {
   const browser = await webkit.launch();
   let failures = 0;
   try {
-    for (const name of PHONES) {
+    for (const name of opts.phones) {
       const device = devices[name];
       if (!device) { console.log(`skip  ${name}: this Playwright has no such device`); continue; }
       for (const scheme of SCHEMES) {
@@ -103,7 +110,7 @@ async function main() {
         const problems = [...errors];
         if (scrollWidth > innerWidth) problems.push(`sideways scroll: page is ${scrollWidth}px wide in a ${innerWidth}px window`);
         if (blocked.length) problems.push(`tried to reach the network: ${blocked.join(", ")}`);
-        const shot = path.join(opts.out, `${name.replace(/\s+/g, "-").toLowerCase()}-${scheme}.png`);
+        const shot = path.join(opts.out, `${name.replace(/[^A-Za-z0-9]+/g, "-").replace(/-$/, "").toLowerCase()}-${scheme}.png`);
         await page.screenshot({ path: shot, fullPage: false });
         // Then the same checks with the synthetic sample data loaded, so the stat and finding tiles (CSS subgrid) and the
         // Memories page are exercised on WebKit too, not only the Start page.
@@ -113,10 +120,25 @@ async function main() {
           await page.waitForTimeout(600);
           for (const id of ["overview", "disappeared", "cleanup", "memories"]) {
             await page.evaluate((h) => { location.hash = h; }, `#/${id}`);
+            await page.mouse.move(0, 0); // no card shows a hover highlight in the picture
             await page.waitForTimeout(350);
             const w = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
             if (w.scrollWidth > w.innerWidth) problems.push(`sideways scroll on #/${id} with sample data: page is ${w.scrollWidth}px wide in a ${w.innerWidth}px window`);
             if (id === "overview") await page.screenshot({ path: shot.replace(/\.png$/, "-overview.png"), fullPage: false });
+          }
+          if (opts.tool) {
+            await page.evaluate((h) => { location.hash = h; }, `#/tools/${opts.tool}`);
+            await page.mouse.move(0, 0);
+            await page.waitForFunction(() => document.querySelector("[aria-busy]") === null, null, { timeout: 15000 }).catch(() => {});
+            await page.waitForTimeout(350);
+            if (opts.toolScroll) {
+              await page.evaluate((t) => {
+                const heading = [...document.querySelectorAll("h2, h3")].find((el) => el.textContent.trim() === t);
+                if (heading) window.scrollTo(0, window.scrollY + heading.getBoundingClientRect().top - 24);
+              }, opts.toolScroll);
+              await page.waitForTimeout(250);
+            }
+            await page.screenshot({ path: shot.replace(/\.png$/, "-tool.png"), fullPage: false });
           }
         } catch (e) {
           problems.push(`sample data pass: ${e.message}`);
