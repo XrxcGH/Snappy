@@ -10,3 +10,13 @@ out/
 apps/app/frontend/
 apps/app/src-tauri/target/
 apps/app/src-tauri/gen/
+
+# Files Snappy itself writes for a person. They hold usernames or capture dates, so none of them belongs in a
+# commit. apps/cli/test/gitignore.test.ts checks every file name the tools write and fails if a tracked file
+# matches one of these patterns.
+*.sealed
+*.csv
+*.ics
+snappy-*manifest*.json
+snappy-*backup*.json
+friends*.json
