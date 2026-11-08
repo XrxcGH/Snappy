@@ -6,6 +6,11 @@ pub mod keys;
 pub mod manifest;
 pub mod store;
 pub mod transport;
+#[cfg(windows)]
+pub mod transport_windows;
+
+#[cfg(test)]
+mod testserver;
 pub mod verify;
 
 use serde::Serialize;

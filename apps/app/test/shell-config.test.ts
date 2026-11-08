@@ -153,11 +153,11 @@ describe("read-only guarantee", () => {
     expect(production(lib)).not.toMatch(/std::fs|File::|OpenOptions/);
   });
 
-  it("depends on tauri, the dialog plugin, serde, serde_json, minisign-verify and sha2 (the updater), plus two Windows-only WebView2 crates, and nothing that can connect", () => {
+  it("depends on tauri, the dialog plugin, serde, serde_json, minisign-verify and sha2 (the updater), plus two Windows-only WebView2 crates and windows-sys (the updater's WinHTTP calls), and nothing that can connect", () => {
     const deps = cargo.split("[dependencies]")[1]?.split("[target")[0] ?? "";
     expect([...deps.matchAll(/^([a-z0-9_-]+)\s*=/gm)].map((m) => m[1]).sort()).toEqual(["minisign-verify", "serde", "serde_json", "sha2", "tauri", "tauri-plugin-dialog"]);
     const win = cargo.split("[target.'cfg(windows)'.dependencies]")[1]?.split("[features]")[0] ?? "";
-    expect([...win.matchAll(/^([a-z0-9_-]+)\s*=/gm)].map((m) => m[1]).sort()).toEqual(["webview2-com", "windows-core"]);
+    expect([...win.matchAll(/^([a-z0-9_-]+)\s*=/gm)].map((m) => m[1]).sort()).toEqual(["webview2-com", "windows-core", "windows-sys"]);
     expect(cargo).not.toMatch(/reqwest|hyper|ureq|curl|isahc|surf|tokio-tungstenite|tauri-plugin-(http|fs|shell|opener|updater|process|os|log|store)/);
   });
 });

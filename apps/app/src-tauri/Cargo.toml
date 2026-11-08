@@ -32,6 +32,8 @@ sha2 = "0.10"
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39"
 windows-core = "0.62"
+# The updater's network calls (WinHTTP) and its checks of the install, in two files only (see src/updater).
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Networking_WinHttp"] }
 
 [features]
 # Test builds only: keeps the WEBVIEW2_* environment variables (a debugging port for Playwright, a
