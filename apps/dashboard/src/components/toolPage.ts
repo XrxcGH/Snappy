@@ -202,7 +202,7 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
     h("div", { class: "tool-top" }, h("div", { class: "tool-back" }, h("a", { class: "back-link", href: "#/tools" }, tools.backLink)), header),
     reads,
     body,
-    o.command ? section(tools.commandHeading, commandBlock(ctx, o.command, { key: `${meta.id}-command` })) : null,
+    o.command ? section(tools.commandHeading, commandBlock(ctx, o.command, { key: `${meta.id}-command`, cliLink: true })) : null,
   );
 }
 

@@ -884,3 +884,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .list-skip { display: inline-flex; align-items: center; min-height: var(--target-min); font-weight: 600; }
 .list-end:focus { outline: none; }
 /* end track T3 */
+
+/* track T5 */
+.command-cli-link { margin: 0; }
+.command-cli-link a { display: inline-flex; align-items: center; min-height: var(--target-min); }
+/* end track T5 */

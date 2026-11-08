@@ -1,6 +1,7 @@
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { common, terminal } from "../copy.ts";
+import { cliTool } from "../copy-tools.ts";
 import { h } from "../dom.ts";
 import { onDispose } from "../reactive.ts";
 import { COMMANDS, displayText } from "../terminal/commands.ts";
@@ -13,6 +14,13 @@ import { terminalPanel } from "./terminalPanel.ts";
 export interface CommandBlockOptions {
   /** Key for focus restoration. */
   key: string;
+  /** Add the link to the Export guide's "Command line tool" section. A page does this on its first block only. */
+  cliLink?: boolean;
+}
+
+/** The line that leads to the Export guide section on getting the command line tool. A page that explains commands outside a block can use it too. */
+export function cliToolLink(): HTMLElement {
+  return h("p", { class: "command-cli-link" }, h("a", { href: "#/guide" }, cliTool.linkLabel));
 }
 
 let counter = 0;
@@ -86,6 +94,7 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
     h("pre", { class: "code", tabindex: "0" }, h("code", {}, text)),
     spec.needsFile ? fileChip(ctx.terminal, { key: options.key }) : null,
     hint,
+    options.cliLink === true ? cliToolLink() : null,
     panel.element,
   );
 }
