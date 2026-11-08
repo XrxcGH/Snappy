@@ -185,7 +185,11 @@ describe("the web lock", () => {
     const lock = createWebLock(m);
     let release: () => void = () => undefined;
     const first = lock.withLock("ledger", { waitMs: 1000 }, () => new Promise<void>((r) => (release = r)));
-    await expect(lock.withLock("ledger", { waitMs: 20 }, async () => "never")).rejects.toMatchObject({ code: "ledger-busy" });
+    const busy = lock.withLock("ledger", { waitMs: 20 }, async () => "never");
+    const error = (await busy.then(() => null, (e: unknown) => e)) as { code: string; message: string };
+    expect(error.code).toBe("ledger-busy");
+    expect(error.message).toBe("Another command is using your saved history, so nothing was changed. Wait and try again.");
+    expect(error.message).not.toMatch(/ledger/i);
     release();
     await first;
   });

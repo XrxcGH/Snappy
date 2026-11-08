@@ -10,7 +10,7 @@ export interface LockManagerLike {
   request<T>(name: string, options: { signal?: AbortSignal }, callback: () => Promise<T>): Promise<T>;
 }
 
-const BUSY = "Another command is using this ledger, so nothing was changed. Wait and try again.";
+const BUSY = "Another command is using your saved history, so nothing was changed. Wait and try again.";
 
 /**
  * Take the named lock for the length of `work`, waiting up to `waitMs`. Without Web Locks the work
