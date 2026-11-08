@@ -50,3 +50,14 @@ describe("the Cleanup warning keeps the standard notice measure", () => {
     expect(cleanupSource).toContain("lists.removalNote");
   });
 });
+
+describe("one search box width", () => {
+  it("sets the width of the search field once, for the lists and for the Cleanup toolbar", () => {
+    expect(declarationsOf(".list-search")).toMatch(/width:\s*min\(var\(--search-w\),\s*100%\)/);
+    // The toolbar does not give its search another size.
+    const toolbar = declarationsOf(".cleanup-controls .list-search");
+    expect(toolbar).toMatch(/flex:\s*none/);
+    expect(toolbar).not.toMatch(/(^|[\s;])(width|flex-basis)\s*:/);
+    expect(block).toMatch(/--search-w:\s*[\d.]+rem/);
+  });
+});

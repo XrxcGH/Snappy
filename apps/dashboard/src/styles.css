@@ -841,6 +841,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .toast { animation: toast-in var(--dur-base) var(--ease) both; }
 }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* One search box width on every page: the lists and the Cleanup toolbar match. */
+:root { --search-w: 18rem; }
 /* A list with its search box above it, and the part that repaints while the box keeps focus. */
 .list-block, .list-slot, .queue-slot { display: grid; gap: var(--gap-card); min-width: 0; }
 /* The Clear button sits inside the end of the box, so the box keeps its size whether or not there is text to clear. */
@@ -848,14 +850,15 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .search-row .input { width: 100%; }
 .search-row .input:not(:placeholder-shown) { padding-inline-end: 5.5rem; }
 .search-row .btn { position: absolute; inset-block: 2px; inset-inline-end: 2px; min-height: 0; padding-inline: var(--space-3); }
+.list-search { width: min(var(--search-w), 100%); }
 .list-search input[type="search"]::-webkit-search-cancel-button { appearance: none; display: none; }
 /* The count line and Save and Copy on one line. */
 .list-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--gap-card); }
 .list-bar > .summary { margin: 0; }
-/* The Cleanup toolbar: the fields on the left, the mode toggle on the right, one row from the width of the column. The warning runs the full width, so it is one line. */
+/* The Cleanup toolbar: the three lists on the first row, then the search on the left and the mode toggle on the right, at every width. */
 .cleanup-controls { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--gap-card); }
-.cleanup-controls .filters { flex: 3 1 31rem; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
-.cleanup-controls .list-search { flex: 1 1 10rem; min-width: 0; }
+.cleanup-controls .filters { flex: 1 1 100%; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); }
+.cleanup-controls .list-search { flex: none; }
 .cleanup-controls .segmented { flex: none; }
 /* The keep list: a framed disclosure like "Protected", with one row per name. */
 .keep-list { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: var(--tap-pad) var(--pad-card); }
