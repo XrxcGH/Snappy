@@ -2,12 +2,44 @@
 
 Snappy helps you tidy your Snapchat friends list and rescue your Memories, using only the data export Snapchat gives you.
 
+![Snappy in a light and a dark theme, each with the Overview page in a desktop window and the Cleanup queue on a phone](docs/images/readme-header.webp)
+
 - **Cleanup queue.** Finds disappeared friends (people who may have removed you), unaccepted requests, and quiet friends, each with a confidence level and the evidence behind it. Saved chats and Snaps both count as activity, so a friend you only Snap with is not called quiet.
 - **Memories rescue.** Plans a local backup of your Memories, shows a storage meter against a 5 GB cap that you can change, and restores each file’s exact capture time. In a newer export the files are inside the ZIP files, and Snappy pairs each one with its list entry by that exact time.
 - **Tools.** Twenty-two small helpers on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup, a year in review and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
 - **Native apps and a command line tool.** Snappy is an app you install: a Windows beta is the first one, and macOS, Linux and phone apps are planned. There is also a command line tool named `snappy-export`.
 
 Snappy only infers. A result means “may have removed you”, never “did”. Removing a friend is always your call, and you do it in Snapchat yourself.
+
+## Screenshots
+
+Every picture here is a real capture of Snappy’s built-in sample data: invented friends such as `ghost_1`, never a real account. [docs/images/README.md](docs/images/README.md) shows them all and says how to make them again.
+
+| Light | Dark |
+|---|---|
+| ![Overview page in the light theme, with counts for disappeared friends, unaccepted requests, quiet friends, the cleanup queue and Memories](docs/images/desktop-overview-light.webp) | ![Overview page in the dark theme, with counts for disappeared friends, unaccepted requests, quiet friends, the cleanup queue and Memories](docs/images/desktop-overview-dark.webp) |
+| ![Cleanup queue in the light theme, with a warning that removing a friend cannot be undone and the first people to review](docs/images/desktop-cleanup-queue-light.webp) | ![Cleanup queue in the dark theme, with a warning that removing a friend cannot be undone and the first people to review](docs/images/desktop-cleanup-queue-dark.webp) |
+| ![Tools page in the light theme, with small helpers grouped by what they read](docs/images/desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with small helpers grouped by what they read](docs/images/desktop-tools-hub-dark.webp) |
+| ![Memories rescue in the light theme, with counts and a storage meter](docs/images/desktop-memories-rescue-light.webp) | ![Memories rescue in the dark theme, with counts and a storage meter](docs/images/desktop-memories-rescue-dark.webp) |
+
+A command shown in the app has Copy and Run. Run works inside the app, on invented data here:
+
+![The in-app terminal after a finished run of the demo command, which prints two invented exports and the commands to try on them](docs/images/desktop-terminal-demo-run-dark.webp)
+
+## On your phone
+
+The same pages fit a phone-size screen. These are captures at 390 by 844 pixels: Overview, Tools, Cleanup queue and the Year in review tool, in the light and the dark theme.
+
+| Overview | Tools | Cleanup queue | Year in review |
+|---|---|---|---|
+| ![Overview on a phone, light theme](docs/images/phone-overview-light.webp) | ![Tools page on a phone, light theme](docs/images/phone-tools-hub-light.webp) | ![Cleanup queue on a phone, light theme](docs/images/phone-cleanup-queue-light.webp) | ![Year in review tool on a phone, light theme](docs/images/phone-tool-year-in-review-light.webp) |
+| ![Overview on a phone, dark theme](docs/images/phone-overview-dark.webp) | ![Tools page on a phone, dark theme](docs/images/phone-tools-hub-dark.webp) | ![Cleanup queue on a phone, dark theme](docs/images/phone-cleanup-queue-dark.webp) | ![Year in review tool on a phone, dark theme](docs/images/phone-tool-year-in-review-dark.webp) |
+
+These were made in a headless browser, and the iPhone sizes in Safari’s engine (WebKit), not on a phone. The phone apps are planned, and their own screenshots come with them.
+
+## Desktop app (Windows beta)
+
+The Windows beta shows this same dashboard in its own window. [docs/BETA.md](docs/BETA.md) says how to install it and what to expect.
 
 ## Privacy model
 
@@ -86,7 +118,7 @@ apps/cli          The snappy command
 apps/dashboard    The dashboard (builds to one HTML file that the apps show)
 apps/app          The desktop app: the dashboard in a native window (Tauri)
 brand             Logo, color and type tokens, icons
-docs              Brand guide, export guide, releases guide and the beta guide
+docs              Brand guide, export guide, releases guide, beta guide and screenshots
 ```
 
 ## For developers
@@ -98,6 +130,7 @@ npm run build:dashboard                          # writes apps/dashboard/dist/in
 npm run serve -w @snappy-export/dashboard        # serves it on 127.0.0.1, for development only
 npm run dev -w @snappy-export/app                # the desktop app in a development window
 npm run build -w @snappy-export/app -- --bundles nsis   # the Windows installer
+npm run screenshots                              # redraws docs/images from the sample data (see docs/images/README.md)
 ```
 
 The dashboard’s single HTML file is what the apps show, and the local server is a way to work on it, not a way to use Snappy. [apps/app/README.md](apps/app/README.md) has the desktop app’s rules and checks, and [docs/RELEASES.md](docs/RELEASES.md) has the build steps and the Windows beta build. To change the code, read [CONTRIBUTING.md](CONTRIBUTING.md).
