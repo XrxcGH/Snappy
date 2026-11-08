@@ -8,7 +8,7 @@ Snappy is an app you install on your own computer or phone. It reads your Snapch
 
 Installers are published on the **Releases** page of the Snappy repository on GitHub, and nowhere else. Each release is built by a public GitHub Actions workflow from a version tag (for example `v0.2.0`) that points at a commit already on the `main` branch. The workflow builds every platform, signs what it can, writes a checksum for every file, and attaches them to a draft release. A maintainer tests the files, edits the notes, and publishes the release by hand.
 
-The Windows desktop app checks these releases for a newer version when it opens, and installs a signed update by itself when that is safe (see [Updates](#updates)). The first beta, `0.1.0-beta.1`, has no updater: to leave it, download a newer installer once and run it. Other systems do not update themselves: download the newer installer and run it. The app's storage stays on one device and an uninstall can remove it, and Snappy cannot export saved history, so keep your original Snapchat export: you can add it again.
+The Windows desktop app checks these releases for a newer version when it opens, and installs a signed update by itself when that is safe (see [Updates](#updates)). The first beta, `0.1.0-beta.1`, has no updater: to leave it, download a newer installer once and run it. Beta 2 (`0.1.0-beta.2`) is the first version that checks. Other systems do not update themselves: download the newer installer and run it. The app's storage stays on one device and an uninstall can remove it, and Snappy cannot export saved history, so keep your original Snapchat export: you can add it again.
 
 Each release's notes list the files that are attached (and say in bold when one is missing), say whether each one is signed, and say which platforms the maintainers tested by hand.
 
@@ -104,36 +104,45 @@ That is a statement about Snappy's own code and pages. It is not a promise that 
 
 ## Building the Windows beta locally
 
-The first installer is a Windows beta, version `0.1.0-beta.1`, built by hand on a maintainer's computer. It is unsigned, installs for one user and has no updater (the updater arrives with the first release that contains it). [BETA.md](BETA.md) is the page for the people who test it. These are the commands that make it, from the repository folder, in PowerShell:
+The current installer is a Windows beta, version `0.1.0-beta.2`, built by hand on a maintainer's computer. It is unsigned, installs for one user and carries the update check described under [Updates](#updates) (beta 1 had none). [BETA.md](BETA.md) is the page for the people who test it. These are the commands that make it, from the repository folder, in PowerShell. `SNAPPY_RELEASE=1` makes the build use the maintainers' real update public keys and run the build guards, so it refuses placeholder keys and the test features:
 
 ```powershell
 npm ci --ignore-scripts
 # Optional: reuse the Rust build folder of an earlier build, which saves most of the compile time.
 $env:CARGO_TARGET_DIR = "C:\path\to\an\earlier\target"
+$env:SNAPPY_RELEASE = "1"
+npm run frontend -w @snappy-export/app
 npm run build -w @snappy-export/app -- --bundles nsis -- --locked
+node apps/app/tools/check-no-network-deps.mjs --exe "$env:CARGO_TARGET_DIR\release\snappy.exe"
 ```
 
-The installer is `Snappy_0.1.0-beta.1_x64-setup.exe`, in `bundle\nsis` under the target folder (`apps\app\src-tauri\target\release` when you do not set `CARGO_TARGET_DIR`). To write its checksum in the format of `SHA256SUMS`:
+The last line is the check on the built program: it must import `winhttp.dll` and no other download library, and hold no test setting or test key. The build ran on 8 November 2026 (Windows 11, Rust 1.98.1, Node 24.16.0) and the check passed.
+
+The installer is `Snappy_0.1.0-beta.2_x64-setup.exe`, in `bundle\nsis` under the target folder (`apps\app\src-tauri\target\release` when you do not set `CARGO_TARGET_DIR`). To write its checksum in the format of `SHA256SUMS`:
 
 ```powershell
-$f = ".\Snappy_0.1.0-beta.1_x64-setup.exe"
+$f = ".\Snappy_0.1.0-beta.2_x64-setup.exe"
 "$((Get-FileHash $f -Algorithm SHA256).Hash.ToLower())  $(Split-Path $f -Leaf)" | Set-Content -Encoding ascii "$f.sha256"
 ```
 
+The installer's pictures are committed (`apps/app/src-tauri/installer/header.bmp` and `sidebar.bmp`). If the brand logo or tokens change, run `node apps/app/tools/make-installer-images.mjs`; `--check` fails when the committed files differ from what the script draws.
+
 Notes on this build:
 
-- **Only NSIS.** `--bundles nsis` builds the `.exe` and nothing else. Tauri's documentation says the MSI format accepts only a numeric pre-release part, so `beta.1` is a reason not to build the `.msi` for a beta. That was not tried here.
-- **The version.** The installer's file name and product version are `0.1.0-beta.1`. The file carries a numeric file version beside it, `0.1.0.0`. The version lives in `tauri.conf.json`, `Cargo.toml` (and `Cargo.lock`) and `apps/app/package.json`, and a test fails when they differ. The installer is per user (`installMode` is `currentUser`), English only, and names the publisher "Snappy contributors" and the icon from `icons/icon.ico`.
+- **Only NSIS.** `--bundles nsis` builds the `.exe` and nothing else. Tauri's documentation says the MSI format accepts only a numeric pre-release part, so `beta.2` is a reason not to build the `.msi` for a beta. That was not tried here.
+- **The version.** The installer's file name and product version are `0.1.0-beta.2`. The file carries a numeric file version beside it, `0.1.0.0`. The version lives in `tauri.conf.json`, `Cargo.toml` (and `Cargo.lock`) and `apps/app/package.json`, and a test fails when they differ. The installer is per user (`installMode` is `currentUser`), English only, and names the publisher "Snappy contributors" and the icon from `icons/icon.ico`.
 - **The release workflow is not used.** It only accepts tags of the form `vX.Y.Z` and builds `nsis,msi`, so a beta tag would be refused and the MSI step would stop. Teaching it about betas is a later change.
-- **The beta label.** An installed beta shows "Beta version 0.1.0-beta.1" in the footer of every page and "Version 0.1.0-beta.1" in Settings. It reads the version from `apps/app/package.json` through the platform seam (`release`), so the web build shows neither.
+- **The beta label.** An installed beta shows "Beta version 0.1.0-beta.2" in the footer of every page and "Version 0.1.0-beta.2" in Settings. It reads the version from `apps/app/package.json` through the platform seam (`release`), so the web build shows neither. The in-app terminal reports the same label (the page sends it with each Run); the standalone command line tool prints its own package version.
+- **The installer's look.** `tauri.conf.json` points the installer at `installer/header.bmp` and `installer/sidebar.bmp`, at `installer/hooks.nsh` (one line, `MUI_FINISHPAGE_SHOWREADME_NOTCHECKED`, which leaves the Finish page's "Create desktop shortcut" box unticked; silent and passive installs still make that shortcut) and at `installer/English.nsh` (a copy of the template's wording with one changed line, the uninstaller's box, "Also delete Snappy's saved data (history and settings)"). The box stays unticked by default and the data is removed only when it is ticked. The template's own text is kept otherwise, so a Tauri upgrade should re-copy that file. The file has no byte order mark, because the bundler writes one.
 
-What was run on 7 November 2026, on one Windows 11 computer with WebView2 runtime 157.0.4341.42, with synthetic data only:
+What was run on 8 November 2026 (beta 2), on one Windows 11 computer with WebView2 runtime 157.0.4341.42, with synthetic data only. The installer and uninstaller windows were driven through Windows UI Automation, because the computer-use permission for them was not granted:
 
-- The installer was run silently (`/S`) into a temporary folder (`/D=`). It made `snappy.exe` and `uninstall.exe` there, a Start menu shortcut, a desktop shortcut, the Apps and features registry entry (name, version `0.1.0-beta.1`, publisher) and the key `HKCU\Software\Snappy contributors\Snappy`. The window title is "Snappy".
-- A synthetic export (60 friends, 100 Memories) was chosen in the app's file dialog and read. `demo --run` and `inspect` were run from the Export guide with Run, and both ended with exit code 0. The Export check tool, the Privacy page and Settings were opened.
-- Sockets: the app's process tree (the shell and its WebView2 processes, up to eight processes) was listed against `netstat` or the TCP table while the app ran. Launch 1 was a first launch on a new profile, sampled about every 1.6 seconds for 150 seconds while the app was used. Launches 2 and 3 were sampled about every 0.3 seconds (298 and 345 milliseconds on average) for 65 seconds each. No process of the tree had a connection to a non-loopback address in any of them. A control run of the same sampler on a process that opened a connection to a public address did see it. This covers one runtime version on one computer, and the sampler can miss a connection shorter than its interval.
-- The uninstaller was run silently. It removed the install folder, both shortcuts and the Apps and features entry. It left the key `HKCU\Software\Snappy contributors\Snappy` and the folder `%LOCALAPPDATA%\com.snappy.export` (the WebView2 profile, one folder named `EBWebView`, about 190 files and 9 MB). The interactive uninstaller, and its option to delete the application data, were not driven, so that option is not verified. The test removed what it had left and put back what was there before.
-- Not checked: a first install by double-click with the SmartScreen warning, the default install folder, the interactive installer pages, Smart App Control, other Windows versions, and a computer without the WebView2 runtime.
+- The installer was run through its own pages, twice, with the default folder (`%LOCALAPPDATA%\Snappy`). The pages are Welcome, License, Install location and Finish (there is no Start menu folder page). The Finish page showed "Run Snappy" ticked and "Create desktop shortcut" unticked, and no desktop shortcut was made. The header and sidebar pictures showed. It made `snappy.exe` and `uninstall.exe`, the Start menu shortcut, the Apps and features entry (name, version `0.1.0-beta.2`, publisher) and the key `HKCU\Software\Snappy contributors\Snappy` (the install folder and the language). With "Run Snappy" ticked, the wizard took about a minute and a half to close and start the app (the cause was not found); with it unticked, Snappy started from the Start menu shortcut.
+- The Start page showed the Use sample data button under the intro, without scrolling. Settings showed "Version 0.1.0-beta.2", the Updates card (version, Check now, the box, "Not checked yet") and the new licenses wording. The first-run notice showed OK and Turn off, and Turn off switched the box off. `help` printed `Version 0.1.0-beta.2` and a logo that joins up, with the help list wrapped by the command, not by the window; `demo --run` ended with exit code 0, and the Tools page opened.
+- Update check: the release has no `latest.json` yet (the address answers 404). Check now ended with "Couldn't check. Try again." and nothing alarming, before and after the fix in this change (before it said "Can't reach GitHub.", which was wrong: GitHub had answered).
+- Sockets: the process tree (`snappy.exe` and up to six WebView2 processes) was sampled with `netstat -ano` about every 0.1 to 2 seconds (the sampler's longest gaps were 0.7 to 2.5 seconds, and one gap while the machine was busy was 102 seconds) in five windows of 100 to 140 seconds across three launches. The only non-loopback connections were from `snappy.exe` to `github.com` on port 443 (172.182.252.133 and 140.82.116.3, addresses `github.com` resolved to here): one when Check now was pressed, and one about four seconds after the first window opened, with the first-run notice on screen. On the second launch, within an hour of the last check, there was none. No process of `msedgewebview2.exe` had one. This is one computer and one runtime, and the sampler can miss a connection shorter than its interval.
+- The uninstaller was run through its own page twice. The box "Also delete Snappy's saved data (history and settings)" is unticked by default. Unticked, it removed the install folder, the shortcut and the Apps and features entry, and left `%LOCALAPPDATA%\com.snappy.export` (`EBWebView` and `updates`, 196 files, 10.8 MB) and the key `HKCU\Software\Snappy contributors`. Ticked, it removed all of those too: no `com.snappy.export` folder in Local or Roaming, and no key. The test deleted what it had left, and put back, byte for byte, the `com.snappy.export` folder that was there before (195 files, 13,562,129 bytes, every file's SHA-256 compared).
+- Not checked: a first install by double-click with the SmartScreen warning, Smart App Control, other Windows versions, a computer without the WebView2 runtime, a launch check after the hourly limit, and an update behind a proxy.
 
 ## Building the macOS beta
 
