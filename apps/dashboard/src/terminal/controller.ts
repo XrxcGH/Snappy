@@ -61,6 +61,12 @@ export interface TerminalController {
   subscribe(id: CommandId, listener: () => void): () => void;
   /** Hear when the page-wide lock turns on or off. */
   subscribeBusy(listener: () => void): () => void;
+  /** How many outputs are open now: blocks whose last Run ended and whose output is still showing. */
+  openOutputs(): number;
+  /** Hear when the number of open outputs changes. Returns the unsubscribe function. */
+  subscribeOpen(listener: () => void): () => void;
+  /** Close every open output. A Run that is working is left alone. */
+  closeAll(): void;
   /** The person pressed Run. */
   request(id: CommandId): void;
   /** The person approved a write. */
@@ -134,9 +140,18 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
   const notify = (id: CommandId): void => {
     for (const listener of [...entry(id).listeners]) listener();
   };
+  const finishedIds = (): CommandId[] => [...entries].filter(([, e]) => e.state.kind === "finished").map(([id]) => id);
+  const openListeners = new Set<() => void>();
+  let openCount = 0;
   const set = (id: CommandId, state: PanelState): void => {
     entry(id).state = state;
     notify(id);
+    // Other blocks care only about how many outputs are open, not about what is in them.
+    const n = finishedIds().length;
+    if (n !== openCount) {
+      openCount = n;
+      for (const listener of [...openListeners]) listener();
+    }
   };
   const setActive = (id: CommandId | null): void => {
     active = id;
@@ -232,6 +247,19 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     subscribeBusy(listener) {
       busyListeners.add(listener);
       return () => void busyListeners.delete(listener);
+    },
+    openOutputs: () => openCount,
+    subscribeOpen(listener) {
+      openListeners.add(listener);
+      return () => void openListeners.delete(listener);
+    },
+    closeAll() {
+      for (const id of finishedIds()) {
+        const e = entry(id);
+        e.buffer.clear();
+        e.files = [];
+        set(id, { kind: "idle" });
+      }
     },
     request(id) {
       const spec = COMMANDS[id];

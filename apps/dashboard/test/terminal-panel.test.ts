@@ -4,6 +4,7 @@
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { terminal } from "../src/copy.ts";
+import { terminalTools } from "../src/copy-tools.ts";
 import { COMMANDS } from "../src/terminal/commands.ts";
 import type { CommandId } from "../src/terminal/commands.ts";
 import { createTerminalController } from "../src/terminal/controller.ts";
@@ -339,5 +340,74 @@ describe("other states", () => {
       expect(["img", "b", "script", "iframe"]).not.toContain(node.tagName);
     }
     expect(s.el.textContent).toContain("<img src=x onerror=alert(1)>");
+  });
+});
+
+describe("Close all", () => {
+  const ok = (): RunResult => ({ end: "done", code: 0, ms: 5 });
+
+  /** Two blocks of one session, each run to its end in turn: only one Run works at a time. */
+  async function two() {
+    const s = setup();
+    const a = await panelFor("inspect", s);
+    const b = await panelFor("check", s);
+    const finish = async (id: CommandId, index: number): Promise<void> => {
+      s.controller.request(id);
+      await tick();
+      s.started[index]?.hooks.onOut("some output\n");
+      s.started[index]?.finish(ok());
+      await tick(80);
+    };
+    return { s, a, b, finish };
+  }
+
+  it("is not offered while one output is open, appears on every open output when a second one opens, and goes when one is left", async () => {
+    const { s, a, b, finish } = await two();
+    await finish("inspect", 0);
+    expect(buttons(a.el)).toEqual([terminal.copyOutputButton, terminal.closeButton]);
+    expect(s.controller.openOutputs()).toBe(1);
+    await finish("check", 1);
+    expect(s.controller.openOutputs()).toBe(2);
+    expect(buttons(a.el)).toEqual([terminal.copyOutputButton, terminal.closeButton, terminalTools.closeAll]);
+    expect(buttons(b.el)).toEqual([terminal.copyOutputButton, terminal.closeButton, terminalTools.closeAll]);
+    const closeAll = a.el.querySelectorAll("button").find((x) => x.textContent === terminalTools.closeAll) as FakeElement;
+    expect(closeAll.getAttribute("aria-label")).toBe(terminalTools.closeAllFor);
+    expect(closeAll.getAttribute("aria-label")?.startsWith(closeAll.textContent)).toBe(true);
+    // Close on one block leaves one open, and the other block loses the button.
+    (b.el.querySelectorAll("button").find((x) => x.textContent === terminal.closeButton) as FakeElement).click();
+    expect(buttons(a.el)).toEqual([terminal.copyOutputButton, terminal.closeButton]);
+  });
+
+  it("adds the button in place: the Copy output button of an open output is not drawn again when a second output opens", async () => {
+    const { a, finish } = await two();
+    await finish("inspect", 0);
+    const copyBefore = a.el.querySelectorAll("button")[0];
+    await finish("check", 1);
+    expect(a.el.querySelectorAll("button")[0]).toBe(copyBefore);
+  });
+
+  it("closes every open output with one press, and puts focus on the Run button of that block", async () => {
+    const { s, a, b, finish } = await two();
+    await finish("inspect", 0);
+    await finish("check", 1);
+    focusReset();
+    (b.el.querySelectorAll("button").find((x) => x.textContent === terminalTools.closeAll) as FakeElement).click();
+    expect(s.controller.state("inspect").kind).toBe("idle");
+    expect(s.controller.state("check").kind).toBe("idle");
+    expect(s.controller.transcript("inspect").size).toBe(0);
+    expect(s.controller.openOutputs()).toBe(0);
+    expect(a.el.childNodes).toHaveLength(0);
+    expect(b.el.childNodes).toHaveLength(0);
+    expect(FakeElement.lastFocused).toBe(b.run);
+  });
+
+  it("leaves a Run that is still working alone", async () => {
+    const { s, finish } = await two();
+    await finish("inspect", 0);
+    s.controller.request("check");
+    await tick();
+    s.controller.closeAll();
+    expect(s.controller.state("check").kind).toBe("running");
+    expect(s.controller.state("inspect").kind).toBe("idle");
   });
 });

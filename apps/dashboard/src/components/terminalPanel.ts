@@ -1,6 +1,7 @@
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { common, terminal } from "../copy.ts";
+import { terminalTools } from "../copy-tools.ts";
 import { h } from "../dom.ts";
 import { onDispose } from "../reactive.ts";
 import { createLogView, measureColumns, warmOutputFont } from "../terminal/ansi-view.ts";
@@ -61,6 +62,35 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
   warmOutputFont();
   let log: LogView | null = null;
   let shown = "";
+  /** The finished panel's button row, and the Close all in it while two or more outputs are open. */
+  let toolbar: HTMLElement | null = null;
+  let closeAll: HTMLElement | null = null;
+
+  /**
+   * Close all joins the button row when a second output opens and leaves it when only one is left. The row is changed in place and
+   * not drawn again, so a keyboard user who is on Copy output keeps their place while another block finishes.
+   */
+  const syncCloseAll = (): void => {
+    if (toolbar === null) return;
+    const wanted = controller.openOutputs() >= 2;
+    if (wanted && closeAll === null) {
+      closeAll = button({
+        label: terminalTools.closeAll,
+        variant: "quiet",
+        ariaLabel: terminalTools.closeAllFor,
+        key: `${options.key}:close-all`,
+        onclick: () => {
+          controller.closeAll();
+          announce(terminalTools.closedAll);
+          focusRun();
+        },
+      });
+      toolbar.appendChild(closeAll);
+    } else if (!wanted && closeAll !== null) {
+      closeAll.remove();
+      closeAll = null;
+    }
+  };
 
   const logView = (): LogView => {
     log ??= createLogView({ label: terminal.panelLabelFor(spec.title), trimmedText: terminal.trimmed, buffer: controller.transcript(id) });
@@ -89,6 +119,11 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
   }
 
   function rebuild(state: PanelState, previous: string): void {
+    // Every state but a finished Run is drawn without the button row.
+    if (state.kind !== "finished") {
+      toolbar = null;
+      closeAll = null;
+    }
     // Focus is managed only for a change the person caused, never when a block is first drawn.
     const moved = previous !== "";
     const fresh = previous === "idle" || previous === "needs-file" || previous === "unavailable" || previous.startsWith("finished");
@@ -170,7 +205,10 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
         const download = NETWORK_HINT.test(view.plainText()) ? h("p", { class: "command-hint" }, terminal.downloadNote) : null;
         // The buttons that act on the whole run come before the files, so a keyboard user reaches Copy output and Close
         // without passing a Save button for every file (a real export saves hundreds).
-        root.replaceChildren(...[view.element, chip(state.result), download, h("div", { class: "command-toolbar" }, copy, close), saved].filter((n): n is HTMLElement => n !== null));
+        toolbar = h("div", { class: "command-toolbar" }, copy, close);
+        closeAll = null;
+        root.replaceChildren(...[view.element, chip(state.result), download, toolbar, saved].filter((n): n is HTMLElement => n !== null));
+        syncCloseAll();
         // The reading starts at the top, not at the last line.
         view.finish();
         // Back to the Run button, unless the person has moved on to something else.
@@ -197,6 +235,7 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
 
   draw();
   onDispose(controller.subscribe(id, draw));
+  onDispose(controller.subscribeOpen(syncCloseAll));
   onDispose(() => log?.dispose());
 
   return { element: root, columns: () => measureColumns(root) };

@@ -54,6 +54,8 @@ export const zone = {
 
 export const terminalTools = {
   closeAll: "Close all",
+  closeAllFor: "Close all outputs",
+  closedAll: "All outputs closed.",
   /** Spoken with a Run: the title of the command first, so several blocks on one page can be told apart. */
   startedFor: (title: string): string => `${title}: running`,
   /** A Copy button that stands in for a download the engine may block without a word. */
