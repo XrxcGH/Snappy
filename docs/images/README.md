@@ -23,13 +23,13 @@ node tools/screenshots/compose.mjs
 
 1. `capture.mjs` takes the desktop pictures at 1440 by 900 and the phone-size Chromium pictures at 390 by 844 (at 2x), in both themes. It checks that each page really rendered in the theme in its name, and that each picture after the sample data was loaded shows the Sample data banner. It writes full-size PNG files to `out/screenshots`, which git ignores.
 2. `ios-webkit.mjs` takes the iPhone-size pictures in WebKit (the engine inside iOS Safari) for the Overview page and one tool page. It also checks for sideways scrolling and any network attempt.
-3. `compose.mjs` turns the captures into the WebP files here and builds `readme-header.webp` and `social-preview.png`. It uses the headless Chromium that Playwright provides, so no image library is needed.
+3. `compose.mjs` turns the captures into the WebP files here and builds `readme-header.webp`. It uses the headless Chromium that Playwright provides, so no image library is needed.
 
 Keep the whole folder under about 6 MB. `apps/dashboard/test/docs-images.test.ts` checks the budget, and that every image the README links exists and has alt text.
 
 ## Social preview
 
-`social-preview.png` is 1280 by 640. Upload it in the repository’s settings on GitHub (Settings, then General, then Social preview). That is a web setting, so it is a step for the maintainer, not something the script does.
+The picture for the repository’s social preview is not in this folder. It is `brand/social-preview.png` (1280 by 640), built with the rest of the brand files by `brand/tools/build-assets.mjs`, and `docs/BRAND.md` describes it. Upload that one in the repository’s settings on GitHub (Settings, then General, then Social preview). That is a web setting, so it is a step for the maintainer, not something the script does.
 
 ## Desktop in Chromium, 1440 by 900
 
@@ -66,11 +66,9 @@ These are Safari’s engine at three iPhone screen sizes, not a real iPhone: the
 | iPhone 15, 393 by 659 | ![Overview at iPhone 15 size, light theme](iphone-15-overview-light.webp) | ![Overview at iPhone 15 size, dark theme](iphone-15-overview-dark.webp) | ![Year in review tool at iPhone 15 size, light theme](iphone-15-tool-light.webp) | ![Year in review tool at iPhone 15 size, dark theme](iphone-15-tool-dark.webp) |
 | iPhone 15 Pro Max, 430 by 739 | ![Overview at iPhone 15 Pro Max size, light theme](iphone-15-pro-max-overview-light.webp) | ![Overview at iPhone 15 Pro Max size, dark theme](iphone-15-pro-max-overview-dark.webp) | ![Year in review tool at iPhone 15 Pro Max size, light theme](iphone-15-pro-max-tool-light.webp) | ![Year in review tool at iPhone 15 Pro Max size, dark theme](iphone-15-pro-max-tool-dark.webp) |
 
-## Composed images
+## Composed image
 
 ![Light and dark side by side: the Overview page in a desktop window, with the Cleanup queue on a phone in front of it](readme-header.webp)
-
-![The social preview: the Snappy logo, the tagline, and the Overview page on a desktop and a phone in the dark theme](social-preview.png)
 
 ## Not captured yet
 

@@ -15,7 +15,7 @@ const PAGES = ["README.md", path.join("docs", "images", "README.md")];
 
 /** The whole folder, in bytes. The README promises about 6 MB at most. */
 const FOLDER_BUDGET = 6 * 1024 * 1024;
-/** One file. GitHub's own limit for a social preview is 1 MB. */
+/** One file. Kept small so the README loads quickly. */
 const FILE_BUDGET = 1024 * 1024;
 
 interface ImageRef {
@@ -95,8 +95,9 @@ describe("docs images", () => {
     expect(sizes.reduce((sum, s) => sum + s.bytes, 0)).toBeLessThanOrEqual(FOLDER_BUDGET);
   });
 
-  it("keeps the social preview at 1280 by 640", () => {
-    const png = readFileSync(path.join(IMAGES, "social-preview.png"));
+  it("keeps one social preview, the brand one, at 1280 by 640", () => {
+    expect(existsSync(path.join(IMAGES, "social-preview.png"))).toBe(false);
+    const png = readFileSync(path.join(root, "brand", "social-preview.png"));
     expect(png.subarray(1, 4).toString("latin1")).toBe("PNG");
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1280, 640]);
   });

@@ -1,12 +1,12 @@
 /**
- * Turn the raw captures into the small images the README and the docs use, and build the two composed images.
+ * Turn the raw captures into the small images the README and the docs use, and build the README header image.
  *
  *   PLAYWRIGHT_DIR=<folder with playwright installed> node tools/screenshots/compose.mjs [--in out/screenshots] [--out docs/images]
  *
  * Reads what tools/screenshots/capture.mjs and tools/mobile/ios-webkit.mjs wrote (see docs/images/README.md) and writes to docs/images:
  *   - every desktop, phone and iPhone picture as WebP, sized for a README (GitHub shows WebP in a README);
- *   - readme-header.webp: light and dark side by side, a desktop window with a phone in front of it;
- *   - social-preview.png: the 1280 by 640 image for the repository's social preview (a PNG, which GitHub accepts).
+ *   - readme-header.webp: light and dark side by side, a desktop window with a phone in front of it.
+ * The repository's social preview is not made here: it is brand/social-preview.png, built by brand/tools/build-assets.mjs (see docs/BRAND.md).
  * It needs no image library: the headless Chromium that Playwright already provides scales, draws and encodes the pictures,
  * so nothing is installed and nothing leaves this computer. Every source picture comes from the built-in sample data.
  */
@@ -77,11 +77,6 @@ async function render(browser, html, width, height) {
   return png;
 }
 
-const atkinson = (weight) => {
-  const file = path.join(root, "node_modules", "@fontsource", "atkinson-hyperlegible-next", "files", `atkinson-hyperlegible-next-latin-${weight}-normal.woff2`);
-  return `@font-face{font-family:"Atkinson";font-weight:${weight};src:url(${fileUri(file, "font/woff2")}) format("woff2");}`;
-};
-
 function raw(dir, name) {
   const file = path.join(dir, name);
   if (!existsSync(file)) throw new Error(`Missing ${path.relative(root, file)}. Run capture.mjs first.`);
@@ -103,26 +98,6 @@ function headerHtml(dir) {
     .desk{left:44px;top:92px;width:690px}
     .phone{left:540px;top:208px;width:224px;border-radius:22px}
   </style>${panel("light", "#dfe3ea")}${panel("dark", "#1b1816")}`;
-}
-
-/** The repository's social preview: logo, tagline, a desktop window and a phone. 1280 by 640. */
-function socialHtml(dir) {
-  const lockup = readFileSync(path.join(root, "brand", "logo", "snappy-lockup.svg"), "utf8").replace("<svg ", '<svg style="color:#f2f4f5;--accent:#9b86ff;width:330px;height:auto;display:block" ');
-  return `<!doctype html><meta charset="utf-8"><style>
-    ${atkinson(400)}
-    html,body{margin:0;width:1280px;height:640px;overflow:hidden;background:#1b1816;font-family:Atkinson,sans-serif}
-    .lockup{position:absolute;left:72px;top:92px}
-    .tag{position:absolute;left:72px;top:232px;width:480px;margin:0;color:#f2f4f5;font-size:32px;line-height:1.28;font-weight:400}
-    .fine{position:absolute;left:72px;bottom:44px;width:400px;margin:0;color:#a7a39e;font-size:14px;line-height:1.45}
-    img{position:absolute;display:block;box-shadow:0 18px 48px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.14)}
-    .desk{left:560px;top:92px;width:700px;border-radius:12px}
-    .phone{left:516px;top:244px;width:190px;border-radius:22px}
-  </style>
-  <div class="lockup">${lockup}</div>
-  <p class="tag">Organize your Snapchat world<br>from your own export.</p>
-  <p class="fine">Snappy is an independent tool. It is not affiliated with, endorsed by, or sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.</p>
-  <img class="desk" src="${raw(dir, "desktop-overview-dark.png")}" alt="">
-  <img class="phone" src="${raw(dir, "phone-overview-dark.png")}" alt="">`;
 }
 
 async function main() {
@@ -150,7 +125,6 @@ async function main() {
     }
     write("readme-header.webp", await toWebp(page, await render(browser, headerHtml(opts.in), 1600, 800)));
     await context.close();
-    write("social-preview.png", await render(browser, socialHtml(opts.in), 1280, 640));
   } finally {
     await browser.close();
   }
