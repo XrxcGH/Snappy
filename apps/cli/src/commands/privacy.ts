@@ -8,8 +8,8 @@ import { insights } from "@snappy-export/core";
 import { CliError } from "../errors.ts";
 import { plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
-import { insightTerm, parseIdList, parseInsightArgs } from "../insights-input.ts";
-import type { CommonFlags } from "../insights-input.ts";
+import { MARKS_HISTORY_OPTIONS, insightTerm, parseIdList, parseInsightArgs, readSavedMarks } from "../insights-input.ts";
+import type { CommonFlags, MarksHistoryFlags } from "../insights-input.ts";
 import type { Io } from "../io.ts";
 import { finish, jsonText, renderNotes, section } from "../render-insights.ts";
 import type { NoteLine } from "../render-insights.ts";
@@ -21,21 +21,23 @@ Lists the Snapchat privacy settings worth a look, with a short hint for each. Sn
 change your settings, and it reads no export. You mark what you have already done.
 
 Options
-  --done <names>  The names of the settings you have done, separated by commas.
-  --json          Print JSON instead of text.
-  --verbose       Add a short code to each note, for bug reports.
-  --no-color      Plain text.
+  --done <names>            The names of the settings you have done, separated by commas.
+  --history <path>          Also read the marks saved in this history. Nothing is changed.
+  --passphrase-file <path>  Use the first line of this file as the passphrase.
+  --json                    Print JSON instead of text.
+  --verbose                 Add a short code to each note, for bug reports.
+  --no-color                Plain text.
 
 Marks are not saved. Add every name you have done each time you run this.
 
 Exit codes: 0 done, 1 could not run.
 `;
 
-type Flags = CommonFlags & { done?: string[] };
+type Flags = CommonFlags & MarksHistoryFlags & { done?: string[] };
 type Result = insights.privacyTuneup.TuneupResult;
 type Item = insights.privacyTuneup.TuneupItem;
 
-const OWN_OPTIONS = { done: { type: "string", multiple: true } } as const;
+const OWN_OPTIONS = { done: { type: "string", multiple: true }, ...MARKS_HISTORY_OPTIONS } as const;
 
 const STATE_LABEL: Record<insights.privacyTuneup.TuneupItemState, string> = {
   done: "Done",
@@ -78,7 +80,7 @@ function itemLines(items: Item[], idWidth: number): string[] {
   ]);
 }
 
-export function renderPrivacy(raw: Result, term: Term, verbose: boolean): string {
+export function renderPrivacy(raw: Result, term: Term, verbose: boolean, fromHistory?: number): string {
   const result = raw;
   const p = result.progress;
   const all = result.sections.flatMap((s) => s.items);
@@ -89,6 +91,7 @@ export function renderPrivacy(raw: Result, term: Term, verbose: boolean): string
   else out.push(`  ${term.violet(`${p.done} of ${plural(p.applicable, "setting")} marked done, ${p.percent}%.`)}`);
   const extra = [p.skipped > 0 ? `${p.skipped} skipped` : "", p.later > 0 ? `${p.later} for later` : ""].filter((s) => s !== "");
   if (extra.length > 0) out.push(`  ${extra.join(", ")}.`);
+  if (fromHistory !== undefined) out.push(`  ${plural(fromHistory, "mark")} read from your saved history.`);
   out.push("");
 
   for (const s of result.sections) out.push(...section(term, s.title, itemLines(s.items, idWidth)));
@@ -118,13 +121,17 @@ export async function runPrivacy(args: string[], io: Io): Promise<number> {
   if (positionals.length > 0) {
     throw new CliError("usage", "This command reads no export, so it takes no files. Use --done to mark settings.");
   }
-  const done = parseIdList("--done", flags.done, insights.privacyTuneup.PRIVACY_TUNEUP_ITEMS.map((i) => i.id));
+  const known = insights.privacyTuneup.PRIVACY_TUNEUP_ITEMS.map((i) => i.id);
+  const typed = parseIdList("--done", flags.done, known);
+  // Marks saved with the history count too, but only when the person names the file.
+  const saved = await readSavedMarks(io, flags, "privacy-tuneup", known);
+  const done = [...new Set([...typed, ...(saved ?? [])])];
 
   const now = io.now();
   const result = insights.privacyTuneup.buildPrivacyTuneup(done.map((id) => ({ id, state: "done" as const })), now);
 
-  if (flags.json) io.out.write(jsonText({ generatedAt: new Date(now).toISOString(), ...result }));
-  else io.out.write(renderPrivacy(result, term, flags.verbose === true));
+  if (flags.json) io.out.write(jsonText({ generatedAt: new Date(now).toISOString(), ...result, ...(saved !== undefined && { marksFromHistory: saved.length }) }));
+  else io.out.write(renderPrivacy(result, term, flags.verbose === true, saved?.length));
   return 0;
 }
 

@@ -14,7 +14,8 @@ import type { OptionSpec, Parsed } from "./args.ts";
 import { CliError } from "./errors.ts";
 import type { Io } from "./io.ts";
 import { newestMtime, parseParts, requireFirstPart, resolveZipPaths, withReaders } from "./inputs.ts";
-import { defaultLedgerPath, HISTORY_PATH_OPTIONS, historyPathFlag, isFreshStore, loadLedger } from "./ledger-store.ts";
+import { defaultLedgerPath, HISTORY_PATH_OPTIONS, historyPathFlag, isFreshStore, loadLedger, loadStore } from "./ledger-store.ts";
+import type { HistoryPathFlags } from "./ledger-store.ts";
 import { resolvePassphrase } from "./prompt.ts";
 import { createTerm } from "./term.ts";
 import type { Term } from "./term.ts";
@@ -49,6 +50,27 @@ export const LEDGER_OPTIONS: OptionSpec = {
   ...HISTORY_PATH_OPTIONS,
   "passphrase-file": { type: "string" },
 };
+
+/** For the two checklists, which can read the marks the person saved with their history. Read only. */
+export const MARKS_HISTORY_OPTIONS: OptionSpec = { ...HISTORY_PATH_OPTIONS, "passphrase-file": { type: "string" } };
+export type MarksHistoryFlags = HistoryPathFlags & { "passphrase-file"?: string };
+
+/**
+ * The marks saved with a person's history for one checklist tool, as the names of the items they
+ * ticked. Only when they name the file with --history: without it nothing is opened, so a checklist
+ * never touches the saved history by surprise. The file is read and never changed, and only ticks
+ * for this tool and for items it knows are used. Undefined when no file was named.
+ */
+export async function readSavedMarks(io: Io, flags: MarksHistoryFlags, tool: string, known: readonly string[]): Promise<string[] | undefined> {
+  const path = historyPathFlag(flags);
+  if (path === undefined) return undefined;
+  if (await isFreshStore(io, path)) throw new CliError("usage", "Snappy found no saved history at that path, so there are no saved marks to read.");
+  const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: false });
+  const { ticks } = await loadStore(io, path, passphrase);
+  const prefix = `${tool}:`;
+  const marked = (ticks ?? []).filter((t) => t.startsWith(prefix)).map((t) => t.slice(prefix.length));
+  return [...new Set(marked.filter((name) => known.includes(name)))];
+}
 
 /** Hours from UTC that every command with a time zone option accepts. */
 export const MIN_UTC_OFFSET_HOURS = -12;

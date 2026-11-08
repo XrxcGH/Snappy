@@ -7,8 +7,8 @@
 import { insights } from "@snappy-export/core";
 import { formatPercent, isAre, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
-import { insightTerm, loadInsightInput, parseIdList, parseInsightArgs } from "../insights-input.ts";
-import type { CommonFlags } from "../insights-input.ts";
+import { MARKS_HISTORY_OPTIONS, insightTerm, loadInsightInput, parseIdList, parseInsightArgs, readSavedMarks } from "../insights-input.ts";
+import type { CommonFlags, MarksHistoryFlags } from "../insights-input.ts";
 import type { Io } from "../io.ts";
 import { finish, jsonText, renderNotes, section } from "../render-insights.ts";
 import type { NoteLine } from "../render-insights.ts";
@@ -23,15 +23,17 @@ Give it your export to add counts of blocked people and pending requests. This i
 nothing is saved between runs.
 
 Options
-  --done <names>  The names of steps you have done, separated by commas.
-  --json          Print JSON instead of text.
-  --verbose       Add a short code to each note, for bug reports.
-  --no-color      Plain text.
+  --done <names>            The names of steps you have done, separated by commas.
+  --history <path>          Also read the marks saved in this history. Nothing is changed.
+  --passphrase-file <path>  Use the first line of this file as the passphrase.
+  --json                    Print JSON instead of text.
+  --verbose                 Add a short code to each note, for bug reports.
+  --no-color                Plain text.
 
 Exit codes: 0 done, 1 could not run.
 `;
 
-type Flags = CommonFlags & { done?: string[] };
+type Flags = CommonFlags & MarksHistoryFlags & { done?: string[] };
 type Checklist = insights.safetyChecklist.SafetyChecklist;
 type Item = insights.safetyChecklist.SafetyItem;
 type Note = insights.safetyChecklist.SafetyNote;
@@ -74,11 +76,13 @@ function hintText(item: Item, hint: Note): string {
   }
 }
 
-export function renderSafety(result: Checklist, term: Term, verbose: boolean): string {
+export function renderSafety(result: Checklist, term: Term, verbose: boolean, fromHistory?: number): string {
   const p = result.progress;
   const out: string[] = [term.bold("Account safety checklist")];
   out.push(`  ${term.violet(`${p.done} of ${plural(p.total, "item")} marked done (${formatPercent(p.percent / 100)}).`)}`);
-  out.push("  This list is self-reported. Snappy cannot see your settings.", "");
+  out.push("  This list is self-reported. Snappy cannot see your settings.");
+  if (fromHistory !== undefined) out.push(`  ${plural(fromHistory, "mark")} read from your saved history.`);
+  out.push("");
 
   out.push(
     ...section(
@@ -107,13 +111,16 @@ export function renderSafety(result: Checklist, term: Term, verbose: boolean): s
 }
 
 export async function runSafety(args: string[], io: Io): Promise<number> {
-  const { values: flags, positionals } = parseInsightArgs<Flags>("safety", args, { done: { type: "string", multiple: true } });
+  const { values: flags, positionals } = parseInsightArgs<Flags>("safety", args, { done: { type: "string", multiple: true }, ...MARKS_HISTORY_OPTIONS });
   if (flags.help) {
     io.out.write(SAFETY_USAGE);
     return 0;
   }
   const term = insightTerm(flags, io);
-  const done = parseIdList("--done", flags.done, insights.safetyChecklist.SAFETY_ITEM_IDS);
+  const typed = parseIdList("--done", flags.done, insights.safetyChecklist.SAFETY_ITEM_IDS);
+  // Marks saved with the history count too, but only when the person names the file.
+  const saved = await readSavedMarks(io, flags, "safety-checklist", insights.safetyChecklist.SAFETY_ITEM_IDS);
+  const done = [...new Set([...typed, ...(saved ?? [])])];
   const ticks = Object.fromEntries(done.map((id) => [id, true]));
 
   // The export is optional and adds counts only. A broken one is not used.
@@ -123,8 +130,8 @@ export async function runSafety(args: string[], io: Io): Promise<number> {
   const built = insights.safetyChecklist.buildSafetyChecklist({ now, ticks, ...(friends !== undefined && { friends }) });
   const result: Checklist = input !== undefined && friends === undefined ? { ...built, notes: [...built.notes, { code: "export-not-used", params: {} }] } : built;
 
-  if (flags.json) io.out.write(jsonText({ generatedAt: new Date(now).toISOString(), ...result }));
-  else io.out.write(renderSafety(result, term, flags.verbose === true));
+  if (flags.json) io.out.write(jsonText({ generatedAt: new Date(now).toISOString(), ...result, ...(saved !== undefined && { marksFromHistory: saved.length }) }));
+  else io.out.write(renderSafety(result, term, flags.verbose === true, saved?.length));
   return 0;
 }
 
