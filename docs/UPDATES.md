@@ -41,7 +41,7 @@ Not covered: someone who holds the signing key can target copies that have not u
 
 ## What is sent
 
-One request for the small file, and, only if a newer version exists, one request for the installer. The only header the program sets is `User-Agent: Snappy-Updater`. There is no query string, no ID and no version number. GitHub, the network and any proxy can see the IP address, the time, and that a Snappy app asked. When an update is downloaded, the address names the version about to be installed. Windows may look up a proxy configuration, which a local network can see.
+One request for the small file, and, only if a newer version exists, one request for the installer. The only header the program sets is `User-Agent: Snappy-Updater`. There is no query string, no ID and no version number. GitHub, the network and any proxy can see the IP address, the time, and that a Snappy app asked. When an update is downloaded, the address names the version about to be installed. Windows may look up a proxy configuration, which a local network can see. The system’s own certificate and proxy handling may also contact other hosts, for example to check a certificate. That is Windows, not Snappy’s code, and Snappy does not control it, as with WebView2.
 
 This does not cover WebView2, the Microsoft web engine that draws the window. It is a separate program that Snappy does not control. The notes in the app’s README say what was and was not tested.
 

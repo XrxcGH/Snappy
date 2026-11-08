@@ -137,6 +137,15 @@ describe("network claims", () => {
  * Someone who installed the app has no Snappy folder, no Node and no npm. The guides say where the command line tool
  * comes from, what it needs, and that the app covers everything but a full Memories rescue.
  */
+describe("what the update check can and cannot say about itself", () => {
+  it("says in What is sent that the system’s certificate and proxy handling may contact other hosts, outside Snappy’s control", () => {
+    const section = prose(path.join("docs", "UPDATES.md")).map((l) => l.raw).join("\n").split(/^## /m).find((s) => s.startsWith("What is sent")) ?? "";
+    expect(section).toMatch(/certificate and proxy handling may also contact other hosts/);
+    expect(section).toMatch(/Snappy does not control it/);
+    expect(section).toMatch(/proxy configuration/);
+  });
+});
+
 describe("the command line tool, for people who installed the app", () => {
   const text = (file: string): string => prose(file).map((l) => l.raw).join("\n");
 
