@@ -315,7 +315,14 @@ grep -E '^(samples|the app first appeared|connections to a non-loopback|loopback
 
 # ------------------------------------------------------------------------------------------------
 say ""
-say "== 7. What the app left on this computer (for docs/MACOS.md) =="
+say "== 7. A WebKit stand-in: web features under a custom scheme, and a blocked address on WKWebView =="
+say "(Not the Snappy app: a plain WKWebView that applies the same two hooks. See webkit-probe.swift.)"
+OUT="$OUT" bash "$HERE/probe.sh" 2>&1 | tee -a "$SUMMARY"
+if [ "${PIPESTATUS[0]}" != "0" ]; then fail "the WebKit stand-in let a request through to the test server (see the lines above)"; fi
+
+# ------------------------------------------------------------------------------------------------
+say ""
+say "== 8. What the app left on this computer (for docs/MACOS.md) =="
 {
   echo "Entries under ~/Library whose name contains snappy (any case), at most 5 levels deep, with sizes in KB:"
   find "$HOME/Library" -maxdepth 5 -iname '*snappy*' -print 2> /dev/null | while IFS= read -r p; do
@@ -329,7 +336,7 @@ cat "$OUT/data-locations.txt" | tee -a "$SUMMARY"
 
 # ------------------------------------------------------------------------------------------------
 say ""
-say "== 8. The files that are uploaded =="
+say "== 9. The files that are uploaded =="
 mkdir -p "$OUT/files"
 cp "$DMG" "$OUT/files/$DMG_NAME"
 TAR_NAME="Snappy_${VERSION}_universal.app.tar.gz"
