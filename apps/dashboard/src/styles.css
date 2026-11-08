@@ -33,15 +33,15 @@
   --content-w: var(--col);               /* the width of the content area: one column here, wider on wide screens */
   --shell-max: calc(var(--content-w) + 2 * var(--gutter));
   /* Wide screens (see "wide layout" at the end). A media query cannot read a custom property, so the two breakpoints
-     are written out there as 80rem and 100rem; these tokens name them and the test keeps them in step. */
-  --bp-wide: 80rem;                      /* 1280 px: the shell widens and card pages use columns */
+     are written out there as 72rem and 100rem; these tokens name them and the test keeps them in step. */
+  --bp-wide: 72rem;                      /* 1152 px: the shell widens and card pages use columns (the desktop app's 1180 px window is wide) */
   --bp-xwide: 100rem;                    /* 1600 px: one more step wider, one more column of tiles */
   --col-wide: 60rem;                     /* content area beside the 16 rem sidebar from --bp-wide */
   --col-xwide: 77rem;                    /* the same from --bp-xwide; the shell stops growing here (96 rem) */
 }
 @media (min-width: 48rem) { :root { --gutter: var(--space-6); } }
 @media (min-width: 64rem) { :root { --shell-max: calc(16rem + var(--content-w) + 2 * var(--gutter)); } }
-@media (min-width: 80rem) { :root { --content-w: var(--col-wide); } }
+@media (min-width: 72rem) { :root { --content-w: var(--col-wide); } }
 @media (min-width: 100rem) { :root { --content-w: var(--col-xwide); } }
 
 /* ---------------------------------------------------------------- base --- */
@@ -400,13 +400,17 @@ img, svg { max-width: 100%; }
   .tile .chip-icon { width: 2.5rem; height: 2.5rem; }
 }
 /* Count tiles are two across from the narrowest phone, the findings one across until 30rem; two from a larger phone (an odd last tile takes the whole row), three from 40rem (the five
-   findings are three, then two wider ones, so the grid has no hole). */
+   findings are three, then two of the same width centered under them, so every row has equal tiles). */
 @media (min-width: 20rem) { .tiles-stats .tile { grid-column: span 3; } }
 @media (min-width: 30rem) { .tiles-findings .tile { grid-column: span 3; } }
 @media (min-width: 20rem) and (max-width: 39.99rem) { .tile:last-child:nth-child(odd) { grid-column: 1 / -1; } }
 @media (min-width: 40rem) {
   .tiles-stats .tile, .tiles-findings .tile { grid-column: span 2; }
-  .tiles-findings .tile:nth-child(n+4) { grid-column: span 3; }
+}
+/* The five findings below the wide layout: three, then two of the same width centered under them. */
+@media (min-width: 40rem) and (max-width: 71.99rem) {
+  .tiles-findings .tile:nth-child(4):nth-last-child(2) { grid-column: 2 / span 2; }
+  .tiles-findings .tile:nth-child(5):last-child { grid-column: 4 / span 2; }
 }
 /* No subgrid (very old browsers): the tile is a plain column with its action pinned to the bottom. */
 @supports not (grid-template-rows: subgrid) {
@@ -682,12 +686,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .tiles-tools .tile { grid-column: span 3; }
   .tiles-tools.tiles-n-1 .tile { grid-column: 1 / -1; }
 }
-/* From 40rem a group fills its rows with no hole: one tile alone, two or four in pairs, three across, five as three and two, seven as three, two and two. */
-@media (min-width: 40rem) {
-  .tiles-tools .tile { grid-column: span 2; }
-  .tiles-tools.tiles-n-2 .tile, .tiles-tools.tiles-n-4 .tile { grid-column: span 3; }
-  .tiles-tools.tiles-n-7 .tile:nth-child(n+4), .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 3; }
-}
+/* Below the wide layout every group has the same two columns, so a tile is the same width in every group and on the whole page; a last odd tile stays at the left. */
 .tool-line { margin: 0; font-size: var(--text-14); color: var(--text-muted); text-wrap: balance; }
 .tool-status { margin: 0; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-14); font-weight: 600; color: var(--text-muted); }
 .tool-status-ready { color: var(--text); }
@@ -718,8 +717,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 
 /* ------------------------------------------------------------ wide layout --- */
 /*
-  From 80rem (--bp-wide) the shell and the content area widen (--content-w: 60rem beside the 16rem sidebar, 77rem from
-  100rem, where the 96rem shell stops growing and centers). Below 80rem nothing here applies, so a phone, a tablet and
+  From 72rem (--bp-wide) the shell and the content area widen (--content-w: up to 60rem beside the 16rem sidebar, 77rem from
+  100rem, where the 96rem shell stops growing and centers). Below 72rem nothing here applies, so a phone, a tablet and
   a narrow window look exactly as before. The rules, kept in one place:
     - The DOM does not change and nothing is reordered: pages use CSS grid on the blocks that are siblings.
     - Running text keeps the --col measure (about 75 characters): paragraphs, lists, notices and fields never stretch;
@@ -727,7 +726,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
     - Cards that are siblings sit in 2 or 3 columns of equal width, and a grid's last row never holds one lone card
       when a spanning or a wider last item avoids it.
 */
-@media (min-width: 80rem) {
+@media (min-width: 72rem) {
   /* Text blocks keep the measure in every context; a block in a narrower column is already narrower. */
   .view :is(p, .plain-list, .point-list, .steps, .tool-notes, .mark-list) { max-width: var(--col); }
   .view :is(.notice, .notice-group, .tool-reads) { max-width: var(--col); }
@@ -756,7 +755,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .details-body:has(> .health-notes):has(> .subsection) > .health-notes, .details-body:has(> .health-notes):has(> .subsection) > .subsection { grid-column: span 1; grid-row: 1; margin-top: 0; }
   .details-body:has(> .health-notes):has(> .subsection) .health-notes { grid-template-columns: minmax(0, 1fr); }
 }
-@media (min-width: 80rem) {
+@media (min-width: 72rem) {
   /* Start: the three steps side by side, in order, as equal cards. The sample-data card and the notes about saving are
      bands: the words on the left (at the measure) and the one action on the right, so no card has an empty right third. */
   div.step-list { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
@@ -784,12 +783,16 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .steps-n-7, .steps-n-8 { --rows: 4; }
   .steps-n-9, .steps-n-10 { --rows: 5; }
 }
-@media (min-width: 80rem) {
-  /* The Tools hub: one tile width on the whole page, three across at every wide width (four across would leave a group of
-     five with one lone tile in its second row, three across makes it three and two). A group of two or five leaves the end
-     of its last row empty rather than stretching a tile, so a tile is the same size in every group. */
-  .tiles-tools { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .tiles-tools.tiles-tools .tile:nth-child(n) { grid-column: span 1; }
+@media (min-width: 72rem) {
+  /* The Tools hub is a grid of twelve columns and the count of the group picks the spans, so no group ends on a lone tile:
+     one or two across the row (spans 12 and 6), three across (4), four across (3), five as three and two (4 and 6) and seven as
+     four and three (3 and 4). */
+  .tiles-tools { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .tiles-tools .tile:nth-child(n) { grid-column: span 4; }
+  .tiles-tools.tiles-n-1 .tile:nth-child(n) { grid-column: span 12; }
+  .tiles-tools.tiles-n-2 .tile:nth-child(n) { grid-column: span 6; }
+  .tiles-tools.tiles-n-4 .tile:nth-child(n), .tiles-tools.tiles-n-7 .tile:nth-child(-n+4) { grid-column: span 3; }
+  .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 6; }
   /* Six short counts are one row. */
   .tiles-stats.tiles-n-6 .tile { grid-column: span 1; }
   /* Independent sections flow down two balanced columns, in document order. Each one stays whole. */

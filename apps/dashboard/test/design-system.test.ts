@@ -99,20 +99,21 @@ describe("stylesheet", () => {
     expect(css).toMatch(/\.tile\s*\{[^}]*justify-items:\s*center/);
     expect(css).toMatch(/\.tiles-findings\s*\{\s*--tile-rows:\s*5/);
     expect(css).toMatch(/\.tiles-stats\s*\{\s*--tile-rows:\s*3/);
-    // The five findings are three across and then two wider ones: no hole in the grid.
-    expect(css).toMatch(/\.tiles-findings \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 3/);
+    // The five findings are three across and then two of the same width, centered under them: no hole in the grid.
+    expect(css).toMatch(/\.tiles-findings \.tile:nth-child\(4\):nth-last-child\(2\)\s*\{\s*grid-column:\s*2 \/ span 2/);
+    expect(css).toMatch(/\.tiles-findings \.tile:nth-child\(5\):last-child\s*\{\s*grid-column:\s*4 \/ span 2/);
   });
 
   it("defines the wide-screen breakpoints and widths, and keeps the narrow layout as it was", () => {
     // The shell and content widths come from tokens; a media query cannot read them, so the literals must agree.
-    expect(css).toMatch(/--bp-wide:\s*80rem/);
+    expect(css).toMatch(/--bp-wide:\s*72rem/);
     expect(css).toMatch(/--bp-xwide:\s*100rem/);
     expect(css).toMatch(/--col:\s*36rem/);
     expect(css).toMatch(/--col-wide:\s*60rem/);
     expect(css).toMatch(/--col-xwide:\s*77rem/);
-    // Below the wide breakpoint the content area is the one 36rem column; the wide widths apply from 80rem and 100rem.
+    // Below the wide breakpoint the content area is the one 36rem column; the wide widths apply from 72rem and 100rem.
     expect(css).toMatch(/--content-w:\s*var\(--col\);/);
-    expect(css).toMatch(/@media \(min-width: 80rem\)\s*\{\s*:root\s*\{\s*--content-w:\s*var\(--col-wide\)/);
+    expect(css).toMatch(/@media \(min-width: 72rem\)\s*\{\s*:root\s*\{\s*--content-w:\s*var\(--col-wide\)/);
     expect(css).toMatch(/@media \(min-width: 100rem\)\s*\{\s*:root\s*\{\s*--content-w:\s*var\(--col-xwide\)/);
     expect(css).toMatch(/\.view\s*\{[^}]*max-width:\s*var\(--content-w\)/);
     // The shell is 16rem of sidebar, the content area and two gutters, so the 79rem and 96rem shells follow from the tokens.
@@ -124,7 +125,7 @@ describe("stylesheet", () => {
     for (const token of ["--bp-wide", "--bp-xwide", "--col-wide", "--col-xwide"]) expect(brand, token).toContain(token);
   });
 
-  it("puts every wide-layout rule inside a min-width media query of 80rem or more, so nothing below 80rem changes", () => {
+  it("puts every wide-layout rule inside a min-width media query of 72rem or more, so nothing below 72rem changes", () => {
     const start = css.indexOf("/* ------------------------------------------------------------ wide layout --- */");
     const end = css.indexOf("/* --------------------------------------------------------------- motion --- */");
     expect(start).toBeGreaterThan(-1);
@@ -138,7 +139,7 @@ describe("stylesheet", () => {
         const prelude = rest.trim();
         rest = "";
         const min = /^@media \(min-width: (\d+)rem\)$/.exec(prelude);
-        expect(min !== null && Number(min[1]) >= 80, `a rule outside a wide media query: ${prelude}`).toBe(true);
+        expect(min !== null && Number(min[1]) >= 72, `a rule outside a wide media query: ${prelude}`).toBe(true);
         depth = 1;
       } else if (depth > 0 && ch === "{") depth++;
       else if (depth > 0 && ch === "}") {
@@ -192,8 +193,9 @@ describe("tools", () => {
 
   it("lays the hub's groups out on the shared tile rows, so a group of two, three, five or seven has no hole in its last row", () => {
     expect(css).toMatch(/\.tiles-tools\s*\{\s*--tile-rows:\s*5/);
-    expect(css).toMatch(/\.tiles-tools\.tiles-n-2 \.tile,\s*\.tiles-tools\.tiles-n-4 \.tile\s*\{\s*grid-column:\s*span 3/);
-    expect(css).toMatch(/\.tiles-tools\.tiles-n-5 \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 3/);
+    // From the wide layout the hub is twelve columns and the count of the group picks the spans (test/layout-css.test.ts measures the rows).
+    expect(css).toMatch(/\.tiles-tools\s*\{\s*grid-template-columns:\s*repeat\(12,/);
+    expect(css).toMatch(/\.tiles-tools\.tiles-n-5 \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 6/);
   });
 
   it("colors every tool through its group's category, with orange for the Memories group alone", () => {
