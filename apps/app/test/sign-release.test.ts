@@ -91,7 +91,7 @@ describe.skipIf(!process.env.SNAPPY_RUN_CARGO_TESTS)("signing and verifying end 
 
       const tampered = path.join(dir, "tampered.exe");
       const bytes = readFileSync(installer);
-      bytes[10] ^= 1;
+      bytes[10] = (bytes[10] ?? 0) ^ 1;
       writeFileSync(tampered, bytes);
       const cases: [string, ReturnType<typeof verify>][] = [
         ["a changed installer", verify(latest(), tampered, pub)],

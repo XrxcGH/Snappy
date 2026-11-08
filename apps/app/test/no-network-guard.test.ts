@@ -9,7 +9,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+// @ts-expect-error plain JavaScript module without types
 import { bannedCrates, tokioFeatures } from "../tools/check-no-network-deps.mjs";
+// @ts-expect-error plain JavaScript module without types
 import { checkBinary, checkCargoToml, checkRepository, checkRustSource, checkTestFeatureNotInRelease, checkWebSideImports, pageNetworkApis, peImports, productionRust, stripRust } from "../tools/network-surface.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -162,7 +164,7 @@ describe("the built program's rules fail on a fixture", () => {
     if (process.platform !== "win32") return;
     const imports = peImports(readFileSync(process.execPath));
     expect(imports).toContain("kernel32.dll");
-    expect(imports.every((n) => /^[a-z0-9_.()-]+$/.test(n)), imports.join()).toBe(true);
+    expect(imports.every((n: string) => /^[a-z0-9_.()-]+$/.test(n)), imports.join()).toBe(true);
     expect(() => peImports(Buffer.from("not a program"))).toThrow(/MZ/);
     expect(() => peImports(Buffer.concat([Buffer.from("MZ"), Buffer.alloc(100)]))).toThrow(/PE/);
   });
