@@ -296,22 +296,50 @@ function dosWallClockMs(date: number, time: number): number | undefined {
   return new Date(ms).getUTCDate() === day ? ms : undefined;
 }
 
+/** How many local headers are read at the same time (each is a separate range read: latency, not bytes, is the cost). */
+const LOCAL_READS_IN_FLIGHT = 24;
+
+/** What the person sees while the local headers are read. */
+export const LOCAL_TIME_PHASE = "Matching Memories to files";
+
+/** Progress of the local-header pass: `done` of `total` files looked at. */
+export interface LocalTimeProgress {
+  phase: string;
+  done: number;
+  total: number;
+}
+
 /**
  * Local headers carry their own extra field, which is where some zippers put the extended
  * timestamp when the central directory has none. Reads one small header per entry that lacks a
  * UTC time (and passes `include`), never any entry data; use `include` to limit this to the
- * entries that matter, because it costs two reads each. Returns new entry objects and leaves the
- * input alone; an entry whose header cannot be read or has no timestamp is returned unchanged.
+ * entries that matter. Up to 24 entries are looked at at once, so thousands of entries cost
+ * their round trips divided by that, not one after the other. Returns new entry objects and
+ * leaves the input alone; an entry whose header cannot be read or has no timestamp is returned
+ * unchanged. `onDone` is told after each entry that was looked at.
  */
 export async function addLocalHeaderTimes(
   reader: RandomAccessReader,
   entries: readonly ZipEntryInfo[],
   include: (entry: ZipEntryInfo) => boolean = () => true,
+  onDone?: () => void,
 ): Promise<ZipEntryInfo[]> {
-  const out: ZipEntryInfo[] = [];
-  for (const entry of entries) {
-    out.push(entry.mtimeUtcMs === undefined && include(entry) ? await withLocalHeaderTime(reader, entry) : entry);
-  }
+  const out: ZipEntryInfo[] = [...entries];
+  const wanted: number[] = [];
+  entries.forEach((entry, i) => {
+    if (entry.mtimeUtcMs === undefined && include(entry)) wanted.push(i);
+  });
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const at = next++;
+      if (at >= wanted.length) return;
+      const i = wanted[at] as number;
+      out[i] = await withLocalHeaderTime(reader, entries[i] as ZipEntryInfo);
+      onDone?.();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(LOCAL_READS_IN_FLIGHT, wanted.length) }, worker));
   return out;
 }
 
@@ -342,15 +370,26 @@ const LOCAL_TIME_PROBE = 16;
  * Memories pairing is exact only with a real UTC time, which some zippers write in the local
  * headers alone. When the central directory gives a Memories file none, look at the local
  * headers: a few files first, and the rest only if those showed that the headers do carry one, so
- * an archive without any pays for sixteen small reads, not two per file.
+ * an archive without any pays for sixteen small reads, not two per file. Each file is looked at
+ * once (the probe is not repeated), and `onProgress` counts them.
  */
-async function withMemoryLocalTimes(reader: RandomAccessReader, entries: ZipEntryInfo[]): Promise<ZipEntryInfo[]> {
+async function withMemoryLocalTimes(
+  reader: RandomAccessReader,
+  entries: ZipEntryInfo[],
+  onProgress?: (progress: LocalTimeProgress) => void,
+): Promise<ZipEntryInfo[]> {
   const lacking = entries.filter((e) => e.mtimeUtcMs === undefined && isMemoryMedia(e));
   if (lacking.length === 0) return entries;
   const probe = new Set(lacking.slice(0, LOCAL_TIME_PROBE));
-  const probed = await addLocalHeaderTimes(reader, entries, (e) => probe.has(e));
+  const total = lacking.length;
+  let done = 0;
+  const count = (): void => {
+    done += 1;
+    onProgress?.({ phase: LOCAL_TIME_PHASE, done, total });
+  };
+  const probed = await addLocalHeaderTimes(reader, entries, (e) => probe.has(e), count);
   if (!probed.some((e, i) => e.mtimeUtcMs !== undefined && entries[i]?.mtimeUtcMs === undefined)) return entries;
-  return addLocalHeaderTimes(reader, probed, isMemoryMedia);
+  return addLocalHeaderTimes(reader, probed, (e) => isMemoryMedia(e) && !probe.has(e), count);
 }
 
 /**
@@ -634,13 +673,18 @@ async function streamList<K extends "friends" | "memories">(reader: RandomAccess
  * limit); message text, display names and locations are skipped as bytes and never decoded. The
  * Memories media files are listed with their stored times, never opened.
  * `opts.part` is this zip's 1-based position among the parts of the export (base name first,
- * then -2, -3): it travels with the files so a later extraction knows which zip to open. Never
- * throws on bad input.
+ * then -2, -3): it travels with the files so a later extraction knows which zip to open.
+ * `opts.onProgress` is told how many Memories files have had their local header looked at, with
+ * the phase text "Matching Memories to files", when the central directory holds no UTC times (it
+ * is never called otherwise). Never throws on bad input.
  */
-export async function parseExportFromReader(reader: RandomAccessReader, opts: { part?: number } = {}): Promise<ParsedExport> {
+export async function parseExportFromReader(
+  reader: RandomAccessReader,
+  opts: { part?: number; onProgress?: (progress: LocalTimeProgress) => void } = {},
+): Promise<ParsedExport> {
   const { entries: listed, issues: listIssues, newestMtime } = await listZipEntries(reader);
   if (listIssues.some((i) => i.severity === "error")) return emptyParsed(listIssues);
-  const entries = await withMemoryLocalTimes(reader, listed);
+  const entries = await withMemoryLocalTimes(reader, listed, opts.onProgress);
 
   const listing: Entry[] = entries.map((e) => ({
     name: e.name,
