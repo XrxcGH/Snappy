@@ -545,7 +545,7 @@ impl Updater {
         let code = error_of(e);
         self.save(|st| {
             if matches!(e, NetError::Policy(_)) {
-                st.policy_rejections = st.policy_rejections.saturating_add(1);
+                st.policy_rejections = st.policy_rejections.saturating_add(1).min(store::MAX_COUNT);
                 if st.policy_rejections >= LINK_AFTER_POLICY {
                     st.link_enabled = true;
                 }
@@ -642,7 +642,32 @@ impl Updater {
         allowed && self.launch_staged().is_ok()
     }
 
+    /// Launching is one-way: once an installer was started, no second one is, whoever asks (a double click on
+    /// "Restart now", a script in the page, a queued command). The check and the change are one step under the lock.
+    /// Returns the phase to go back to if this attempt ends before anything was started.
+    fn begin_launch(&self) -> Option<Phase> {
+        let mut live = locked(&self.0.live);
+        if live.phase == Phase::Installing {
+            return None;
+        }
+        Some(std::mem::replace(&mut live.phase, Phase::Installing))
+    }
+
     fn launch_staged(&self) -> Result<(), InstallError> {
+        let Some(before) = self.begin_launch() else { return Err(InstallError::Busy) };
+        let result = self.launch_staged_once();
+        // Nothing was started and no failure was recorded (nothing staged, a bad signature file): the phase is as it was.
+        if matches!(result, Err(InstallError::NotStaged | InstallError::Failed)) && self.phase() == Phase::Installing {
+            self.live(|l| l.phase = before);
+        }
+        result
+    }
+
+    fn phase(&self) -> Phase {
+        locked(&self.0.live).phase
+    }
+
+    fn launch_staged_once(&self) -> Result<(), InstallError> {
         let state = self.state();
         let version = state.staged.as_ref().and_then(|s| Version::parse(&s.version)).ok_or(InstallError::NotStaged)?;
         let (installer, sig_file) = (self.paths().staged_file(&version), self.paths().sig_file(&version));
@@ -655,7 +680,7 @@ impl Updater {
         };
         let text = version.to_string();
         let previous = state.pending_install.clone();
-        let attempts = previous.as_ref().filter(|p| p.version == text).map_or(0, |p| p.attempts).saturating_add(1);
+        let attempts = previous.as_ref().filter(|p| p.version == text).map_or(0, |p| p.attempts).saturating_add(1).min(store::MAX_COUNT);
         // Written BEFORE the installer starts, so a launch that does not end up on this version is counted.
         self.save(|st| st.pending_install = Some(Pending { version: text.clone(), attempts }));
         self.live(|l| l.phase = Phase::Installing);
@@ -712,7 +737,7 @@ fn throttled(now: u64, last: u64, interval: u64) -> bool {
 
 fn bump_failed(st: &mut State, version: &str) {
     let count = match &st.failed {
-        Some(f) if f.version == version => f.count.saturating_add(1),
+        Some(f) if f.version == version => f.count.saturating_add(1).min(store::MAX_COUNT),
         _ => 1,
     };
     st.failed = Some(Failed { version: version.to_string(), count });

@@ -588,6 +588,46 @@ fn install_refuses_unless_everything_is_quiet() {
 }
 
 #[test]
+fn launching_is_one_way_a_second_install_starts_nothing() {
+    let rig = Rig::staged("0.1.5");
+    assert_eq!(rig.up.install(true), Ok(()));
+    for _ in 0..3 {
+        assert_eq!(rig.up.install(true), Err(InstallError::Busy), "an installer is already running");
+    }
+    assert!(!rig.up.apply_at_launch(), "the launch-time path cannot start a second one either");
+    assert_eq!(rig.launcher.started.lock().unwrap().len(), 1, "one installer process in all");
+    assert_eq!(rig.up.status().state, "installing");
+}
+
+#[test]
+fn a_refused_launch_leaves_the_phase_as_it_was() {
+    let rig = Rig::new("0.1.5");
+    assert_eq!(rig.up.install(true), Err(InstallError::NotStaged));
+    assert_eq!(rig.up.status().state, "idle", "nothing was started, so it is not installing");
+    let staged = Rig::staged("0.1.5");
+    staged.launcher.spawn_fails.store(true, Ordering::SeqCst);
+    assert_eq!(staged.up.install(true), Err(InstallError::Failed));
+    staged.launcher.spawn_fails.store(false, Ordering::SeqCst);
+    assert_eq!(staged.up.install(true), Ok(()), "a failed start may be tried again by hand");
+}
+
+#[test]
+fn many_launches_that_never_land_do_not_wipe_the_settings() {
+    let rig = Rig::staged("0.1.5");
+    rig.up.set_auto(true);
+    for _ in 0..14 {
+        let next = rig.make("0.1.5"); // each launch is still on 0.1.5: the installer did not land
+        next.startup();
+        assert_eq!(next.install(true), Ok(()));
+    }
+    let last = rig.make("0.1.5");
+    let state = last.state();
+    assert!(state.notice_seen, "the count is clamped; the sanity check does not reset everything");
+    assert_eq!(state.pending_install.as_ref().map(|p| p.attempts), Some(store::MAX_COUNT));
+    assert!(state.staged.is_some());
+}
+
+#[test]
 fn install_with_nothing_staged_is_refused() {
     let rig = Rig::new("0.1.5");
     assert_eq!(rig.up.install(true), Err(InstallError::NotStaged));

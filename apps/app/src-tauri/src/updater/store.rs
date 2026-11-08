@@ -16,7 +16,7 @@ use super::manifest::{installer_name, Version};
 use super::verify::is_digest;
 
 const MAX_STATE_BYTES: u64 = 4096;
-const MAX_COUNT: u8 = 10;
+pub const MAX_COUNT: u8 = 10;
 
 /// Why the last operation failed. Only this code is kept and shown: no text from the network.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
