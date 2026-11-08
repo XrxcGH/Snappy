@@ -17,7 +17,8 @@ import { privacy, settings } from "../../dashboard/src/copy.ts";
 import { h, setVar } from "../../dashboard/src/dom.ts";
 import { announce } from "../../dashboard/src/announce.ts";
 import { updateCopy as copy } from "./update-copy.ts";
-import { bannerFor, checkResult, freshLocal, isQuietRoute, pageIsIdle, sanitizeStatus } from "./update-model.ts";
+import { updateA11yCopy as spoken } from "./update-copy-a11y.ts";
+import { bannerFor, bannerSignature, checkResult, crossedHalfway, freshLocal, isQuietRoute, pageIsIdle, sanitizeStatus } from "./update-model.ts";
 import type { Banner, BannerAction, UpdateStatus } from "./update-model.ts";
 
 /** The shell's `invoke`, narrowed to what is used here (and replaceable in tests). */
@@ -161,21 +162,46 @@ export function mountUpdates(bridge: Bridge): Mounted {
     return button({ label, variant: primary ? "primary" : "secondary", key: `update:${action}`, className: "update-action", onclick: () => void act(action) });
   };
 
+  /** The parts of the download banner that change while it stays on screen (see paintBanner). */
+  interface DownloadParts {
+    text: HTMLElement;
+    bar: HTMLElement;
+    fill: HTMLElement;
+  }
+  let download: DownloadParts | null = null;
+  let lastPercent: number | null = null;
+
+  const showPercent = (parts: DownloadParts, banner: Banner): void => {
+    parts.text.textContent = banner.text;
+    parts.bar.setAttribute("aria-valuenow", String(banner.percent));
+    setVar(parts.fill, "--update-progress", `${banner.percent}%`);
+  };
+
+  /**
+   * The text that carries the percent is hidden from assistive technology and changed in place; the bar is a progress bar
+   * whose value changes in place; the words a screen reader hears when the banner appears never contain the percent.
+   */
+  const downloadElements = (banner: Banner): { text: HTMLElement; bar: HTMLElement } => {
+    const fill = h("div", { class: "update-bar-fill" });
+    const shownText = h("span", { class: "update-percent", "aria-hidden": "true" });
+    const bar = h("div", { class: "update-bar", role: "progressbar", "aria-label": spoken.downloadingLive, "aria-valuemin": "0", "aria-valuemax": "100" }, fill);
+    download = { text: shownText, bar, fill };
+    showPercent(download, banner);
+    return { text: h("p", { class: "banner-text update-text" }, shownText, h("span", { class: "sr-only" }, spoken.downloadingLive)), bar };
+  };
+
   const bannerElement = (banner: Banner): HTMLElement => {
-    const bar = banner.percent === undefined ? null : h("div", { class: "update-bar", role: "presentation" }, (() => {
-      const fill = h("div", { class: "update-bar-fill" });
-      setVar(fill, "--update-progress", `${banner.percent}%`);
-      return fill;
-    })());
+    download = null;
+    const downloading = banner.percent === undefined ? null : downloadElements(banner);
     return h(
       "div",
       { class: `banner update-banner update-${banner.kind}` },
       h(
         "div",
         { class: "update-main" },
-        h("p", { class: "banner-text update-text" }, banner.text),
+        downloading ? downloading.text : h("p", { class: "banner-text update-text" }, banner.text),
         banner.caution ? h("p", { class: "caption update-caution" }, banner.caution) : null,
-        bar,
+        downloading ? downloading.bar : null,
         banner.kind === "countdown" ? h("div", { class: "update-wait", role: "presentation" }) : null,
       ),
       banner.actions.length ? h("div", { class: "update-actions" }, ...banner.actions.map(actionButton)) : null,
@@ -186,7 +212,16 @@ export function mountUpdates(bridge: Bridge): Mounted {
     const base = status ? bannerFor(status, local, idle()) : null;
     // While "Update now" has not been taken up yet, the banner already says so instead of offering the same button again.
     const banner: Banner | null = updating && base && (base.kind === "available" || base.kind === "failed") ? { kind: "progress", text: copy.checkingLabel, actions: [] } : base;
-    const signature = banner ? `${banner.kind}|${banner.text}|${banner.percent ?? ""}|${banner.actions.join(",")}` : "";
+    const signature = bannerSignature(banner);
+    // Half way through a download is said once; a banner first seen past half says nothing.
+    const percent = banner?.percent;
+    if (percent !== undefined && crossedHalfway(lastPercent, percent)) announce(spoken.halfwayAnnounce);
+    lastPercent = percent ?? null;
+    // A new percent changes the bar and its text in place. The banner is not rebuilt, so the live region does not repeat it.
+    if (signature === shown && banner && download) {
+      showPercent(download, banner);
+      return;
+    }
     if (signature === shown) return;
     const active = document.activeElement;
     const hadFocus = active instanceof HTMLElement && slot.contains(active);

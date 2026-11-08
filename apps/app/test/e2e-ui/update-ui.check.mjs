@@ -107,6 +107,43 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   await shot(page, "progress-wide-light");
   await page.context().close();
 
+  // The bar is a progress bar, and a new percent changes it in place: the live region is not rebuilt, so it is not read again.
+  const dl = await open({ state: "downloading", percent: 40, version: "0.2.0" });
+  const bar = dl.locator(".update-bar");
+  ok((await bar.getAttribute("role")) === "progressbar", "the download bar is a progress bar");
+  ok((await bar.getAttribute("aria-valuemin")) === "0" && (await bar.getAttribute("aria-valuemax")) === "100" && (await bar.getAttribute("aria-valuenow")) === "40", "with a range and the current value");
+  ok((await bar.getAttribute("aria-label")) === "Downloading update", "named for what is downloading, with no percent in the name");
+  ok((await dl.locator(".update-slot .sr-only").innerText()) === "Downloading update", "the words read out when the banner appears are static");
+  ok((await dl.locator(".update-percent").getAttribute("aria-hidden")) === "true", "the changing percent text is hidden from assistive technology");
+  await dl.evaluate(() => {
+    window.__slotMutations = 0;
+    window.__bannerNode = document.querySelector(".update-banner");
+    new MutationObserver((records) => (window.__slotMutations += records.filter((r) => r.type === "childList" && !r.target.closest('[aria-hidden="true"]')).length)).observe(document.querySelector(".update-slot"), { childList: true, subtree: true });
+    document.getElementById("live-polite").textContent = "";
+  });
+  await refresh(dl, { percent: 43 });
+  await refresh(dl, { percent: 44 });
+  ok((await bar.getAttribute("aria-valuenow")) === "44", "the bar's value moves with the download");
+  ok((await dl.locator(".update-percent").innerText()) === "Downloading… 44%", "and so does the text you see");
+  ok((await dl.evaluate(() => window.__slotMutations)) === 0, "without changing anything inside the live region that assistive technology can reach");
+  ok(await dl.evaluate(() => window.__bannerNode === document.querySelector(".update-banner")), "the banner is the same element");
+  ok((await dl.evaluate(() => document.getElementById("live-polite").textContent)) === "", "and nothing is announced below half");
+  await refresh(dl, { percent: 55 });
+  await dl.waitForTimeout(150);
+  ok((await dl.evaluate(() => document.getElementById("live-polite").textContent)) === "Update is half downloaded.", "half way is announced once");
+  await dl.evaluate(() => (document.getElementById("live-polite").textContent = ""));
+  await refresh(dl, { percent: 70 });
+  await dl.waitForTimeout(150);
+  ok((await dl.evaluate(() => document.getElementById("live-polite").textContent)) === "", "and not again");
+  await refresh(dl, { state: "staged", percent: 100 });
+  ok((await banner(dl)).includes("Updating now.") && !(await banner(dl)).includes("Downloading"), "the finished download is announced by the next banner appearing in the live region");
+  await dl.context().close();
+
+  const late = await open({ state: "downloading", percent: 80, version: "0.2.0" });
+  await late.waitForTimeout(150);
+  ok((await late.evaluate(() => document.getElementById("live-polite").textContent)) === "", "a download first seen past half says nothing about half way");
+  await late.context().close();
+
   const ready = await open({ state: "staged", percent: 100, version: "0.2.0" }, { hash: "#/overview" });
   const text = await banner(ready);
   ok(text.includes("Update ready. Restart to finish.") && text.includes("Restarting closes Snappy. Results aren’t saved unless history is saved."), "ready shows the caution when the page is not idle");

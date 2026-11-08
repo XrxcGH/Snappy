@@ -128,6 +128,20 @@ export function bannerFor(status: UpdateStatus, local: Local, idle: boolean): Ba
   return null;
 }
 
+/**
+ * What identifies a banner for repainting. A percent is not part of it, and neither is the text that carries the percent:
+ * a download that moves from 42 to 43 percent is the same banner, changed in place, so a screen reader is not told again
+ * at every step. The banner is rebuilt (and read out) only when its kind, its words or its buttons change.
+ */
+export function bannerSignature(banner: Banner | null): string {
+  if (!banner) return "";
+  const words = banner.percent === undefined ? banner.text : "";
+  return `${banner.kind}|${words}|${banner.actions.join(",")}`;
+}
+
+/** True once, when a download that was seen below half has reached half or more. A banner first seen past half says nothing. */
+export const crossedHalfway = (previous: number | null, next: number): boolean => previous !== null && previous < 50 && next >= 50;
+
 /** What "Check now" answers once the check has ended. */
 export function checkResult(status: UpdateStatus): "upToDate" | "unreachable" | "couldNotCheck" | null {
   if (status.state === "checking" || status.state === "downloading") return null;
