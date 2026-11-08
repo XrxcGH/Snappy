@@ -2,7 +2,7 @@
 
 ## What Snappy handles
 
-Snappy reads your own Snapchat data export on your own device. It never sends your data anywhere. The network features are an optional Memories download in the command-line tool, which contacts only the links inside your own export and is off unless you ask for it, and the update check of the Windows desktop app, which asks one fixed address on github.com for the newest version, sends no ID and none of your data, and can be turned off ([docs/UPDATES.md](docs/UPDATES.md)). The dashboard is a single file with a policy that blocks all network connections.
+Snappy reads your own Snapchat data export on your own device. It never sends your data anywhere. The network features are an optional Memories download (`snappy-export memories --download`) in the command line tool, which contacts only the links inside your own export and is off unless you ask for it, and the update check of the Windows desktop app, which asks one fixed address on github.com for the newest version, sends no ID and none of your data, and can be turned off ([docs/UPDATES.md](docs/UPDATES.md)). The dashboard is a single file with a policy that blocks all network connections.
 
 ## Reporting a vulnerability
 

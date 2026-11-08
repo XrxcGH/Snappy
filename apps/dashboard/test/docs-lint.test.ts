@@ -54,3 +54,46 @@ describe.each(DOCS)("%s", (file) => {
     expect(find(/\t/)).toEqual([]);
   });
 });
+
+/**
+ * The network claims. Beta 2 added the update check, so a sentence that says there is one network use, only one, or
+ * none must name it, in every document and string a person reads. A claim that stays true for the command line
+ * tool alone has to say so.
+ */
+describe("network claims", () => {
+  const CLAIM = /one network|only network|sends nothing over a network|nothing else touches the network/i;
+  const CLAIM_DOCS = ["README.md", "CONTRIBUTING.md", "SECURITY.md", path.join("apps", "cli", "README.md"), path.join("docs", "BETA.md"), path.join("docs", "RELEASES.md"), path.join("docs", "UPDATES.md")];
+
+  it.each(CLAIM_DOCS)("%s names the update check wherever it counts the network uses", (file) => {
+    const bad = prose(file).filter((l) => CLAIM.test(l.raw) && !/update check/i.test(l.raw));
+    expect(bad.map((l) => `${file}:${l.n}: ${l.text.slice(0, 80)}`)).toEqual([]);
+  });
+
+  it("names the two network features in the same words in README item 5 and SECURITY", () => {
+    const readme = prose("README.md").find((l) => /^5\. /.test(l.raw))?.raw ?? "";
+    const security = prose("SECURITY.md").find((l) => /network features/i.test(l.raw))?.raw ?? "";
+    for (const text of [readme, security]) {
+      expect(text).toMatch(/memories --download/);
+      expect(text).toMatch(/update check/i);
+      expect(text).toMatch(/github\.com/);
+      expect(text).toMatch(/turned off|turn it off/);
+    }
+  });
+
+  it("qualifies the front page's everything-runs-here line", () => {
+    const line = prose("README.md").find((l) => /^3\. Everything runs on this device/.test(l.raw))?.raw ?? "";
+    expect(line).toMatch(/apart from the two optional network features/);
+  });
+
+  it("is kept in the strings the interface shows", async () => {
+    const copy = await import("../src/copy.ts");
+    const texts: string[] = [];
+    const walk = (v: unknown): void => {
+      if (typeof v === "string") texts.push(v);
+      else if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") Object.values(v).forEach(walk);
+    };
+    walk(copy);
+    expect(texts.filter((t) => CLAIM.test(t) && !/update check/i.test(t))).toEqual([]);
+  });
+});

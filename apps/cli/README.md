@@ -1,6 +1,6 @@
 # Snappy command line
 
-Offline tools for your own Snapchat data export. Snappy is content-blind: it reads friend usernames, dates, and categories, and skips messages, photos, and locations. Nothing leaves this device. The one network feature is `memories --download`, which you opt into and which contacts only the links inside your own export. Newer exports have no links (their Memories are inside the ZIP files), so for them it has nothing to download and Snappy says so.
+Offline tools for your own Snapchat data export. Snappy is content-blind: it reads friend usernames, dates, and categories, and skips messages, photos, and locations. Nothing leaves this device, and no request carries your data. The one network feature of this tool is `memories --download`, which you opt into and which contacts only the links inside your own export. Newer exports have no links (their Memories are inside the ZIP files), so for them it has nothing to download and Snappy says so. The Windows app has its own optional update check, which this tool does not make ([docs/UPDATES.md](../../docs/UPDATES.md)).
 
 Snappy is an independent tool. It is not affiliated with, endorsed by, or sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.
 
