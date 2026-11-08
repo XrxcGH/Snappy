@@ -19,10 +19,18 @@ export const SCRUBBED_GLOBALS: readonly string[] = [
   "SharedWorker",
   "indexedDB",
   "caches",
+  // Newer ways to open a connection or to talk to another page, where the engine has them in a worker.
+  "WebTransport",
+  "BroadcastChannel",
+  "RTCPeerConnection",
 ];
 
 /** Names on the helper's navigator that are removed. */
-export const SCRUBBED_NAVIGATOR: readonly string[] = ["sendBeacon"];
+export const SCRUBBED_NAVIGATOR: readonly string[] = [
+  "sendBeacon",
+  // The page's storage, which a command has no use for: the saved history reaches it only through the bridge.
+  "storage",
+];
 
 function remove(target: object, name: string): boolean {
   try {

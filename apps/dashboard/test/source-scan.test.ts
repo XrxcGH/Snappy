@@ -57,15 +57,15 @@ describe("no markup strings", () => {
 describe("content-blind and offline", () => {
   it("has no network APIs, shared or service workers, window.open or importScripts", () => {
     // The one file that names them is the command helper's scrubber, which removes them (see below).
-    expect(offenders(/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|window\.open|serviceWorker|RTCPeerConnection/, tsFiles, ["src/terminal/scrub.ts"])).toEqual([]);
+    expect(offenders(/\bfetch\s*\(|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|window\.open|serviceWorker|RTCPeerConnection|WebTransport|BroadcastChannel|navigator\.storage/, tsFiles, ["src/terminal/scrub.ts"])).toEqual([]);
   });
 
   it("names those APIs in the scrubber only inside its two string lists, never as a call or an access", () => {
     const scrub = stripComments(read(path.join(srcDir, "terminal", "scrub.ts")));
     const outsideLists = scrub.replace(/export const SCRUBBED_(GLOBALS|NAVIGATOR): readonly string\[\] = \[[\s\S]*?\];/g, "");
-    expect(outsideLists).not.toMatch(/fetch|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|indexedDB|caches/);
+    expect(outsideLists).not.toMatch(/fetch|XMLHttpRequest|WebSocket|sendBeacon|EventSource|importScripts|SharedWorker|indexedDB|caches|WebTransport|BroadcastChannel|RTCPeerConnection|storage/);
     const listed = [...scrub.matchAll(/^\s*"([A-Za-z]+)",$/gm)].map((m) => m[1]);
-    expect(listed).toEqual(expect.arrayContaining(["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "importScripts", "Worker", "SharedWorker", "indexedDB", "caches"]));
+    expect(listed).toEqual(expect.arrayContaining(["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "importScripts", "Worker", "SharedWorker", "indexedDB", "caches", "WebTransport", "BroadcastChannel", "RTCPeerConnection", "storage"]));
     expect(scrub).toContain("\"sendBeacon\"");
   });
 

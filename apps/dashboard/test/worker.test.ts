@@ -35,9 +35,19 @@ describe("scrubScope", () => {
     expect(scope.indexedDB).toBeUndefined();
   });
 
+  it("also removes the newer connection and messaging features, and the page's storage on the navigator, and keeps the locks", () => {
+    const scope: Record<string, unknown> = { WebTransport: class {}, BroadcastChannel: class {}, RTCPeerConnection: class {}, crypto: { subtle: {} } };
+    const navigator: Record<string, unknown> = { storage: { estimate: async () => ({}), getDirectory: async () => ({}) }, locks: { request: () => 1 } };
+    expect(scrubScope(scope, navigator)).toEqual([]);
+    for (const name of ["WebTransport", "BroadcastChannel", "RTCPeerConnection"]) expect(scope[name], name).toBeUndefined();
+    expect(navigator.storage).toBeUndefined();
+    expect(scope.crypto).toBeDefined();
+    expect(navigator.locks).toBeDefined();
+  });
+
   it("names the features to remove", () => {
-    expect(SCRUBBED_GLOBALS).toEqual(expect.arrayContaining(["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "importScripts", "Worker", "SharedWorker", "indexedDB", "caches"]));
-    expect(SCRUBBED_NAVIGATOR).toEqual(["sendBeacon"]);
+    expect(SCRUBBED_GLOBALS).toEqual(expect.arrayContaining(["fetch", "XMLHttpRequest", "WebSocket", "EventSource", "importScripts", "Worker", "SharedWorker", "indexedDB", "caches", "WebTransport", "BroadcastChannel", "RTCPeerConnection"]));
+    expect(SCRUBBED_NAVIGATOR).toEqual(["sendBeacon", "storage"]);
   });
 });
 
