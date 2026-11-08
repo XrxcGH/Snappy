@@ -86,6 +86,19 @@ describe("the command", () => {
     expect(Object.keys(json)).toEqual(["generatedAt", "status", "parts", "sections", "coverage", "age", "notes", "todo"]);
   });
 
+  it("counts only the ZIP files it could read, so a file that is not a ZIP is not read", async () => {
+    const dir = tempDir("check-notzip");
+    const junk = join(dir, "notzip.zip");
+    writeFileSync(junk, "not a zip");
+    const one = await runInsight(exportCheckCommand, [junk, "--no-color"]);
+    expect(one.out).toContain("0 of 1 ZIP file read.");
+    expect(one.out).toContain("1 ZIP file could not be read.");
+    expect(one.out).not.toMatch(/^ +1 ZIP file read\.$/m);
+    const fine = tempDir("check-fine");
+    writeSyntheticParts(fine);
+    expect((await runInsight(exportCheckCommand, [fine, "--no-color"])).out).toMatch(/^ +3 ZIP files read\.$/m);
+  });
+
   it("uses no color with --no-color or NO_COLOR, and color on a color terminal", async () => {
     const dir = tempDir("check-color");
     writeSyntheticParts(dir);

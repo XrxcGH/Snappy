@@ -146,12 +146,18 @@ function ageLine(age: insights.exportCheck.ExportAge): string {
   return age.ageDays === null ? `Made ${when}.` : `Made ${when}, ${daysAgo(age.ageDays)}.`;
 }
 
+/** How many ZIP files were read. A part that could not be read is not counted as read. */
+function partsLine(parts: Check["parts"]): string {
+  const read = Math.max(0, parts.count - parts.unreadable);
+  return parts.unreadable > 0 ? `${read} of ${plural(parts.count, "ZIP file")} read.` : `${plural(parts.count, "ZIP file")} read.`;
+}
+
 export function renderExportCheck(check: Check, term: Term, verbose: boolean): string {
   const out: string[] = [term.bold("Export check"), `  ${term.violet(VERDICT[check.status])}`, ""];
 
   out.push(
     ...section(term, "What was found", [
-      `${plural(check.parts.count, "ZIP file")} read.`,
+      partsLine(check.parts),
       ...term.table(
         [{ header: "Section" }, { header: "Status" }, { header: "Items", align: "right" }],
         check.sections.map((s) => [SECTION_LABEL[s.id], STATUS_LABEL[s.status], formatCount(s.count)]),
