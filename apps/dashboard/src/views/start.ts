@@ -25,16 +25,15 @@ export const startView: View = (ctx) => {
   return h(
     "div",
     { class: "view view-start" },
-    hero(),
+    hero(ctx),
     region(store, (s) => [s.vault.phase, s.vault.busy, s.vault.message], (s) => unlockCard(ctx, s)),
     // Before the steps, so the advice to seal a history comes before the first import, not after it.
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
     h("div", { class: "step-list" }, getExportSection(), countSection(ctx), addSection(ctx)),
-    sampleSection(ctx),
   );
 };
 
-function hero(): HTMLElement {
+function hero(ctx: ViewContext): HTMLElement {
   const [onDevice, neverOpens, noNetwork] = start.trustChips;
   const pill = (name: IconName, text: string): HTMLElement => h("span", { class: "pill" }, icon(name, 16), h("span", {}, text));
   return h(
@@ -45,6 +44,7 @@ function hero(): HTMLElement {
       { class: "page-header-main" },
       h("div", { class: "page-title-row" }, chipIcon("import", "lg"), h("h1", { id: "page-title", tabindex: "-1" }, routes.start.title)),
       h("p", { class: "lead" }, start.promiseLead),
+      sampleAction(ctx),
     ),
     // The three promises sit under the lead, in the same column.
     h("div", { class: "trust-row" }, pill("device", onDevice), pill("content-blind", neverOpens), pill("shield", noNetwork)),
@@ -240,30 +240,26 @@ function importStatus(store: Store, s: State): Child {
   return null;
 }
 
-function sampleSection(ctx: ViewContext): HTMLElement {
+/** One short secondary button under the intro, so a first look at every screen needs no scrolling. The note says the sample is never saved. */
+function sampleAction(ctx: ViewContext): HTMLElement {
   return h(
-    "section",
-    { class: "card card-tint card-pad card-band" },
-    h("h2", { class: "section-title" }, start.sampleHeading),
-    h("p", {}, start.sampleBody),
-    h(
-      "div",
-      { class: "actions" },
-      button({
-        label: start.sampleButton,
-        icon: "search",
-        key: "try-sample",
-        onclick: () => {
-          announce(start.readingSample(0, 3));
-          void ctx.actions.loadSample().then((result) => {
-            if (result === "done") {
-              announce(start.sampleLoaded);
-              navigate("overview");
-            }
-          });
-        },
-      }),
-    ),
+    "div",
+    { class: "actions" },
+    button({
+      label: start.sampleButton,
+      icon: "search",
+      key: "try-sample",
+      onclick: () => {
+        announce(start.readingSample(0, 3));
+        void ctx.actions.loadSample().then((result) => {
+          if (result === "done") {
+            announce(start.sampleLoaded);
+            navigate("overview");
+          }
+        });
+      },
+    }),
+    h("p", { class: "caption muted" }, start.sampleBody),
   );
 }
 

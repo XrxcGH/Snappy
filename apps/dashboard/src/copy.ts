@@ -185,7 +185,6 @@ export const start = {
   readFailed: "Snappy could not read these files. Check that every part finished downloading, then try again.",
   exportTimeFuture: "This export’s date is in the future, so Snappy used today’s date instead.",
   exportTimeUnknown: "Snappy could not tell when this export was made, so it used today’s date.",
-  sampleHeading: "Try sample data",
   get sampleBody(): string {
     return onDesktop(
       "Builds two made-up exports in your browser so you can see every screen. The sample is never saved.",
