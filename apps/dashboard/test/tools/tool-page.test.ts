@@ -2,12 +2,12 @@
  * The frame every tool page shares, checked with a small made-up tool: what the frame always shows, the honest empty
  * states, waiting, announcing, remembering, parameters, downloads and failure. Synthetic sample data only.
  */
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { toolView } from "../../src/components/toolPage.ts";
 import type { ToolPageOptions } from "../../src/components/toolPage.ts";
 import { tools } from "../../src/copy.ts";
-import { commandNotes } from "../../src/copy-tools.ts";
+import { commandNotes, terminalTools } from "../../src/copy-tools.ts";
 import { section } from "../../src/components/layout.ts";
 import { h } from "../../src/dom.ts";
 import type { State } from "../../src/reducer.ts";
@@ -19,11 +19,12 @@ import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settle
 
 const said: { text: string; assertive: boolean }[] = [];
 const saved: { fileName: string; text: string; mime: string }[] = [];
+let saveWorks = true;
 vi.mock("../../src/announce.ts", () => ({ announce: (text: string, assertive = false) => void said.push({ text, assertive }) }));
 vi.mock("../../src/download.ts", () => ({
   saveTextFile: (fileName: string, text: string, mime: string) => {
     saved.push({ fileName, text, mime });
-    return true;
+    return saveWorks;
   },
   saveBlob: () => true,
 }));
@@ -318,6 +319,51 @@ describe("the download", () => {
     expect(saved[0]).toMatchObject({ fileName: "sample.json", mime: "application/json" });
     expect(JSON.parse(saved[0]?.text ?? "{}")).toEqual({ friends: expect.any(Number) });
     expect(said).toEqual([{ text: tools.downloadSaved, assertive: false }]);
+  });
+
+  describe("the Copy fallback", () => {
+    const withDownload = () =>
+      view({ download: { label: "Download JSON", build: (r) => ({ fileName: "sample.json", text: JSON.stringify({ friends: r.friends }), mime: "application/json" }) } });
+    const pressSave = (root: FakeElement): void => (root.querySelectorAll("button").find((b) => b.textContent === "Download JSON") as FakeElement).click();
+
+    afterEach(() => {
+      saveWorks = true;
+      vi.unstubAllGlobals();
+    });
+
+    it("is not on the page until Save is pressed, so a page that never saves carries nothing extra", async () => {
+      const { root } = await renderSettled(withDownload(), sample);
+      expect(root.querySelectorAll(".download-fallback")).toHaveLength(0);
+      expect(root.querySelectorAll("button").map((b) => b.textContent)).not.toContain(terminalTools.copyFallback);
+    });
+
+    it("appears under the Save button after it is pressed, in a line that says when to use it, and copies exactly the saved text", async () => {
+      const written: string[] = [];
+      vi.stubGlobal("navigator", { clipboard: { writeText: async (t: string) => void written.push(t) } });
+      const { root } = await renderSettled(withDownload(), sample);
+      pressSave(root);
+      const fallback = root.querySelector(".download-fallback") as FakeElement;
+      expect(fallback.querySelector(".caption")?.textContent).toBe(terminalTools.fallbackHint);
+      const copyButton = fallback.querySelector("button") as FakeElement;
+      expect(copyButton.textContent).toBe(terminalTools.copyFallback);
+      expect(copyButton.getAttribute("aria-label")).toBe(terminalTools.copyFallbackFor("sample.json"));
+      expect(copyButton.getAttribute("aria-label")?.startsWith(copyButton.textContent)).toBe(true);
+      said.length = 0;
+      copyButton.click();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(written).toEqual([saved[0]?.text]);
+      expect(said).toEqual([{ text: terminalTools.copiedFile, assertive: false }]);
+    });
+
+    it("is offered when the save failed as well, and pressing Save again replaces it instead of stacking another", async () => {
+      saveWorks = false;
+      const { root } = await renderSettled(withDownload(), sample);
+      said.length = 0;
+      pressSave(root);
+      expect(said).toEqual([{ text: tools.downloadFailedNote, assertive: false }]);
+      pressSave(root);
+      expect(root.querySelectorAll(".download-fallback")).toHaveLength(1);
+    });
   });
 
   it("offers nothing to download where there is no result", () => {

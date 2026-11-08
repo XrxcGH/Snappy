@@ -889,6 +889,10 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .command-cli-link, .command-note { margin: 0; }
 .command-note { color: var(--text-muted); font-size: var(--text-14); }
 .command-cli-link a { display: inline-flex; align-items: center; min-height: var(--target-min); }
+/* The Copy fallback that appears under a Save button once it is pressed. */
+.download-slot:empty { display: none; }
+.download-fallback { display: grid; gap: var(--space-2); }
+.download-fallback .caption { margin: 0; }
 /* A table cell with a bare value and a full phrase: a wide page shows the value, a phone (no column names) shows the phrase. */
 @media (max-width: 40rem) {
   .table .cell-short { display: none; }

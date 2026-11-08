@@ -52,8 +52,9 @@ export const terminalTools = {
   closeAll: "Close all",
   /** Spoken with a Run: the title of the command first, so several blocks on one page can be told apart. */
   startedFor: (title: string): string => `${title}: running`,
-  /** A Copy button that stands in for a download the page cannot make. */
+  /** A Copy button that stands in for a download the engine may block without a word. */
   copyFallback: "Copy text",
-  copyFallbackFor: (fileName: string): string => `Copy the text of ${fileName}`,
+  copyFallbackFor: (fileName: string): string => `Copy text of ${fileName}`,
   copiedFile: "Text copied.",
+  fallbackHint: "No file arrived? Copy the text instead.",
 };

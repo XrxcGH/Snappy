@@ -14,7 +14,6 @@
  */
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
-import { saveTextFile } from "../download.ts";
 import { common, tools } from "../copy.ts";
 import { commandNotes } from "../copy-tools.ts";
 import { append, h } from "../dom.ts";
@@ -30,6 +29,7 @@ import type { View, ViewContext } from "../views/context.ts";
 import { button, routeLink } from "./button.ts";
 import { scopeClass } from "./category.ts";
 import { commandBlock } from "./commandBlock.ts";
+import { offerFile } from "./fileOffer.ts";
 import { icon } from "./icon.ts";
 import { emptyState, pageHeader, section } from "./layout.ts";
 import { progressBar } from "./progressBar.ts";
@@ -208,6 +208,8 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
 }
 
 function downloadSection<R>(download: ToolDownload<R>, result: R): HTMLElement {
+  // After a press the same text is offered for copying, because a blocked download says nothing at all.
+  const fallback = h("div", { class: "download-slot" });
   return section(
     tools.downloadHeading,
     download.note ? h("p", {}, download.note) : null,
@@ -219,12 +221,10 @@ function downloadSection<R>(download: ToolDownload<R>, result: R): HTMLElement {
         icon: "export",
         variant: "secondary",
         key: "tool-download",
-        onclick: () => {
-          const file = download.build(result);
-          announce(saveTextFile(file.fileName, file.text, file.mime) ? tools.downloadSaved : tools.downloadFailedNote);
-        },
+        onclick: () => fallback.replaceChildren(offerFile(download.build(result)).fallback),
       }),
     ),
+    fallback,
   );
 }
 
