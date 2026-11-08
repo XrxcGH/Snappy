@@ -71,27 +71,41 @@ export async function demoCommand(args: string[], io: Io): Promise<number> {
   await atomicWrite(io, later, syntheticExportZip({ ...common, phase: 2 }), { sync: false });
 
   const snappy = commandPrefix(io);
-  const analyze = `${snappy} analyze "${later}" --earlier "${earlier}" --no-save`;
-  const memories = `${snappy} memories "${later}" --dry-run`;
-  io.out.write(
-    [
-      ...term.banner(),
-      "",
-      "Two demo exports are ready. They are invented: made-up friends, no real data.",
-      "",
-      `  Earlier export: ${earlier}`,
-      `  Later export:   ${later}`,
-      "",
-      "Find friends to review (saves nothing):",
-      `  ${analyze}`,
-      "",
-      "Preview a Memories rescue (writes nothing):",
-      `  ${memories}`,
-      "",
-      `Run ${snappy} help for the rest.`,
-      "",
-    ].join("\n") + "\n",
-  );
+  const intro = [...term.banner(), "", "Two demo exports are ready. They are invented: made-up friends, no real data.", ""];
+  if (io.env.SNAPPY_APP === "1") {
+    // Inside the app the files live in a temporary folder that exists only in this window. Its path means nothing on the
+    // person's computer, and the commands built on it cannot be pasted anywhere, so the files get a plain name and no list.
+    io.out.write(
+      [
+        ...intro,
+        "  Earlier export: demo/snappy-demo-earlier.zip",
+        "  Later export:   demo/snappy-demo-later.zip",
+        "",
+        "These files exist only inside the app, for this run.",
+        "Commands to try on demo files are for the command line tool. Run snappy-export demo there.",
+        "",
+      ].join("\n") + "\n",
+    );
+  } else {
+    const analyze = `${snappy} analyze "${later}" --earlier "${earlier}" --no-save`;
+    const memories = `${snappy} memories "${later}" --dry-run`;
+    io.out.write(
+      [
+        ...intro,
+        `  Earlier export: ${earlier}`,
+        `  Later export:   ${later}`,
+        "",
+        "Find friends to review (saves nothing):",
+        `  ${analyze}`,
+        "",
+        "Preview a Memories rescue (writes nothing):",
+        `  ${memories}`,
+        "",
+        `Run ${snappy} help for the rest.`,
+        "",
+      ].join("\n") + "\n",
+    );
+  }
 
   if (flags.run) {
     io.out.write(term.bold("Running the first command") + "\n\n");

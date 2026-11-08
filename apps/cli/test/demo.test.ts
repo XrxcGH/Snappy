@@ -38,6 +38,26 @@ describe("snappy-export demo", () => {
     expect(viaNpm.out.trimEnd().split("\n").at(-1)).toBe("Run npm run snappy-export -- help for the rest.");
   });
 
+  it("inside the app names the files demo/ and lists no commands that could not be pasted anywhere", async () => {
+    const app = makeIo({ env: { SNAPPY_APP: "1" } });
+    const { code, out } = await run(["demo"], app);
+    expect(code).toBe(0);
+    expect(out).toContain("Earlier export: demo/snappy-demo-earlier.zip");
+    expect(out).toContain("Later export:   demo/snappy-demo-later.zip");
+    expect(out).toContain("Commands to try on demo files are for the command line tool.");
+    // No temporary folder path and no command built on one.
+    expect(out).not.toMatch(/\/tmp\/|snappy-demo-[A-Za-z0-9]{6}\b|\\Temp\\|analyze "|memories "/);
+    expect(out).not.toContain("--no-save");
+    expect(out).not.toContain("for the rest");
+  });
+
+  it("inside the app --run still runs the analysis on the files", async () => {
+    const { code, out } = await run(["demo", "--run"], makeIo({ env: { SNAPPY_APP: "1" } }));
+    expect(code).toBe(0);
+    expect(out).toContain("Running the first command");
+    expect(out).toMatch(/ghost_1 +Disappeared/);
+  });
+
   it("--run also runs the analysis", async () => {
     const dir = tempDir("demo");
     const { code, out } = await run(["demo", "--dir", dir, "--run"]);
