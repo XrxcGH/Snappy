@@ -8,6 +8,7 @@ import type { Ledger, Snapshot } from "@snappy-export/core";
 import { createActions } from "../src/actions.ts";
 import type { Actions } from "../src/actions.ts";
 import { announce } from "../src/announce.ts";
+import { settings as settingsCopy } from "../src/copy.ts";
 import { shellCopy } from "../src/copy-shell.ts";
 import { Scope, runInScope } from "../src/reactive.ts";
 import { initialState, reduce } from "../src/reducer.ts";
@@ -76,8 +77,16 @@ describe("the list", () => {
     expect(empty.textContent).toContain(shellCopy.historyEmpty);
     expect(rows(empty)).toEqual([]);
 
-    const locked = open(withLedger(ledger(), { vault: { supported: true, hasSaved: true, phase: "locked", busy: false } })).root;
-    expect(locked.textContent).not.toContain(shellCopy.historyHeading);
+    // The storage section above the card is also headed "Saved history" and says the history is locked, so the heading
+    // cannot tell the card from it. The card is silent when its words, its list and its dates are all missing, with
+    // exports in the history that it could have shown.
+    const lockedState = withLedger(THREE, { vault: { supported: true, hasSaved: true, phase: "locked", busy: false } });
+    const locked = open(lockedState).root;
+    expect(locked.textContent).toContain(settingsCopy.storageLocked);
+    for (const words of [shellCopy.historyNote, shellCopy.historyEmpty, "Nov 6, 2026", "3 friends"]) expect(locked.textContent, words).not.toContain(words);
+    expect(locked.querySelectorAll(".history-list, .history-row")).toHaveLength(0);
+    const headings = (root: FakeElement): number => root.querySelectorAll("h2").filter((h) => h.textContent === shellCopy.historyHeading).length;
+    expect(headings(locked)).toBe(headings(open(withLedger(THREE)).root) - 1);
   });
 
   it("shows the real history while sample data is on, and a sample does not change it", () => {
