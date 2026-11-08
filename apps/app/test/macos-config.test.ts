@@ -28,9 +28,11 @@ type MacConfig = {
 const conf = JSON.parse(read("src-tauri", "tauri.conf.json")) as {
   identifier: string;
   version: string;
-  bundle: { targets: string | string[]; category?: string; icon: string[]; macOS?: MacConfig };
+  bundle: { targets: string | string[]; category?: string; icon: string[]; licenseFile?: string; macOS?: MacConfig };
 };
-const mac = conf.bundle.macOS ?? {};
+/** Tauri merges tauri.macos.conf.json over tauri.conf.json when it builds for macOS, so the macOS settings live apart from the shared ones. */
+const macConf = JSON.parse(read("src-tauri", "tauri.macos.conf.json")) as { bundle: { licenseFile?: string | null; macOS?: MacConfig } };
+const mac = macConf.bundle.macOS ?? {};
 const lib = read("src-tauri", "src", "lib.rs");
 const cargo = read("src-tauri", "Cargo.toml");
 
@@ -53,9 +55,22 @@ describe("macOS bundle config", () => {
     expect(mac.exceptionDomain).toBeUndefined();
     expect(mac.providerShortName).toBeUndefined();
     expect(mac.frameworks).toBeUndefined();
-    expect(mac.files).toBeUndefined();
     expect(existsSync(path.join(tauri, "entitlements.plist"))).toBe(false);
     expect(existsSync(path.join(tauri, "Entitlements.plist"))).toBe(false);
+  });
+
+  it("keeps the macOS settings in tauri.macos.conf.json, so the shared config stays as it is for every other platform", () => {
+    expect(conf.bundle.macOS).toBeUndefined();
+    expect(Object.keys(macConf.bundle).sort()).toEqual(["licenseFile", "macOS"]);
+  });
+
+  it("shows no license agreement when the disk image is opened, and puts the license and notice inside the app instead", () => {
+    // The shared config names the license file (the Windows and Linux installers show it). Tauri would also turn it into a
+    // click-through agreement on the disk image, which is wrong for an Apache-2.0 program, so this platform drops it.
+    expect(conf.bundle.licenseFile).toBe("../../../LICENSE");
+    expect(macConf.bundle.licenseFile).toBeNull();
+    expect(mac.files).toEqual({ "Resources/LICENSE": "../../../LICENSE", "Resources/NOTICE": "../../../NOTICE" });
+    for (const source of Object.values(mac.files ?? {})) expect(existsSync(path.join(tauri, source))).toBe(true);
   });
 
   it("asks for macOS 12.3 or newer: the first release that ships WebKit 15.4, which the bundled script needs", () => {
