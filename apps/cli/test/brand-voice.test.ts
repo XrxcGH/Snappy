@@ -4,7 +4,7 @@
  */
 import { join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
-import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { makeIo, removeAll, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
 import { collectInsightOutputs } from "./insight-outputs.ts";
 import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
 
@@ -17,7 +17,7 @@ const ACRONYMS = new Set(["JSON", "HTML", "ZIP", "CSV", "AES", "NO", "SNAPPY"]);
  * running the test, such as the Windows runner's temp folder (C:\Users\RUNNER~1\AppData\Local\Temp).
  */
 function shoutingWords(text: string): string[] {
-  const words = stripPaths(text).replace(USERNAMES, "").match(/\b[A-Z]{4,}\b/g) ?? [];
+  const words = removeAll(stripPaths(text), USERNAMES).match(/\b[A-Z]{4,}\b/g) ?? [];
   return words.filter((w) => !ACRONYMS.has(w));
 }
 
@@ -83,7 +83,7 @@ describe("terminal copy follows the brand guide", () => {
     const banned = /\b(ghosts?|unfriend\w*|unadded|purge\w*|oops|whoops|awesome|simply|just|stalker\w*|exposed|leaked|dormant|inactive|dead|failed adds?|data dump)\b/i;
     for (const [name, text] of Object.entries(await everything())) {
       // core's evidence sentences are quoted verbatim from a detector; those use "unadds" in a hedge.
-      const copy = text.replace(USERNAMES, "").replace(/\bunadds?\b|\bunadded\b/gi, "");
+      const copy = removeAll(removeAll(text, USERNAMES), /\bunadds?\b|\bunadded\b/gi);
       const hit = banned.exec(copy);
       expect(hit?.[0], `${name}: ${hit?.[0]}`).toBeUndefined();
     }
@@ -130,7 +130,7 @@ describe("terminal copy follows the brand guide", () => {
   it("uses American spelling", async () => {
     const british = /\b(colour\w*|grey|organis\w*|analys(?!is)\w*|cancelled|licence|centre|favourite|behaviour|catalogue|programme)\b/i;
     for (const [name, text] of Object.entries(await everything())) {
-      expect(british.exec(stripPaths(text).replace(USERNAMES, ""))?.[0], name).toBeUndefined();
+      expect(british.exec(removeAll(stripPaths(text), USERNAMES))?.[0], name).toBeUndefined();
     }
   });
 

@@ -146,3 +146,24 @@ export function stripPaths(text: string): string {
     .replace(/(^|[\s("'=:])\/(?:[\w.~@+%-]+\/)*[\w.~@+%-]+(?:\/[^\s"'<>|]*)?/g, "$1<path>")
     .replace(/\b[A-Za-z0-9_]+~\d+\b/g, "<path>");
 }
+
+/**
+ * Text with every match of a global pattern removed. One pass can join the pieces on either side of a
+ * removed match into a new match ("aabb" without "ab" is "ab"), so the pass repeats until the text stops
+ * changing. It builds the result from the matches rather than calling replace, so no leftover can hide
+ * in a replacement string.
+ */
+export function removeAll(text: string, pattern: RegExp): string {
+  let current = text;
+  for (let previous = ""; previous !== current; ) {
+    previous = current;
+    let kept = "";
+    let from = 0;
+    for (const m of current.matchAll(pattern)) {
+      kept += current.slice(from, m.index);
+      from = m.index + m[0].length;
+    }
+    current = kept + current.slice(from);
+  }
+  return current;
+}

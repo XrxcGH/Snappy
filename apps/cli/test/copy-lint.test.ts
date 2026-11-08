@@ -25,7 +25,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
-import { makeIo, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
+import { makeIo, removeAll, run, stripPaths, tempDir, writeDemoPair, writeSyntheticParts } from "./helpers.ts";
 import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
 import { collectInsightOutputs } from "./insight-outputs.ts";
 import { SHARED_HOOK_TIMEOUT } from "./shared-runs.ts";
@@ -498,7 +498,7 @@ describe("CLI output", () => {
   it("uses American English in every line", () => {
     const bad: string[] = [];
     for (const [name, text] of Object.entries(outputs)) {
-      for (const line of text.replace(USERNAMES, "").split("\n")) {
+      for (const line of removeAll(text, USERNAMES).split("\n")) {
         for (const re of BRITISH) {
           const m = re.exec(line);
           if (m) bad.push(`${name}: "${clip(line.trim())}" uses British English ("${m[0]}")`);
@@ -536,7 +536,7 @@ describe("CLI output", () => {
   it("shows no sentence of more than 8 words twice in one command's output", () => {
     const bad: string[] = [];
     for (const [name, text] of Object.entries(outputs)) {
-      const prose = text.replace(USERNAMES, "").split("\n").filter((l) => l.trim() !== "" && !/^\s/.test(l)).join(" ");
+      const prose = removeAll(text, USERNAMES).split("\n").filter((l) => l.trim() !== "" && !/^\s/.test(l)).join(" ");
       const seen = new Map<string, number>();
       for (const s of sentences(prose)) {
         const n = s.toLowerCase().replace(/[.?!]+$/, "");
