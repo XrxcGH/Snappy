@@ -19,6 +19,9 @@ export const startFlow = {
   // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
   unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
 
+  // Files dragged over the page: what a drop will do.
+  dropOverlayTitle: "Drop your ZIP files to add them",
+
   // An unzipped folder read directly (a browser's folder chooser, or a folder dropped on the drop zone).
   chooseFolder: "Choose a folder",
   folderHint: "Browser unzipped it? Choose its folder instead.",

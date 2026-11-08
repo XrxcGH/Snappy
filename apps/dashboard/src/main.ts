@@ -1,6 +1,8 @@
 import { createActions } from "./actions.ts";
 import { applyTheme, buildShell, followTheme } from "./app-shell.ts";
 import { browserImport } from "./browser-import.ts";
+import { installDropAnywhere } from "./drop-anywhere.ts";
+import { createImportFlow } from "./import-flow.ts";
 import { importRunner } from "./platform.ts";
 import { initialState } from "./reducer.ts";
 import { startRouter } from "./router.ts";
@@ -10,6 +12,7 @@ import { terminalWorkerSource } from "snappy:terminal-worker";
 import { browserVault, readThemePreference, writeThemePreference } from "./vault.ts";
 import { spawnBlobChannel } from "./worker-runner.ts";
 import type { ToWorker } from "./terminal/protocol.ts";
+import { navigate } from "./views/context.ts";
 import type { ViewContext } from "./views/context.ts";
 
 // The page ships with data-theme="dark" on <html>, so the first paint is dark with no script at
@@ -49,8 +52,13 @@ function boot(): void {
   // The header toggle and the Settings control both change store.theme; this keeps the page in step.
   followTheme(store);
 
-  // A file dropped outside the drop zone would make the browser open it and leave the page.
-  for (const type of ["dragover", "drop"]) window.addEventListener(type, (e) => e.preventDefault());
+  // A file dropped outside the drop zone would make the browser open it and leave the page. Instead the page adds it: a drop
+  // anywhere goes to Start and runs the same import as the drop zone does. A read or a command that is running refuses it.
+  installDropAnywhere(window, {
+    flow: createImportFlow(ctx),
+    isBusy: () => store.get().import.phase === "reading" || ctx.terminal.controller.busy() !== null,
+    toStart: () => navigate("start"),
+  });
 
   const shell = buildShell(root, ctx);
   startRouter(shell.outlet, ctx, shell.onRoute);
