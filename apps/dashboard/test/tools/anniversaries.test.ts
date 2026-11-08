@@ -220,7 +220,7 @@ describe("the page", () => {
     const many: FriendRecord[] = Array.from({ length: 60 }, (_, i) => ({ username: `zqcanary_${String(i).padStart(2, "0")}`, createdAt: created(2, i % 20) }));
     const { root } = await renderSettled(view, real(many));
     expect(root.querySelectorAll("tbody tr")).toHaveLength(50);
-    expect(root.querySelector(".caption")?.textContent).toBe(copy.moreLine(50, 60));
+    expect(root.querySelector(".tool-result .caption")?.textContent).toBe(copy.moreLine(50, 60));
     expect(root.querySelectorAll(".fact dd")[0]?.textContent).toBe("60");
   });
 

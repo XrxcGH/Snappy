@@ -196,6 +196,25 @@ describe("formats", () => {
   });
 });
 
+describe("the one-liners and descriptions", () => {
+  it("start with a verb, say you and your friends, and say lists and Snapchat's own words where they mean them", () => {
+    expect(blockedReview.oneLiner).toBe("Review who you blocked or ignored.");
+    expect(lookalikeUsernames.description).toContain("friends, requests and blocked lists that look alike");
+    expect(closestFading.description).toBe("Rank friends by recent chats and Snaps in your export. See who has gone quieter than before.");
+    expect(friendCountHistory.description).toMatch(/^See how your friend count grew and shrank, month by month\./);
+    // A description is one imperative sentence: "Shows how" and "Look over" are gone.
+    expect(hits(/^(Shows|Look over)\b/).filter((l) => /: (description|oneLiner): /.test(l))).toEqual([]);
+  });
+
+  it("defines the milestones where the control is, so Milestones only is not a guess", async () => {
+    expect(anniversaries.milestonesHelp).toBe("Milestones are 1, 2, 3, 5 and 10 years.");
+    const root = await pageOf("anniversaries");
+    const box = root.querySelector("input.check-input") as FakeElement;
+    const help = root.querySelector(`#${box.getAttribute("aria-describedby")}`) as FakeElement;
+    expect(help.textContent).toBe(anniversaries.milestonesHelp);
+  });
+});
+
 describe("table cells", () => {
   it("never repeat their column header on a wide page: the bare value is shown and the full phrase is kept for assistive technology", async () => {
     const repeats: string[] = [];

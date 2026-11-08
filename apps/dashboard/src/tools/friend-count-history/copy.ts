@@ -16,7 +16,7 @@ const them = (n: number): string => (n === 1 ? "that friend" : "them");
 export const copy = {
   title: "Friend count history",
   oneLiner: "See how your friend count has changed.",
-  description: "Shows how your friend count grew and shrank, month by month. It also compares the curve with your saved history.",
+  description: "See how your friend count grew and shrank, month by month. It also compares the curve with your saved history.",
   reads: "The dates friends were added and removed, and the friend counts in your saved history.",
   empty: {
     title: "No dates to chart",

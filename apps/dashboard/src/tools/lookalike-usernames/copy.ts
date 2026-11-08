@@ -15,7 +15,7 @@ const them = (n: number): string => (n === 1 ? "it" : "them");
 export const copy = {
   title: "Lookalike usernames",
   oneLiner: "Spot names that look alike.",
-  description: "Find usernames in your friends, requests and blocked list that look alike. Lookalikes are common and prove nothing.",
+  description: "Find usernames in your friends, requests and blocked lists that look alike. Lookalikes are common and prove nothing.",
   reads: "Usernames in your friends, requests and blocked lists, compared with each other.",
   empty: {
     title: "No lookalike names",

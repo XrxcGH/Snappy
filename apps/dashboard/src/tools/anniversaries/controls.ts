@@ -20,13 +20,13 @@ export function controls(ui: ToolUi<AnniversaryParams>): HTMLElement {
   const chevron = icon("chevron-right", 16);
   chevron.setAttribute("class", "icon select-chevron");
 
-  const box = h("input", { type: "checkbox", class: "check-input", checked: ui.params.milestonesOnly, "data-key": "anniversaries-milestones" });
+  const box = h("input", { type: "checkbox", class: "check-input", checked: ui.params.milestonesOnly, "data-key": "anniversaries-milestones", "aria-describedby": "anniversaries-milestones-help" });
   box.addEventListener("change", () => ui.set({ milestonesOnly: box.checked }));
 
   return h(
     "div",
     { class: "controls", role: "group", "aria-label": copy.controlsLabel },
     h("div", { class: "field" }, h("label", { class: "label", for: "anniversaries-window" }, copy.windowLabel), h("div", { class: "select-wrap" }, select, chevron)),
-    h("label", { class: "check" }, box, h("span", {}, copy.milestonesLabel)),
+    h("div", { class: "field" }, h("label", { class: "check" }, box, h("span", {}, copy.milestonesLabel)), h("p", { class: "caption", id: "anniversaries-milestones-help" }, copy.milestonesHelp)),
   );
 }

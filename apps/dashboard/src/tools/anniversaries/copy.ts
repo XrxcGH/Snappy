@@ -32,6 +32,7 @@ export const copy = {
     { days: 366, label: "Next year" },
   ],
   milestonesLabel: "Milestones only",
+  milestonesHelp: "Milestones are 1, 2, 3, 5 and 10 years.",
 
   glanceHeading: "At a glance",
   upcomingFact: "Coming up",

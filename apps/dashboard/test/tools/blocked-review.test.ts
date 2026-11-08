@@ -59,7 +59,7 @@ const CANARIES = ["zqcanary_friend", "zqcanary_other", "zqcanary_pending", "zqca
 describe("the tool", () => {
   it("is a Friends tool in the requests color that needs an export and shows the blocked command", () => {
     expect(descriptor).toMatchObject({ id: "blocked-review", title: "Blocked and ignored review", group: "friends", category: "requests", needs: ["export"] });
-    expect(descriptor.oneLiner).toBe("Look over who you blocked or ignored.");
+    expect(descriptor.oneLiner).toBe("Review who you blocked or ignored.");
     expect(COMMANDS.blocked.argv[0]).toBe("blocked");
   });
 });

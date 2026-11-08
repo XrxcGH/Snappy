@@ -11,7 +11,7 @@ const has = (n: number): string => (n === 1 ? "has" : "have");
 
 export const copy = {
   title: "Blocked and ignored review",
-  oneLiner: "Look over who you blocked or ignored.",
+  oneLiner: "Review who you blocked or ignored.",
   description: "See the people you blocked, ignored or hid from suggestions, oldest first. Snappy only lists them and changes nothing.",
   reads: "Usernames and dates in your blocked, ignored and hidden suggestion lists, checked against your friends and requests.",
   empty: {

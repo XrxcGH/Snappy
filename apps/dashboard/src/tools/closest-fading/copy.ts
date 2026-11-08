@@ -12,7 +12,7 @@ const them = (n: number): string => (n === 1 ? "it" : "them");
 export const copy = {
   title: "Closest and fading",
   oneLiner: "See your closest friends and who is fading.",
-  description: "Rank friends by recent saved chats and Snaps. See who has gone quieter than before.",
+  description: "Rank friends by recent chats and Snaps in your export. See who has gone quieter than before.",
   reads: "Counts, dates and directions of your saved chats and Snaps with each friend.",
   empty: {
     title: "Nothing to rank yet",
