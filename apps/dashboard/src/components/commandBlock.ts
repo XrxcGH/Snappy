@@ -1,10 +1,10 @@
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { common, terminal } from "../copy.ts";
-import { cliTool } from "../copy-tools.ts";
+import { cliTool, commandNotes } from "../copy-tools.ts";
 import { h } from "../dom.ts";
 import { onDispose } from "../reactive.ts";
-import { COMMANDS, displayText } from "../terminal/commands.ts";
+import { COMMANDS, displayText, displayTextWith } from "../terminal/commands.ts";
 import type { CommandId } from "../terminal/commands.ts";
 import type { ViewContext } from "../views/context.ts";
 import { button } from "./button.ts";
@@ -18,6 +18,18 @@ export interface CommandBlockOptions {
   cliLink?: boolean;
   /** One short line under the code, such as "The command shows the default view." */
   note?: string;
+  /** Replaces the catalog's title on a copy-only block, such as "Check later against a saved backup". */
+  title?: string;
+  /**
+   * Words added after the catalog command (flags and their placeholders, such as `--compare` and `<backup file>`), copied and shown
+   * as part of the command. Only a copy-only block takes them, because Run would run the plain command and not this one.
+   */
+  append?: readonly string[];
+  /**
+   * The block can only be copied: it names a file or folder that this page cannot open, so a terminal has to run it. It has no Run,
+   * no file chip and no output, and says "This needs a terminal." in a line of its own.
+   */
+  copyOnly?: boolean;
 }
 
 /** The line that leads to the Export guide section on getting the command line tool. A page that explains commands outside a block can use it too. */
@@ -37,6 +49,7 @@ let counter = 0;
  * another command is running) that it points to, instead of going dead.
  */
 export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBlockOptions): HTMLElement {
+  if (options.copyOnly === true) return copyOnlyBlock(id, options);
   const spec = COMMANDS[id];
   const { controller, picked } = ctx.terminal;
   const text = displayText(spec);
@@ -99,5 +112,32 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
     hint,
     options.cliLink === true ? cliToolLink() : null,
     panel.element,
+  );
+}
+
+/**
+ * A command that only Copy can serve: the catalog command plus words naming a file or folder, with the title the page gives it. It
+ * is the same frame (title, Copy, code), with no Run, chip or output, and a line that says why.
+ */
+function copyOnlyBlock(id: CommandId, options: CommandBlockOptions): HTMLElement {
+  const spec = COMMANDS[id];
+  const title = options.title ?? spec.title;
+  const text = displayTextWith(spec, options.append ?? []);
+  const copy = button({
+    label: common.copy,
+    icon: "copy",
+    variant: "secondary",
+    ariaLabel: terminal.copyFor(title),
+    key: `${options.key}:copy`,
+    onclick: () => void copyText(text).then((ok) => announce(ok ? terminal.copiedCommandAnnounce : common.copyFailed)),
+  });
+  return h(
+    "div",
+    { class: "command code-block command-copy-only" },
+    h("div", { class: "command-head" }, h("p", { class: "command-title" }, title), h("div", { class: "command-actions" }, copy)),
+    h("pre", { class: "code", tabindex: "0" }, h("code", {}, text)),
+    h("p", { class: "command-note" }, commandNotes.needsTerminal),
+    options.note === undefined ? null : h("p", { class: "command-note" }, options.note),
+    options.cliLink === true ? cliToolLink() : null,
   );
 }

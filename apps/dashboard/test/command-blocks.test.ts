@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { Actions } from "../src/actions.ts";
 import { common, terminal } from "../src/copy.ts";
+import { commandNotes } from "../src/copy-tools.ts";
 import { initialState } from "../src/reducer.ts";
 import type { State } from "../src/reducer.ts";
 import { Scope, runInScope } from "../src/reactive.ts";
@@ -59,6 +60,13 @@ describe.each([
   it.each(ROUTES)("%s: every command is a block with one Copy and one Run, Copy first, and the code is exactly what Copy copies", (name) => {
     const root = render(name, getState());
     for (const block of root.querySelectorAll(".command")) {
+      if (block.classList.contains("command-copy-only")) {
+        // A block that names a file or folder only a terminal can open: Copy alone, the catalog command and more words, and the reason.
+        expect(block.querySelectorAll("button").map((b) => b.textContent), name).toEqual([common.copy]);
+        expect([...commandsByCode.keys()].some((text) => codeOf(block).startsWith(`${text} `)), `${name}: ${codeOf(block)}`).toBe(true);
+        expect(block.querySelector(".command-note")?.textContent, name).toBe(commandNotes.needsTerminal);
+        continue;
+      }
       const buttons = block.querySelectorAll("button");
       const labels = buttons.map((b) => b.textContent);
       expect(labels.filter((l) => l === common.copy), name).toHaveLength(1);
@@ -112,6 +120,53 @@ describe("the pages that show commands", () => {
       expect(block.querySelector(".command-files") !== null, id).toBe(COMMANDS[id].needsFile);
       expect(block.querySelector("input")?.getAttribute("type") ?? "none", id).toBe(COMMANDS[id].needsFile ? "file" : "none");
     }
+  });
+});
+
+describe("a copy-only block", () => {
+  async function copyOnly(extra: Record<string, unknown> = {}) {
+    const { commandBlock } = await import("../src/components/commandBlock.ts");
+    const terminalSession = testTerminal();
+    const ctx = { store: createStore(emptyState), actions: {} as Actions, terminal: terminalSession };
+    const el = runInScope(new Scope(true), () => commandBlock(ctx, "backup", { key: "co", copyOnly: true, append: ["--compare", "<backup file>"], title: "Check later against a backup", ...extra })) as unknown as FakeElement;
+    return { el, session: terminalSession };
+  }
+
+  it("shows the catalog command and the added words, the page's own title, Copy alone and the reason", async () => {
+    const { el } = await copyOnly();
+    expect(el.classList.contains("command")).toBe(true);
+    expect(el.classList.contains("code-block")).toBe(true);
+    expect(el.querySelector(".command-title")?.textContent).toBe("Check later against a backup");
+    expect(codeOf(el)).toBe(`${displayText(COMMANDS.backup)} --compare "<backup file>"`);
+    expect(el.querySelector(".command-head")?.querySelectorAll("button").map((b) => b.textContent)).toEqual([common.copy]);
+    expect(el.querySelector(".command-note")?.textContent).toBe(commandNotes.needsTerminal);
+    expect(el.querySelectorAll("button").map((b) => b.getAttribute("aria-label"))).toEqual([terminal.copyFor("Check later against a backup")]);
+  });
+
+  it("has no Run, no file chip, no output panel and no hint, so nothing in it can start a command", async () => {
+    const { el, session } = await copyOnly();
+    expect(el.querySelectorAll("button").map((b) => b.textContent)).not.toContain(terminal.runButton);
+    expect(el.querySelector(".command-files")).toBeNull();
+    expect(el.querySelector(".command-panel")).toBeNull();
+    expect(el.querySelector(".command-hint")).toBeNull();
+    expect(el.querySelector("input")).toBeNull();
+    expect(session.controller.busy()).toBeNull();
+  });
+
+  it("copies exactly the text shown", async () => {
+    const written: string[] = [];
+    vi.stubGlobal("navigator", { clipboard: { writeText: async (t: string) => void written.push(t) } });
+    const { el } = await copyOnly();
+    (el.querySelector(".command-head")?.querySelector("button") as FakeElement).click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(written).toEqual([codeOf(el)]);
+    vi.unstubAllGlobals();
+  });
+
+  it("falls back to the catalog title, and can carry a link to the command line tool section", async () => {
+    const { el } = await copyOnly({ title: undefined, cliLink: true });
+    expect(el.querySelector(".command-title")?.textContent).toBe(COMMANDS.backup.title);
+    expect(el.querySelectorAll(".command-cli-link a").map((a) => a.getAttribute("href"))).toEqual(["#/guide"]);
   });
 });
 

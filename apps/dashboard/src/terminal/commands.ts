@@ -137,10 +137,18 @@ export const COMMAND_IDS = Object.keys(COMMANDS) as CommandId[];
 /** A word that the shell would split or read as redirection is quoted, as in the Copy text people paste. */
 const quoted = (token: string): string => (/[\s<>"'|&;$`\\*?]/.test(token) ? `"${token.replace(/(["\\$`])/g, "\\$1")}"` : token);
 
+/**
+ * The text Copy puts on the clipboard and the block shows: the prefix, then the words with their examples. `more` is words a
+ * copy-only block adds after them (a flag and the placeholder for its file), quoted the same way.
+ */
+export function displayTextWith(spec: CommandSpec, more: readonly string[]): string {
+  const words = [...spec.argv.map((a) => (typeof a === "string" ? a : a.example)), ...more].map(quoted);
+  return [cliPrefix(), ...words].join(" ");
+}
+
 /** The text Copy puts on the clipboard and the block shows: the prefix, then the words with their examples. */
 export function displayText(spec: CommandSpec): string {
-  const words = spec.argv.map((a) => (typeof a === "string" ? a : a.example)).map(quoted);
-  return [cliPrefix(), ...words].join(" ");
+  return displayTextWith(spec, []);
 }
 
 export interface Binding {

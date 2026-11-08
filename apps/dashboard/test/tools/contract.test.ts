@@ -19,6 +19,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import * as mainCopy from "../../src/copy.ts";
 import { tools as toolsCopy } from "../../src/copy.ts";
+import { commandNotes } from "../../src/copy-tools.ts";
 import { COMMANDS, COMMAND_IDS, displayText } from "../../src/terminal/commands.ts";
 import { GROUPS, TOOLS, toolById } from "../../src/tools/registry.ts";
 import type { ToolCopy, ToolDescriptor, ToolNeed } from "../../src/tools/types.ts";
@@ -229,8 +230,17 @@ describe.each(ids)("tool %s", (id) => {
       for (const [label, state] of states()) {
         const { root } = await renderSettled(descriptor.view, state);
         for (const block of root.querySelectorAll(".command")) {
-          expect(shown.has(block.querySelector("code")?.textContent ?? ""), `${id} (${label})`).toBe(true);
-          expect(block.querySelector(".command-head")?.querySelectorAll("button").map((b) => b.textContent), `${id} (${label})`).toEqual(["Copy", "Run"]);
+          const code = block.querySelector("code")?.textContent ?? "";
+          const buttons = block.querySelector(".command-head")?.querySelectorAll("button").map((b) => b.textContent);
+          if (block.classList.contains("command-copy-only")) {
+            // A command that names a file or folder this page cannot open: the catalog command and more words, Copy only, and the reason.
+            expect([...shown.keys()].some((text) => code.startsWith(`${text} `)), `${id} (${label}) copy-only: ${code}`).toBe(true);
+            expect(buttons, `${id} (${label})`).toEqual(["Copy"]);
+            expect(block.querySelector(".command-note")?.textContent, `${id} (${label})`).toBe(commandNotes.needsTerminal);
+            continue;
+          }
+          expect(shown.has(code), `${id} (${label})`).toBe(true);
+          expect(buttons, `${id} (${label})`).toEqual(["Copy", "Run"]);
         }
       }
     });

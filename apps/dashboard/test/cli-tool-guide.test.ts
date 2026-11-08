@@ -52,7 +52,8 @@ describe("the Export guide section on the command line tool", () => {
     let withBlocks = 0;
     for (const tool of TOOLS) {
       const { root } = await renderSettled(tool.view, sample);
-      const blocks = root.querySelectorAll(".command");
+      // A copy-only block beside it (a command that names a file) is not the page's first block.
+      const blocks = root.querySelectorAll(".command").filter((b) => !b.classList.contains("command-copy-only"));
       if (blocks.length === 0) continue;
       withBlocks++;
       expect(blocks, tool.id).toHaveLength(1);
