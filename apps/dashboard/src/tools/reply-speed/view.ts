@@ -6,7 +6,7 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { usernameText } from "../../components/usernameChip.ts";
 import { h } from "../../dom.ts";
-import { formatCount, formatDate } from "../../format.ts";
+import { formatCount } from "../../format.ts";
 import { offsetLabel, startingOffset, zoneOptions } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
@@ -88,7 +88,6 @@ function glance({ report }: ReplySpeedResult): HTMLElement {
     you === null ? null : h("p", {}, copy.youNineLine(timeText(you.p90Ms))),
     them === null ? null : h("p", {}, copy.themNineLine(timeText(them.p90Ms))),
     h("p", { class: "caption" }, copy.methodLine(hoursOf(report))),
-    report.asOf === null ? null : h("p", { class: "caption" }, copy.asOfLine(formatDate(report.asOf))),
   );
 }
 

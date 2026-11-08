@@ -266,7 +266,9 @@ describe("the page", () => {
     expect(root.textContent).toContain(copy.youNineLine("40 minutes"));
     expect(root.textContent).toContain(copy.themNineLine("30 minutes"));
     expect(root.textContent).toContain(copy.methodLine(24));
-    expect(root.textContent).toContain(copy.asOfLine("Nov 6, 2026"));
+    // Reply times do not depend on a date, so no "Counted up to" line gives one (it was the day the page was read, not the export's).
+    expect(root.textContent).not.toMatch(/Counted up to/);
+    expect(Object.keys(copy)).not.toContain("asOfLine");
 
     const tables = root.querySelectorAll("table");
     expect(tables).toHaveLength(6);

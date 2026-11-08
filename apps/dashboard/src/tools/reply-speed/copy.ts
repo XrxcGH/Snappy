@@ -46,7 +46,6 @@ export const copy = {
   youCountLabel: "Your replies",
   themCountLabel: "Their replies",
   noValue: common.noFigure,
-  asOfLine: (date: string): string => `Counted up to ${date}.`,
   methodLine: (hours: number): string => `A reply is a change of sender within ${hoursOf(hours)}. A run of messages counts as one turn.`,
   youNineLine: (time: string): string => `Nine in ten of your replies came within ${time}.`,
   themNineLine: (time: string): string => `Nine in ten of their replies came within ${time}.`,
