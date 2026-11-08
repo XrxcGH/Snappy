@@ -15,6 +15,7 @@ import { clearSearches, listSearch, searchQuery, setSearchQuery } from "../compo
 import { categoryOfCandidate, categoryTag } from "../components/category.ts";
 import { confidenceBadge } from "../components/confidenceBadge.ts";
 import { icon } from "../components/icon.ts";
+import { keepListSection } from "../components/keepListSection.ts";
 import { listActions } from "../components/listActions.ts";
 import { disclosureSummary, emptyState, pageHeader, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
@@ -51,7 +52,10 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
   }
   // An export was read and the queue is empty: say so, and point to the next step rather than the first one.
   if (a.queue.summary.total === 0) {
-    return [emptyState({ icon: "check", spot: "overview", category: "cleanup", title: cleanup.nothingFound, body: cleanup.nothingFoundBody, actions: [routeLink("start", common.addExport, "primary")] })];
+    return [
+      emptyState({ icon: "check", spot: "overview", category: "cleanup", title: cleanup.nothingFound, body: cleanup.nothingFoundBody, actions: [routeLink("start", common.addExport, "primary")] }),
+      keepListSection(actions, a.workspace.allowlist),
+    ];
   }
 
   const all = a.queue.items;
@@ -89,6 +93,7 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     slot,
     a.hasChats ? notice("info", cleanup.protectedByChats) : null,
     protectedItems.length > 0 ? protectedSection(actions, protectedItems, !a.sample) : null,
+    keepListSection(actions, a.workspace.allowlist),
   ];
 }
 
