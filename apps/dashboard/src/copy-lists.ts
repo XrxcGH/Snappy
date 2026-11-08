@@ -19,13 +19,13 @@ export const lists = {
 
   // Search and sort. The typed text is a piece of a username: it is never put in the address, the title or storage.
   searchLabel: "Search usernames",
-  searchPlaceholder: "Type part of a name",
+  searchPlaceholder: "Part of a name",
   searchClearButton: "Clear",
   searchClearAria: "Clear search",
   matchCount: (shown: number, total: number) => `${shown} of ${total} match`,
   noMatchSearch: "No one matches. Clear the search to see more.",
   sortLabel: "Sort",
-  sortOptions: { likely: "Most likely first", newest: "Newest first", oldest: "Oldest first", confidence: "Highest confidence" },
+  sortOptions: { likely: "Most likely", newest: "Newest", oldest: "Oldest", confidence: "Confidence" },
   clearFiltersButton: "Clear filters",
 
   // The spreadsheet file each finding list saves, by the list's key ("ghost" is Disappeared friends, "one-way" Unaccepted requests, "dormant" Quiet friends).

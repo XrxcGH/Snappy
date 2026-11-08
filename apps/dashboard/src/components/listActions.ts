@@ -1,7 +1,8 @@
 /**
  * "Save list" and "Copy list" for a list of people: a spreadsheet file, or the usernames one per line. Used above the
  * Cleanup queue and above each finding list, with the rows that are showing. The file holds usernames, a category,
- * the confidence word and core's evidence sentence, nothing else (see queue-export.ts).
+ * the confidence word and core's evidence sentence, nothing else (see queue-export.ts). What each button gives is said
+ * to screen readers as the buttons' description, so the visible row stays one line.
  */
 import type { Candidate } from "@snappy-export/core";
 import { announce } from "../announce.ts";
@@ -15,32 +16,27 @@ import { button } from "./button.ts";
 export interface ListActionsOptions {
   /** The name of the saved file, such as "snappy-disappeared.csv". */
   fileName: string;
-  /** Add the one line that says what each button gives. */
-  help?: boolean;
 }
 
+let counter = 0;
+
 export function listActions(items: readonly Candidate[], options: ListActionsOptions): HTMLElement {
-  return h(
-    "div",
-    { class: "list-actions" },
-    h(
-      "div",
-      { class: "actions" },
-      button({
-        label: cleanup.saveList,
-        icon: "export",
-        key: "save-list",
-        disabled: items.length === 0,
-        onclick: () => announce(saveTextFile(options.fileName, queueToCsv(items), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
-      }),
-      button({
-        label: cleanup.copyList,
-        icon: "copy",
-        key: "copy-list",
-        disabled: items.length === 0,
-        onclick: () => void copyText(queueToText(items)).then((ok) => announce(ok ? cleanup.listCopied : common.copyFailed)),
-      }),
-    ),
-    options.help === false ? null : h("p", {}, cleanup.listHelp),
-  );
+  const helpId = `list-actions-help-${++counter}`;
+  const save = button({
+    label: cleanup.saveList,
+    icon: "export",
+    key: "save-list",
+    disabled: items.length === 0,
+    onclick: () => announce(saveTextFile(options.fileName, queueToCsv(items), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
+  });
+  const copy = button({
+    label: cleanup.copyList,
+    icon: "copy",
+    key: "copy-list",
+    disabled: items.length === 0,
+    onclick: () => void copyText(queueToText(items)).then((ok) => announce(ok ? cleanup.listCopied : common.copyFailed)),
+  });
+  save.setAttribute("aria-describedby", helpId);
+  copy.setAttribute("aria-describedby", helpId);
+  return h("div", { class: "list-actions" }, h("div", { class: "actions" }, save, copy), h("span", { class: "sr-only", id: helpId }, cleanup.listHelp));
 }

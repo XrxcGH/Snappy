@@ -52,10 +52,9 @@ function searchableList(a: Analysis, items: readonly Candidate[], actions: Actio
     const summary = summaryOf(shown.length);
     slot.replaceChildren();
     append(slot, [
-      h("p", { class: "summary" }, summary),
+      // The count line and Save and Copy share one line. Save and Copy hold the rows that are showing, so a search narrows the file too.
+      h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: lists.areas[key].csvFile })),
       shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
-      // Save and Copy hold the rows that are showing, so a search narrows the file too.
-      listActions(shown, { fileName: lists.areas[key].csvFile, help: false }),
       shown.length === 0 ? h("p", { class: "empty-inline" }, lists.noMatchSearch) : candidateList(a, shown, actions, key),
     ]);
     return shown.length === 0 ? lists.noMatchSearch : summary;

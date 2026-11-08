@@ -122,11 +122,11 @@ function clearFilters(actions: Actions): void {
 function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: readonly Candidate[], summary: string): Child[] {
   const { actions } = ctx;
   return [
-    h("p", { class: "summary", role: "status" }, summary),
-    shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
+    // The count line and Save and Copy share one line.
+    h("div", { class: "list-bar" }, h("p", { class: "summary", role: "status" }, summary), listActions(shown, { fileName: cleanup.csvFile })),
     // The consequence is stated before any action, in both modes.
     notice("warning", cleanup.removalWarning),
-    listActions(shown, { fileName: cleanup.csvFile }),
+    shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
     shown.length === 0
       ? h(
           "div",
@@ -175,7 +175,8 @@ function controls(actions: Actions, view: CleanupView, handlers: ControlHandlers
   const sortOptions = (Object.keys(lists.sortOptions) as QueueSort[]).map((order): [string, string] => [order, lists.sortOptions[order]]);
   return h(
     "div",
-    { class: "controls" },
+    // One row where it fits: the three lists, the search and the mode toggle on the right; in a narrower column the search and the toggle share the second row.
+    { class: "controls cleanup-controls" },
     h(
       "div",
       { class: "filters", role: "group", "aria-label": cleanup.filtersLabel },
