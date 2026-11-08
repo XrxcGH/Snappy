@@ -19,6 +19,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { startFakeGithub } from "./fake-github.mjs";
+import { overlayFor } from "./overlay.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(here, "..", "..");
@@ -65,7 +66,7 @@ const sign = (key, file, version) => {
 function build(version, pubs) {
   log(`building ${version} (trusting ${pubs.length} test key${pubs.length === 1 ? "" : "s"}) ...`);
   const overlay = path.join(work, `conf-${version}.json`);
-  writeFileSync(overlay, JSON.stringify({ ...JSON.parse(readFileSync(path.join(here, "tauri.e2e.conf.json"), "utf8")), version }));
+  writeFileSync(overlay, JSON.stringify(overlayFor(readFileSync(path.join(here, "tauri.e2e.conf.json"), "utf8"), version)));
   const env = { ...process.env, SNAPPY_E2E_VERSION: version, SNAPPY_E2E_PUBKEYS: pubs.join(","), CARGO_TARGET_DIR: path.join(work, "target"), SNAPPY_RELEASE: "" };
   const r = spawnSync("npx.cmd", ["tauri", "build", "--bundles", "nsis", "--config", `"${overlay}"`, "--", "--features", "dev-update-endpoint", "--locked"], { cwd: appDir, env, stdio: "inherit", shell: true });
   if (r.status !== 0) throw new Error(`the build of ${version} failed`);

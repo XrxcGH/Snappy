@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error plain JavaScript module without types
 import { BASE_PATH, manifestFor, startFakeGithub } from "./e2e-update/fake-github.mjs";
+// @ts-expect-error plain JavaScript module without types
+import { overlayFor } from "./e2e-update/overlay.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const drill = path.join(here, "e2e-update");
@@ -77,6 +79,29 @@ describe("the stand-in for GitHub", () => {
     }
     expect(BASE_PATH).toBe("/XrxcGH/Snappy");
     expect(JSON.parse(manifestFor("http://127.0.0.1:1", { version: "1.2.3", signature: "x" })).platforms["windows-x86_64"].url).toBe("http://127.0.0.1:1/XrxcGH/Snappy/releases/download/v1.2.3/Snappy_1.2.3_x64-setup.exe");
+  });
+});
+
+describe("the configuration overlay of the drill", () => {
+  const schema = JSON.parse(readFileSync(path.join(here, "..", "..", "..", "node_modules", "@tauri-apps", "cli", "config.schema.json"), "utf8")) as { properties: Record<string, unknown> };
+  const file = readFileSync(path.join(drill, "tauri.e2e.conf.json"), "utf8");
+
+  it("holds only properties that Tauri's configuration schema knows, so `tauri build --config` accepts it", () => {
+    // The first full run of the drill stopped at once on the `$comment` in the file: "Additional properties are not allowed".
+    const overlay = overlayFor(file, "0.9.1");
+    expect(Object.keys(overlay).filter((key) => !(key in schema.properties))).toEqual([]);
+    expect(Object.keys(overlay).some((key) => key.startsWith("$"))).toBe(false);
+  });
+
+  it("keeps the test identity and adds the version, and the file itself keeps its comment", () => {
+    const overlay = overlayFor(file, "0.9.2") as Record<string, unknown> & { bundle: { windows: { nsis: { installMode: string } } } };
+    expect(overlay).toMatchObject({ productName: "Snappy E2E", identifier: "com.snappy.e2e", version: "0.9.2" });
+    expect(overlay.bundle.windows.nsis.installMode).toBe("currentUser");
+    expect(file).toContain('"$comment"');
+  });
+
+  it("is what the drill passes to the build", () => {
+    expect(readFileSync(path.join(drill, "run-e2e.mjs"), "utf8")).toContain("overlayFor(");
   });
 });
 
