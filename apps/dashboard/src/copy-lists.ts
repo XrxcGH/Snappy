@@ -43,6 +43,14 @@ export const lists = {
   keepRemoved: (u: string) => `${u} is off your keep list.`,
   keepEmpty: "No one is on your keep list yet.",
 
+  // Related tools at the end of a page, and the Tools card on the Overview.
+  relatedLabel: "Related tools",
+  relatedBackupNote: "Back up your friends before you remove anyone.",
+  toolsHeading: "Tools",
+  toolsCardText: (n: number) => `${n} small helpers that read your export.`,
+  // The command that finds the same people without saving anything, shown under the queue.
+  previewNote: "The same search, without saving anything to your history.",
+
   // Memories rescue, in the desktop app, where Run holds only a small test.
   rescueLimitNote: (mb: number) => `Run copies a small test here, up to ${mb} MB. A full rescue needs the command line tool.`,
   rescueGuideLine: "The guide says how to get it.",

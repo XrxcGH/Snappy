@@ -849,4 +849,10 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .keep-list { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); padding: var(--tap-pad) var(--pad-card); }
 .keep-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--pad-card); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
 .keep-row .username { overflow-wrap: anywhere; min-width: 0; }
+/* The Tools card on the Overview, and the related-tools row at the end of a page. */
+.tools-card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); padding: var(--pad-card); color: var(--text); text-decoration: none; }
+.tools-card > p { flex: 1 1 14rem; min-width: 0; font-weight: 600; }
+.related { display: grid; gap: var(--space-2); }
+.related-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); }
+.related-list a { display: inline-flex; align-items: center; min-height: var(--target-min); }
 /* end track T3 */

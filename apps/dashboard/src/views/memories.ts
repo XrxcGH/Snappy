@@ -11,6 +11,7 @@ import { button, routeLink } from "../components/button.ts";
 import { commandBlock } from "../components/commandBlock.ts";
 import { columns, emptyState, pageHeader, section, slideIn, stat, statGrid, subsection } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
+import { relatedTools } from "../components/relatedTools.ts";
 import { pairingFacts } from "../pairing-facts.ts";
 import { parseCapGiB } from "../parse-input.ts";
 import { region } from "../reactive.ts";
@@ -44,6 +45,7 @@ function render(ctx: ViewContext, a: Analysis, capGiB: number): Child[] {
     // Two independent sections: side by side on a wide screen.
     columns(...pairingSections(a), storageSection(ctx, plan.meter, capGiB)),
     rescueSection(ctx),
+    relatedTools(["storage-planner", "memories-gaps", "memories-on-this-day", "rescue-manifest"]),
   ];
 }
 

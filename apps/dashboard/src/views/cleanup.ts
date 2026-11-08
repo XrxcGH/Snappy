@@ -4,7 +4,7 @@ import type { Analysis, QueueSort } from "../analysis.ts";
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
-import { categories, cleanup, common, routes } from "../copy.ts";
+import { categories, cleanup, common, routes, tools } from "../copy.ts";
 import { lists } from "../copy-lists.ts";
 import { platform } from "../platform.ts";
 import { h } from "../dom.ts";
@@ -17,9 +17,11 @@ import { confidenceBadge } from "../components/confidenceBadge.ts";
 import { icon } from "../components/icon.ts";
 import { keepListSection } from "../components/keepListSection.ts";
 import { listActions } from "../components/listActions.ts";
-import { disclosureSummary, emptyState, pageHeader, slideIn } from "../components/layout.ts";
+import { disclosureSummary, emptyState, pageHeader, section, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pagedList, resetPaging } from "../components/pagedList.ts";
+import { relatedTools } from "../components/relatedTools.ts";
+import { commandBlock } from "../components/commandBlock.ts";
 import { toastHost } from "../components/toast.ts";
 import { progressBar } from "../components/progressBar.ts";
 import { usernameChip } from "../components/usernameChip.ts";
@@ -94,6 +96,9 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     a.hasChats ? notice("info", cleanup.protectedByChats) : null,
     protectedItems.length > 0 ? protectedSection(actions, protectedItems, !a.sample) : null,
     keepListSection(actions, a.workspace.allowlist),
+    relatedTools(["friends-backup"], lists.relatedBackupNote),
+    // The same search as a command, which finds these people without saving anything to the history.
+    section(tools.commandHeading, h("p", {}, lists.previewNote), commandBlock(ctx, "analyze-preview", { key: "cleanup-preview" })),
   ];
 }
 

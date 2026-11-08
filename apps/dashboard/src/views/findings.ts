@@ -17,6 +17,7 @@ import { listActions } from "../components/listActions.ts";
 import { listSearch, searchQuery, setSearchQuery } from "../components/listSearch.ts";
 import { emptyState, factList, pageHeader, section } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
+import { relatedTools } from "../components/relatedTools.ts";
 import { pagedList, resetPaging } from "../components/pagedList.ts";
 import { toastHost } from "../components/toast.ts";
 import { region } from "../reactive.ts";
@@ -116,13 +117,14 @@ export const disappearedView: View = view("disappeared", routes.disappeared.titl
   return [
     changes,
     section(disappeared.listHeading, searchableList(a, a.ghosts, ctx.actions, "ghost", disappeared.listCount)),
+    relatedTools(["since-last-export"]),
   ];
 });
 
 export const requestsView: View = view("requests", routes.requests.title, requests.lead, requests.inference, (ctx) => (a) => {
   if (a.source === "none") return [emptyState({ icon: "one-way", spot: "import", category: "requests", title: requests.noExportTitle, body: requests.noExportBody, actions: [addExport()] })];
   if (a.oneWay.length === 0) return [emptyState({ icon: "one-way", spot: "overview", category: "requests", title: requests.emptyTitle, body: requests.emptyBody })];
-  return [searchableList(a, a.oneWay, ctx.actions, "one-way", requests.listCount)];
+  return [searchableList(a, a.oneWay, ctx.actions, "one-way", requests.listCount), relatedTools(["lookalike-usernames"])];
 });
 
 export const quietView: View = view("quiet", routes.quiet.title, quiet.lead, quiet.inference, (ctx) => (a) => {
@@ -140,5 +142,5 @@ export const quietView: View = view("quiet", routes.quiet.title, quiet.lead, qui
     ];
   }
   if (a.dormant.length === 0) return [emptyState({ icon: "check", spot: "overview", category: "quiet", title: quiet.emptyTitle, body: quiet.emptyBody })];
-  return [searchableList(a, a.dormant, ctx.actions, "dormant", quiet.listCount)];
+  return [searchableList(a, a.dormant, ctx.actions, "dormant", quiet.listCount), relatedTools(["closest-fading"])];
 });

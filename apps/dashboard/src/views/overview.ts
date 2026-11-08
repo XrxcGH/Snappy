@@ -1,15 +1,20 @@
 import { analyze } from "../analysis.ts";
 import type { Analysis } from "../analysis.ts";
-import { brand, overview, routes } from "../copy.ts";
+import { brand, overview, routes, tools } from "../copy.ts";
+import { lists } from "../copy-lists.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatCount, formatDate } from "../format.ts";
 import { routeLink } from "../components/button.ts";
+import { chipIcon } from "../components/category.ts";
 import { findingCard } from "../components/findingCard.ts";
 import { healthGroup } from "../components/healthGroup.ts";
+import { icon } from "../components/icon.ts";
 import { emptyState, noticeGroup, pageHeader, section, stat, statGrid, subsection } from "../components/layout.ts";
 import { issueNotice, notice } from "../components/notice.ts";
+import { relatedTools } from "../components/relatedTools.ts";
 import { region } from "../reactive.ts";
+import { TOOLS } from "../tools/registry.ts";
 import { dataDeps } from "./context.ts";
 import type { View } from "./context.ts";
 
@@ -23,7 +28,7 @@ function render(a: Analysis): Child[] {
   if (a.source === "none") {
     return [emptyState({ icon: "import", spot: "import", title: overview.emptyTitle, body: overview.emptyBody, actions: [routeLink("start", overview.emptyAction, "primary")] })];
   }
-  return [allClearPanel(a), findingsList(a), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];
+  return [allClearPanel(a), findingsList(a), toolsSection(), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];
 }
 
 /** Shown above the findings only when every area was checked and came up empty. */
@@ -75,6 +80,20 @@ function findingsList(a: Analysis): HTMLElement {
   return h("div", { class: "tiles tiles-findings findings" }, ...rows);
 }
 
+/** The Tools hub as one card, so the helpers are found from the first page and not only from the menu. */
+function toolsSection(): HTMLElement {
+  return section(
+    lists.toolsHeading,
+    h(
+      "a",
+      { class: "card card-link tools-card cat-neutral", href: "#/tools" },
+      chipIcon("tools"),
+      h("p", {}, lists.toolsCardText(TOOLS.length)),
+      h("span", { class: "tile-action card-open" }, h("span", {}, tools.open), icon("chevron-right", 16)),
+    ),
+  );
+}
+
 function countsSection(a: Analysis): HTMLElement {
   const friends = a.parsed?.friends.friends.length ?? 0;
   const sent = a.parsed?.friends.sentRequests.length ?? 0;
@@ -104,7 +123,7 @@ function healthNotes(count: number, ...children: Child[]): HTMLElement {
 function healthSection(a: Analysis): HTMLElement {
   if (a.source === "ledger") return section(overview.healthHeading, notice("info", overview.healthFromLedger));
   const all = a.workspace.issues;
-  if (all.length === 0) return section(overview.healthHeading, notice("success", overview.healthGood));
+  if (all.length === 0) return section(overview.healthHeading, notice("success", overview.healthGood), relatedTools(["export-check"]));
   // A Memories note cannot change who looks disappeared, quiet or one-way, so it is not counted in
   // "read these first": it is listed after the others, with a pointer to the page that explains it.
   const memoryNotes = all.filter(isMemoriesIssue);
@@ -154,6 +173,7 @@ function healthSection(a: Analysis): HTMLElement {
             routeLink("memories", overview.healthMemoriesLink),
           ),
       h("p", {}, overview.schemaNote),
+      relatedTools(["export-check"]),
     ),
   );
 }
