@@ -4,7 +4,7 @@
  * the result tables and in the CSV file and nowhere else (not in a note, an announcement, a label or a title).
  */
 import type { ChatEvent, FriendRecord, ParsedExport } from "@snappy-export/core";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import type { State, Workspace } from "../../src/reducer.ts";
@@ -14,6 +14,7 @@ import { copy } from "../../src/tools/reply-speed/copy.ts";
 import { descriptor } from "../../src/tools/reply-speed/index.ts";
 import { computeReplySpeed, csvFileName, friendsCsvText, FRIENDS_SHOWN, OFFSETS } from "../../src/tools/reply-speed/model.ts";
 import { view } from "../../src/tools/reply-speed/view.ts";
+import { forgetPreferredOffset, offsetLabel, rememberOffset } from "../../src/tools/timezone.ts";
 import { RULES, collectCopy, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
@@ -42,10 +43,18 @@ beforeAll(async () => {
   sample = await sampleState();
   names = (base.latest as ParsedExport).friends.friends.map((f) => f.username).filter((n) => n.length >= 5);
 }, 120_000);
+/** A device that is `east` minutes east of UTC (getTimezoneOffset counts the other way). The page starts in the device's zone. */
+const deviceAt = (east: number): void => void vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-east);
 beforeEach(() => {
   resetAnalysisCache();
   said.length = 0;
   saved.length = 0;
+  forgetPreferredOffset();
+  deviceAt(0);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  forgetPreferredOffset();
 });
 
 interface Turns {
@@ -335,6 +344,27 @@ describe("the page", () => {
     expect(text(r.root, "tbody th").filter((t) => /[ap]m$/.test(t))).toEqual(["12 am"]);
     expect(r.root.textContent).toContain(copy.hourLine("UTC+4:00"));
     expect(r.root.querySelector("select")).toBe(select);
+  });
+
+  it("starts in the zone of the device, or the one chosen in Settings, and keeps a pick on this page only", async () => {
+    deviceAt(-300);
+    const [a] = names as [string];
+    const state = real(turns(a, { you: six(10), them: six(10), hour: 20 }));
+    const first = await renderSettled(view, state);
+    expect(first.root.querySelector("#reply-speed-zone option[selected]")?.textContent).toBe("UTC-5:00");
+    expect(first.root.textContent).toContain(copy.hourLine("UTC-5:00"));
+    // 20:00 UTC is 3 pm at UTC-5:00.
+    expect(text(first.root, "tbody th").filter((t) => /[ap]m$/.test(t))).toEqual(["3 pm"]);
+    const select = first.root.querySelector("select") as FakeElement;
+    select.value = "240";
+    select.fire("change");
+    await settled(first.root);
+    expect(first.root.textContent).toContain(copy.hourLine("UTC+4:00"));
+    const again = await renderSettled(view, state);
+    expect(again.root.querySelector("#reply-speed-zone option[selected]")?.textContent).toBe("UTC-5:00");
+    rememberOffset(120);
+    expect((await renderSettled(view, state)).root.querySelector("#reply-speed-zone option[selected]")?.textContent).toBe("UTC+2:00");
+    expect(copy.zoneHelp).not.toContain("starts with UTC");
   });
 
   it("writes each note as a short hedged sentence, from counts alone", async () => {

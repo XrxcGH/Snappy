@@ -6,9 +6,10 @@ import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { usernameText } from "../../components/usernameChip.ts";
 import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
+import { offsetLabel, startingOffset, zoneOptions } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
-import { computeReplySpeed, csvFileName, DEFAULT_PARAMS, friendsCsvText, FRIENDS_SHOWN, OFFSETS } from "./model.ts";
+import { computeReplySpeed, csvFileName, DEFAULT_PARAMS, friendsCsvText, FRIENDS_SHOWN } from "./model.ts";
 import type { ReplySpeedParams, ReplySpeedReport, ReplySpeedResult } from "./model.ts";
 
 export const meta: ToolMeta = { id: "reply-speed", group: "chats", category: "quiet", icon: "queue", needs: ["chats"] };
@@ -116,7 +117,7 @@ function rankings({ report }: ReplySpeedResult): HTMLElement {
 function hourSection({ report, hours: rows }: ReplySpeedResult): HTMLElement {
   return section(
     copy.hourHeading,
-    h("p", {}, copy.hourLine(copy.unitOffset(report.utcOffsetMinutes))),
+    h("p", {}, copy.hourLine(offsetLabel(report.utcOffsetMinutes))),
     dataTable(
       copy.hourCaption,
       [copy.hourHeader, copy.hourYouHeader, copy.hourThemHeader],
@@ -147,12 +148,18 @@ function friends({ report, shown }: ReplySpeedResult): HTMLElement | null {
   );
 }
 
+/**
+ * The page opens in the zone the person's device is in (or the one chosen in Settings), read each time the page opens. A zone
+ * picked on this page stays on this page: it is not remembered for the next one.
+ */
+const START: ReplySpeedParams = Object.defineProperty({ ...DEFAULT_PARAMS }, "utcOffsetMinutes", { get: startingOffset, enumerable: true, configurable: true });
+
 function zoneField(ui: ToolUi<ReplySpeedParams>): HTMLElement {
   const id = "reply-speed-zone";
   const select = h(
     "select",
     { id, class: "input", "data-key": id, "aria-describedby": `${id}-help` },
-    ...OFFSETS.map((minutes) => h("option", { value: String(minutes), selected: minutes === ui.params.utcOffsetMinutes }, copy.unitOffset(minutes))),
+    ...zoneOptions(ui.params.utcOffsetMinutes),
   );
   select.addEventListener("change", () => {
     const minutes = Number(select.value);
@@ -173,7 +180,7 @@ function zoneField(ui: ToolUi<ReplySpeedParams>): HTMLElement {
 export const view = toolView<ReplySpeedResult, ReplySpeedParams>({
   meta,
   copy,
-  params: DEFAULT_PARAMS,
+  params: START,
   compute: computeReplySpeed,
   summary: ({ report }) => (report.summary.youReplies + report.summary.themReplies === 0 ? copy.emptyAnnounce : copy.doneAnnounce(report.summary.youReplies, report.summary.themReplies)),
   isEmpty: ({ report }) => report.summary.youReplies + report.summary.themReplies === 0,

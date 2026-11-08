@@ -6,9 +6,10 @@ import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
 import type { Child } from "../../dom.ts";
 import { formatDate } from "../../format.ts";
+import { startingOffset, zoneOptions } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
-import { buildReminderFile, computeExportReminder, DEFAULT_PARAMS, OFFSETS } from "./model.ts";
+import { buildReminderFile, computeExportReminder, DEFAULT_PARAMS } from "./model.ts";
 import type { ReminderParams, ReminderResult } from "./model.ts";
 
 export const meta: ToolMeta = { id: "export-reminder", group: "your-export", category: "cleanup", icon: "calendar", needs: [] };
@@ -43,13 +44,11 @@ function noteText(n: insights.exportReminder.ReminderNote, result: ReminderResul
 
 const WARNINGS = new Set(["due-date-passed", "last-export-in-future"]);
 
-/** The person's own offset, rounded to one the list offers. Reading the zone is not reading a clock. */
-function deviceOffset(): string {
-  const minutes = -new Date().getTimezoneOffset();
-  return String(OFFSETS.includes(minutes) ? minutes : 0);
-}
-
-const START: ReminderParams = { ...DEFAULT_PARAMS, offset: deviceOffset() };
+/**
+ * The page opens in the zone the person's device is in (or the one chosen in Settings), read each time the page opens. A zone
+ * picked on this page stays on this page: it is not remembered for the next one.
+ */
+const START: ReminderParams = Object.defineProperty({ ...DEFAULT_PARAMS }, "offset", { get: () => String(startingOffset()), enumerable: true, configurable: true });
 
 /** A label above a field, the field, and a short help line under it. */
 function field(id: string, label: string, help: string, control: Child): HTMLElement {
@@ -68,7 +67,7 @@ function controls(ui: ToolUi<ReminderParams>): HTMLElement {
   const zone = h(
     "select",
     { id: "reminder-zone", class: "input", "aria-describedby": "reminder-zone-help", "data-key": "reminder-zone" },
-    ...OFFSETS.map((minutes) => h("option", { value: String(minutes), selected: String(minutes) === p.offset }, copy.unitZone(minutes))),
+    ...zoneOptions(Number(p.offset)),
   );
   zone.addEventListener("change", () => ui.set({ offset: zone.value }));
   // The select draws no native arrow: the chevron is its own icon, like the select on the Cleanup page.

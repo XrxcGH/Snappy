@@ -6,6 +6,7 @@ import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
+import { OFFSETS, offsetLabel, startingOffset } from "../timezone.ts";
 import { copy } from "./copy.ts";
 import { computeMemoriesOnThisDay, DEFAULT_PARAMS } from "./model.ts";
 import type { OnThisDayParams, OnThisDayResult, ResultNote } from "./model.ts";
@@ -14,10 +15,12 @@ export const meta: ToolMeta = { id: "memories-on-this-day", group: "memories", c
 
 /** Days either side to offer. */
 const WINDOWS = [0, 1, 3, 7] as const;
-/** UTC offsets to offer, in minutes: every whole hour from -12 to +14, and the common half and quarter hours. */
-const OFFSETS: readonly number[] = [
-  -720, -660, -600, -570, -540, -480, -420, -360, -300, -240, -210, -180, -120, -60, 0, 60, 120, 180, 210, 240, 270, 300, 330, 345, 360, 390, 420, 480, 525, 540, 570, 600, 630, 660, 720, 765, 780, 840,
-];
+
+/**
+ * The page opens in the zone the person's device is in (or the one chosen in Settings), read each time the page opens. A zone
+ * picked on this page stays on this page: it is not remembered for the next one.
+ */
+const START: OnThisDayParams = Object.defineProperty({ ...DEFAULT_PARAMS }, "offsetMinutes", { get: startingOffset, enumerable: true, configurable: true });
 
 const num = (n: ResultNote, key: string): number => n.params[key] ?? 0;
 
@@ -75,8 +78,8 @@ function controls(ui: ToolUi<OnThisDayParams>): HTMLElement {
     ),
     selectField(
       "otd-offset",
-      copy.offsetLabel,
-      OFFSETS.map((m): [string, string] => [String(m), copy.unitOffset(m)]),
+      copy.zoneLabel,
+      OFFSETS.map((m): [string, string] => [String(m), offsetLabel(m)]),
       String(ui.params.offsetMinutes),
       (v) => ui.set({ offsetMinutes: Number(v) }),
     ),
@@ -130,12 +133,12 @@ function topDaysSection(r: OnThisDayResult): HTMLElement {
 export const view = toolView<OnThisDayResult, OnThisDayParams>({
   meta,
   copy,
-  params: DEFAULT_PARAMS,
+  params: START,
   compute: computeMemoriesOnThisDay,
   isEmpty: (r) => r.counts.dated === 0,
   summary: (r) => (r.counts.dated === 0 ? copy.emptyAnnounce : r.total === 0 ? copy.noneAnnounce(r.windowDays > 0) : copy.foundAnnounce(r.total, r.windowDays > 0)),
   controls,
   render: (r) => [daySection(r), yearsSection(r), topDaysSection(r)],
-  notes: (r): ToolNote[] => [{ kind: "info", text: copy.offsetNote(copy.unitOffset(r.utcOffsetMinutes)) }, ...r.notes.map(noteOf)],
+  notes: (r): ToolNote[] => [{ kind: "info", text: copy.offsetNote(offsetLabel(r.utcOffsetMinutes)) }, ...r.notes.map(noteOf)],
   command: "on-this-day",
 });

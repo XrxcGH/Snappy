@@ -4,7 +4,7 @@
  */
 import { insights } from "@snappy-export/core";
 import type { ParsedExport } from "@snappy-export/core";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import { formatDate } from "../../src/format.ts";
@@ -18,6 +18,7 @@ import { descriptor } from "../../src/tools/export-reminder/index.ts";
 import { buildReminderFile, computeExportReminder, DEFAULT_PARAMS, OFFSETS } from "../../src/tools/export-reminder/model.ts";
 import type { ReminderParams } from "../../src/tools/export-reminder/model.ts";
 import { view } from "../../src/tools/export-reminder/view.ts";
+import { forgetPreferredOffset, offsetLabel, rememberOffset } from "../../src/tools/timezone.ts";
 import { RULES, collectCopy, lint, useNames } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
@@ -48,10 +49,18 @@ beforeAll(async () => {
   const parsed = base.latest as ParsedExport;
   names = [...new Set([...parsed.friends.friends.map((f) => f.username), ...parsed.chats.slice(0, 200).map((c) => c.conversation)])].filter((n) => n.length >= 5);
 }, 120_000);
+/** A device that is `east` minutes east of UTC (getTimezoneOffset counts the other way). The page starts in the device's zone. */
+const deviceAt = (east: number): void => void vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-east);
 beforeEach(() => {
   resetAnalysisCache();
   said.length = 0;
   saved.length = 0;
+  forgetPreferredOffset();
+  deviceAt(0);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  forgetPreferredOffset();
 });
 
 /** A real (not sample) export made from the sample's, exported and read on fixed days. */
@@ -73,9 +82,9 @@ describe("the tool", () => {
   it("offers time zones that core accepts, each one once", () => {
     expect(new Set(OFFSETS).size).toBe(OFFSETS.length);
     for (const minutes of OFFSETS) expect(minutes).toBeGreaterThanOrEqual(-insights.exportReminder.MAX_OFFSET_MINUTES);
-    expect(copy.unitZone(0)).toBe("UTC");
-    expect(copy.unitZone(-300)).toBe("UTC-5:00");
-    expect(copy.unitZone(330)).toBe("UTC+5:30");
+    expect(offsetLabel(0)).toBe("UTC");
+    expect(offsetLabel(-300)).toBe("UTC-5:00");
+    expect(offsetLabel(330)).toBe("UTC+5:30");
     expect(copy.unitClock(0, 5)).toBe("12:05 AM");
     expect(copy.unitClock(13, 30)).toBe("1:30 PM");
   });
@@ -254,6 +263,20 @@ describe("the page", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("starts in the zone of the device, or the one chosen in Settings, and keeps a pick on this page only", async () => {
+    const selected = (r: Rendered): string | undefined => r.root.querySelector("#reminder-zone option[selected]")?.textContent;
+    deviceAt(-300);
+    const first = await renderSettled(view, real());
+    expect(selected(first)).toBe("UTC-5:00");
+    await enter(first, "reminder-zone", "60", "change");
+    expect(selected(await renderSettled(view, real()))).toBe("UTC-5:00");
+    rememberOffset(330);
+    expect(selected(await renderSettled(view, real()))).toBe("UTC+5:30");
+    forgetPreferredOffset();
+    deviceAt(100);
+    expect(selected(await renderSettled(view, real()))).toBe("UTC");
   });
 
   it("works with the sample data and with no data at all, and says when no date is known", async () => {

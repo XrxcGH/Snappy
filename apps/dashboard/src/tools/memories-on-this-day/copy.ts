@@ -20,16 +20,9 @@ export const copy = {
   dateLabel: "Day",
   dateHelpNote: "Leave it blank to use today.",
   windowLabel: "Days either side",
-  offsetLabel: "UTC offset",
+  zoneLabel: "Time zone",
   /** "None", "1 day", "3 days". */
   unitWindow: (days: number): string => (days === 0 ? "None" : countOf(days, "day", "days")),
-  /** "UTC", "UTC-5", "UTC+5:30". */
-  unitOffset: (minutes: number): string => {
-    if (minutes === 0) return "UTC";
-    const abs = Math.abs(minutes);
-    const rest = abs % 60;
-    return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}${rest === 0 ? "" : `:${String(rest).padStart(2, "0")}`}`;
-  },
 
   dayHeading: "On this day",
   lookingLine: (date: string, today: boolean, windowDays: number) =>
@@ -75,6 +68,6 @@ export const copy = {
   invalidDayNote: "Snappy cannot use that day. Pick another one.",
   windowNote: (days: number) => `The days either side were changed to ${days}.`,
   leapNote: (n: number) => `${countOf(n, "Memory", "Memories")} from Feb 29 ${n === 1 ? "is" : "are"} shown on Feb 28, since this year has no Feb 29.`,
-  offsetInvalidNote: "That UTC offset is not valid, so Snappy used UTC.",
+  offsetInvalidNote: "That time zone is not valid, so Snappy used UTC.",
   otherNote: "Snappy noted something it cannot describe here.",
 } as const;

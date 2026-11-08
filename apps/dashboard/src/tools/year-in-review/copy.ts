@@ -27,14 +27,7 @@ export const copy = {
   yearHelp: "Snappy starts with the latest year that has dates.",
   latestLabel: "Latest year",
   zoneLabel: "Time zone",
-  zoneHelp: "Months and days follow this time zone. Snappy starts with UTC.",
-  /** "UTC", "UTC+2:00", "UTC-5:30". A piece that code joins into a sentence is a "unit" key. */
-  unitOffset: (minutes: number): string => {
-    if (!Number.isFinite(minutes)) return "";
-    if (minutes === 0) return "UTC";
-    const abs = Math.abs(minutes);
-    return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-  },
+  zoneHelp: "Months and days follow this time zone. Snappy starts with the zone of this device.",
 
   summaryAnnounce: (year: number, count: number) => (isYear(year) ? `Year in review for ${year} counted ${things(count)}.` : ""),
   quietAnnounce: (year: number) => (isYear(year) ? `Year in review found no chats or Snaps in ${year}.` : ""),

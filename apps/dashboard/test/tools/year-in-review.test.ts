@@ -5,7 +5,7 @@
  */
 import { insights } from "@snappy-export/core";
 import type { ChatEvent, DeletedFriendRecord, FriendRecord, MemoryItem, ParsedExport } from "@snappy-export/core";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import type { State, Workspace } from "../../src/reducer.ts";
@@ -15,6 +15,7 @@ import { copy } from "../../src/tools/year-in-review/copy.ts";
 import { descriptor } from "../../src/tools/year-in-review/index.ts";
 import { availableYears, computeYear, OFFSETS } from "../../src/tools/year-in-review/model.ts";
 import { view } from "../../src/tools/year-in-review/view.ts";
+import { forgetPreferredOffset, offsetLabel, rememberOffset } from "../../src/tools/timezone.ts";
 import { RULES, collectCopy, lint, sentences, words } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
@@ -46,10 +47,18 @@ beforeAll(async () => {
   base = await sampleWorkspace();
   sample = await sampleState();
 }, 120_000);
+/** A device that is `east` minutes east of UTC (getTimezoneOffset counts the other way). The page starts in the device's zone. */
+const deviceAt = (east: number): void => void vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-east);
 beforeEach(() => {
   resetAnalysisCache();
   said.length = 0;
   saved.length = 0;
+  forgetPreferredOffset();
+  deviceAt(0);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  forgetPreferredOffset();
 });
 
 const chat = (at: number, direction: ChatEvent["direction"] = "sent", kind = "TEXT"): ChatEvent => ({ conversation: CANARY, isGroup: false, direction, kind, at });
@@ -295,6 +304,22 @@ describe("the page", () => {
     expect(tiles(r.root)[0]).toEqual([copy.chatsLabel, "5"]);
   });
 
+  it("starts in the zone of the device, or the one chosen in Settings, and keeps a pick on this page only", async () => {
+    deviceAt(-300);
+    const state = withExport(crafted());
+    const first = await renderSettled(view, state);
+    const selected = (root: FakeElement): string | undefined => root.querySelector("#year-in-review-zone option[selected]")?.textContent;
+    expect(selected(first.root)).toBe("UTC-5:00");
+    const zone = first.root.querySelector("#year-in-review-zone") as FakeElement;
+    zone.value = "840";
+    zone.fire("change");
+    await settled(first.root);
+    expect(selected((await renderSettled(view, state)).root)).toBe("UTC-5:00");
+    rememberOffset(60);
+    expect(selected((await renderSettled(view, state)).root)).toBe("UTC+1:00");
+    expect(copy.zoneHelp).not.toContain("starts with UTC");
+  });
+
   it("recomputes for another time zone, repaints only the result and keeps the control", async () => {
     const { root, select } = await year2025();
     const zone = root.querySelector("#year-in-review-zone") as FakeElement;
@@ -471,8 +496,8 @@ describe("the copy", () => {
     expect(copy.unitGapDays(1)).toBe("1 day");
     expect(copy.unitGapDays(12)).toBe("12 days");
     expect(copy.unitGapDays(-1)).toBe("");
-    expect(copy.unitOffset(-330)).toBe("UTC-5:30");
-    expect(copy.unitOffset(0)).toBe("UTC");
+    expect(offsetLabel(-330)).toBe("UTC-5:30");
+    expect(offsetLabel(0)).toBe("UTC");
     expect(copy.unknownNote(60)).toBe("About 60% have no known direction, so sent and received may be off.");
     expect(copy.months).toHaveLength(12);
     expect(copy.monthsLong).toHaveLength(12);

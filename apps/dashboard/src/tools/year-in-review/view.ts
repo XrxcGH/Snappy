@@ -6,9 +6,10 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h, setVar } from "../../dom.ts";
 import { formatCount, formatDate, formatPercent } from "../../format.ts";
+import { offsetLabel, OFFSETS, startingOffset } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
-import { availableYears, computeYear, DEFAULT_PARAMS, OFFSETS } from "./model.ts";
+import { availableYears, computeYear, DEFAULT_PARAMS } from "./model.ts";
 import type { YearParams, YearView } from "./model.ts";
 
 export const meta: ToolMeta = { id: "year-in-review", group: "your-export", category: "cleanup", icon: "calendar", needs: ["export"] };
@@ -180,7 +181,7 @@ function controls(ui: ToolUi<YearParams>): HTMLElement {
     "year-in-review-zone",
     copy.zoneLabel,
     copy.zoneHelp,
-    OFFSETS.map((minutes) => ({ value: String(minutes), text: copy.unitOffset(minutes), selected: minutes === ui.params.utcOffsetMinutes })),
+    OFFSETS.map((minutes) => ({ value: String(minutes), text: offsetLabel(minutes), selected: minutes === ui.params.utcOffsetMinutes })),
     (value) => {
       const minutes = Number(value);
       if (Number.isFinite(minutes)) ui.set({ utcOffsetMinutes: minutes });
@@ -189,10 +190,16 @@ function controls(ui: ToolUi<YearParams>): HTMLElement {
   return h("div", { class: "year-controls" }, yearField, zoneField);
 }
 
+/**
+ * The page opens in the zone the person's device is in (or the one chosen in Settings), read each time the page opens. A zone
+ * picked on this page stays on this page: it is not remembered for the next one.
+ */
+const START: YearParams = Object.defineProperty({ ...DEFAULT_PARAMS }, "utcOffsetMinutes", { get: startingOffset, enumerable: true, configurable: true });
+
 export const view = toolView<YearView, YearParams>({
   meta,
   copy,
-  params: DEFAULT_PARAMS,
+  params: START,
   compute: computeYear,
   summary: ({ result, activity }) =>
     result.year === null ? copy.emptyAnnounce : activity === null ? copy.quietAnnounce(result.year) : copy.summaryAnnounce(result.year, activity.total.total),

@@ -22,12 +22,6 @@ export const copy = {
   alertHelp: "Whole days, from 0 to 30. Leave it empty for no alert.",
   zoneHeader: "Time zone",
   zoneHelp: "It decides which calendar day your dates fall on.",
-  /** An offset in minutes east of UTC as a label, such as "UTC-5:00". A piece that code joins into a sentence is a unit key. */
-  unitZone: (minutes: number): string => {
-    if (minutes === 0) return "UTC";
-    const abs = Math.abs(minutes);
-    return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-  },
 
   reminderHeading: "Your reminder",
   dueLine: (date: string) => `Request your next export on ${date}.`,

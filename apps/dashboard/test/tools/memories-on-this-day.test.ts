@@ -3,7 +3,7 @@
  * Memory ids and usernames carry canaries that must never reach a result, a note, an announcement or the page.
  */
 import type { MemoryItem, ParsedExport } from "@snappy-export/core";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import { initialState } from "../../src/reducer.ts";
@@ -14,6 +14,7 @@ import { copy } from "../../src/tools/memories-on-this-day/copy.ts";
 import { descriptor } from "../../src/tools/memories-on-this-day/index.ts";
 import { computeMemoriesOnThisDay, DEFAULT_PARAMS } from "../../src/tools/memories-on-this-day/model.ts";
 import { view } from "../../src/tools/memories-on-this-day/view.ts";
+import { forgetPreferredOffset, offsetLabel, rememberOffset } from "../../src/tools/timezone.ts";
 import { RULES, collectCopy, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
@@ -27,9 +28,17 @@ beforeAll(async () => {
   base = await sampleWorkspace();
   sample = await sampleState();
 }, 120_000);
+/** A device that is `east` minutes east of UTC (getTimezoneOffset counts the other way). The page starts in the device's zone. */
+const deviceAt = (east: number): void => void vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-east);
 beforeEach(() => {
   resetAnalysisCache();
   said.length = 0;
+  forgetPreferredOffset();
+  deviceAt(0);
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  forgetPreferredOffset();
 });
 
 /** The reference date of the sample (and of the crafted exports below): Nov 6, 2026, 12:00 UTC. */
@@ -240,16 +249,17 @@ describe("the page", () => {
 });
 
 describe("the controls", () => {
-  it("offers a day, the days either side and a UTC offset, labeled, with today and UTC as the start", async () => {
+  it("offers a day, the days either side and a time zone, labeled, with today and the device's zone as the start", async () => {
     const { root } = await renderSettled(view, real());
-    expect(text(root, "label.label")).toEqual([copy.dateLabel, copy.windowLabel, copy.offsetLabel]);
+    expect(text(root, "label.label")).toEqual([copy.dateLabel, copy.windowLabel, "Time zone"]);
+    expect(copy.zoneLabel).toBe("Time zone");
     const date = root.querySelector("#otd-date") as FakeElement;
     expect(date.getAttribute("type")).toBe("date");
     expect(date.getAttribute("aria-describedby")).toBe("otd-date-help");
     expect(root.querySelector("#otd-date-help")?.textContent).toBe(copy.dateHelpNote);
     expect(text(root.querySelector("#otd-window") as FakeElement, "option")).toEqual(["None", "1 day", "3 days", "7 days"]);
     const offsets = text(root.querySelector("#otd-offset") as FakeElement, "option");
-    expect(offsets).toEqual(expect.arrayContaining(["UTC", "UTC-5", "UTC+1", "UTC+5:30", "UTC-12", "UTC+14"]));
+    expect(offsets).toEqual(expect.arrayContaining(["UTC", "UTC-5:00", "UTC+1:00", "UTC+5:30", "UTC-12:00", "UTC+14:00"]));
     expect(root.querySelector("#otd-window option[selected]")?.textContent).toBe("None");
     expect(root.querySelector("#otd-offset option[selected]")?.textContent).toBe("UTC");
   });
@@ -281,6 +291,32 @@ describe("the controls", () => {
     expect(r.root.textContent).toContain(copy.foundLine(4, 3, true));
     expect(tableRows(r.root.querySelectorAll("table")[0] as FakeElement).map((row) => row[0])).toEqual(["2025", "2024", "2023"]);
     expect(said.at(-1)).toBe(copy.foundAnnounce(4, true));
+  });
+
+  it("starts in the zone the device is in, so an evening capture in the Americas is on its own day", async () => {
+    deviceAt(-300);
+    const late = real([memory("ZQCANARY-late", at(2025, 11, 7, 2))]);
+    const r = await renderSettled(view, late);
+    expect(r.root.querySelector("#otd-offset option[selected]")?.textContent).toBe("UTC-5:00");
+    expect(text(r.root, ".tool-notes li")).toContain(copy.offsetNote("UTC-5:00"));
+    // 02:00 UTC on Nov 7 is 9 pm on Nov 6 in New York: today's date there is Nov 6, and the Memory is found on it.
+    expect(r.root.textContent).toContain(copy.foundLine(1, 1, false));
+    // A zone picked on the page is kept for that page only: the next visit starts at the device's zone again.
+    const offset = r.root.querySelector("#otd-offset") as FakeElement;
+    offset.value = "330";
+    offset.fire("change");
+    await settled(r.root);
+    expect(text(r.root, ".tool-notes li")).toContain(copy.offsetNote("UTC+5:30"));
+    const again = await renderSettled(view, late);
+    expect(again.root.querySelector("#otd-offset option[selected]")?.textContent).toBe("UTC-5:00");
+  });
+
+  it("starts in the zone chosen in Settings when there is one, and in UTC when the device's zone is not offered", async () => {
+    rememberOffset(60);
+    expect((await renderSettled(view, real())).root.querySelector("#otd-offset option[selected]")?.textContent).toBe("UTC+1:00");
+    forgetPreferredOffset();
+    deviceAt(100);
+    expect((await renderSettled(view, real())).root.querySelector("#otd-offset option[selected]")?.textContent).toBe("UTC");
   });
 
   it("recomputes for a UTC offset and names it in a note", async () => {
@@ -363,8 +399,8 @@ describe("its words", () => {
     expect(collectCopy({ copy }).map((e) => e.text).join(" ")).not.toMatch(/!/);
   });
 
-  it("names the offsets and windows the way the command does", () => {
-    expect([0, -300, 330, 345, 840].map(copy.unitOffset)).toEqual(["UTC", "UTC-5", "UTC+5:30", "UTC+5:45", "UTC+14"]);
+  it("names the zones as UTC+2:00 everywhere, and the windows the way the command does", () => {
+    expect([0, -300, 330, 345, 840].map(offsetLabel)).toEqual(["UTC", "UTC-5:00", "UTC+5:30", "UTC+5:45", "UTC+14:00"]);
     expect([0, 1, 7].map(copy.unitWindow)).toEqual(["None", "1 day", "7 days"]);
     expect(copy.unitAgo(0)).toBe("Same year");
   });
