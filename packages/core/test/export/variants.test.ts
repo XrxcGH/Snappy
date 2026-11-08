@@ -4,7 +4,7 @@ import { buildVariants, runVariant } from "../../../../tools/import-check/varian
 describe("export variants report the expected issue codes", () => {
   const variants = buildVariants();
 
-  it("has the variants the audit matrix names", () => {
+  it("has every layout variant it should", () => {
     expect(variants.map((v) => v.id)).toEqual(expect.arrayContaining(["v00", "v01", "v02", "v06", "v15", "v20", "v21a", "v21c", "v21d", "v21e", "v33"]));
   });
 

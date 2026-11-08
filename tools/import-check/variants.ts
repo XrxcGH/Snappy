@@ -166,6 +166,17 @@ export function buildVariants(): Variant[] {
   add("v10", "friends nested one level", [part(withFriends({ "User Data": friendsJson() }))], ["friends-layout-unknown","friends-no-sections"], 0);
   const stamps = ["2023-04-01 12:30:00 UTC", "2023-04-01T12:30:00+02:00", 1680352200, "1680352200000", "04/05/2023", "Apr 5, 2023 10:00 PM"];
   add("v11", "six date shapes, two of them guesses", [part(withFriends({ Friends: stamps.map((d, i) => ({ Username: `friend_${i}`, "Creation Timestamp": d })) }))], ["dates-read-loosely"], 6);
+  const microsOnly = (flagKey: string, flagged: boolean) =>
+    Object.fromEntries(range(30).map((i) => [`friend_${i}`, [{ From: `friend_${i}`, "Media Type": "TEXT", "Created(microseconds)": String(1706781600000000 + i * 1000000), ...(flagged ? { [flagKey]: false } : {}) }]]));
+  add("v12", "times as microseconds in a string, no Created", [part({ ...baseFiles(), "json/chat_history.json": microsOnly("IsSender", true) })], [], 30);
+  add("v13", "another IsSender spelling, and Snaps without the flag", [part({ ...baseFiles(), "json/chat_history.json": microsOnly("is_sender", true), "json/snap_history.json": microsOnly("IsSender", false) })], ["snap-direction-unknown"], 30);
+  last().events = { sent: 0, received: 30, unknown: 30, groups: 0 };
+  add("v14", "duplicates, case, a numeric username and entries that are not records", [part(withFriends({ Friends: [{ Username: "Amy" }, { Username: "amy" }, { Username: "12345" }, null, "text"] }))], ["duplicate-usernames", "friends-invalid-entries"], 3);
+  const old = (name: string): Record<string, unknown> => ({ Username: name, "Creation Timestamp": "2018-02-01 10:00:00 UTC" });
+  add("v25", "friends all newer than the oldest records", [part(withFriends({ Friends: range(10).map((i) => ({ Username: `friend_${i}`, "Creation Timestamp": "2024-02-01 10:00:00 UTC" })), "Friend Requests Sent": [old("sent_0")] }))], ["possibly-date-limited"], 10);
+  const bareMemories = range(3).map((i) => ({ Date: `2023-06-0${i + 1} 10:00:00`, "Media Type": i % 2 === 0 ? "PHOTO" : "VIDEO", "Download Link": `https://example.invalid/m?id=${i}` }));
+  add("v26", "a bare list of Memories", [part({ ...baseFiles(), "json/memories_history.json": bareMemories })], [], 30);
+  add("v27", "PHOTO and VIDEO types, dates without a zone", [part({ ...baseFiles(), "json/memories_history.json": { "Saved Media": bareMemories } })], [], 30);
   add("v15", "empty Friends with deleted friends listed", [part(withFriends({ Friends: [], "Deleted Friends": range(5).map((i) => ({ Username: `gone_${i}`, Date: stamp(i) })) }))], ["friends-empty-but-deleted"], 0);
   add("v20", "a ZIP inside a ZIP", [{ name: "mydata~1700000000000.zip", bytes: zipSync({ "mydata~1700000000000.zip": [zipOf(baseFiles()), { level: 0 }] }) }], ["nested-zip"], 0);
   add("v21a", "empty file", [{ name: "mydata~1700000000000.zip", bytes: new Uint8Array(0) }], ["zip-unreadable"], 0);
