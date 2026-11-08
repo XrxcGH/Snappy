@@ -9,6 +9,7 @@ import { parseFlags } from "../args.ts";
 import type { OptionSpec } from "../args.ts";
 import { CliError } from "../errors.ts";
 import type { Io } from "../io.ts";
+import { noun } from "../format.ts";
 import { resolveZipPaths, withReaders } from "../inputs.ts";
 
 export const INSPECT_USAGE = `Usage: snappy-export inspect <ZIP files or folder...> [--show-keys] [--layout] [--memory-links] [--mtime-check] [--checks-only]
@@ -27,6 +28,7 @@ Options
   --memory-links   Check whether Memories link to files by an identifier. Counts only.
   --mtime-check    Check whether zip times match your Memories dates. Counts only.
   --checks-only    Print only the checks you asked for.
+  --no-color       Plain text. The report has no color to turn off.
 `;
 
 /** The options this command accepts, shared with the in-app command catalog's checks. */
@@ -36,6 +38,7 @@ export const INSPECT_OPTIONS: OptionSpec = {
   "memory-links": { type: "boolean" },
   "mtime-check": { type: "boolean" },
   "checks-only": { type: "boolean" },
+  "no-color": { type: "boolean" },
   help: { type: "boolean", short: "h" },
 };
 
@@ -45,6 +48,7 @@ interface Flags {
   "memory-links"?: boolean;
   "mtime-check"?: boolean;
   "checks-only"?: boolean;
+  "no-color"?: boolean;
   help?: boolean;
 }
 
@@ -69,7 +73,8 @@ export async function inspectCommand(args: string[], io: Io): Promise<number> {
       checksOnly: flags["checks-only"] === true,
     }),
   );
+  // Nothing readable at all: say so in plain words first, and through the exit code too.
+  if (!report.readable) io.out.write(`${noun(paths.length, "Snappy could not read this file as a ZIP file.", "Snappy could not read any of these files as ZIP files.")}\n\n`);
   io.out.write(report.text);
-  // Nothing readable at all: say so through the exit code too.
   return report.readable ? 0 : 2;
 }

@@ -1,4 +1,5 @@
 /** snappy-export help: the overview, or one command's usage. */
+import { parseFlags } from "../args.ts";
 import { CliError } from "../errors.ts";
 import { INSIGHT_COMMANDS } from "../insight-commands.ts";
 import type { InsightGroup } from "../insights-command.ts";
@@ -66,7 +67,9 @@ function rowsOf(group: InsightGroup | "More"): Row[] {
 }
 
 export function helpCommand(args: string[], io: Io, version: string): number {
-  const topic = args[0];
+  // help takes --no-color like every command, before or after the topic. Any other option is a mistake.
+  const { values: flags, positionals } = parseFlags<{ "no-color"?: boolean }>("help", args, { "no-color": { type: "boolean" }, help: { type: "boolean", short: "h" } });
+  const topic = positionals[0];
   if (topic !== undefined) {
     const usage = Object.hasOwn(USAGE, topic) ? USAGE[topic] : undefined;
     if (usage === undefined) {
@@ -76,7 +79,7 @@ export function helpCommand(args: string[], io: Io, version: string): number {
     return 0;
   }
 
-  const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: args.includes("--no-color") });
+  const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
   const width = Math.max(...GROUPS.flatMap((g) => rowsOf(g).map((r) => r.synopsis.length)));
   const listing = GROUPS.flatMap((group) => [
     term.bold(group),

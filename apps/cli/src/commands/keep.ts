@@ -26,6 +26,7 @@ Options
   --list                    Show your keep list. Add no names.
   --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
+  --no-color                Plain text. The output has no color to turn off.
 
 The passphrase comes from --passphrase-file, then SNAPPY_PASSPHRASE, then a hidden prompt.
 `;
@@ -35,6 +36,7 @@ export const KEEP_OPTIONS: OptionSpec = {
   ...HISTORY_PATH_OPTIONS,
   list: { type: "boolean" },
   "passphrase-file": { type: "string" },
+  "no-color": { type: "boolean" },
   help: { type: "boolean", short: "h" },
 };
 
@@ -43,6 +45,7 @@ interface Flags {
   ledger?: string;
   list?: boolean;
   "passphrase-file"?: string;
+  "no-color"?: boolean;
   help?: boolean;
 }
 

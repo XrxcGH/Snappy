@@ -61,10 +61,29 @@ describe("snappy-export inspect", () => {
     writeFileSync(junk, "not a zip");
     const { code, out } = await run(["inspect", junk]);
     expect(code).toBe(2);
+    expect(out.startsWith("Snappy could not read this file as a ZIP file.\n\n")).toBe(true);
     expect(out).toContain("note: zip unreadable");
+    const second = join(dir, "second.zip");
+    writeFileSync(second, "also not a zip");
+    const several = await run(["inspect", junk, second]);
+    expect(several.out.startsWith("Snappy could not read any of these files as ZIP files.\n\n")).toBe(true);
     const checks = await run(["inspect", junk, "--layout", "--checks-only"]);
     expect(checks.code).toBe(2);
     expect(checks.out).toContain("note: zip unreadable");
+  });
+
+  it("does not put the plain sentence on a report it could read", async () => {
+    const { later } = writeDemoPair(tempDir("insp"));
+    expect((await run(["inspect", later])).out).not.toContain("could not read");
+  });
+
+  it("accepts --no-color, which changes nothing because the report has no color", async () => {
+    const { later } = writeDemoPair(tempDir("insp"));
+    const plain = await run(["inspect", later]);
+    const flagged = await run(["inspect", later, "--no-color"]);
+    expect(flagged.code).toBe(0);
+    expect(flagged.err).toBe("");
+    expect(flagged.out).toBe(plain.out);
   });
 
   it("needs an export, and says how to ask for help", async () => {

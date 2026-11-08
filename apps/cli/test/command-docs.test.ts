@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 import { INSIGHT_COMMANDS } from "../src/insight-commands.ts";
 import { COMMAND_NAMES } from "../src/main.ts";
-import { COMMAND_ALIASES } from "../src/cli.ts";
+import { COMMAND_ALIASES, COMMAND_OPTIONS } from "../src/cli.ts";
 import { run } from "./helpers.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -41,6 +41,23 @@ describe("the command list", () => {
     for (const c of INSIGHT_COMMANDS) expect(COMMAND_NAMES, c.name).toContain(c.name);
     for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "history", "demo"]) expect(COMMAND_NAMES, name).toContain(name);
     expect(new Set(COMMAND_NAMES).size, "no name is registered twice").toBe(COMMAND_NAMES.length);
+  });
+});
+
+describe("--no-color", () => {
+  const COMMANDS = ALL.filter((name) => name !== "help");
+
+  it.each(COMMANDS)("%s accepts it, and says so in its help", async (name) => {
+    expect(Object.keys(COMMAND_OPTIONS[name] ?? {}), name).toContain("no-color");
+    const { code, out, err } = await run([name, "--no-color", "--help"]);
+    expect(err, name).toBe("");
+    expect(code, name).toBe(0);
+    expect(out, name).toContain("--no-color");
+  });
+
+  it("is accepted by help, and the older names take it too", async () => {
+    expect((await run(["help", "--no-color"])).code).toBe(0);
+    for (const alias of Object.keys(COMMAND_ALIASES)) expect((await run([alias, "--no-color", "--help"])).err, alias).toBe("");
   });
 });
 
