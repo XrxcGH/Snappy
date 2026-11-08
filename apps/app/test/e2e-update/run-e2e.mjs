@@ -133,7 +133,7 @@ const removeEverything = () => {
   rmSync(DATA_DIR, retry);
   rmSync(path.join(process.env.APPDATA, "com.snappy.e2e"), retry);
   // A silent install makes the desktop shortcut, as Tauri's template does. The uninstaller removes it, but a run cut short may not have.
-  ps(`Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Snappy E2E.lnk') -Force -ErrorAction SilentlyContinue`);
+  ps(`Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Snappy E2E.lnk') -Force -ErrorAction SilentlyContinue; exit 0`);
   ps(`Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors\\Snappy E2E' -Recurse -Force -ErrorAction SilentlyContinue; if (-not (Get-ChildItem 'HKCU:\\Software\\Snappy contributors' -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors' -Force -ErrorAction SilentlyContinue }`);
 };
 function launch(endpoint) {

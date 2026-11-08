@@ -90,7 +90,7 @@ Build rules (`build.rs`, `build_guards.rs`): with `SNAPPY_RELEASE=1` the build f
 
 What the tests cover without a window: `cargo test --lib` runs the whole path against a loopback server and the real WinHTTP, with TEST signatures; `cargo test --lib -- --ignored self_signed` checks that a self-signed HTTPS server is refused (needs `node` and `openssl`); `SNAPPY_RUN_CARGO_TESTS=1 npx vitest run apps/app/test/sign-release.test.ts` signs with a throwaway key and checks with the real verifier; `PLAYWRIGHT_DIR=<dir> npx vitest run apps/app/test/update-ui.test.ts` drives the built page in headless Chromium; `node apps/app/tools/check-web-build-unchanged.mjs <ref>` proves the web build did not change.
 
-What needs a window or an install, and has not been run: the update drill in `test/e2e-update`, the `/UPDATE` installer behavior over a real install, WinHTTP behind a corporate proxy or PAC file, and the real GitHub redirect chain.
+What needs a window or an install: the update drill in `test/e2e-update` (hand-run; it covers `/UPDATE` over a real per-user install against a loopback server, see its README for the run and what stays manual). Not run anywhere: WinHTTP behind a corporate proxy or PAC file, and the real GitHub redirect chain.
 
 ## Privacy posture of this shell
 

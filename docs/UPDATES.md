@@ -1,6 +1,6 @@
 # Updates: decision record
 
-Status: built and tested without a window, not released. The wording in “Wording awaiting the owner’s approval” is a draft that the owner has not approved. The real-install checks are listed in “What has not been run”.
+Status: built, not released. The update drill (see “What the drill ran”) was run with test keys against a loopback server standing in for GitHub, and the installers were run on one Windows 11 computer. No real release exists, so nothing has been checked against the live GitHub addresses. The wording in “Wording awaiting the owner’s approval” is a draft that the owner has not approved. What was not run is listed in “What has not been run”.
 
 ## What changed, and why
 
@@ -76,13 +76,11 @@ Headless captures of the built desktop page with a scripted stand-in for the she
 - Signing and checking: `apps/app/tools/sign-release.mjs`, `apps/app/src-tauri/examples/verify_manifest.rs`, `.github/workflows/verify-published.yml`. Steps: [UPDATE-RUNBOOKS.md](UPDATE-RUNBOOKS.md).
 - The Windows transport is the system’s WinHTTP, called from one file. If it misbehaves behind a proxy on a real machine, the fallback is the Tauri updater plugin, wrapped with its own address pinning and limits and with no updater permission granted to the page. That switch has not been built.
 
-## What has not been run
-
 ## What the drill ran
 
-The update drill (`apps/app/test/e2e-update`) was run in full on 8 November 2026, on one Windows 11 computer, from an ordinary shell: three test installers built with test keys under a separate identity, one installed per user, and a loopback server standing in for GitHub. All 34 of its checks passed in the last full run: an update found, signature-checked, staged, installed per user at the next launch with no administrator prompt and the app’s data kept; a tampered installer, a wrong key, a signature made for another file name, a stripped signature, a wrong address, a foreign redirect, an oversize installer, one with no length and one with a content encoding, each refused; a downgrade and the same version ignored; a dead server and the switch off silent; no request on the first launch; and a rotation to the recovery key. It cleaned up after itself.
+The update drill (`apps/app/test/e2e-update`) was run in full on 8 November 2026, on one Windows 11 computer, from an ordinary shell: three test installers built with test keys under a separate identity, one installed per user, and a loopback server standing in for GitHub. All 36 of its checks passed in the last full run (on the tree rebased onto `main`, with the drill changed as described below): an update found, signature-checked, staged, installed per user at the next launch with no administrator prompt and the app’s data kept; a tampered installer, a wrong key, a signature made for another file name, a stripped signature, a wrong address, a foreign redirect, an oversize installer, one with no length and one with a content encoding, each refused; a downgrade and the same version, each carrying a signature, ignored because of the version comparison (the manifest was accepted and counted, and the installer was never requested); a dead server and the switch off silent; no request on the first launch; and a rotation to the recovery key. It cleaned up after itself, apart from one registry key that a mistake in the drill's own new cleanup step left (fixed, and the key was removed by hand).
 
-It found three real problems on the way, which are fixed and covered by tests: every installed copy said it could not update itself (the installer’s record was looked up under an empty publisher), the first launch sent its check while the first-run notice was still on screen, and the drill’s own scripts had two mistakes (see the README in that folder). The drill’s own failure on the sandboxed shell that first started it was not explained beyond a likely cause.
+It found three real problems on the way, which are fixed and covered by tests: every installed copy said it could not update itself (the installer’s record was looked up under an empty publisher), the first launch sent its check while the first-run notice was still on screen, and the drill’s own scripts had two mistakes (see the README in that folder). A review of the drill then found that it ended every `snappy.exe` on the computer, including a real Snappy that was open, and that its downgrade and same-version scenarios sent an empty signature, so the manifest was refused before the versions were compared. The test program is now named `snappy-e2e.exe` and is stopped by path, and those two scenarios carry a signature and check that the version comparison decided. The drill’s own failure on the sandboxed shell that first started it was not explained beyond a likely cause.
 
 ## What has not been run
 
@@ -90,7 +88,7 @@ The drill used the real `/UPDATE` installer path, but only with test builds and 
 
 ## Installer facts
 
-These were read from the NSIS script that the Tauri tooling generated for the Windows beta build (`target/release/nsis/x64/installer.nsi`, tauri-cli 2.12). They were not run: an install is a step for the first-release drill.
+These were read from the NSIS script that the Tauri tooling generated for the Windows beta build (`target/release/nsis/x64/installer.nsi`, tauri-cli 2.12). They describe the generated installer; the drill and the installer runs described above and in [RELEASES.md](RELEASES.md) exercised them on one computer.
 
 - The program starts the installer with `/P /UPDATE /R`. `/P` is the passive progress window, `/UPDATE` is update mode, and `/R` starts the app again when the install ends (only in passive and silent modes).
 - In update mode the installer skips the reinstall page, does not run the uninstaller first, skips the WebView2 download, and does not delete app data. The uninstaller removes the app’s data folders only when the person ticks the box in the uninstaller and update mode is off.
@@ -98,4 +96,4 @@ These were read from the NSIS script that the Tauri tooling generated for the Wi
 - The per-user installer records its folder in `HKCU\Software\<publisher>\<product name>` (the default value), and as `InstallLocation` under `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<product name>`. The program reads the first of these to decide whether it is the installed copy.
 - The program file carries the version as its product and file version (`0.1.0-beta.2` for the beta). The installer file carries the numeric version.
 
-Not run: the interactive installer, `/UPDATE` over a real install, data preservation across an update, Smart App Control, and an install on a machine without WebView2.
+Not run: Smart App Control, an install on a machine without WebView2, and a first install by double-click with the SmartScreen warning. `/UPDATE` over an install and the data kept across it were run by the drill; the wizard was run once by hand (see RELEASES.md).
