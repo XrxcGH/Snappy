@@ -18,6 +18,8 @@ export interface HarnessOptions {
   columns?: number;
   outCap?: number;
   coarse?: boolean;
+  /** The version label the page asks the commands to report (the desktop app sends its own). */
+  version?: string;
   locks?: LockManagerLike;
   /** Called once with a function that sends a message to the helper, before the run request. */
   beforeRun?: (send: (to: ToWorker) => void) => void;
@@ -108,6 +110,7 @@ export function runInHelper(argv: string[], options: HarnessOptions = {}): Promi
       columns: options.columns ?? 80,
       coarse: options.coarse ?? false,
       outCap: options.outCap ?? 256 * 1024 * 1024,
+      ...(options.version === undefined ? {} : { version: options.version }),
     } satisfies ToWorker);
   });
 }

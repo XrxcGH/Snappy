@@ -5,6 +5,7 @@
  * instead of failing.
  */
 import { announce as speak } from "../announce.ts";
+import { platform } from "../platform.ts";
 import type { VaultStore } from "../vault.ts";
 import { createTerminalController } from "./controller.ts";
 import type { TerminalController } from "./controller.ts";
@@ -53,6 +54,8 @@ export interface SessionOptions {
   setTimer?: (fn: () => void, ms: number) => () => void;
   /** A touch device. Default: ask the browser. */
   coarse?: boolean;
+  /** The version label the commands report. Default: the desktop app's own label, if it set one. */
+  version?: () => string | undefined;
 }
 
 const isCoarse = (): boolean => {
@@ -86,6 +89,7 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
       }),
     outCap,
     coarse,
+    version: options.version ?? (() => platform().release?.version),
   });
   const controller = createTerminalController({
     runner,

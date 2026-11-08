@@ -25,7 +25,12 @@ export interface RunRequest {
   coarse: boolean;
   /** Most bytes the virtual output folder may hold. */
   outCap: number;
+  /** The version the commands report, when the app that hosts the page has its own label (the desktop app). */
+  version?: string;
 }
+
+/** A version label as the app writes it: 0.1.0 or 0.1.0-beta.2. Anything else is dropped. */
+export const isVersionLabel = (v: unknown): v is string => typeof v === "string" && /^\d{1,5}\.\d{1,5}\.\d{1,6}(-[0-9A-Za-z.]{1,32})?$/.test(v);
 
 export type ToWorker =
   | RunRequest
@@ -95,7 +100,7 @@ export function parseToWorker(message: unknown): ToWorker | null {
   if (!isRecord(message)) return null;
   switch (message.type) {
     case "run": {
-      const { runId, argv, files, columns, coarse, outCap } = message;
+      const { runId, argv, files, columns, coarse, outCap, version } = message;
       if (typeof runId !== "string" || runId.length > 100) return null;
       if (!Array.isArray(argv) || !argv.every((a) => typeof a === "string")) return null;
       if (!Array.isArray(files)) return null;
@@ -107,7 +112,8 @@ export function parseToWorker(message: unknown): ToWorker | null {
       if (typeof columns !== "number" || !Number.isInteger(columns) || columns < 20 || columns > 400) return null;
       if (typeof coarse !== "boolean") return null;
       if (typeof outCap !== "number" || !Number.isSafeInteger(outCap) || outCap < 0) return null;
-      return { type: "run", runId, argv: [...argv] as string[], files: runFiles, columns, coarse, outCap };
+      if (version !== undefined && !isVersionLabel(version)) return null;
+      return { type: "run", runId, argv: [...argv] as string[], files: runFiles, columns, coarse, outCap, ...(version === undefined ? {} : { version }) };
     }
     case "secret":
       if (!isId(message.id)) return null;

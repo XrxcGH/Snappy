@@ -68,6 +68,8 @@ export interface RunnerDeps {
   /** Most bytes the virtual output folder may hold. */
   outCap: number;
   coarse: boolean;
+  /** The version label the commands should report, if the host app has one (the desktop app). */
+  version?(): string | undefined;
 }
 
 /** After a stop request, the helper gets this long before it is cut off. */

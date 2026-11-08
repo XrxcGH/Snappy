@@ -139,7 +139,8 @@ export function createRunner(deps: RunnerDeps): Runner {
       channel.onMessage(handle);
       channel.onFailure(() => settle("failed", null));
 
-      post({ type: "run", runId, argv: input.argv, files: [...input.files], columns: input.columns, coarse: deps.coarse, outCap: deps.outCap });
+      const version = deps.version?.();
+      post({ type: "run", runId, argv: input.argv, files: [...input.files], columns: input.columns, coarse: deps.coarse, outCap: deps.outCap, ...(version === undefined ? {} : { version }) });
 
       return {
         done,

@@ -123,6 +123,14 @@ const input = (spec: CommandSpec, names: string[] = ["a.zip"]): RunInput => ({
 
 const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
+describe("the version the commands report", () => {
+  it("is sent with the run request when the app has its own label", () => {
+    const { runner, channels } = setup({ version: () => "0.1.0-beta.2" });
+    runner.run(input(COMMANDS["analyze-preview"]), hooks());
+    expect((channels[0] as FakeChannel).sent[0]).toMatchObject({ type: "run", version: "0.1.0-beta.2" });
+  });
+});
+
 describe("a normal Run", () => {
   it("starts one helper, sends the run request, relays output in order and ends on exit", async () => {
     const { runner, channels } = setup();
@@ -132,6 +140,7 @@ describe("a normal Run", () => {
     expect(channels).toHaveLength(1);
     expect(channel.sent).toHaveLength(1);
     expect(channel.sent[0]).toMatchObject({ type: "run", argv: ["analyze", "/in/a.zip", "--no-save"], columns: 80, coarse: false, outCap: 1024 });
+    expect(channel.sent[0]).not.toHaveProperty("version");
     channel.emit({ type: "out", text: "one " });
     channel.emit({ type: "out", text: "two" });
     channel.emit({ type: "exit", code: 0 });

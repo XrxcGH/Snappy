@@ -69,6 +69,14 @@ describe("the helper", () => {
     expect(r.messages.at(-1)).toEqual({ type: "exit", code: 0 });
   });
 
+  it("reports the app's own version label when the page sends one, and the command line's version otherwise", async () => {
+    const withLabel = await runInHelper(["help"], { version: "0.1.0-beta.2" });
+    expect(withLabel.out).toContain("Version 0.1.0-beta.2\n");
+    expect(withLabel.out).not.toContain("Version 0.1.0\n");
+    const plain = await runInHelper(["help"]);
+    expect(plain.out).toMatch(/Version \d+\.\d+\.\d+\n/);
+  });
+
   it("checks the argument list again and refuses what the page would have refused", async () => {
     for (const argv of [["memories", "/in/a.zip", "--out", "/out/m", "--download"], ["analyze", "/in/a.zip", "--ledger", "/out/x"], ["keep", "someone"], ["inspect", "/etc/passwd"], ["analyze", "/in/a.zip", "--csv", "/out/q.csv"]]) {
       const r = await runInHelper(argv, { files: [blobOf("a.zip", later)] });

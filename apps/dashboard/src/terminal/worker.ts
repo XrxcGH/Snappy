@@ -102,7 +102,7 @@ export function createHelper(host: HelperHost): HelperHandler {
     });
     let code = 1;
     try {
-      code = await runCli(request.argv, io, { version: CLI_VERSION });
+      code = await runCli(request.argv, io, { version: request.version ?? CLI_VERSION });
     } catch (e) {
       code = e instanceof CliError ? e.exitCode : 1;
     }
