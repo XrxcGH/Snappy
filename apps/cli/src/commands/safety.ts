@@ -16,15 +16,17 @@ import type { Term } from "../term.ts";
 
 export const SAFETY_USAGE = `Usage: snappy-export safety [ZIP files or folder...] [options]
 
-Shows a short account safety checklist. It is self-reported: Snappy cannot see your settings, so you say what you have done in Snapchat.
+Shows a short account safety checklist. It is self-reported: Snappy cannot see your settings, so
+you say what you have done in Snapchat.
 
-Give it your export to add counts of blocked people and pending requests. This is optional, and nothing is saved between runs.
+Give it your export to add counts of blocked people and pending requests. This is optional, and
+nothing is saved between runs.
 
 Options
-  --done <ids>  Ids you have done, separated by commas. Repeat for more.
-  --json        Print JSON instead of text.
-  --verbose     Add a short code to each note, for bug reports.
-  --no-color    Plain text.
+  --done <names>  The names of the steps you have done, separated by commas. Repeat for more.
+  --json          Print JSON instead of text.
+  --verbose       Add a short code to each note, for bug reports.
+  --no-color      Plain text.
 
 Exit codes: 0 done, 1 could not run.
 `;
@@ -47,9 +49,9 @@ function noteText(n: Note): string {
   const count = num(n);
   switch (n.code) {
     case "tick-ids-unknown":
-      return `${plural(count, "id")} did not match the list. Snappy left ${noun(count, "it", "them")} out.`;
+      return `${plural(count, "name")} did not match the list. Snappy left ${noun(count, "it", "them")} out.`;
     case "tick-ids-duplicate":
-      return `${plural(count, "id")} ${wasWere(count)} given more than once. Snappy counted each one once.`;
+      return `${plural(count, "name")} ${wasWere(count)} given more than once. Snappy counted each one once.`;
     case "tick-times-future":
       return `${plural(count, "date")} ${isAre(count)} in the future. Snappy left ${noun(count, "it", "them")} out.`;
     case "export-not-used":
@@ -83,7 +85,7 @@ export function renderSafety(result: Checklist, term: Term, verbose: boolean): s
       term,
       "Checklist",
       term.table(
-        [{ header: "#", align: "right" }, { header: "Status" }, { header: "Id" }, { header: "What to check" }],
+        [{ header: "#", align: "right" }, { header: "Status" }, { header: "Name" }, { header: "What to check" }],
         result.items.map((i) => [String(i.order), STATUS[i.status], i.id, insights.safetyChecklist.SAFETY_ITEM_TEXT[i.id]?.label ?? "Review this item"]),
       ),
     ),
@@ -99,7 +101,7 @@ export function renderSafety(result: Checklist, term: Term, verbose: boolean): s
   const next =
     p.todo + p.stale === 0
       ? ["Everything on the list is marked done. It may be worth a fresh look every few months."]
-      : ["Run this again with --done and the ids you finished to see your progress.", "Nothing is saved between runs."];
+      : ["Run this again with --done and the names you finished to see your progress.", "Nothing is saved between runs."];
   out.push(...section(term, "Next", next));
   return finish(out);
 }

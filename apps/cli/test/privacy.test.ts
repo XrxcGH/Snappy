@@ -2,7 +2,7 @@
 import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { insights } from "@snappy-export/core";
-import { privacyCommand, renderPrivacy } from "../src/commands/privacy.ts";
+import { PRIVACY_USAGE, privacyCommand, renderPrivacy } from "../src/commands/privacy.ts";
 import { createTerm } from "../src/term.ts";
 import { NOW, makeIo, stripPaths, tempDir, writeSyntheticZip } from "./helpers.ts";
 import { expectBrandSafe, expectNoLeaks, expectValidDescriptor, runInsight } from "./insights-helpers.ts";
@@ -70,6 +70,14 @@ describe("the command", () => {
     expectBrandSafe(all.out, "all done");
   });
 
+  it("wraps its help at about 100 characters, says names not ids, and leaves a blank line before the exit codes", () => {
+    for (const line of PRIVACY_USAGE.split("\n")) expect(line.length, line).toBeLessThanOrEqual(100);
+    expect(PRIVACY_USAGE).toContain("--done <names>");
+    expect(PRIVACY_USAGE).not.toMatch(/\bids?\b/i);
+    expect(PRIVACY_USAGE).toContain("each time you run this.\n\nExit codes:");
+    expect(privacyCommand.synopsis).toBe("privacy [--done <names>]");
+  });
+
   it("names the map setting without the retired word", async () => {
     const { out } = await runInsight(privacyCommand, ["--json"]);
     expect(out).not.toMatch(/ghost/i);
@@ -128,7 +136,7 @@ describe("the command", () => {
   it("stops with calm messages for bad input", async () => {
     const unknown = await runInsight(privacyCommand, ["--done", "contact-me,not-a-setting"]);
     expect(unknown).toMatchObject({ code: 1, out: "" });
-    expect(unknown.err).toContain("--done has an id Snappy does not know. Run the command without --done to see the ids.");
+    expect(unknown.err).toContain("--done has a name Snappy does not know. Run the command without --done to see the names.");
     expect(unknown.err).not.toContain("not-a-setting");
     expect((await runInsight(privacyCommand, ["--done"])).err).toContain("The option --done needs a value.");
     expect((await runInsight(privacyCommand, ["--bogus"])).err).toContain('Snappy does not know the option --bogus for privacy. Run "snappy-export help privacy"');

@@ -166,7 +166,7 @@ describe("flags", () => {
     const known = ["alpha", "beta", "gamma"];
     expect(parseIdList("--done", undefined, known)).toEqual([]);
     expect(parseIdList("--done", ["alpha, Beta", "beta,gamma", ""], known)).toEqual(["alpha", "beta", "gamma"]);
-    expect(() => parseIdList("--done", ["alpha,sam_01"], known)).toThrow('--done has an id Snappy does not know. Run the command without --done to see the ids.');
+    expect(() => parseIdList("--done", ["alpha,sam_01"], known)).toThrow('--done has a name Snappy does not know. Run the command without --done to see the names.');
     try {
       parseIdList("--done", ["sam_01"], known);
     } catch (e) {

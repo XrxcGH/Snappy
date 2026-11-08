@@ -201,7 +201,7 @@ export function friendCountOf(flags: FriendCountFlags): number | undefined {
 export function parseIdList(option: string, values: string[] | undefined, known: readonly string[]): string[] {
   const ids = [...new Set((values ?? []).flatMap((v) => v.split(",")).map((v) => v.trim().toLowerCase()).filter((v) => v !== ""))];
   if (ids.some((id) => !known.includes(id))) {
-    throw new CliError("usage", `${option} has an id Snappy does not know. Run the command without ${option} to see the ids.`);
+    throw new CliError("usage", `${option} has a name Snappy does not know. Run the command without ${option} to see the names.`);
   }
   return ids;
 }

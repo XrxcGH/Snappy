@@ -67,6 +67,20 @@ describe("the command", () => {
     expectBrandSafe(all.out, "all done");
   });
 
+  it("calls the steps names, not ids, in the help, the table and the next step", async () => {
+    const help = (await runInsight(safetyCommand, ["--help"])).out;
+    expect(help).toContain("--done <names>");
+    expect(help).not.toMatch(/\bids?\b/i);
+    const out = (await runInsight(safetyCommand, [])).out;
+    expect(out).toMatch(/^ *# +Status +Name +What to check/m);
+    expect(out).not.toMatch(/\bIds?\b/);
+    expect(out).toContain("the names you finished");
+  });
+
+  it("wraps its help like every other command, at about 100 characters", () => {
+    for (const line of SAFETY_USAGE.split("\n")) expect(line.length, line).toBeLessThanOrEqual(100);
+  });
+
   it("prints JSON with ids, statuses and counts only", async () => {
     const { code, out } = await runInsight(safetyCommand, ["--json", "--done", "blocked-list"]);
     expect(code).toBe(0);
@@ -138,7 +152,7 @@ describe("the command", () => {
     const dir = tempDir("safety-errors");
     const bad = await runInsight(safetyCommand, ["--done", "alice_01"]);
     expect(bad).toMatchObject({ code: 1, out: "" });
-    expect(bad.err).toContain("--done has an id Snappy does not know.");
+    expect(bad.err).toContain("--done has a name Snappy does not know.");
     expect(bad.err).not.toContain("alice_01");
     const missing = await runInsight(safetyCommand, [join(dir, "missing.zip")]);
     expect(missing).toMatchObject({ code: 1, out: "" });
@@ -180,14 +194,14 @@ describe("wording", () => {
     const one = renderSafety(built(1), term, false);
     expect(one).toContain("Your export lists 1 blocked person. Item 6 may be worth a look.");
     expect(one).toContain("Your export lists 1 pending request. Item 5 may be worth a look.");
-    expect(one).toContain("1 id did not match the list. Snappy left it out.");
-    expect(one).toContain("1 id was given more than once.");
+    expect(one).toContain("1 name did not match the list. Snappy left it out.");
+    expect(one).toContain("1 name was given more than once.");
     expect(one).toContain("1 date is in the future. Snappy left it out.");
     const many = renderSafety(built(2), term, false);
     expect(many).toContain("Your export lists 2 blocked people.");
     expect(many).toContain("Your export lists 2 pending requests.");
-    expect(many).toContain("2 ids did not match the list. Snappy left them out.");
-    expect(many).toContain("2 ids were given more than once.");
+    expect(many).toContain("2 names did not match the list. Snappy left them out.");
+    expect(many).toContain("2 names were given more than once.");
     expect(many).toContain("2 dates are in the future. Snappy left them out.");
   });
 

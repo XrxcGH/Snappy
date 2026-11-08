@@ -21,12 +21,13 @@ Lists the Snapchat privacy settings worth a look, with a short hint for each. Sn
 change your settings, and it reads no export. You mark what you have already done.
 
 Options
-  --done <ids>  Mark settings as done, by id, separated by commas.
-  --json        Print JSON instead of text.
-  --verbose     Add a short code to each note, for bug reports.
-  --no-color    Plain text.
+  --done <names>  The names of the settings you have done, separated by commas.
+  --json          Print JSON instead of text.
+  --verbose       Add a short code to each note, for bug reports.
+  --no-color      Plain text.
 
-Marks are not saved. Add every done id each time you run this.
+Marks are not saved. Add every name you have done each time you run this.
+
 Exit codes: 0 done, 1 could not run.
 `;
 
@@ -103,7 +104,7 @@ export function renderPrivacy(raw: Result, term: Term, verbose: boolean): string
   const noteLines = renderNotes(notes, term, { heading: "Notes", verbose });
   if (noteLines.length > 0) out.push(...noteLines, "");
 
-  out.push("Marks are not saved. Add every done id each time you run this.", "");
+  out.push("Marks are not saved. Add every name you have done each time you run this.", "");
   return finish(out);
 }
 
@@ -129,7 +130,7 @@ export async function runPrivacy(args: string[], io: Io): Promise<number> {
 
 export const privacyCommand: InsightCommand = {
   name: "privacy",
-  synopsis: "privacy [--done <ids>]",
+  synopsis: "privacy [--done <names>]",
   summary: "Walk through your privacy settings.",
   group: "Checklists",
   usage: PRIVACY_USAGE,
