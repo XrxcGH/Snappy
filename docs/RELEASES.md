@@ -19,8 +19,7 @@ The status column says what has been done for each row. "Not yet built" means th
 | Platform | Files | What it needs | Status |
 | --- | --- | --- | --- |
 | Windows, 64-bit | `Snappy_<version>_x64-setup.exe` (installs for your user, no administrator needed). There is no MSI: an MSI install could not be updated in place by the per-user installer | Windows 10 or 11. The window is drawn by Microsoft's WebView2 runtime, which Windows 11 includes. If it is missing, the installer downloads it from Microsoft. | Built, installed, run and uninstalled by hand on Windows 11. Not yet built by the release workflow. |
-| macOS, Apple silicon | `Snappy_<version>_aarch64.dmg` | A current macOS release. | Not yet built. |
-| macOS, Intel | `Snappy_<version>_x64.dmg` | A current macOS release. | Not yet built. It is cross-compiled on an Apple silicon runner and has not been started on an Intel Mac. |
+| macOS, Apple silicon and Intel | `Snappy_<version>_universal.dmg`: one app that runs natively on both (see [MACOS.md](MACOS.md)) | macOS 12.3 or newer. The window is drawn by the system's own WebKit web view. | Built unsigned, started and watched by CI on an Apple silicon runner (see "Building the macOS beta"). Never run on a real Mac, and the Intel half has never been started anywhere. Not yet built by the release workflow. |
 | Linux, 64-bit | `Snappy_<version>_amd64.AppImage`, `Snappy_<version>_amd64.deb`, `Snappy-<version>-1.x86_64.rpm` | WebKitGTK 4.1, which Ubuntu 22.04, Debian 12, Fedora 38 and newer include. The files are built on Ubuntu 22.04, so the AppImage needs glibc 2.35 or newer. | Not yet built. |
 | Android | `Snappy_<version>_android-universal-<signing>.apk` and `.aab` | Android 7.0 or newer. The APK installs directly. The AAB is the format app stores take. | Not yet built, and the mobile project has never been created. The release workflow treats Android as optional until it has worked once: if it fails, the release goes out without it and the notes say so. |
 
@@ -46,8 +45,8 @@ The hash in `SHA256SUMS` is lowercase and PowerShell prints uppercase. They matc
 **macOS (Terminal).**
 
 ```sh
-shasum -a 256 Snappy_0.2.0_aarch64.dmg
-grep aarch64.dmg SHA256SUMS
+shasum -a 256 Snappy_0.2.0_universal.dmg
+grep universal.dmg SHA256SUMS
 ```
 
 **Linux.** This checks every file you downloaded and skips the ones you did not:
@@ -74,7 +73,7 @@ Some installers are not signed. Signing means a company vouches for who built a 
 
 On Windows 11 with **Smart App Control** turned on, Windows blocks an unsigned installer outright and offers no "Run anyway". Snappy does not ask you to turn Smart App Control off. If it blocks the installer, use a file the release notes list as signed, or build Snappy yourself on another machine. When Windows files are signed, the signature is on the installers (`.exe` and `.msi`), not on the program file inside them, and the release notes say so. Whether Smart App Control then lets the installed program start has not been tested.
 
-**macOS.** A dialog says Apple could not verify that "Snappy" is free of malware, or that "Snappy" cannot be opened because Apple cannot check it. Choose **Done** (or **Cancel**), then open **System Settings**, **Privacy & Security**, scroll to the Security section, and choose **Open Anyway** next to Snappy. On macOS 14 and earlier you can instead Control-click the app and choose **Open**. A build that Apple has notarized does not show this.
+**macOS.** A dialog says Apple could not verify that "Snappy" is free of malware, or that "Snappy" cannot be opened because Apple cannot check it. Choose **Done** (or **Cancel**), then open **System Settings**, **Privacy & Security**, scroll to the Security section, and choose **Open Anyway** next to Snappy. On macOS 14 and earlier you can instead Control-click the app and choose **Open**; macOS 15 removed that shortcut, so use Settings there. A build that Apple has notarized does not show this, and the macOS beta is not notarized (see [MACOS.md](MACOS.md), which also shows the Terminal command that clears the mark).
 
 **Linux.** There is no warning. For an AppImage, make it executable first (`chmod +x Snappy_*.AppImage`). Install a `.deb` with `sudo apt install ./Snappy_*.deb` and an `.rpm` with `sudo dnf install ./Snappy-*.rpm`.
 
@@ -135,6 +134,52 @@ What was run on 7 November 2026, on one Windows 11 computer with WebView2 runtim
 - The uninstaller was run silently. It removed the install folder, both shortcuts and the Apps and features entry. It left the key `HKCU\Software\Snappy contributors\Snappy` and the folder `%LOCALAPPDATA%\com.snappy.export` (the WebView2 profile, one folder named `EBWebView`, about 190 files and 9 MB). The interactive uninstaller, and its option to delete the application data, were not driven, so that option is not verified. The test removed what it had left and put back what was there before.
 - Not checked: a first install by double-click with the SmartScreen warning, the default install folder, the interactive installer pages, Smart App Control, other Windows versions, and a computer without the WebView2 runtime.
 
+## Building the macOS beta
+
+The macOS beta is one universal app (Apple silicon and Intel in the same executable) in a disk image: `Snappy_0.1.0-beta.1_universal.dmg`, with the same app as `Snappy_0.1.0-beta.1_universal.app.tar.gz` for a later updater. It is unsigned apart from the ad-hoc signature that Apple silicon needs, and there is no `.pkg`. [MACOS.md](MACOS.md) is the page for the people who test it. Nobody on the project has a Mac, so the only place it is built and started is a GitHub-hosted Apple silicon runner, in the `macOS universal build and smoke test` job of `.github/workflows/desktop-smoke.yml`. That job runs on every pull request and every push to `main` that touches the app, the dashboard or the workflow. It has no secret and no Apple credential.
+
+To build it the same way yourself, on a Mac, from the repository folder:
+
+```sh
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+npm ci --ignore-scripts
+npm run tauri -w @snappy-export/app -- build --target universal-apple-darwin --bundles dmg,app -- --locked
+```
+
+The files are in `apps/app/src-tauri/target/universal-apple-darwin/release/bundle/` (`dmg` and `macos`). The macOS settings are in `apps/app/src-tauri/tauri.macos.conf.json` and `Info.plist`, which Tauri applies only when it builds for macOS.
+
+Why these choices:
+
+- **`.dmg` and not `.pkg`.** A disk image with the app and an Applications link is the usual way to share a Mac app. A package runs installer scripts and is meant for the App Store or for putting files outside the app, and Snappy needs neither.
+- **No license agreement on the disk image.** Tauri turns the shared `licenseFile` setting into a click-through agreement that the disk image shows when it is opened. That is wrong for an Apache-2.0 program, so the macOS settings drop it, and `LICENSE` and `NOTICE` sit inside the app, in `Contents/Resources`.
+- **Version strings.** macOS accepts only dotted numbers in `CFBundleShortVersionString` and `CFBundleVersion`, so both are `0.1.0`. The full `0.1.0-beta.1` is in the custom Info.plist key `SnappyReleaseVersion`, in the file names and in the in-app Beta label. `apps/app/test/macos-config.test.ts` fails when these drift from the other three version places.
+- **Oldest macOS: 12.3.** The page is built for ES2022 and uses `Object.hasOwn` and `navigator.locks`. Both came with Safari 15.4, and macOS 12.3 is the first release that ships that WebKit itself. This is an argument from the code, not a test: nothing older than the runner's own macOS has been run. Both halves of the executable are built for 12.3 (the smoke test reads that back with `otool`).
+- **Ad-hoc signature, hardened runtime off, no entitlements.** Hardened runtime is for notarized apps, and Snappy is not sandboxed and asks for no extra access, so there is no entitlements file and no network entitlement to grant. The smoke test fails if the signature is anything but ad hoc, if the hardened-runtime flag is on, or if the app carries any entitlement.
+- **The menu bar** is Tauri's default on macOS: an app menu with About, Hide and Quit, the standard Edit menu (so Cmd+C, Cmd+V and Cmd+A work in the passphrase and filter fields), View, Window and Help. Snappy adds no menu code.
+
+What CI checks, and what it cannot.
+
+On every run the macOS job:
+
+1. Runs `cargo test --lib` (the navigation allow-list and the read-only file table) and builds the universal app and disk image.
+2. Reads the finished files: the Info.plist keys (identifier, both version strings, the beta key, the oldest macOS, the category, no network exception), both architectures in the executable (`lipo -archs`) and the oldest macOS each one needs, `codesign -dv` (ad hoc, no hardened runtime, no entitlements, no team), `codesign --verify --deep --strict`, `hdiutil verify`, that the image shows no license prompt, holds `Snappy.app` and an `Applications` link to `/Applications`, and that `LICENSE` and `NOTICE` are in the app.
+3. Installs the app into a temporary folder and starts it with `open -n`. It checks the process stays alive, that the window server lists a window for it, and takes a screenshot of the window and of the screen. It reads the menu bar (File, Edit, View, Window and the Edit items) through System Events.
+4. Watches the app's processes for 60 seconds, sampling `lsof -i` about every 0.6 seconds. Because the system web view does its networking in helper processes that are not children of the app, the sampler counts the app, its descendants and every WebKit helper process that started after the watch began. Before the app starts, a control process holds a connection to a real outside address, and the job fails unless the sampler sees it. The job fails on any connection from the app's processes to a non-loopback address, and writes every one it sees, with a list of the other connections on the runner for comparison.
+5. Asks the app to quit with an Apple event and checks that it exits and that none of its processes are left.
+6. Uploads the disk image, the app archive, their SHA-256 files, the screenshots, and the raw output of every check, kept for 14 days.
+
+What it cannot show:
+
+- **Anything a person would see or do on a Mac.** The runner has no person: Gatekeeper's first-run dialog, the Open Anyway step, how the window looks and behaves under real use, the native file dialog and picking a real export, drag and drop, and the Cmd shortcuts in a field were not exercised. The screenshot shows that the page drew; it is one frame on a small virtual screen.
+- **Notarization.** The app is not signed with a Developer ID and not notarized, and `spctl` rejects it on the runner, as expected. What a notarized build would change is below.
+- **Blocked navigation on WKWebView.** The same two handlers that lock the window on Windows are applied on macOS (`on_navigation` and `on_new_window` act on the WebKit delegates), and the page's content policy blocks every connection. But nothing has loaded a blocked address into the macOS window to see it refused, and the Windows-only request interception has no macOS counterpart. The network watch is silent about a link nobody clicked.
+- **Sealing a history.** The page's saved-history feature uses Web Crypto and IndexedDB. The IndexedDB folder was created, but nothing has typed a passphrase into the macOS window. Whether Web Crypto is available under the app's own address scheme (`tauri://localhost`) on macOS is not verified; if it is missing, sealing fails with an error.
+- **Apple silicon versus Intel at run time.** The runner is Apple silicon. The Intel half of the executable is built and the smoke test confirms it is there and was built for macOS 12.3, but it has never been started, and neither has any macOS older than the runner's (26.x at the time of writing).
+- **The network watch is a sample.** It can miss a connection that opens and closes between two samples, sees only this user's internet sockets, and says nothing about what a later macOS update changes in the web view. It saw no connection from the app in the runs the maintainers read; that is one runner on one macOS version.
+- **Data folders.** What the app leaves behind (see MACOS.md) was listed after one short run, without a sealed history.
+
+If Apple Developer ID signing and notarization are added later, the `sign-macos` job in `release.yml` (already written, behind the `release` environment, and turned off while the secrets do not exist) signs with the Developer ID certificate, turns the hardened runtime on, notarizes the app and the disk image and staples the tickets. That needs the paid Apple Developer Program membership of the project owner, a Developer ID Application certificate and an app-specific password for notarization. Nothing of that is in the build job or in CI for pull requests, and none of it exists yet.
+
 ## How a release is made (for maintainers)
 
 The workflow is `.github/workflows/release.yml`. It is split so that code from the build never meets a signing key.
@@ -182,7 +227,7 @@ The installers appear under `apps/app/src-tauri/target/release/bundle/`, in a fo
 What else each platform needs:
 
 - **Windows:** the Visual Studio C++ build tools (the "Desktop development with C++" workload). The first build downloads the NSIS and WiX tools, so it needs a network. The app does not.
-- **macOS:** the Xcode command line tools (`xcode-select --install`). To build the Intel app on an Apple silicon Mac, run `rustup target add x86_64-apple-darwin` and add `--target x86_64-apple-darwin` after `--` in the command above.
+- **macOS:** the Xcode command line tools (`xcode-select --install`). For the same universal app that CI builds, run `rustup target add aarch64-apple-darwin x86_64-apple-darwin` and then `npm run tauri -w @snappy-export/app -- build --target universal-apple-darwin --bundles dmg,app -- --locked`. The result is ad-hoc signed (the configuration sets that). To build for one architecture only, give `--target aarch64-apple-darwin` or `--target x86_64-apple-darwin` instead.
 - **Linux:** the Tauri build libraries. On Debian and Ubuntu: `sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf`.
 - **Android:** JDK 17, the Android SDK and NDK, `ANDROID_HOME` and `NDK_HOME` set, and the four Android Rust targets (`rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android`). Run `npm run tauri -w @snappy-export/app -- android init`, then delete the `android.permission.INTERNET` line from `apps/app/src-tauri/gen/android/app/src/main/AndroidManifest.xml` (the release workflow does the same), and build with `npm run tauri -w @snappy-export/app -- android build --apk`. The result is unsigned and has to be signed before Android installs it. None of this has been run yet.
 

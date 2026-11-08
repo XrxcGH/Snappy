@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "..", "..", "..");
-const DOCS = ["README.md", path.join("apps", "cli", "README.md"), path.join("docs", "EXPORT-GUIDE.md"), path.join("docs", "BETA.md"), path.join("docs", "images", "README.md"), path.join("docs", "UPDATES.md"), path.join("docs", "UPDATE-RUNBOOKS.md")];
+const DOCS = ["README.md", path.join("apps", "cli", "README.md"), path.join("docs", "EXPORT-GUIDE.md"), path.join("docs", "BETA.md"), path.join("docs", "MACOS.md"), path.join("docs", "images", "README.md"), path.join("docs", "UPDATES.md"), path.join("docs", "UPDATE-RUNBOOKS.md")];
 
 /** The prose of a Markdown file: no fenced blocks, no inline code. One entry per line, with its number. */
 function prose(file: string): { n: number; text: string; raw: string }[] {

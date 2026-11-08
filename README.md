@@ -7,7 +7,7 @@ Snappy helps you tidy your Snapchat friends list and rescue your Memories, using
 - **Cleanup queue.** Finds disappeared friends (people who may have removed you), unaccepted requests, and quiet friends, each with a confidence level and the evidence behind it. Saved chats and Snaps both count as activity, so a friend you only Snap with is not called quiet.
 - **Memories rescue.** Plans a local backup of your Memories, shows a storage meter against a 5 GB cap that you can change, and restores each file’s exact capture time. In a newer export the files are inside the ZIP files, and Snappy pairs each one with its list entry by that exact time.
 - **Tools.** Twenty-two small helpers on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup, a year in review and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
-- **Native apps and a command line tool.** Snappy is an app you install: a Windows beta is the first one, and macOS, Linux and phone apps are planned. There is also a command line tool named `snappy-export`.
+- **Native apps and a command line tool.** Snappy is an app you install: a Windows beta is the first one, a macOS beta is built and tested by automation (see [docs/MACOS.md](docs/MACOS.md)), and Linux and phone apps are planned. There is also a command line tool named `snappy-export`.
 
 Snappy only infers. A result means “may have removed you”, never “did”. Removing a friend is always your call, and you do it in Snapchat yourself.
 
@@ -59,7 +59,7 @@ The Windows beta shows this same dashboard in its own window. [docs/BETA.md](doc
 
 ### 1. Get the app
 
-The first build is a **Windows beta**. It is unsigned, so Windows shows a warning, and this first beta does not update itself (later releases of the Windows app can: [docs/UPDATES.md](docs/UPDATES.md)). [docs/BETA.md](docs/BETA.md) says how to install it, where it keeps its data, how to remove it and how to report a problem without sharing anything personal. [docs/RELEASES.md](docs/RELEASES.md) says where installers come from and how to check one.
+The first build is a **Windows beta**. It is unsigned, so Windows shows a warning, and this first beta does not update itself (later releases of the Windows app can: [docs/UPDATES.md](docs/UPDATES.md)). [docs/BETA.md](docs/BETA.md) says how to install it, where it keeps its data, how to remove it and how to report a problem without sharing anything personal. [docs/RELEASES.md](docs/RELEASES.md) says where installers come from and how to check one. A **macOS beta** (one universal app, unsigned) is built by CI but has not been run on a real Mac yet; [docs/MACOS.md](docs/MACOS.md) says how to install it.
 
 ### 2. Get your export
 
