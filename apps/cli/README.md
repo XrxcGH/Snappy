@@ -24,7 +24,7 @@ The script runs `node --experimental-strip-types apps/cli/src/main.ts`, so there
 | `snappy-export inspect <ZIP files or folder...>` | Prints the structure of the export (field names, types, bucketed counts), never a value. |
 | `snappy-export keep <username...>` / `snappy-export unkeep <username...>` | Manages the keep list in your saved history: friends who never appear in the cleanup queue. |
 | `snappy-export history status` | Lists the exports in your saved history: dates and friend counts, never usernames. `ledger status` still works. |
-| `snappy-export demo [--run]` | Writes two invented exports and prints the commands to try them. |
+| `snappy-export demo [--run]` | Writes two sample exports and prints the commands to try them. |
 
 Several ZIP files, a folder of ZIP files, or a wildcard such as `"mydata*.zip"` are the parts of one export. Snappy puts them in the order Snapchat numbers them (the name without a number, then `-2`, then `-3`), whatever order you type them in. To compare two exports, give the older one with `--earlier`, or let your saved history remember it between runs.
 

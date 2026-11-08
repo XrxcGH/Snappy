@@ -223,6 +223,12 @@ describe("one tagline and one spelling of the list in the documents", () => {
   });
 });
 
+describe("one name for the built-in fake data: sample data", () => {
+  it.each(["README.md", path.join("docs", "BETA.md"), path.join("apps", "cli", "README.md")])("%s says sample data and sample exports, not invented or made-up", (file) => {
+    expect(prose(file).filter((l) => /\b(invented|made-up)\b/i.test(l.text)).map((l) => `${file}:${l.n}: ${l.text.slice(0, 80)}`)).toEqual([]);
+  });
+});
+
 describe("the README mentions guided removal, the keep list and the guides", () => {
   const readme = (): string => prose("README.md").map((l) => l.raw).join("\n");
 

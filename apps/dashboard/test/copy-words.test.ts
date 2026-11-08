@@ -42,6 +42,15 @@ describe("Start page words", () => {
   });
 });
 
+describe("sample data", () => {
+  it("is the one name for the built-in fake data on Start and on the Export guide page", () => {
+    expect(copy.start.sampleButton).toBe("Use sample data");
+    expect(copy.start.sampleBody).toMatch(/^Builds two sample exports in your browser/);
+    expect(copy.terminal.titles["demo-run"]).toBe("Try it on sample data");
+    expect(hits(/\binvented\b|\bmade-up\b|\bsynthetic\b/i)).toEqual([]);
+  });
+});
+
 describe("strings nothing used", () => {
   it("are gone: brand.basedOn, shell.lockedShort, terminal.logLabel and terminal.failedAnnounce", () => {
     expect(Object.keys(copy.brand)).not.toContain("basedOn");

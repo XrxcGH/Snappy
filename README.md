@@ -13,7 +13,7 @@ Snappy only infers. A result means “may have removed you”, never “did”. 
 
 ## Screenshots
 
-Every picture here is a real capture of Snappy’s built-in sample data: invented friends such as `ghost_1`, never a real account. [docs/images/README.md](docs/images/README.md) shows them all and says how to make them again.
+Every picture here is a real capture of Snappy’s built-in sample data, with sample friends such as `ghost_1`, never a real account. [docs/images/README.md](docs/images/README.md) shows them all and says how to make them again.
 
 | Light | Dark |
 |---|---|
@@ -22,9 +22,9 @@ Every picture here is a real capture of Snappy’s built-in sample data: invente
 | ![Tools page in the light theme, with the first tools, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with the first tools, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-dark.webp) |
 | ![Memories rescue in the light theme, with the counts, the files found in the export, and the storage cap with its meter](docs/images/desktop-memories-rescue-light.webp) | ![Memories rescue in the dark theme, with the counts, the files found in the export, and the storage cap with its meter](docs/images/desktop-memories-rescue-dark.webp) |
 
-A command shown in the app has Copy and Run. Run works inside the app, on invented data here:
+A command shown in the app has Copy and Run. Run works inside the app, on sample data here:
 
-![The in-app terminal after a finished run of the demo command, which prints two invented exports and the commands to try on them](docs/images/desktop-terminal-demo-run-dark.webp)
+![The in-app terminal after a finished run of the demo command, which prints two sample exports and the commands to try on them](docs/images/desktop-terminal-demo-run-dark.webp)
 
 ## On your phone
 
@@ -67,7 +67,7 @@ Request your data in Snapchat under Settings, then My Data. Select “Export JSO
 
 ### 3. Use the app
 
-Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the tools: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app. To keep your history for next time, save it with a passphrase in Settings. The Export guide page says what to select when you request your export, and the Privacy page says what Snappy reads and what it skips.
+Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with sample friends first. The Tools page lists the tools: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app. To keep your history for next time, save it with a passphrase in Settings. The Export guide page says what to select when you request your export, and the Privacy page says what Snappy reads and what it skips.
 
 ### 4. Use the command line
 
@@ -86,7 +86,7 @@ npm run snappy-export -- demo --run
 | `snappy-export inspect <ZIP files or folder...>` | Prints the structure of the JSON files (field names and types), never a value. Photos, videos, and web pages are only counted. Options: `--show-keys`, `--layout`, `--memory-links`, `--mtime-check`, and `--checks-only`. |
 | `snappy-export keep <username...>` and `snappy-export unkeep <username...>` | Protects friends from the cleanup queue. |
 | `snappy-export history status` | Lists the exports in your saved history: dates and friend counts, never usernames. |
-| `snappy-export demo` | Writes two invented exports and prints commands to try them. |
+| `snappy-export demo` | Writes two sample exports and prints commands to try them. |
 
 Twenty-two more commands (`check`, `storage`, `backup`, `closest`, `remind`, `since`, `year`, and others) are listed in [apps/cli/README.md](apps/cli/README.md#more-commands). Run `snappy-export help` to see them all.
 

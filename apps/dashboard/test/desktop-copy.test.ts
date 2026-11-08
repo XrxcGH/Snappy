@@ -72,7 +72,7 @@ const DIFFERENCES: readonly (readonly [path: string, web: string, desktop: strin
     "Snappy’s page cannot connect to the internet. A built-in rule blocks every connection.",
   ],
   ["start.trustChips[2]", "Works without internet", "Works offline"],
-  ["start.sampleBody", "Builds two made-up exports in your browser so you can see every screen. The sample is never saved.", "Builds two made-up exports in this window so you can see every screen. The sample is never saved."],
+  ["start.sampleBody", "Builds two sample exports in your browser so you can see every screen. The sample is never saved.", "Builds two sample exports in this window so you can see every screen. The sample is never saved."],
   ["start.sessionOnlyBody", "Closing this tab clears your results. To keep your history, save it with a passphrase in Settings.", "Closing Snappy clears your results. To keep your history, save it with a passphrase in Settings."],
   ["tools.failedNote", "Snappy could not finish this. Reload the page and try again.", "Snappy could not finish this. Restart Snappy and try again."],
   ["tools.downloadFailedNote", "Snappy could not save the file. Your browser may block downloads.", "Snappy could not save the file. Try again."],

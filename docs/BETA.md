@@ -36,7 +36,7 @@ If Windows 11 has **Smart App Control** turned on, it blocks unsigned installers
 
 ## Where Snappy keeps its data
 
-Snappy puts files in these places on Windows. The list comes from installing, running and uninstalling beta 2 through the installer’s own pages on one Windows 11 computer, with made-up data.
+Snappy puts files in these places on Windows. The list comes from installing, running and uninstalling beta 2 through the installer’s own pages on one Windows 11 computer, with sample data.
 
 | What | Where |
 | --- | --- |
@@ -91,7 +91,7 @@ Inside the app, **Run** works on a copy of the command and keeps what it writes 
 
 ## What to try first
 
-1. Open **Start**. Choose **Use sample data** to look around with made-up friends. Nothing about the sample is saved.
+1. Open **Start**. Choose **Use sample data** to look around with sample friends. Nothing about the sample is saved.
 2. On Start, choose **Choose ZIP files** (or drop the ZIP files on the page) and pick every ZIP part of your export at once. The Export guide page says what to select when you request one.
 3. Open **Overview** and read the export health notes before the results.
 4. Open **Tools**. Pick one or two, such as the export check, and read what each says it reads.
@@ -104,7 +104,7 @@ Open an issue in the Snappy repository and include only this:
 - **The version.** It is at the bottom of every page (“Beta version …”) and on the Settings page.
 - **What you did,** step by step, in plain words.
 - **What you saw,** and what you expected instead.
-- **A screenshot only if it shows made-up or blurred content.** Use the sample data to reproduce a problem when you can, and blur every username first.
+- **A screenshot only if it shows sample data or blurred content.** Use the sample data to reproduce a problem when you can, and blur every username first.
 - **The output of the `inspect` command, after you have read it.** It prints names of fields and counts, never values. Read every line before you paste it.
 
 Never attach your export or any file from it, never paste a username, a message, a photo name or a link, and never describe a friend by name. If a report cannot be made without personal data, say that instead and describe the problem in words.

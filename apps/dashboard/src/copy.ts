@@ -190,8 +190,8 @@ export const start = {
   exportTimeUnknown: "Snappy could not tell when this export was made, so it used today’s date.",
   get sampleBody(): string {
     return onDesktop(
-      "Builds two made-up exports in your browser so you can see every screen. The sample is never saved.",
-      "Builds two made-up exports in this window so you can see every screen. The sample is never saved.",
+      "Builds two sample exports in your browser so you can see every screen. The sample is never saved.",
+      "Builds two sample exports in this window so you can see every screen. The sample is never saved.",
     );
   },
   sampleButton: "Use sample data",
@@ -654,7 +654,7 @@ export const terminal = {
   /** The muted one-line title above each command, by command. */
   titles: {
     help: "Show the commands",
-    "demo-run": "Try it on invented data",
+    "demo-run": "Try it on sample data",
     inspect: "Show the shape of your export",
     "analyze-preview": "Find friends to review",
     "analyze-save": "Find friends and save history",
