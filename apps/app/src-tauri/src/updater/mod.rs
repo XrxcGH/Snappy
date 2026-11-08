@@ -349,6 +349,13 @@ impl Updater {
         st.auto && st.notice_seen && !throttled(self.now(), st.last_attempt_unix, AUTO_INTERVAL_SECS)
     }
 
+    /// An automatic run whose setting was switched off after it began. The person turned the check off, so nothing more may be
+    /// fetched or kept for it: the run stops, and whatever it had downloaded is deleted. A manual run ("Check now",
+    /// "Update now") is the person's own request and does not depend on the setting.
+    fn withdrawn(&self, manual: bool) -> bool {
+        !manual && !self.state().auto
+    }
+
     /// Runs a check on its own thread. `manual` is "Check now" (or "Update now" after a failure).
     pub fn start_check(&self, manual: bool) {
         let me = self.clone();
@@ -434,6 +441,10 @@ impl Updater {
             self.manifest_failed(e);
             return;
         }
+        if self.withdrawn(manual) {
+            self.finish_idle(None, None); // switched off while the request was under way: record nothing, fetch nothing more
+            return;
+        }
         self.save(|st| st.policy_rejections = 0);
         let manifest = match parse_manifest(&body, &cfg.endpoint) {
             Ok(m) => m,
@@ -490,9 +501,23 @@ impl Updater {
             l.percent = 0;
         });
         let part = self.paths().part_file(&version);
-        if let Err(code) = self.download(&version, &part) {
+        match self.download(&version, &part, manual) {
+            Ok(true) => {}
+            Ok(false) => {
+                // Switched off during the download: the file is not kept.
+                let _ = fs::remove_file(&part);
+                self.finish_idle(None, None);
+                return;
+            }
+            Err(code) => {
+                let _ = fs::remove_file(&part);
+                self.fail_download(version, code, manual);
+                return;
+            }
+        }
+        if self.withdrawn(manual) {
             let _ = fs::remove_file(&part);
-            self.fail_download(version, code, manual);
+            self.finish_idle(None, None);
             return;
         }
         let verified = File::open(&part).map_err(|_| VerifyOutcome::Disk).and_then(|mut f| keys.verify_reader(&checked, &mut f).map_err(|_| VerifyOutcome::Bad));
@@ -506,6 +531,11 @@ impl Updater {
                 }
                 return;
             }
+        }
+        if self.withdrawn(manual) {
+            let _ = fs::remove_file(&part);
+            self.finish_idle(None, None);
+            return;
         }
         let (ready, sig_file) = (self.paths().staged_file(&version), self.paths().sig_file(&version));
         let moved = fs::remove_file(&ready).or_else(|e| if e.kind() == std::io::ErrorKind::NotFound { Ok(()) } else { Err(e) }).and_then(|()| fs::rename(&part, &ready)).and_then(|()| fs::write(&sig_file, manifest.signature.as_bytes()));
@@ -526,14 +556,16 @@ impl Updater {
         });
     }
 
-    /// Streams the installer to `part`, which is held exclusively while it is written.
-    fn download(&self, version: &Version, part: &Path) -> Result<(), ErrorCode> {
+    /// Streams the installer to `part`, which is held exclusively while it is written. `Ok(false)` means an automatic run
+    /// was switched off meanwhile: the download stopped early and the caller deletes the file.
+    fn download(&self, version: &Version, part: &Path, manual: bool) -> Result<bool, ErrorCode> {
         let mut file = open_exclusive(part).map_err(|_| ErrorCode::Disk)?;
         let declared = AtomicU64::new(0);
+        let stopped = AtomicBool::new(false);
         let (mut received, mut last_percent) = (0u64, 0u8);
         let options = FetchOptions { max_body: MAX_INSTALLER_BYTES, require_length: true, deadline: Instant::now() + DOWNLOAD_BUDGET, idle: DOWNLOAD_IDLE, length_out: Some(&declared) };
         let url = self.0.cfg.endpoint.installer_url(version);
-        fetch(&*self.0.deps.transport, &url, self.0.cfg.policy, &options, &mut |chunk| {
+        let fetched = fetch(&*self.0.deps.transport, &url, self.0.cfg.policy, &options, &mut |chunk| {
             file.write_all(chunk).map_err(|_| NetError::Disk)?;
             received += chunk.len() as u64;
             let total = declared.load(Ordering::Relaxed);
@@ -541,12 +573,21 @@ impl Updater {
             if percent != last_percent {
                 last_percent = percent;
                 self.live(|l| l.percent = percent);
+                // Looked at once per percent, not per chunk: the setting is on disk and small, but a download has thousands of chunks.
+                if self.withdrawn(manual) {
+                    stopped.store(true, Ordering::SeqCst);
+                    return Err(NetError::Disk); // any error ends the transfer; the caller reads `stopped`
+                }
             }
             Ok(())
-        })
-        .map_err(error_of)?;
+        });
+        if stopped.load(Ordering::SeqCst) {
+            return Ok(false);
+        }
+        fetched.map_err(error_of)?;
         file.flush().map_err(|_| ErrorCode::Disk)?;
-        file.sync_all().map_err(|_| ErrorCode::Disk)
+        file.sync_all().map_err(|_| ErrorCode::Disk)?;
+        Ok(true)
     }
 
     fn manifest_failed(&self, e: NetError) {

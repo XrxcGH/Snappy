@@ -40,6 +40,9 @@ struct Serve {
     wrong_url: bool,
     /// The Content-Length the installer response claims, whatever its body is.
     installer_length: Option<usize>,
+    /// Run when the manifest is asked for / when the installer is asked for, before the server answers (a person acting meanwhile).
+    on_manifest: Option<Arc<dyn Fn() + Send + Sync>>,
+    on_installer: Option<Arc<dyn Fn() + Send + Sync>>,
 }
 
 struct SharedProbe(Mutex<Fake>);
@@ -114,12 +117,17 @@ impl Rig {
             manifest_redirect: None,
             wrong_url: false,
             installer_length: None,
+            on_manifest: None,
+            on_installer: None,
         }));
         let for_server = serve.clone();
         let server = Server::start(move |req| {
             let s = for_server.lock().unwrap().clone();
             let v = &s.version;
             if req.path == format!("{BASE_PATH}/releases/latest/download/latest.json") {
+                if let Some(hook) = &s.on_manifest {
+                    hook();
+                }
                 if let Some(to) = &s.manifest_redirect {
                     return Reply::redirect(302, to);
                 }
@@ -130,6 +138,9 @@ impl Rig {
                 let json = format!(r#"{{"version":"{v}","notes":"ignored","platforms":{{"windows-x86_64":{{"signature":"{}","url":"{url}"}}}}}}"#, s.signature);
                 Reply::ok(json.into_bytes())
             } else if req.path == format!("{BASE_PATH}/releases/download/v{v}/Snappy_{v}_x64-setup.exe") {
+                if let Some(hook) = &s.on_installer {
+                    hook();
+                }
                 let reply = Reply::ok(s.installer.clone());
                 match s.installer_length {
                     Some(n) => reply.declaring(n),
@@ -333,6 +344,63 @@ fn switching_the_check_off_sends_nothing_and_deletes_the_staged_installer() {
     assert_eq!(rig.server.requests().len(), before, "toggle off means zero requests");
     // the choice survives a restart
     assert!(!rig.make("0.1.5").status().auto);
+}
+
+/// A check that began with the setting on, and whose person then turned it off, must not leave an installer behind.
+fn rig_that_is_switched_off_when(on_installer: bool) -> Rig {
+    let rig = Rig::new("0.1.5");
+    rig.up.startup();
+    rig.up.set_auto(true);
+    let up = rig.up.clone();
+    let hook: Arc<dyn Fn() + Send + Sync> = Arc::new(move || up.set_auto(false));
+    {
+        let mut serve = rig.serve.lock().unwrap();
+        if on_installer {
+            serve.on_installer = Some(hook);
+        } else {
+            serve.on_manifest = Some(hook);
+        }
+    }
+    rig.up.run_check(false);
+    rig
+}
+
+fn assert_nothing_kept(rig: &Rig) {
+    let s = rig.up.status();
+    assert_eq!((s.state, s.auto, s.version.clone(), s.error), ("idle", false, None, None), "{s:?}");
+    assert!(!rig.staged_path().exists(), "no installer is staged after the check was switched off");
+    assert!(!rig.paths().part_file(&Version::parse("0.2.0").unwrap()).exists(), "and no half-written one is left");
+    assert!(!rig.paths().sig_file(&Version::parse("0.2.0").unwrap()).exists());
+    assert!(rig.up.state().staged.is_none(), "the saved state names no staged installer");
+}
+
+#[test]
+fn a_check_switched_off_while_the_manifest_is_asked_for_downloads_nothing() {
+    let rig = rig_that_is_switched_off_when(false);
+    assert_nothing_kept(&rig);
+    assert_eq!((rig.manifests(), rig.installers()), (1, 0), "the installer is never asked for");
+}
+
+#[test]
+fn a_check_switched_off_while_the_installer_downloads_deletes_it_and_stages_nothing() {
+    let rig = rig_that_is_switched_off_when(true);
+    assert_nothing_kept(&rig);
+    assert_eq!(rig.installers(), 1);
+    // the next launch does not offer it either
+    let again = rig.make("0.1.5");
+    again.startup();
+    assert_eq!(again.status().state, "idle");
+    assert!(!again.apply_at_launch());
+}
+
+#[test]
+fn switching_the_check_off_does_not_stop_a_check_the_person_asked_for() {
+    let rig = Rig::new("0.1.5");
+    rig.up.startup();
+    rig.up.set_auto(false);
+    rig.up.run_check(true);
+    assert_eq!(rig.up.status().state, "staged", "{:?}", rig.up.status());
+    assert!(rig.staged_path().is_file());
 }
 
 #[test]
