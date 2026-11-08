@@ -12,7 +12,7 @@ This reverses the earlier line in the releases guide that said Snappy never chec
 
 ## How it works
 
-- The program asks one fixed address on github.com for a small file that names the newest version. It asks once an hour at most, a few seconds after the window opens, and only when the setting is on and the first-run notice has been shown.
+- The program asks one fixed address on github.com for a small file that names the newest version. It asks once an hour at most, a few seconds after the window opens, and only when the setting is on and the first-run notice had already been shown when the program started. The launch that shows the notice makes no check; the next launch does.
 - If the file names a newer version, the program downloads the installer from the matching fixed address, checks its signature, and keeps it ready. When nothing is in progress, the update is applied the next time Snappy opens, before the window appears. The person can also choose Update now.
 - Everything that decides what is downloaded and installed is in the Rust program (`apps/app/src-tauri/src/updater`). The page never supplies an address, a host, a header, a version or a path. It can ask five questions and give two orders: ask for the status, check now, install the file that is ready (it says whether it is idle), switch the check on or off, and open the fixed releases page after repeated failures.
 - A new version must be higher than the running one. A downgrade is refused twice: by the program, and by the installer.
@@ -78,7 +78,15 @@ Headless captures of the built desktop page with a scripted stand-in for the she
 
 ## What has not been run
 
-The update drill (`apps/app/test/e2e-update`) installs and starts the app, so it needs a window: the real `/UPDATE` install over an installed copy, data surviving it, Smart App Control, the elevated and second-process cases, an installer killed mid-run, WinHTTP behind a proxy or PAC file, and the live GitHub redirect chain. Everything else above was tested against a loopback server and test keys.
+## What the drill ran
+
+The update drill (`apps/app/test/e2e-update`) was run in full on 8 November 2026, on one Windows 11 computer, from an ordinary shell: three test installers built with test keys under a separate identity, one installed per user, and a loopback server standing in for GitHub. All 34 of its checks passed in the last full run: an update found, signature-checked, staged, installed per user at the next launch with no administrator prompt and the app’s data kept; a tampered installer, a wrong key, a signature made for another file name, a stripped signature, a wrong address, a foreign redirect, an oversize installer, one with no length and one with a content encoding, each refused; a downgrade and the same version ignored; a dead server and the switch off silent; no request on the first launch; and a rotation to the recovery key. It cleaned up after itself.
+
+It found three real problems on the way, which are fixed and covered by tests: every installed copy said it could not update itself (the installer’s record was looked up under an empty publisher), the first launch sent its check while the first-run notice was still on screen, and the drill’s own scripts had two mistakes (see the README in that folder). The drill’s own failure on the sandboxed shell that first started it was not explained beyond a likely cause.
+
+## What has not been run
+
+The drill used the real `/UPDATE` installer path, but only with test builds and a loopback server. Not run: Smart App Control, the elevated and second-process cases, an installer killed mid-run, WinHTTP behind a proxy or PAC file, an update from the live GitHub redirect chain (there is no published release), and a check made on launch after the one-hour limit on an installed release build. Everything else above was tested against a loopback server and test keys.
 
 ## Installer facts
 
