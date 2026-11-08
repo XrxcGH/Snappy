@@ -42,6 +42,25 @@ describe("Start page words", () => {
   });
 });
 
+describe("buttons and notes the tools share", () => {
+  it("names the control that picks the export the same way on Start and in the terminal, and Add export for the links to Start", () => {
+    expect(copy.terminal.chooseButton).toBe(copy.start.choose);
+    expect(copy.terminal.chooseButton).toBe("Choose ZIP files");
+    expect(copy.common.addExport).toBe("Add export");
+    expect(hits(/^Choose export$/)).toEqual([]);
+  });
+
+  it("has one note for something a tool cannot describe, that says where to look next", () => {
+    expect(copy.tools.otherNote).toBe("Snappy found something it could not describe. The export check can say more.");
+    expect(copy.tools.otherNote).not.toMatch(/noted/);
+  });
+
+  it("writes the empty value as an en dash and a clock as AM or PM, never a hyphen or a lowercase am", () => {
+    expect(copy.common.noFigure).toBe("\u2013");
+    expect(hits(/\b\d{1,2}(:\d\d)? ?(am|pm)\b/)).toEqual([]);
+  });
+});
+
 describe("sample data", () => {
   it("is the one name for the built-in fake data on Start and on the Export guide page", () => {
     expect(copy.start.sampleButton).toBe("Use sample data");

@@ -267,6 +267,8 @@ export const tools = {
     return onDesktop("Snappy could not finish this. Reload the page and try again.", "Snappy could not finish this. Restart Snappy and try again.");
   },
   notesHeading: "Notes",
+  // For a tool to show when its export holds something it cannot describe: the sentence that says where to look next.
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
   commandHeading: "Run it as a command",
   // Save, not download: in the app there is no download, the file dialog says save, and the message after it says "File saved."
   downloadHeading: "Save a file",
@@ -688,7 +690,8 @@ export const terminal = {
   stopButton: "Stop",
   closeButton: "Close",
   copyOutputButton: "Copy output",
-  chooseButton: "Choose export",
+  // The same name as the control on Start (start.choose): one control, one name.
+  chooseButton: "Choose ZIP files",
   clearFilesButton: "Clear",
   continueButton: "Continue",
   cancelButton: "Cancel",
