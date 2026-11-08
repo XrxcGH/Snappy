@@ -721,6 +721,53 @@ fn bump_failed(st: &mut State, version: &str) {
     }
 }
 
+/// Where this build looks for updates: the repository's GitHub releases. The end-to-end test build
+/// (`dev-update-endpoint`) instead reads a loopback address from the environment, and has no updater
+/// at all when that is not set.
+#[cfg(not(feature = "dev-update-endpoint"))]
+fn build_endpoint() -> Option<(Endpoint, Policy)> {
+    Some((Endpoint::release(), Policy::Release))
+}
+
+#[cfg(feature = "dev-update-endpoint")]
+fn build_endpoint() -> Option<(Endpoint, Policy)> {
+    std::env::var("SNAPPY_UPDATE_ENDPOINT").ok().map(|base| (Endpoint::loopback(&base), Policy::Loopback))
+}
+
+/// The updater of this running program: the real network, the real Windows checks, the system clock.
+/// `data_dir` is the app's local data folder; `product` and `publisher` name the installer's registry
+/// record. `busy` tells whether a picked file is open or was just read. `None` on systems other
+/// than Windows (their update path is a later decision) and when the running version is unreadable.
+#[cfg(windows)]
+pub fn for_app(data_dir: &Path, product: &str, publisher: &str, busy: Arc<dyn Fn() -> bool + Send + Sync>) -> Option<Updater> {
+    let running_text = env!("CARGO_PKG_VERSION");
+    let (endpoint, policy) = build_endpoint()?;
+    let config = Config {
+        endpoint,
+        policy,
+        keys: keys::trusted().ok(),
+        running: Version::running(running_text)?,
+        running_text: running_text.to_string(),
+        paths: Paths::new(data_dir.join("updates")),
+    };
+    let clock = || std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    Some(Updater::new(
+        config,
+        Deps {
+            transport: Arc::new(transport_windows::WinHttp),
+            probe: Arc::new(launch_windows::SystemProbe { product_key: format!(r"Software\{publisher}\{product}") }),
+            launcher: Arc::new(launch_windows::WindowsLauncher),
+            clock: Arc::new(clock),
+            busy,
+        },
+    ))
+}
+
+#[cfg(not(windows))]
+pub fn for_app(_data_dir: &Path, _product: &str, _publisher: &str, _busy: Arc<dyn Fn() -> bool + Send + Sync>) -> Option<Updater> {
+    None
+}
+
 fn read_signature(path: &Path) -> Option<String> {
     let mut text = String::new();
     File::open(path).ok()?.take(MAX_SIGNATURE_BYTES as u64 + 1).read_to_string(&mut text).ok()?;

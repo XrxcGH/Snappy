@@ -9,7 +9,7 @@
  * need the built program" in the README.
  */
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -118,7 +118,7 @@ describe("navigation lock", () => {
 
 /** The commands of the native reader, then the update commands. Nothing else may be callable from the page. */
 const READER_COMMANDS = ["pick_zips", "read_range", "close_file"];
-const UPDATE_COMMANDS = ["update_status"];
+const UPDATE_COMMANDS = ["update_status", "update_check", "update_install", "update_set_auto", "update_open_releases"];
 const permissionOf = (command: string): string => `allow-${command.replaceAll("_", "-")}`;
 
 describe("read-only guarantee", () => {
@@ -286,5 +286,42 @@ describe("WebView2 hardening", () => {
     expect(features).not.toMatch(/^default\s*=/m);
     // (test/workflows.test.ts checks that no workflow file asks for them either)
     expect(read("package.json")).not.toMatch(/dev-hooks/);
+  });
+});
+
+describe("the updater's boundary with the page", () => {
+  const updaterDir = path.join(root, "src-tauri", "src", "updater");
+  const sources = readdirSync(updaterDir).filter((f) => f.endsWith(".rs") && f !== "tests.rs" && f !== "testserver.rs");
+
+  it("takes nothing from the page except two booleans: no address, host, header, version or path", () => {
+    const c = production(lib);
+    const found = [...c.matchAll(/#\[tauri::command\][\s\S]*?\bfn (update_\w+)\(([^)]*)\)/g)];
+    expect(found.map((m) => m[1])).toEqual(UPDATE_COMMANDS);
+    // what the page can pass: whatever is not injected by the shell (State, AppHandle)
+    const own = (params: string): string[] =>
+      params.replace(/\w+:\s*State<[^>]*>/g, "").replace(/\w+:\s*AppHandle/g, "").split(",").map((p) => p.trim()).filter(Boolean);
+    const passed = found.map((m) => [m[1], own(m[2] ?? "")] as const);
+    expect(passed).toEqual([
+      ["update_status", []],
+      ["update_check", []],
+      ["update_install", ["idle: bool"]],
+      ["update_set_auto", ["auto: bool"]],
+      ["update_open_releases", []],
+    ]);
+  });
+
+  it("never imports the picked-file or read-only code, and that code never touches the updater", () => {
+    for (const file of sources) {
+      const c = production(readFileSync(path.join(updaterDir, file), "utf8"));
+      expect(c, file).not.toMatch(/readonly|Picked|pick_zips|read_range|PickedFile/);
+    }
+    expect(production(readonlyRs)).not.toMatch(/updater/);
+  });
+
+  it("has no log file and prints nothing, so no address or token reaches a log", () => {
+    for (const file of sources) {
+      const c = production(readFileSync(path.join(updaterDir, file), "utf8"));
+      expect(c, file).not.toMatch(/println!|eprintln!|print!|dbg!|log::|tracing::|write_log/);
+    }
   });
 });

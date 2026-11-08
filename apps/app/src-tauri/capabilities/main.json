@@ -3,5 +3,5 @@
   "identifier": "main",
   "description": "What the Snappy window may ask the shell to do. Local pages only; no remote URLs. Three read-only commands of our own and the update commands; no file-system, dialog, shell, http or opener plugin permission.",
   "windows": ["main"],
-  "permissions": ["allow-pick-zips", "allow-read-range", "allow-close-file", "allow-update-status"]
+  "permissions": ["allow-pick-zips", "allow-read-range", "allow-close-file", "allow-update-status", "allow-update-check", "allow-update-install", "allow-update-set-auto", "allow-update-open-releases"]
 }

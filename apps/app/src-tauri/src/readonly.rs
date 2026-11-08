@@ -83,6 +83,11 @@ impl Picked {
     pub fn close_all(&mut self) {
         self.files.clear();
     }
+
+    /// True when no picked file is open.
+    pub fn is_empty(&self) -> bool {
+        self.files.is_empty()
+    }
 }
 
 #[cfg(windows)]

@@ -64,10 +64,18 @@ mod tests {
         if neither {
             // real keys: both must decode, and they must be two different keys
             assert_ne!(signing, recovery);
-            assert_eq!(trusted().ok().map(|k| k.len()), Some(2));
+            assert!(Keys::from_texts(&[signing, recovery]).is_ok_and(|k| k.len() == 2));
         } else {
-            assert_eq!(trusted().err(), Some(KeyError::Placeholder), "a placeholder build can verify nothing");
+            assert_eq!(Keys::from_texts(&[signing, recovery]).err(), Some(KeyError::Placeholder), "a placeholder build can verify nothing");
         }
+    }
+
+    #[cfg(feature = "dev-update-endpoint")]
+    #[test]
+    fn the_test_build_trusts_a_test_key_and_never_the_release_file() {
+        let texts = trusted_texts().unwrap();
+        assert!(!texts.is_empty() && texts.iter().all(|t| !key_file().contains(t.as_str())));
+        assert!(trusted().is_ok());
     }
 
     #[test]

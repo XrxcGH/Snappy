@@ -1,5 +1,5 @@
 //! Snappy desktop shell. It hosts the dashboard (one built HTML file) in the system WebView and
-//! does four things, all local:
+//! does five things:
 //!
 //! 1. The main window can only ever show the app's own bundled page. Every other address (a link,
 //!    `window.open`, a redirect, a form post, a script setting `location`) is refused before any
@@ -12,21 +12,35 @@
 //!    are turned off on the live controller.
 //! 4. In release builds the environment variables that reconfigure WebView2 (a debugging port, a
 //!    different profile folder or runtime) are removed before the engine starts.
+//! 5. On Windows, an update check (`updater`): a few seconds after the window opens the program asks
+//!    github.com for the newest version, and applies a signed update. It is the only network use of
+//!    this program, it is made here and never by the page (whose policy still forbids every
+//!    connection), and the person can switch it off. The page reaches it through five commands.
 //!
-//! Nothing here opens a network connection.
+//! Apart from the update check, nothing here opens a network connection.
 
 mod readonly;
 pub mod updater;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use readonly::{Picked, PickedFile};
 use tauri::ipc::Response;
 use tauri::webview::NewWindowResponse;
-use tauri::{AppHandle, State, Url, WebviewWindow, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, State, Url, WebviewWindow, WebviewWindowBuilder};
 use tauri_plugin_dialog::DialogExt;
 
 type PickedState = Mutex<Picked>;
+
+/// The updater of this run, if this program has one (Windows only).
+struct UpdaterState(Option<updater::Updater>);
+
+/// When a picked file was last read. A restart for an update waits while a read was this recent.
+#[derive(Default)]
+struct ReadClock(Mutex<Option<Instant>>);
+
+const RECENT_READ: Duration = Duration::from_secs(10);
 
 fn lock(state: &PickedState) -> Result<std::sync::MutexGuard<'_, Picked>, String> {
     state.lock().map_err(|_| "internal state is unavailable".to_string())
@@ -57,8 +71,11 @@ async fn pick_zips(app: AppHandle, window: WebviewWindow, state: State<'_, Picke
 
 /// Reads `length` bytes at `offset` of a picked file, read-only.
 #[tauri::command]
-fn read_range(state: State<'_, PickedState>, id: String, offset: u64, length: u64) -> Result<Response, String> {
+fn read_range(state: State<'_, PickedState>, clock: State<'_, ReadClock>, id: String, offset: u64, length: u64) -> Result<Response, String> {
     let (file, size) = lock(&state)?.lookup(&id)?;
+    if let Ok(mut last) = clock.0.lock() {
+        *last = Some(Instant::now());
+    }
     readonly::read_range(&file, size, offset, length).map(Response::new)
 }
 
@@ -69,10 +86,55 @@ fn close_file(state: State<'_, PickedState>, id: String) -> Result<(), String> {
     Ok(())
 }
 
-/// What the page may know about updates (see `updater`).
+/// What the page may know about updates (see `updater`): enums, numbers and validated version text.
 #[tauri::command]
-fn update_status() -> updater::Status {
-    updater::Status::inert()
+fn update_status(state: State<'_, UpdaterState>) -> updater::Status {
+    state.0.as_ref().map_or_else(updater::Status::inert, |u| u.status())
+}
+
+/// "Check now" (and "Update now" after a failure): checks, and downloads and stages what it finds.
+/// Takes no arguments. The answer comes through `update_status`.
+#[tauri::command]
+fn update_check(state: State<'_, UpdaterState>) {
+    if let Some(u) = &state.0 {
+        u.start_check(true);
+    }
+}
+
+/// Installs the staged update and restarts. `idle` is the page's claim that nothing is in progress;
+/// the program also refuses while a picked file is in use or another copy runs. Takes no version
+/// and no path: it only ever starts the file that was downloaded and verified.
+#[tauri::command]
+fn update_install(app: AppHandle, state: State<'_, UpdaterState>, idle: bool) -> Result<(), &'static str> {
+    let Some(u) = &state.0 else { return Err("unsupported") };
+    match u.install(idle) {
+        Ok(()) => {
+            app.exit(0); // runs Tauri's own cleanup; the installer was started detached
+            Ok(())
+        }
+        Err(updater::InstallError::Busy) => Err("busy"),
+        Err(updater::InstallError::NotStaged) => Err("not_staged"),
+        Err(updater::InstallError::Unsupported) => Err("unsupported"),
+        Err(updater::InstallError::Failed) => Err("failed"),
+    }
+}
+
+/// The setting "Check for updates on launch". The page also calls this with the current value when
+/// it shows the first-run notice, which is how the program learns the notice was seen.
+#[tauri::command]
+fn update_set_auto(state: State<'_, UpdaterState>, auto: bool) {
+    if let Some(u) = &state.0 {
+        u.set_auto(auto);
+    }
+}
+
+/// Opens the one fixed releases page in the browser. Does nothing until repeated failures (or a
+/// copy that cannot update itself) have enabled the link. Takes no address.
+#[tauri::command]
+fn update_open_releases(state: State<'_, UpdaterState>) {
+    if let Some(u) = &state.0 {
+        u.open_releases();
+    }
 }
 
 /// True only for the app's own bundled page. Windows and Android serve it from
@@ -187,14 +249,40 @@ fn harden_webview2(window: &WebviewWindow) {
 #[cfg(not(windows))]
 fn harden_webview2(_window: &WebviewWindow) {}
 
+/// The updater, wired to this app's data folder, its installer record and the picked-file table.
+fn build_updater(app: &tauri::App) -> Option<updater::Updater> {
+    let handle = app.handle().clone();
+    let busy = Arc::new(move || {
+        let open = handle.state::<PickedState>().lock().map_or(true, |t| !t.is_empty());
+        let recent = handle.state::<ReadClock>().0.lock().map_or(true, |t| t.is_some_and(|at| at.elapsed() < RECENT_READ));
+        open || recent
+    });
+    let config = app.config();
+    let data = app.path().app_local_data_dir().ok()?;
+    let product = config.product_name.clone().unwrap_or_else(|| "Snappy".into());
+    let publisher = config.bundle.publisher.clone().unwrap_or_default();
+    updater::for_app(&data, &product, &publisher, busy)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     scrub_webview_environment();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(PickedState::default())
-        .invoke_handler(tauri::generate_handler![pick_zips, read_range, close_file, update_status])
+        .manage(ReadClock::default())
+        .invoke_handler(tauri::generate_handler![pick_zips, read_range, close_file, update_status, update_check, update_install, update_set_auto, update_open_releases])
         .setup(|app| {
+            // Before any window: settle the last update, and if a verified one is waiting, run it.
+            let updater = build_updater(app);
+            if let Some(u) = &updater {
+                u.startup();
+                if u.apply_at_launch() {
+                    app.handle().exit(0);
+                    return Ok(());
+                }
+            }
+            app.manage(UpdaterState(updater));
             // The window is created here, not from the config alone, so it can carry the handlers.
             let config = app
                 .config()
@@ -214,6 +302,9 @@ pub fn run() {
             }
             let window = builder.build()?;
             harden_webview2(&window);
+            if let Some(u) = &app.state::<UpdaterState>().0 {
+                u.schedule(); // a few seconds from now, only if the setting is on; never blocks start-up
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

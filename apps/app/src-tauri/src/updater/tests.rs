@@ -238,6 +238,27 @@ fn dummy_deps() -> Deps {
 }
 
 #[test]
+fn the_program_version_is_one_the_updater_can_compare() {
+    assert!(Version::running(env!("CARGO_PKG_VERSION")).is_some(), "Cargo.toml has a version the updater understands");
+}
+
+#[test]
+fn the_real_wiring_builds_for_this_program() {
+    let dir = scratch_dir("wiring");
+    let up = for_app(&dir, "Snappy", "Snappy contributors", Arc::new(|| false));
+    #[cfg(not(feature = "dev-update-endpoint"))]
+    {
+        let up = up.expect("a Windows build has an updater");
+        let s = up.status();
+        assert_eq!(s.current, env!("CARGO_PKG_VERSION"));
+        assert!(!s.supported, "a test program is not the per-user install");
+        assert!(s.notice_pending && s.auto);
+    }
+    #[cfg(feature = "dev-update-endpoint")]
+    let _ = up;
+}
+
+#[test]
 fn nothing_is_sent_before_the_first_run_notice_was_shown() {
     let rig = Rig::new("0.1.5");
     rig.up.startup();

@@ -60,6 +60,16 @@ pub struct Target {
     pub loopback: bool,
 }
 
+#[cfg(any(test, feature = "dev-update-endpoint"))]
+fn is_loopback(policy: Policy) -> bool {
+    policy == Policy::Loopback
+}
+
+#[cfg(not(any(test, feature = "dev-update-endpoint")))]
+fn is_loopback(_policy: Policy) -> bool {
+    false
+}
+
 fn clean_text(raw: &str) -> bool {
     raw.len() <= MAX_URL && raw.bytes().all(|b| (0x21..0x7f).contains(&b) && b != b'\\')
 }
@@ -85,10 +95,7 @@ pub fn check_url(raw: &str, hop: usize, policy: Policy) -> Result<Target, Policy
         return Err(PolicyError::Form);
     }
     let url = Url::parse(raw).map_err(|_| PolicyError::Form)?;
-    #[cfg(any(test, feature = "dev-update-endpoint"))]
-    let loopback = policy == Policy::Loopback;
-    #[cfg(not(any(test, feature = "dev-update-endpoint")))]
-    let loopback = false;
+    let loopback = is_loopback(policy);
     let scheme_ok = match url.scheme() {
         "https" => true,
         "http" => loopback,
