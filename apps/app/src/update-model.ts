@@ -13,8 +13,12 @@ export type UpdateError = "offline" | "timeout" | "status" | "policy" | "tls" | 
 
 const STATES: readonly string[] = ["idle", "checking", "downloading", "staged", "installing", "failed"];
 const ERRORS: readonly string[] = ["offline", "timeout", "status", "policy", "tls", "manifest", "size", "signature", "disk", "install", "busy", "unsupported", "keys"];
-/** Errors that mean "could not talk to GitHub", as opposed to something this copy did itself. */
-const UNREACHABLE: readonly string[] = ["offline", "timeout", "status", "policy", "tls", "manifest"];
+/**
+ * Errors that mean "could not talk to GitHub", as opposed to something this copy did itself. A reply that is not the file
+ * ("status", such as the 404 before the first release exists) is not in the list: GitHub was reached, so "Can’t reach GitHub."
+ * would be wrong, and the calm "Couldn’t check. Try again." is true.
+ */
+const UNREACHABLE: readonly string[] = ["offline", "timeout", "policy", "tls", "manifest"];
 const PLAIN_VERSION = /^\d{1,5}\.\d{1,5}\.\d{1,5}$/;
 const CURRENT_VERSION = /^\d{1,5}\.\d{1,5}\.\d{1,5}(-[0-9A-Za-z.-]{1,32})?$/;
 

@@ -111,8 +111,9 @@ describe("what Check now answers", () => {
     expect(checkResult(status({ state: "checking" }))).toBeNull();
     expect(checkResult(status({ state: "downloading" }))).toBeNull();
     expect(checkResult(status())).toBe("upToDate");
-    for (const error of ["offline", "timeout", "status", "policy", "tls", "manifest"]) expect(checkResult(status({ error })), error).toBe("unreachable");
-    for (const error of ["busy", "keys", "disk", "signature", "unsupported"]) expect(checkResult(status({ error })), error).toBe("couldNotCheck");
+    for (const error of ["offline", "timeout", "policy", "tls", "manifest"]) expect(checkResult(status({ error })), error).toBe("unreachable");
+    // GitHub answered, but not with the file (a 404 before the first release exists): not "unreachable", and nothing alarming.
+    for (const error of ["status", "busy", "keys", "disk", "signature", "unsupported"]) expect(checkResult(status({ error })), error).toBe("couldNotCheck");
   });
 
   it("says nothing while a newer version is known, so it never contradicts the banner", () => {
