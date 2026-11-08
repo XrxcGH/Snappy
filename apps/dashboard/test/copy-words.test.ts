@@ -4,9 +4,11 @@
  * specific choices: what the Start page says, which name a thing has, and which words are gone.
  */
 import { describe, expect, it } from "vitest";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import * as copy from "../src/copy.ts";
 import { setPlatform } from "../src/platform.ts";
-import { SAMPLE_ARGS } from "./copy-rules.ts";
+import { SAMPLE_ARGS, loadCopyModules } from "./copy-rules.ts";
 
 /** Every string reachable from copy.ts with the path it came from; functions are called with sample values. */
 function strings(value: unknown, at = "", out: [string, string][] = []): [string, string][] {
@@ -24,6 +26,8 @@ function strings(value: unknown, at = "", out: [string, string][] = []): [string
   return out;
 }
 const all = strings(copy);
+/** copy.ts and every src/copy-<name>.ts beside it, for the rules that hold for every track's words. */
+const everyModule = [...all, ...(await loadCopyModules(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src"))).flatMap((m) => strings(m))];
 const hits = (re: RegExp, except: RegExp = /^$/): string[] => all.filter(([p, t]) => re.test(t) && !except.test(p)).map(([p, t]) => `${p}: ${t}`);
 
 describe("Start page words", () => {
@@ -356,5 +360,27 @@ describe("one name for what a passphrase protects: the saved history", () => {
 
   it("says in two short sentences that Snappy cannot check marks and when they are kept", () => {
     expect(copy.tools.markNote).toBe("Snappy cannot check your marks. They are kept only if you save your history with a passphrase.");
+  });
+});
+
+describe("the words rules that hold for every copy file", () => {
+  it("has no ledger, allowlist, candidates, screen scan or virtual folder in anything a person reads", () => {
+    const bad = everyModule.filter(([, t]) => /\b(ledger|allowlist|candidates|screen scan|virtual folder)\b/i.test(t));
+    expect(bad.map(([p, t]) => `${p}: ${t}`)).toEqual([]);
+  });
+
+  it("keeps worker-src and blob: in the one sentence under Technical details, which says so", () => {
+    const bad = everyModule.filter(([, t]) => /worker-src|blob:/.test(t) && !t.startsWith("Technical: "));
+    expect(bad.map(([p]) => p)).toEqual([]);
+  });
+
+  it("says this page only where it was read in the app and kept", () => {
+    const REVIEWED = new Set([
+      "terminal.confirmFolderBody()", // the web text; the app says Snappy
+      "privacy.networkUnknown", // the web text names the page whose policy could not be read
+      "privacy.policyLabel", // inside Technical details
+    ]);
+    const found = [...new Set(everyModule.filter(([, t]) => /\bthis page\b/i.test(t)).map(([p]) => p))].sort();
+    expect(found).toEqual([...REVIEWED].sort());
   });
 });
