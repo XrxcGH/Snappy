@@ -532,3 +532,102 @@ describe("the checker itself catches the mistakes it is for", () => {
     expect(problems("release.yml", withComment)).toEqual([]);
   });
 });
+
+describe("the macOS build and smoke job in desktop-smoke.yml", () => {
+  const text = workflow("desktop-smoke.yml");
+  const job = split(text).jobs.find((j) => j.name === "macos-universal-build");
+  const body = (): string => code(job!.lines).join("\n");
+  const smokeScript = readFileSync(path.join(repo, "apps", "app", "tools", "macos", "smoke.sh"), "utf8");
+  const netwatch = readFileSync(path.join(repo, "apps", "app", "tools", "macos", "netwatch.py"), "utf8");
+
+  it("exists, runs on macOS with a time limit, and the workflow runs on pull requests and on main", () => {
+    expect(job).toBeDefined();
+    expect(body()).toMatch(/^ {4}runs-on: macos-latest$/m);
+    expect(body()).toMatch(/^ {4}timeout-minutes: \d+$/m);
+    const on = /^on:\n((?:[ ]{2}.*\n|\n)*)/m.exec(text)![1]!;
+    expect(on).toMatch(/push:\s*\n\s+branches: \[main\]/);
+    expect(on).toMatch(/pull_request:/);
+  });
+
+  it("holds no secret, no environment and no write permission, and every action in it is pinned", () => {
+    expect(problems("desktop-smoke.yml", text)).toEqual([]);
+    expect(namesSecrets(job!.lines)).toBe(false);
+    expect(body()).not.toMatch(/^ {4}environment:/m);
+    expect(body()).toMatch(/^ {4}permissions:\n {6}contents: read$/m);
+    expect(body()).not.toMatch(/\bwrite\b/);
+    // Ad hoc signing only: the one APPLE_ name is the identity "-", which is not a secret. No certificate, no notarization.
+    const apple = [...body().matchAll(/\bAPPLE_[A-Z_]+/g)].map((m) => m[0]);
+    expect([...new Set(apple)]).toEqual(["APPLE_SIGNING_IDENTITY"]);
+    expect(body()).toMatch(/APPLE_SIGNING_IDENTITY: "-"/);
+    expect(body()).not.toMatch(/notarytool|stapler|security import|create-keychain|\.p12|\bcurl\b|\bwget\b/);
+  });
+
+  it("builds the universal app and disk image unsigned and locked, from both Rust targets, after the unit tests", () => {
+    const b = body();
+    expect(b).toMatch(/rustup target add aarch64-apple-darwin x86_64-apple-darwin/);
+    expect(b).toMatch(/cargo test --lib --locked/);
+    expect(b).toMatch(/build --target universal-apple-darwin --bundles dmg,app -- --locked/);
+    expect(b.indexOf("cargo test --lib --locked")).toBeLessThan(b.indexOf("--target universal-apple-darwin"));
+    expect(b).toMatch(/npm ci --ignore-scripts/);
+    expect(b).toMatch(/git diff --exit-code -- package-lock\.json apps\/app\/src-tauri\/Cargo\.lock/);
+    expect(b).not.toMatch(/dev-hooks/);
+  });
+
+  it("runs the smoke script and uploads the disk image, checksums, screenshots, logs and signature output for 14 days", () => {
+    const b = body();
+    expect(b).toMatch(/run: bash apps\/app\/tools\/macos\/smoke\.sh/);
+    const uploads = stepsOf(job!.lines).filter((s) => /actions\/upload-artifact@/.test(s.join("\n")));
+    expect(uploads).toHaveLength(2);
+    for (const u of uploads) expect(u.join("\n")).toMatch(/retention-days: 14\b/);
+    const [files, evidence] = uploads.map((u) => u.join("\n"));
+    expect(files).toMatch(/macos-evidence\/files\/\*/);
+    expect(evidence).toMatch(/if: always\(\)/);
+    for (const kind of ["*.txt", "*.log", "*.png"]) expect(evidence).toContain(`macos-evidence/${kind}`);
+  });
+
+  it("has a smoke script that checks what the task says it must", () => {
+    for (const needle of [
+      "lipo -archs", "Signature=adhoc", "hdiutil verify", "hdiutil attach", "Applications", "codesign -dv --verbose=4", "plutil -p",
+      "open -n", "screencapture", "--control", "OBSERVE_SECONDS", "shasum -a 256", "LSMinimumSystemVersion", "public.app-category.utilities",
+    ]) {
+      expect(smokeScript, needle).toContain(needle);
+    }
+    // Hardened runtime off, no entitlements, and a hard failure when the app survives the request to quit.
+    expect(smokeScript).toMatch(/hardened runtime is on/);
+    expect(smokeScript).toMatch(/carries entitlements/);
+    expect(smokeScript).toMatch(/ignored SIGTERM/);
+    // It uses no secret and does not sign or publish anything.
+    expect(smokeScript).not.toMatch(/codesign (--force|-f|-s )|notarytool|stapler|gh release|security import/);
+  });
+
+  it("watches the app's WebKit helper processes too, because they are not children of the app, and proves the sampler works first", () => {
+    expect(netwatch).toContain("com.apple.WebKit.");
+    expect(netwatch).toMatch(/def control\(/);
+    // The positive control runs before the app is started.
+    expect(smokeScript.indexOf("--control")).toBeLessThan(smokeScript.indexOf('open -n "$APPS/Snappy.app"'));
+    // Loopback is the only address that is not counted.
+    expect(netwatch).toContain('LOOPBACK = re.compile(r"^(127\\.|::1$|::ffff:127\\.|localhost$)"');
+  });
+});
+
+describe("release.yml builds the macOS app the same way as CI: one universal app, unsigned, ad hoc", () => {
+  const text = workflow("release.yml");
+  const desktop = split(text).jobs.find((j) => j.name === "desktop")!;
+  const signMac = split(text).jobs.find((j) => j.name === "sign-macos")!;
+
+  it("has one macOS row, universal, with dmg and app, and no separate Intel or Apple silicon row", () => {
+    const rows = code(desktop.lines).join("\n");
+    expect(rows).toMatch(/name: macos-universal\n\s+os: macos-latest\n\s+bundles: dmg,app\n\s+target: universal-apple-darwin/);
+    expect(rows).not.toMatch(/macos-arm64|macos-x64/);
+    expect(rows).toMatch(/rustup target add aarch64-apple-darwin x86_64-apple-darwin/);
+    expect(code(signMac.lines).join("\n")).toMatch(/name: \[macos-universal\]/);
+  });
+
+  it("stays unsigned in the build job: ad-hoc identity only, and the sign job stays behind the release environment", () => {
+    const rows = code(desktop.lines).join("\n");
+    expect(rows).toMatch(/export APPLE_SIGNING_IDENTITY="-"/);
+    expect(namesSecrets(desktop.lines)).toBe(false);
+    expect(code(signMac.lines).join("\n")).toMatch(/environment: release/);
+    expect(code(signMac.lines).join("\n")).toMatch(/needs\.verify\.outputs\.official == 'true'/);
+  });
+});
