@@ -11,15 +11,19 @@
  * safeKey(). safeKey() rejects identifier-shaped keys (usernames, ids, numbers, anything with
  * "@" or "+"), but it cannot tell a plain-words group title or display name from a field name, so
  * a showKeys report MUST be reviewed before it is shared (the report itself says so).
- * Media bytes are never read: only their length is used. Neither are the values of the chat and
- * Snap histories: those two files are walked as a byte stream that reports field names and value
- * kinds only, so message text is never decoded (and the files may be of any size).
+ * Media bytes are never read: only their length is used. Neither are the values of any JSON file in
+ * the reader-based report: every one is walked as a byte stream that reports field names and value
+ * kinds only, so message text, locations and account values are never decoded (and the files may
+ * be of any size). Files whose name or section names say login, location, purchase, support, My AI,
+ * ad, account or device data are not described at all: the report lists the allowlisted file name
+ * and the words "not described", with no field names, counts or sizes, and such a file named by
+ * its path is not even opened.
  */
 import { unzipSync } from "fflate";
 import { KNOWN_DIRS, KNOWN_STEMS, MEDIA_EXTENSIONS } from "./layout.ts";
 import { readZipDirectory } from "./zip.ts";
 import { JsonStreamError, inflateSource, projectShapes } from "./json-stream.ts";
-import { listZipEntries, readZipEntry } from "./zip-reader.ts";
+import { listZipEntries } from "./zip-reader.ts";
 import type { RandomAccessReader, ZipEntryInfo } from "./zip-reader.ts";
 
 // ------------------------------------------------------------------- types ---
@@ -316,9 +320,11 @@ interface Entry {
   bytes?: Uint8Array;
   /** Fixed-text remark used instead of the default when no bytes are present. */
   note?: string;
-  /** A history file described by streaming: `structure` (or `note`, when that failed) is final and no bytes were held. */
+  /** A JSON file described by streaming: `structure` (or `note`, when that failed) is final and no bytes were held. */
   streamed?: boolean;
   structure?: StructureNode;
+  /** A file of a kind the report never describes: only its allowlisted name and a fixed remark are printed. */
+  sensitive?: boolean;
 }
 
 function splitName(path: string): { dirs: string[]; stem: string; ext: string } {
@@ -345,6 +351,43 @@ function knownName(dirs: string[], stem: string, ext: string): string | undefine
   const m = /^(.*?)(?:[_-]\d{1,3})?$/.exec(stem.toLowerCase());
   if (!m || !KNOWN_STEMS.has(m[1] as string)) return undefined;
   return [...dirs.map((d) => d.toLowerCase()), `${stem.toLowerCase()}.${ext}`].join("/");
+}
+
+/** Fixed remark for a file the report never describes. */
+const NOT_DESCRIBED = "not described";
+
+/**
+ * Words that mark a file or a section as login, location, purchase, support, My AI, ad, account or
+ * device data: the kinds of data the contract says are never read. Matched on whole words of a
+ * file name or a section name ("Login History", "location_history", "LoginHistory").
+ */
+const SENSITIVE_WORDS: ReadonlySet<string> = new Set([
+  "login", "logins", "signin", "location", "locations", "gps", "geo", "places",
+  "purchase", "purchases", "shopping", "order", "orders", "payment", "payments", "billing", "subscription", "subscriptions",
+  "support", "ai", "ad", "ads", "advertising", "advertisement", "advertisements",
+  "account", "email", "phone", "mobile", "password", "device", "devices", "survey", "surveys",
+  "profile", "search", "talk", "interactions", "display", "bio", "caption", "captions",
+]);
+
+/** True when `name` (a file name or a section name) says it holds data the report must not describe. */
+export function isSensitiveName(name: string): boolean {
+  const words = name
+    .replace(/\.[A-Za-z0-9]{1,6}$/, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w !== "");
+  return words.some((w) => SENSITIVE_WORDS.has(w) || w.startsWith("advertis"));
+}
+
+/** True when a parsed document's top-level section names say it is a kind the report never describes. */
+function hasSensitiveSection(value: unknown): boolean {
+  return typeof value === "object" && value !== null && !Array.isArray(value) && Object.keys(value).some(isSensitiveName);
+}
+
+/** A JSON entry whose own file name says it is a kind the report never describes (it is not opened). */
+function isSensitivePath(path: string): boolean {
+  return isSensitiveName(path.slice(path.lastIndexOf("/") + 1));
 }
 
 function describeEntries(entries: Entry[], showKeys: boolean, notes: string[]): StructureReport {
@@ -374,6 +417,10 @@ function describeEntries(entries: Entry[], showKeys: boolean, notes: string[]): 
       fileNo += 1;
       name = kind === "other" ? `<file-${fileNo}>` : `<file-${fileNo}>.${ext}`;
     }
+    if (kind === "json" && (e.sensitive === true || isSensitivePath(e.path))) {
+      files.push({ name, kind, note: NOT_DESCRIBED }); // no size, no counts, no field names
+      continue;
+    }
     const file: StructureFile = { name, kind, sizeBytes: e.size };
 
     if (e.streamed) {
@@ -389,7 +436,12 @@ function describeEntries(entries: Entry[], showKeys: boolean, notes: string[]): 
       } else {
         try {
           const text = new TextDecoder("utf-8").decode(e.bytes).replace(/^﻿/, "");
-          file.structure = describeValue(JSON.parse(text), 0, showKeys);
+          const value: unknown = JSON.parse(text);
+          if (hasSensitiveSection(value)) {
+            files.push({ name, kind, note: NOT_DESCRIBED });
+            continue;
+          }
+          file.structure = describeValue(value, 0, showKeys);
         } catch {
           file.note = "unparseable json"; // never include the parser message: it can quote the input
         }
@@ -503,21 +555,31 @@ function withReadResults(
   });
 }
 
-/** The two per-conversation histories: the only files that hold message text, so they are never decoded. */
+/** The two per-conversation histories: described as conversations, whose keys are never printed or judged. */
 const isHistoryFile = (path: string): boolean => /^(?:chat|snap)_history\.json$/i.test(path.slice(path.lastIndexOf("/") + 1));
 
-/** Fixed remarks for a history that could not be described. */
-const HISTORY_NOTES = { malformed: "unparseable json", depth: "too large to describe", limit: "too large to describe", source: "could not be decompressed" } as const;
+/** Fixed remarks for a file that could not be described. */
+const STREAM_NOTES = { malformed: "unparseable json", depth: "too large to describe", limit: "too large to describe", source: "could not be decompressed" } as const;
 
 /**
- * Describe a history file by streaming it: conversations as a record list under keys that are
- * never printed, each record as its field names and value kinds. Values (message text above all)
- * are skipped as bytes and never decoded, whatever the size of the file.
+ * Describe a JSON file by streaming it: lists of records as their field names and value kinds
+ * (under keys that are never printed unless they are vocabulary), other top-level values by
+ * kind. Values (message text, names, places) are skipped as bytes and never decoded, whatever the
+ * size of the file. A file whose top-level or section names say login, location, purchase,
+ * support, My AI, ad, account or device data is dropped from the result entirely (`sensitive`);
+ * the two histories are exempt from that check because their keys are conversation names.
  */
-async function describeHistory(reader: RandomAccessReader, info: ZipEntryInfo, showKeys: boolean): Promise<Pick<Entry, "structure" | "note">> {
+async function describeStreamed(reader: RandomAccessReader, info: ZipEntryInfo, showKeys: boolean, history: boolean): Promise<Pick<Entry, "structure" | "note" | "sensitive">> {
   const conversations = new Map<number, { key: string; count: number; fields: Map<string, Set<string>> }>();
+  const topLevel = new Map<string, Set<string>>();
+  const onKind = (key: string | null, kind: string): void => {
+    if (key === null) return;
+    const seen = topLevel.get(key);
+    if (seen === undefined) topLevel.set(key, new Set([kind]));
+    else seen.add(kind);
+  };
   try {
-    for await (const { conversation, conversationKey, kinds } of projectShapes(inflateSource(reader, info))) {
+    for await (const { conversation, conversationKey, kinds } of projectShapes(inflateSource(reader, info), { onKind })) {
       let c = conversations.get(conversation);
       if (c === undefined) conversations.set(conversation, (c = { key: conversationKey, count: 0, fields: new Map() }));
       c.count++;
@@ -528,13 +590,23 @@ async function describeHistory(reader: RandomAccessReader, info: ZipEntryInfo, s
       }
     }
   } catch (e) {
-    return { note: e instanceof JsonStreamError ? HISTORY_NOTES[e.code] : HISTORY_NOTES.source };
+    return { note: e instanceof JsonStreamError ? STREAM_NOTES[e.code] : STREAM_NOTES.source };
+  }
+  if (!history && [...topLevel.keys(), ...[...conversations.values()].map((c) => c.key)].some(isSensitiveName)) {
+    return { sensitive: true, note: NOT_DESCRIBED };
   }
   const children: Child[] = [...conversations.values()].map((c) => {
     const bucket = countBucket(c.count);
     const fields: Child[] = [...c.fields].map(([key, kinds]) => ({ key, hidden: false, node: mergeAll([...kinds].map((kind) => ({ kind: kind as StructureKind }))) as StructureNode }));
     return { key: c.key, hidden: true, node: { kind: "array", size: { min: bucket, max: bucket }, items: objectNode(fields, showKeys) } };
   });
+  if (!history) {
+    // Top-level values that hold no records (a list of text, a number, an object): their kind only.
+    const filed = new Set(children.map((c) => c.key));
+    for (const [key, kinds] of topLevel) {
+      if (!filed.has(key)) children.push({ key, hidden: false, node: mergeAll([...kinds].map((kind) => ({ kind: kind as StructureKind }))) as StructureNode });
+    }
+  }
   return { structure: objectNode(children, showKeys) };
 }
 
@@ -548,8 +620,7 @@ async function describeHistory(reader: RandomAccessReader, info: ZipEntryInfo, s
  */
 export async function describeStructureFromReader(readers: RandomAccessReader[], opts: DescribeOptions = {}): Promise<StructureReport> {
   const notes: string[] = [];
-  const listed: { path: string; size: number; reader: RandomAccessReader; info: ZipEntryInfo }[] = [];
-  const histories: typeof listed = [];
+  const json: { path: string; size: number; reader: RandomAccessReader; info: ZipEntryInfo }[] = [];
   const leftOut: LeftOutCounts = { html: 0, media: 0, other: 0 };
   let entryTotal = 0;
 
@@ -567,31 +638,21 @@ export async function describeStructureFromReader(readers: RandomAccessReader[],
         if (path.endsWith("/")) continue;
         const kind = kindOf(splitName(path).ext);
         if (kind !== "json") leftOut[kind] += 1;
-        else if (isHistoryFile(path)) histories.push({ path: info.name, size: info.size, reader, info });
-        else listed.push({ path: info.name, size: info.size, reader, info });
+        else json.push({ path: info.name, size: info.size, reader, info });
       }
     }
   }
 
-  const { selected, overBudget } = chooseTextEntries(listed);
-  const read = new Map<string, Uint8Array>();
-  const failed = new Set<string>();
-  for (const { path, reader, info } of listed) {
-    if (!selected.has(path) || read.has(path) || failed.has(path)) continue;
-    try {
-      read.set(path, await readZipEntry(reader, info, { maxBytes: MAX_TEXT_BYTES }));
-    } catch {
-      failed.add(path); // ZipEntryError text is fixed, but one bad entry only costs its own structure
-    }
-  }
   const showKeys = opts.showKeys === true;
-  const entries = withReadResults(listed, (path) => read.get(path), failed, overBudget);
-  // Streamed: no size cap and no share of the budget, because nothing is held.
+  const entries: Entry[] = [];
+  // Streamed: no size cap and no share of the budget, because nothing is held. A file named for a
+  // kind the report never describes is not opened at all.
   const done = new Set<string>();
-  for (const { path, size, reader, info } of histories) {
+  for (const { path, size, reader, info } of json) {
     if (done.has(path)) continue;
     done.add(path);
-    entries.push({ path, size, streamed: true, ...(await describeHistory(reader, info, showKeys)) });
+    if (isSensitivePath(path)) entries.push({ path, size, sensitive: true });
+    else entries.push({ path, size, streamed: true, ...(await describeStreamed(reader, info, showKeys, isHistoryFile(path))) });
   }
   const report = describeEntries(entries, showKeys, notes);
   return { ...report, leftOut };
@@ -637,7 +698,7 @@ export function formatStructureReport(r: StructureReport): string {
   for (const f of r.files) {
     out.push("");
     const size = f.sizeBytes !== undefined ? `${f.sizeBytes} bytes` : (f.sizeBucket ?? "");
-    out.push(`${f.name}  [${f.kind}, ${size}]`);
+    out.push(`${f.name}  [${size === "" ? f.kind : `${f.kind}, ${size}`}]`);
     if (f.note) out.push(`  ${f.note}`);
     if (f.structure) renderNode(null, f.structure, 1, out);
     if (f.tags) {

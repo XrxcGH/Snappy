@@ -121,11 +121,12 @@ export async function* projectConversations(
  * quote and dropped), so message text cannot reach memory; field names are, and a name longer
  * than 64 bytes is reported as "". `conversation` numbers the conversations in file order and
  * `conversationKey` is the key they are filed under (decoded like projectConversations does).
- * Used by the structure report (`snappy-export inspect`), which prints neither.
+ * Used by the structure report (`snappy-export inspect`), which prints neither. `onKind` is told
+ * the kind of each top-level value without reading it (see ProjectOptions).
  */
 export async function* projectShapes(
   source: StreamSource,
-  opts: { maxBytes?: number } = {},
+  opts: { maxBytes?: number; onKind?: ProjectOptions["onKind"] } = {},
 ): AsyncGenerator<{ conversation: number; conversationKey: string; kinds: Record<string, string> }> {
   const projector = new Projector(
     { keepFields: [], ...opts },
