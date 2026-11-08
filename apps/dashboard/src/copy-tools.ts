@@ -49,7 +49,6 @@ export const hubSearch = {
 export const zone = {
   /** The caption on a page that shows dates and times: which zone they are in. */
   datesIn: (name: string): string => `Dates are in ${name}.`,
-  selectLabel: "Time zone",
 };
 
 export const terminalTools = {

@@ -80,8 +80,6 @@ export const shell = {
   betaLine: (version: string) => `Beta version ${version}`,
   navFindings: "Findings",
   navMore: "More",
-  themeToLight: "Switch to light theme",
-  themeToDark: "Switch to dark theme",
   themeChangedDark: "Dark theme on.",
   themeChangedLight: "Light theme on.",
 };

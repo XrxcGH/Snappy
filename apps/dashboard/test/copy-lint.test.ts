@@ -176,10 +176,12 @@ describe("copy module: the real strings", () => {
     expect(lint(copyEntries.filter((e) => e.kind === "button"), RULES[5] as (typeof RULES)[number])).toEqual([]);
   });
 
-  it("names the theme toggle by what pressing it does", () => {
+  it("names the theme toggle once, by the theme it turns on, and leaves on or off to its pressed state", () => {
+    // The header toggle keeps one fixed name and aria-pressed says whether it is on (shell-header.test.ts, shell-a11y.test.ts),
+    // so a name that changes with the theme ("Switch to light theme") must not come back: it reads as the opposite state.
     const all = copyEntries.map((e) => e.text);
-    expect(all, "a string for the light switch").toContain("Switch to light theme");
-    expect(all, "a string for the dark switch").toContain("Switch to dark theme");
+    expect(all, "the toggle's one name").toContain("Dark theme");
+    expect(all.filter((t) => /^Switch to (light|dark) theme$/.test(t)), "a name that changes with the theme").toEqual([]);
   });
 
   it("does not show the old session badge text in the shell strings that name the header", () => {
