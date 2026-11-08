@@ -915,4 +915,6 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 /* The Start intro for someone with no export yet: one line, then the sample button and its note. */
 .sample-row { display: grid; gap: var(--space-2); }
 .sample-lead { margin: 0; font-weight: 600; }
+/* The line for someone who comes back to Start with exports already read: the text, then the way to the results. */
+.latest-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); margin: 0; font-weight: 600; }
 /* end track T2 */

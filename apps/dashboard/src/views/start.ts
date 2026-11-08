@@ -4,6 +4,7 @@ import { announce } from "../announce.ts";
 import { failureClass, visibleIssues } from "@snappy-export/core";
 import { common, routes, settings, start } from "../copy.ts";
 import { startFlow } from "../copy-start.ts";
+import { formatDate } from "../format.ts";
 import { clearReloadNote, reloadNotePending } from "../unload-guard.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
@@ -33,6 +34,8 @@ export const startView: View = (ctx) => {
     region(store, (s) => [s.vault.phase, s.vault.busy, s.vault.message], (s) => unlockCard(ctx, s)),
     // Before the steps, so the advice to seal a history comes before the first import, not after it.
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
+    // With an export already in the history: which one is the latest, how many were read, and the way to its results.
+    region(store, (s) => [s.real.ledger.snapshots], (s) => latestLine(s)),
     // A reload cleared the results of an export that was not saved: say so, until there is something to show again.
     region(store, (s) => [s.real, s.sample, s.import.phase], (s) => reloadNote(s)),
     // The progress and any problem sit here, full width above the three steps: inside the third card they
@@ -55,7 +58,15 @@ export const startView: View = (ctx) => {
   return view;
 };
 
-const hasResults = (s: State): boolean => s.real.latest !== null || s.real.ledger.snapshots.length > 0 || s.sample !== null;
+/** One line for someone who comes back to Start with exports already read: nothing is stored for it, it comes from the history. */
+function latestLine(s: State): Child {
+  const snapshots = s.real.ledger.snapshots;
+  if (snapshots.length === 0) return null;
+  const latest = snapshots.reduce((newest, snap) => Math.max(newest, snap.takenAt), 0);
+  return h("p", { class: "latest-line" }, h("span", {}, startFlow.latestLine(formatDate(latest), snapshots.length)), routeLink("overview", startFlow.openOverview, "quiet"));
+}
+
+const hasResults =(s: State): boolean => s.real.latest !== null || s.real.ledger.snapshots.length > 0 || s.sample !== null;
 
 function reloadNote(s: State): Child {
   if (!reloadNotePending()) return null;
@@ -240,7 +251,7 @@ function addSection(ctx: ViewContext): HTMLElement {
     void flow.drop(e.dataTransfer);
   });
 
-  return stepSection(
+  const card = stepSection(
     3,
     start.addHeading,
     h("p", {}, start.addBody),
@@ -254,6 +265,14 @@ function addSection(ctx: ViewContext): HTMLElement {
       folderPicker,
     ),
   );
+  // With exports already in the history this step adds a newer one: it says so.
+  const title = card.querySelectorAll("h2 span")[1];
+  const retitle = (s: State): void => {
+    if (title) title.textContent = s.real.ledger.snapshots.length > 0 ? startFlow.addNewerHeading : start.addHeading;
+  };
+  retitle(ctx.store.get());
+  onDispose(ctx.store.subscribe((s) => retitle(s)));
+  return card;
 }
 
 /**

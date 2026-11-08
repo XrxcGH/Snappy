@@ -21,6 +21,11 @@ export const startFlow = {
   // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
   unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
 
+  // For someone who comes back to Start with exports already read.
+  latestLine: (date: string, count: number) => `Latest export: ${date}. ${count === 1 ? "1 export read." : `${count} exports read.`}`,
+  openOverview: "Open overview",
+  addNewerHeading: "Add a newer export",
+
   // The chip of a command block when its files are the export that was read on Start.
   filesFromStart: (n: number) => (n === 1 ? "1 file from Start" : `${n} files from Start`),
 
