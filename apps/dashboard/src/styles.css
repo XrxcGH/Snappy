@@ -912,4 +912,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .drop-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; pointer-events: none; background: var(--surface-sunken); border: 3px dashed var(--accent-fg); }
 .drop-overlay[hidden] { display: none; }
 .drop-overlay-text { margin: 0; padding: var(--space-4) var(--space-6); font-family: var(--font-display); font-weight: 600; font-size: var(--text-24); color: var(--text); background: var(--surface-raised); border-radius: var(--radius-lg); }
+/* The Start intro for someone with no export yet: one line, then the sample button and its note. */
+.sample-row { display: grid; gap: var(--space-2); }
+.sample-lead { margin: 0; font-weight: 600; }
 /* end track T2 */

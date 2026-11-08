@@ -21,6 +21,9 @@ export const startFlow = {
   // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
   unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
 
+  // The row in the Start intro for someone with no export yet, before the sample button.
+  noExportYet: "No export yet? You can look around first.",
+
   // Said on Start after a reload cleared the results of an export that was not saved.
   get reloaded(): string {
     return platform().desktop === undefined ? "Your results were cleared when this page reloaded." : "Your results were cleared when the app reloaded.";

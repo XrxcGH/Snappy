@@ -100,7 +100,8 @@ function hero(ctx: ViewContext): HTMLElement {
       { class: "page-header-main" },
       h("div", { class: "page-title-row" }, chipIcon("import", "lg"), h("h1", { id: "page-title", tabindex: "-1" }, routes.start.title)),
       h("p", { class: "lead" }, start.promiseLead),
-      sampleAction(ctx),
+      // The way in for someone who has no export yet. Once there are results (an export, a saved history or the sample) it has done its work.
+      region(ctx.store, (s) => [s.real, s.sample], (s) => (hasResults(s) ? null : sampleAction(ctx))),
     ),
     // The three promises sit under the lead, in the same column.
     h("div", { class: "trust-row" }, pill("device", onDevice), pill("content-blind", neverOpens), pill("shield", noNetwork)),
@@ -369,23 +370,27 @@ async function goOn(ctx: ViewContext): Promise<void> {
 function sampleAction(ctx: ViewContext): HTMLElement {
   return h(
     "div",
-    { class: "actions" },
-    button({
-      label: start.sampleButton,
-      icon: "search",
-      key: "try-sample",
-      onclick: () => {
-        announce(start.readingSample(0, 3));
-        void ctx.actions.loadSample().then((result) => {
-          if (result === "done") {
-            announce(start.sampleLoaded);
-            navigate("overview");
-          }
-        });
-      },
-    }),
-    h("p", { class: "caption muted" }, start.sampleBody),
+    { class: "sample-row" },
+    h("p", { class: "sample-lead" }, startFlow.noExportYet),
+    h("div", { class: "actions" }, sampleButton(ctx), h("p", { class: "caption muted" }, start.sampleBody)),
   );
+}
+
+function sampleButton(ctx: ViewContext): HTMLElement {
+  return button({
+    label: start.sampleButton,
+    icon: "search",
+    key: "try-sample",
+    onclick: () => {
+      announce(start.readingSample(0, 3));
+      void ctx.actions.loadSample().then((result) => {
+        if (result === "done") {
+          announce(start.sampleLoaded);
+          navigate("overview");
+        }
+      });
+    },
+  });
 }
 
 function storageNote(s: State): Child {
