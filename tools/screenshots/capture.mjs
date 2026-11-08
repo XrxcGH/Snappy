@@ -37,10 +37,10 @@ const DESKTOP = [
   { name: "start", hash: "#/start", beforeSample: true },
   { name: "overview", hash: "#/overview" },
   { name: "unaccepted-requests", hash: "#/requests" },
-  { name: "cleanup-queue", hash: "#/cleanup" },
-  { name: "memories-rescue", hash: "#/memories" },
-  { name: "tools-hub", hash: "#/tools" },
-  { name: "tool-friends-table", hash: "#/tools/friends-table" },
+  { name: "cleanup-queue", hash: "#/cleanup", scrollTo: "Category" },
+  { name: "memories-rescue", hash: "#/memories", scrollTo: "Counts" },
+  { name: "tools-hub", hash: "#/tools", scrollTo: "Your export" },
+  { name: "tool-friends-table", hash: "#/tools/friends-table", scrollTo: "Your friends" },
   { name: "tool-year-in-review", hash: "#/tools/year-in-review" },
   { name: "terminal-demo-run", hash: "#/guide", prepare: runDemo },
   { name: "privacy", hash: "#/privacy" },
@@ -90,18 +90,46 @@ async function runDemo(page) {
   // The block's own heading sits just under the top edge, and its whole output stays in view.
   await page.evaluate(() => {
     const block = [...document.querySelectorAll(".command")].find((el) => /Try it on invented data/.test(el.innerText));
-    if (block) window.scrollTo(0, window.scrollY + block.getBoundingClientRect().top - 24);
+    if (block) window.scrollTo(0, window.scrollY + block.getBoundingClientRect().top - 12);
   });
   await page.waitForTimeout(250);
 }
 
-/** Scroll so the heading with this text sits just under the top edge: a phone picture then shows results, not only the controls. */
+/** Scroll so the heading (or field label) with this text sits just under the top edge: a picture then shows results, not only the controls. */
 async function scrollToHeading(page, text) {
   await page.evaluate((t) => {
-    const heading = [...document.querySelectorAll("h2, h3")].find((el) => el.textContent.trim() === t);
+    const heading = [...document.querySelectorAll("h2, h3, label")].find((el) => el.textContent.trim() === t);
     if (heading) window.scrollTo(0, window.scrollY + heading.getBoundingClientRect().top - 24);
   }, text);
   await page.waitForTimeout(250);
+}
+
+/**
+ * Where to cut the picture so its bottom edge falls between two things, not through a card, a button or a line of text.
+ * A plain viewport capture ends wherever the window ends. This returns the height (in CSS pixels) to keep: the lowest
+ * gap between blocks inside the visible part, plus a little air for a card shadow. It returns null when the page ends
+ * inside the window anyway, or when no gap is low enough to keep most of the picture (then the full window is kept).
+ * A cut never comes straight after a heading, so a heading is not left alone above nothing. A small table counts as one card, so it is not cut
+ * through (a long table may be cut between two rows). What sits inside a closed details block is not on screen, so it
+ * is ignored.
+ */
+function bottomGap(page) {
+  return page.evaluate(() => {
+    const view = window.innerHeight;
+    if (document.documentElement.scrollHeight - window.scrollY <= view + 1) return null;
+    const main = document.querySelector("main");
+    if (!main) return null;
+    const blocks = [...main.querySelectorAll(
+      ".card, .tile, .candidate, .notice, .table-wrap, .stat-card, .command, .tool-note, details, summary, tr, .btn, input, select, textarea, label, h1, h2, h3, h4, p, li, dt, dd",
+    )].filter((el) => el.tagName === "DETAILS" || el.closest("summary") || !el.closest("details:not([open])"))
+      .map((el) => ({ rect: el.getBoundingClientRect(), heading: /^H[1-4]$/.test(el.tagName), table: el.classList.contains("table-wrap") }))
+      .filter((b) => b.rect.width > 0 && b.rect.height > 0 && !(b.table && b.rect.height >= view * 0.8));
+    const straddled = (y) => blocks.some((b) => b.rect.top < y - 0.5 && b.rect.bottom > y + 0.5);
+    const gaps = blocks.filter((b) => !b.heading && b.rect.bottom >= view * 0.6 && b.rect.bottom <= view && !straddled(b.rect.bottom)).map((b) => b.rect.bottom);
+    if (gaps.length === 0) return null;
+    const y = Math.max(...gaps);
+    return Math.min(view, Math.ceil(straddled(y + 12) ? y : y + 12));
+  });
 }
 
 /** A page with a browser context that can reach only the dashboard on 127.0.0.1. */
@@ -131,7 +159,9 @@ async function shoot(page, shot, file) {
   if (!shot.beforeSample && !(await page.evaluate(() => document.body.innerText.includes("Sample data")))) {
     throw new Error(`${shot.hash} does not show the Sample data banner, so it may not be synthetic. No picture was written for it.`);
   }
-  await page.screenshot({ path: file, fullPage: false });
+  const keep = shot.trim === false ? null : await bottomGap(page);
+  const viewport = page.viewportSize();
+  await page.screenshot({ path: file, fullPage: false, ...(keep ? { clip: { x: 0, y: 0, width: viewport.width, height: keep } } : {}) });
   console.log("wrote", path.relative(root, file));
 }
 
