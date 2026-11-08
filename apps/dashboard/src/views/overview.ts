@@ -1,6 +1,6 @@
 import { analyze } from "../analysis.ts";
 import type { Analysis } from "../analysis.ts";
-import { brand, overview, routes, tools } from "../copy.ts";
+import { brand, overview, routes, shell, tools } from "../copy.ts";
 import { lists } from "../copy-lists.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
@@ -29,7 +29,7 @@ function render(a: Analysis): Child[] {
   if (a.source === "none") {
     return [emptyState({ icon: "import", spot: "import", title: overview.emptyTitle, body: overview.emptyBody, actions: [routeLink("start", overview.emptyAction, "primary")] })];
   }
-  return [allClearPanel(a), findingsList(a), nextStepsSection(a), toolsSection(), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];
+  return [allClearPanel(a), findingsHeading(), findingsList(a), nextStepsSection(a), toolsSection(), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];
 }
 
 /** Shown above the findings only when every area was checked and came up empty. */
@@ -39,6 +39,9 @@ function allClearPanel(a: Analysis): Child {
   if (!clear) return null;
   return emptyState({ icon: "check", spot: "overview", tint: true, category: "cleanup", title: overview.allClearTitle, body: overview.allClearBody });
 }
+
+/** The tiles are h3s, so they sit under an h2. The sidebar already groups these areas under "Findings", so the heading is for screen readers only. */
+const findingsHeading = (): HTMLElement => h("h2", { class: "sr-only" }, shell.navFindings);
 
 /** One tile per finding area, three across and then two. The sidebar already groups these under "Findings", so there is no heading of its own. */
 function findingsList(a: Analysis): HTMLElement {
