@@ -257,6 +257,10 @@ export function planJsonReads(listing: Entry[], issues: ExportIssue[], streamed:
     if (!isStreamed) budget -= e.size;
     wanted.push(e);
   }
+  // Parts saved from a cloud drive or a mail app often arrive inside one more ZIP file.
+  if (wanted.length === 0 && candidates.some((e) => /\.zip$/i.test(e.path))) {
+    issues.push(issue("error", "nested-zip", "This ZIP holds other ZIP files. Unzip it once and choose the parts inside."));
+  }
   return wanted;
 }
 

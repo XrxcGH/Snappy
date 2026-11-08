@@ -154,7 +154,7 @@ export function buildVariants(): Variant[] {
   add("v09", "snake_case keys", [part(withFriends({ friends: range(5).map((i) => ({ username: `friend_${i}`, creation_timestamp: stamp(i) })) }))], [], 5);
   add("v10", "friends nested one level", [part(withFriends({ "User Data": friendsJson() }))], ["friends-layout-unknown","friends-no-sections"], 0);
   add("v15", "empty Friends with deleted friends listed", [part(withFriends({ Friends: [], "Deleted Friends": range(5).map((i) => ({ Username: `gone_${i}`, Date: stamp(i) })) }))], ["friends-empty-but-deleted"], 0);
-  add("v20", "a ZIP inside a ZIP", [{ name: "mydata~1700000000000.zip", bytes: zipSync({ "mydata~1700000000000.zip": [zipOf(baseFiles()), { level: 0 }] }) }], ["chat-history-missing","memories-missing","no-friends-section","snap-history-missing"], 0);
+  add("v20", "a ZIP inside a ZIP", [{ name: "mydata~1700000000000.zip", bytes: zipSync({ "mydata~1700000000000.zip": [zipOf(baseFiles()), { level: 0 }] }) }], ["nested-zip"], 0);
   add("v21a", "empty file", [{ name: "mydata~1700000000000.zip", bytes: new Uint8Array(0) }], ["zip-unreadable"], 0);
   add("v21b", "ZIP with no entries", [{ name: "mydata~1700000000000.zip", bytes: zipSync({}) }], ["chat-history-missing","memories-missing","no-friends-section","snap-history-missing"], 0);
   const whole = zipOf(baseFiles());

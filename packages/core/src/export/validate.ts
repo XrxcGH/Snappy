@@ -32,7 +32,7 @@ const baseName = (p: string): string => p.slice(p.lastIndexOf("/") + 1).toLowerC
  * left out, so the person gets one cause and one remedy, not five contradictory notices.
  */
 const ROOT_CAUSE_CODES: ReadonlySet<string> = new Set([
-  "zip-unreadable", "zip-entry-unreadable", "zip-encrypted", "zip-unsupported-method", "zip-entry-too-large", "html-only-export",
+  "zip-unreadable", "zip-entry-unreadable", "zip-encrypted", "zip-unsupported-method", "zip-entry-too-large", "nested-zip", "html-only-export",
 ]);
 
 /** A data file that was found but could not be read as JSON: it explains an empty friends list on its own. */
@@ -44,6 +44,8 @@ export type FailureClass =
   | "password"
   /** Part of the ZIP files could not be read: download them again. */
   | "unreadable"
+  /** The ZIP file holds other ZIP files: unzip it once and choose the parts inside. */
+  | "nested-zip"
   /** The export holds only HTML pages: request it again with JSON files. */
   | "html-only";
 
@@ -58,6 +60,7 @@ export function failureClass(issues: readonly { code: string }[]): FailureClass 
   for (const code of ["zip-unreadable", "zip-entry-unreadable", "zip-unsupported-method", "zip-entry-too-large"]) {
     if (codes.has(code)) return "unreadable";
   }
+  if (codes.has("nested-zip")) return "nested-zip";
   if (codes.has("html-only-export")) return "html-only";
   return undefined;
 }
