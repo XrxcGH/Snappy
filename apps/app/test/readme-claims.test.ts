@@ -27,3 +27,47 @@ describe("what the README says about the update keys", () => {
     expect(row).not.toMatch(/placeholders until/);
   });
 });
+
+/** The numbered steps of "Checks that need the built program", as one text per step. */
+function handChecks(): string[] {
+  const start = readme.indexOf("## Checks that need the built program");
+  const end = readme.indexOf("\n## ", start + 1);
+  const body = readme.slice(start, end);
+  return body.split(/\n(?=\d+\. )/).filter((step) => /^\d+\. /.test(step));
+}
+
+describe("the checks that need the built program", () => {
+  const checks = handChecks();
+  const find = (word: RegExp): string => checks.find((step) => word.test(step)) ?? "";
+
+  it("lists every Save and Download button that only a built program can prove, for both systems", () => {
+    const downloads = find(/Downloads, on Windows and on macOS/);
+    expect(downloads).not.toBe("");
+    for (const label of ["Save list", "Download JSON", "Download calendar", "Download CSV", "Save all"]) expect(downloads).toContain(label);
+  });
+
+  it("names Save and Download labels that exist in the dashboard", () => {
+    const sources = [
+      ["..", "dashboard", "src", "copy.ts"],
+      ["..", "dashboard", "src", "tools", "friends-backup", "copy.ts"],
+      ["..", "dashboard", "src", "tools", "export-reminder", "copy.ts"],
+      ["..", "dashboard", "src", "tools", "friends-table", "copy.ts"],
+    ];
+    const all = sources.map((p) => read(...p)).join("\n");
+    for (const label of ["Save list", "Download JSON", "Download calendar file", "Download CSV", "Save all"]) expect(all).toContain(`"${label}"`);
+  });
+
+  it("lists the macOS Tab check (Full Keyboard Access) and says it was not run", () => {
+    const tab = find(/Full Keyboard Access/);
+    expect(tab).toMatch(/Tab/);
+    expect(tab).toMatch(/macOS/);
+    expect(tab).toMatch(/Nobody has run this yet/);
+  });
+
+  it("lists the zoom check at 200 and 300 percent with Ctrl and plus", () => {
+    const zoom = find(/Page zoom/);
+    expect(zoom).toMatch(/Ctrl and plus/);
+    expect(zoom).toMatch(/200 percent/);
+    expect(zoom).toMatch(/300 percent/);
+  });
+});

@@ -65,6 +65,23 @@ a change to `src-tauri/` or the frontend build, run these by hand on a test buil
    Expect none. A positive control that shows the sampler works: launch a `dev-hooks` build with
    `SNAPPY_WEBVIEW_ARGS=--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`, which leaves the sign-in
    features on.
+6. Downloads, on Windows and on macOS. Every Save and Download button makes a file in the page and clicks a link to it,
+   and the page says "saved" without being told whether the web engine kept the file. WKWebView on macOS treats such a
+   link differently from WebView2, and a blocked download would still read as saved. With a synthetic export loaded,
+   press each of these and find the file in the Downloads folder, with the right name and the right content:
+   Cleanup "Save list" (a spreadsheet file), Friends backup "Download JSON", the Export reminder's "Download calendar
+   file" (open the `.ics` in a calendar app), a Friends table "Download CSV", and, after `demo --run` on the Guide
+   page, one output file's "Save" and then "Save all" (a `.zip` that opens). If a file does not arrive, "Copy list" is
+   the fallback for the Cleanup list: say so in the report and do not call the build ready.
+7. Keyboard on macOS (Full Keyboard Access). WKWebView often skips buttons and links on Tab unless the system setting
+   "Keyboard navigation" is on, or Option+Tab is used. With the setting off, press Tab from the top of the Start page and
+   note whether it reaches the skip link, the menu links and the buttons. Record the result here and in docs/BETA.md.
+   Nobody has run this yet: the macOS build has not run on a real Mac.
+8. Page zoom, on Windows. Press Ctrl and plus until the page is at 200 percent, then at 300 percent, and Ctrl and
+   minus and Ctrl and 0 to come back. At both sizes the menu, the Start steps, a Cleanup row and the update banner
+   must stay readable with no sideways scrolling, and Ctrl and scroll must zoom too. macOS and Linux need one more
+   capability permission before this works there (it widens the window's permissions, so the owner reviews it); check
+   it once the macOS build runs.
 
 The finished release program removes the `WEBVIEW2_*` variables, so it cannot be driven this way. The test build
 and the release build are the same code apart from that.
