@@ -11,6 +11,7 @@
 //! it does. The host rule is defence in depth; the signature is the root of trust.
 
 use std::net::IpAddr;
+use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 
 use tauri::Url;
@@ -170,7 +171,7 @@ pub struct Hop {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct FetchOptions {
+pub struct FetchOptions<'a> {
     /// Bodies larger than this are refused (by the declared length, and again while reading).
     pub max_body: u64,
     /// The installer must declare its length; the manifest may not.
@@ -179,6 +180,8 @@ pub struct FetchOptions {
     pub deadline: Instant,
     /// The longest wait for the next piece of data.
     pub idle: Duration,
+    /// Receives the declared body length (when there is one) as soon as the headers are in, for a progress figure.
+    pub length_out: Option<&'a AtomicU64>,
 }
 
 pub type Sink<'a> = &'a mut dyn FnMut(&[u8]) -> Result<(), NetError>;
@@ -366,8 +369,8 @@ mod tests {
         }
     }
 
-    fn options() -> FetchOptions {
-        FetchOptions { max_body: 1024, require_length: false, deadline: Instant::now() + Duration::from_secs(5), idle: Duration::from_secs(1) }
+    fn options() -> FetchOptions<'static> {
+        FetchOptions { max_body: 1024, require_length: false, deadline: Instant::now() + Duration::from_secs(5), idle: Duration::from_secs(1), length_out: None }
     }
 
     fn run(script: &Script, start: &str) -> (Result<(), NetError>, Vec<u8>) {

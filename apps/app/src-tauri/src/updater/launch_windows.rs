@@ -5,8 +5,12 @@
 //! a process or open the browser (a check in `tools/check-no-network-deps.mjs` enforces it).
 
 use std::ffi::OsString;
+use std::fs::{File, OpenOptions};
 use std::os::windows::ffi::OsStringExt;
-use std::path::PathBuf;
+use std::os::windows::fs::OpenOptionsExt;
+use std::os::windows::process::CommandExt;
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::ptr::{null, null_mut};
 
 use windows_sys::Win32::Foundation::{CloseHandle, ERROR_SUCCESS, INVALID_HANDLE_VALUE};
@@ -14,8 +18,11 @@ use windows_sys::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_EL
 use windows_sys::Win32::System::Diagnostics::ToolHelp::{CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS};
 use windows_sys::Win32::System::Registry::{RegGetValueW, HKEY_CURRENT_USER, RRF_RT_REG_SZ};
 use windows_sys::Win32::System::Threading::{GetCurrentProcess, GetCurrentProcessId, OpenProcessToken};
+use windows_sys::Win32::UI::Shell::ShellExecuteW;
+use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
 use super::install_kind::Probe;
+use super::{LaunchError, Launcher};
 
 fn wide(text: &str) -> Vec<u16> {
     text.encode_utf16().chain(std::iter::once(0)).collect()
@@ -85,6 +92,51 @@ fn other_processes_named(image: &str) -> Option<u32> {
     Some(others)
 }
 
+/// What the installer is started with: passive progress window, update mode (keeps the app's data,
+/// skips the reinstall page and the WebView2 download, refuses a downgrade), and relaunch when done.
+/// Checked against the installer script Tauri generates (see docs/UPDATES.md, "Installer facts").
+pub const INSTALLER_ARGS: [&str; 3] = ["/P", "/UPDATE", "/R"];
+
+/// The installer must outlive this program, so it gets no console and its own process group.
+const DETACHED_PROCESS: u32 = 0x0000_0008;
+const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
+/// Other programs may read the staged file while it is held, and nobody may write or delete it.
+const FILE_SHARE_READ: u32 = 1;
+
+/// Starts staged installers and opens the one fixed page.
+pub struct WindowsLauncher;
+
+impl Launcher for WindowsLauncher {
+    /// Opens the staged file with a handle that nobody else may write or delete through, lets
+    /// `check` verify it by reading that same handle, and starts it while the handle is still held.
+    /// So the bytes that were verified are the bytes that run. No shell is involved: the program is
+    /// started directly with fixed arguments and the staging folder as its working directory.
+    fn start_installer(&self, installer: &Path, workdir: &Path, check: &mut dyn FnMut(&mut File) -> bool) -> Result<(), LaunchError> {
+        let mut held = OpenOptions::new().read(true).share_mode(FILE_SHARE_READ).open(installer).map_err(|_| LaunchError::Spawn)?;
+        if !check(&mut held) {
+            return Err(LaunchError::Changed);
+        }
+        let started = Command::new(installer)
+            .args(INSTALLER_ARGS)
+            .current_dir(workdir)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+            .spawn();
+        drop(held);
+        started.map(|_| ()).map_err(|_| LaunchError::Spawn)
+    }
+
+    /// Opens `url` in the default browser. The caller passes only the fixed releases address.
+    fn open_page(&self, url: &str) -> bool {
+        let (verb, target) = (wide("open"), wide(url));
+        // SAFETY: both strings are null-terminated and outlive the call; no window, parameters or folder are passed.
+        let result = unsafe { ShellExecuteW(null_mut(), verb.as_ptr(), target.as_ptr(), null(), null(), SW_SHOWNORMAL) };
+        result as isize > 32
+    }
+}
+
 /// The real facts, read from Windows. `product_key` is `Software\<publisher>\<product name>`, the key
 /// whose default value the per-user installer sets to the install folder.
 pub struct SystemProbe {
@@ -130,6 +182,59 @@ mod tests {
         assert_eq!(probe.registered_install_dir(), None, "a product that was never installed has no record");
         // Rust's test harness runs one copy of this program, plus possibly the build tool's own check; none of them is "snappy" itself
         assert!(probe.other_instances().is_some());
+    }
+
+    fn scratch(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("snappy-launch-test-{}-{tag}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// A harmless console program (it prints usage and exits) stands in for an installer: no window, no change to anything.
+    fn stand_in(dir: &Path) -> PathBuf {
+        let source = Path::new(&std::env::var_os("SystemRoot").unwrap_or_else(|| r"C:\Windows".into())).join("System32").join("hostname.exe");
+        let copy = dir.join("Snappy_9.9.9_x64-setup.exe");
+        std::fs::copy(source, &copy).unwrap();
+        copy
+    }
+
+    #[test]
+    fn the_staged_file_is_held_against_writes_and_deletes_while_it_is_checked_and_started() {
+        let dir = scratch("held");
+        let file = stand_in(&dir);
+        let mut seen = (false, false, false);
+        let result = WindowsLauncher.start_installer(&file, &dir, &mut |held| {
+            seen.0 = OpenOptions::new().write(true).open(&file).is_err();
+            seen.1 = std::fs::remove_file(&file).is_err();
+            seen.2 = std::fs::OpenOptions::new().read(true).open(&file).is_ok(); // reading by others is fine
+            let mut first = [0u8; 2];
+            std::io::Read::read_exact(held, &mut first).unwrap();
+            first == *b"MZ"
+        });
+        assert!(result.is_ok(), "{result:?}");
+        assert_eq!(seen, (true, true, true));
+        assert!(file.exists());
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_failed_check_starts_nothing() {
+        let dir = scratch("refused");
+        let file = stand_in(&dir);
+        assert_eq!(WindowsLauncher.start_installer(&file, &dir, &mut |_| false), Err(LaunchError::Changed));
+        assert_eq!(WindowsLauncher.start_installer(&dir.join("missing.exe"), &dir, &mut |_| true), Err(LaunchError::Spawn));
+        // a file that is not a program fails to start and says so
+        let junk = dir.join("junk.exe");
+        std::fs::write(&junk, b"not a program").unwrap();
+        assert_eq!(WindowsLauncher.start_installer(&junk, &dir, &mut |_| true), Err(LaunchError::Spawn));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_installer_arguments_are_the_three_fixed_flags() {
+        assert_eq!(INSTALLER_ARGS, ["/P", "/UPDATE", "/R"]);
     }
 
     #[test]

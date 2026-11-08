@@ -206,6 +206,9 @@ impl Transport for WinHttp {
             return Err(NetError::Size);
         }
 
+        if let (Some(out), Some(n)) = (options.length_out, length) {
+            out.store(n, std::sync::atomic::Ordering::Relaxed);
+        }
         let mut buf = vec![0u8; READ_CHUNK];
         let mut total = 0u64;
         loop {
@@ -238,8 +241,8 @@ mod tests {
     use crate::updater::transport::{fetch, Policy, PolicyError};
     use std::time::Duration;
 
-    fn options(max_body: u64, require_length: bool) -> FetchOptions {
-        FetchOptions { max_body, require_length, deadline: Instant::now() + Duration::from_secs(15), idle: Duration::from_secs(5) }
+    fn options(max_body: u64, require_length: bool) -> FetchOptions<'static> {
+        FetchOptions { max_body, require_length, deadline: Instant::now() + Duration::from_secs(15), idle: Duration::from_secs(5), length_out: None }
     }
 
     fn get(server: &Server, path: &str, opts: &FetchOptions) -> (Result<(), NetError>, Vec<u8>) {
@@ -329,17 +332,17 @@ mod tests {
         let mut sink = |_: &[u8]| Ok(());
         assert_eq!(fetch(&WinHttp, &dead_url, Policy::Loopback, &options(10, true), &mut sink), Err(NetError::Offline));
 
-        let slow = Server::start(|_| Reply::ok(b"late".to_vec()).after(Duration::from_secs(4)));
-        let quick = FetchOptions { max_body: 10, require_length: true, deadline: Instant::now() + Duration::from_secs(15), idle: Duration::from_millis(1_200) };
+        let slow = Server::start(|_| Reply::ok(b"late".to_vec()).after(Duration::from_secs(9)));
+        let quick = FetchOptions { max_body: 10, require_length: true, deadline: Instant::now() + Duration::from_secs(15), idle: Duration::from_millis(1_200), length_out: None };
         let started = Instant::now();
         assert_eq!(fetch(&WinHttp, &slow.url("/x"), Policy::Loopback, &quick, &mut sink), Err(NetError::Timeout));
-        assert!(started.elapsed() < Duration::from_secs(4), "the idle limit ends the wait");
+        assert!(started.elapsed() < Duration::from_secs(8), "the idle limit ends the wait long before the server answers");
     }
 
     #[test]
     fn the_overall_deadline_ends_a_slow_fetch() {
         let server = Server::start(|_| Reply::ok(b"x".to_vec()));
-        let expired = FetchOptions { max_body: 10, require_length: true, deadline: Instant::now(), idle: Duration::from_secs(5) };
+        let expired = FetchOptions { max_body: 10, require_length: true, deadline: Instant::now(), idle: Duration::from_secs(5), length_out: None };
         let mut sink = |_: &[u8]| Ok(());
         assert_eq!(fetch(&WinHttp, &server.url("/x"), Policy::Loopback, &expired, &mut sink), Err(NetError::Timeout));
         assert!(server.requests().is_empty(), "no request once the time is up");

@@ -205,6 +205,11 @@ impl Paths {
         self.ready_dir().join(installer_name(version))
     }
 
+    /// The signature text kept beside a staged installer, so the file can be checked again just before it runs.
+    pub fn sig_file(&self, version: &Version) -> PathBuf {
+        self.ready_dir().join(format!("{}.sig", installer_name(version)))
+    }
+
     pub fn create_dirs(&self) -> io::Result<()> {
         fs::create_dir_all(self.tmp_dir())?;
         fs::create_dir_all(self.ready_dir())
@@ -214,14 +219,15 @@ impl Paths {
     /// one installer `keep`, and the temporary state file. It never deletes a directory, never
     /// recurses, and leaves every other name alone.
     pub fn clean(&self, keep: Option<&Version>) {
-        let kept = keep.map(|v| installer_name(v));
+        let kept = keep.map(installer_name);
+        let kept_sig = kept.as_ref().map(|n| format!("{n}.sig"));
         let _ = fs::remove_file(self.state_temp());
         for dir in [self.tmp_dir(), self.ready_dir()] {
             let Ok(entries) = fs::read_dir(&dir) else { continue };
             for entry in entries.flatten() {
                 let Some(name) = entry.file_name().to_str().map(str::to_string) else { continue };
-                let installer = name.strip_suffix(".part").unwrap_or(&name);
-                if !is_installer_name(installer) || Some(&name) == kept.as_ref() {
+                let installer = name.strip_suffix(".part").or_else(|| name.strip_suffix(".sig")).unwrap_or(&name);
+                if !is_installer_name(installer) || Some(&name) == kept.as_ref() || Some(&name) == kept_sig.as_ref() {
                     continue;
                 }
                 if entry.file_type().is_ok_and(|t| t.is_file()) {
@@ -231,9 +237,10 @@ impl Paths {
         }
     }
 
-    /// Deletes the staged installer for `version`, if any.
+    /// Deletes the staged installer for `version` and its signature, if any.
     pub fn remove_staged(&self, version: &Version) {
         let _ = fs::remove_file(self.staged_file(version));
+        let _ = fs::remove_file(self.sig_file(version));
     }
 }
 
