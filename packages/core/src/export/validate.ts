@@ -36,7 +36,7 @@ const ROOT_CAUSE_CODES: ReadonlySet<string> = new Set([
 ]);
 
 /** A data file that was found but could not be read as JSON: it explains an empty friends list on its own. */
-const JSON_FAILURE_CODES: ReadonlySet<string> = new Set(["json-parse-failed", "json-too-complex", "json-too-large", "zip-json-too-large"]);
+const JSON_FAILURE_CODES: ReadonlySet<string> = new Set(["json-parse-failed", "json-unsupported-encoding", "json-too-complex", "json-too-large", "zip-json-too-large"]);
 
 /** What went wrong at the root, in the words of what the person should do next. */
 export type FailureClass =

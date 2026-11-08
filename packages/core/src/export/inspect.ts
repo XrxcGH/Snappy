@@ -559,7 +559,7 @@ function withReadResults(
 const isHistoryFile = (path: string): boolean => /^(?:chat|snap|saved_chat)_history\.json$/i.test(path.slice(path.lastIndexOf("/") + 1));
 
 /** Fixed remarks for a file that could not be described. */
-const STREAM_NOTES = { malformed: "unparseable json", depth: "too large to describe", limit: "too large to describe", source: "could not be decompressed" } as const;
+const STREAM_NOTES = { malformed: "unparseable json", depth: "too large to describe", limit: "too large to describe", source: "could not be decompressed", encoding: "unsupported text encoding" } as const;
 
 /**
  * Describe a JSON file by streaming it: lists of records as their field names and value kinds

@@ -44,13 +44,14 @@ export interface StreamSource {
 export type ProjectedValue = string | number | boolean | null;
 export type ProjectedRecord = Record<string, ProjectedValue>;
 
-export type JsonStreamErrorCode = "malformed" | "depth" | "limit" | "source";
+export type JsonStreamErrorCode = "malformed" | "depth" | "limit" | "source" | "encoding";
 
 const ERROR_TEXT: Record<JsonStreamErrorCode, string> = {
   malformed: "The JSON data is damaged or not in the expected format.",
   depth: "The JSON data is nested deeper than the allowed limit.",
   limit: "The JSON data is larger than the allowed limit.",
   source: "The JSON data could not be read.",
+  encoding: "The JSON data uses a text encoding that is not supported.",
 };
 
 /** Thrown by the projectors. The message is fixed text: no snippet, offset, key or value. */
@@ -514,12 +515,17 @@ class Projector<T> {
           if (c !== 0x20 && c !== 0x0a && c !== 0x0d && c !== 0x09) malformed();
           break;
         }
-        case S_START:
-          if (chunk[i] === 0xef) {
+        case S_START: {
+          const b0 = chunk[i] as number;
+          // UTF-16 (a byte order mark, or the NUL byte that follows the first ASCII character) is not
+          // decoded: that would turn every value, message text included, into a string. Said plainly.
+          if (b0 === 0xff || b0 === 0xfe || b0 === 0x00 || (i + 1 < n && chunk[i + 1] === 0x00)) throw new JsonStreamError("encoding");
+          if (b0 === 0xef) {
             i++;
             st = S_BOM1;
           } else st = S_VALUE;
           break;
+        }
         case S_BOM1:
           if (chunk[i++] !== 0xbb) malformed();
           st = S_BOM2;

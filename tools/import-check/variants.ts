@@ -155,7 +155,7 @@ export function buildVariants(): Variant[] {
 
   add("v00", "baseline: per-conversation chat and Snaps, Saved Media", [part(baseFiles())], [], 30);
   add("v03", "UTF-8 byte order mark", [part({ ...baseFiles(), "json/friends.json": new Uint8Array([0xef, 0xbb, 0xbf, ...enc(friendsJson())]) })], [], 30);
-  add("v04", "friends.json in UTF-16", [part({ ...baseFiles(), "json/friends.json": utf16le(friendsJson()) })], ["json-parse-failed"], 0);
+  add("v04", "friends.json in UTF-16", [part({ ...baseFiles(), "json/friends.json": utf16le(friendsJson()) })], ["json-unsupported-encoding"], 0);
   add("v05", "everything under a mydata_ folder", [part(Object.fromEntries(Object.entries(baseFiles()).map(([k, v]) => [`mydata_1700000000000/${k}`, v])))], [], 30);
   add("v06", "HTML only (the default Snapchat format)", [part({ "html/index.html": "<html></html>", "html/friends.html": "<html></html>", "html/chat_history.html": "<html></html>" })], ["html-only-export"], 0);
   const upper = baseFiles();

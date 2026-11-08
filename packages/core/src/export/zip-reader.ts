@@ -587,6 +587,7 @@ const STREAM_FAILURES: Record<Exclude<JsonStreamErrorCode, "source">, { code: st
   malformed: { code: "json-parse-failed", text: (label) => `${label} is not valid JSON, so it was not read.` },
   depth: { code: "json-too-complex", text: (label) => `${label} has too many items to read safely, so it was not read.` },
   limit: { code: "json-too-large", text: (label) => `${label} is too large to read, so it was not read.` },
+  encoding: { code: "json-unsupported-encoding", text: (label) => `${label} uses a text encoding Snappy does not support, so it was not read.` },
 };
 
 /**
