@@ -51,8 +51,12 @@ export const NAV: NavGroup[] = [
       { id: "requests", icon: CATEGORY_ICON.requests, category: "requests" },
       { id: "quiet", icon: CATEGORY_ICON.quiet, category: "quiet" },
       { id: "cleanup", icon: CATEGORY_ICON.cleanup, category: "cleanup" },
-      { id: "memories", icon: CATEGORY_ICON.memories, category: "memories" },
     ],
+  },
+  {
+    // The rescue finds nothing to review, so it does not sit under Findings: it copies photos and videos out of the export.
+    label: { id: "nav-memories", text: shellCopy.navMemories },
+    items: [{ id: "memories", icon: CATEGORY_ICON.memories, category: "memories" }],
   },
   {
     label: { id: "nav-more", text: shell.navMore },

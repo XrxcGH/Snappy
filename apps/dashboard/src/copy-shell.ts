@@ -20,6 +20,9 @@ export const shellCopy = {
   /** The first words of the name of a license's scrolling text, which a keyboard can reach; the library's name follows. */
   licenseTextLabel: "License text for",
 
+  /** The menu group that holds Memories rescue, which is not a list of people to review. */
+  navMemories: "Memories",
+
   // The header's theme toggle has one fixed name; whether it is on is said by the button's pressed state.
   themeToggleName: "Dark theme",
   /** Said when Settings turns on "Match device"; the other two say "Dark theme on." and "Light theme on." (copy.ts). */
