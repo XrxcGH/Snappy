@@ -53,7 +53,7 @@ export const copy = {
 
   gridFor: (year: number, used: number, days: number): string =>
     `Daily activity in ${year}: ${things(used)} on ${countOf(days, "day", "days")}. The tables below hold the same counts.`,
-  gridNote: "Each square is one day. Darker squares mean more.",
+  gridNote: "Each square is one day. A stronger color means more.",
   scrollNote: "The grid starts at the latest weeks. Scroll sideways to see earlier ones.",
   legendLess: "Less",
   legendMore: "More",
