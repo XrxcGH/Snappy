@@ -92,8 +92,9 @@ export const browserVault: VaultStore = {
   },
 };
 
-/** Theme preference: the only thing kept in localStorage, and never anything about friends. */
+/** Theme preference, and the time zone a person last chose (tools/timezone.ts): the only things kept in localStorage, and never anything about friends. */
 const THEME_KEY = "snappy-theme";
+const ZONE_KEY = "snappy-zone";
 
 export function readThemePreference(): string | null {
   try {
@@ -108,5 +109,23 @@ export function writeThemePreference(value: string): void {
     localStorage.setItem(THEME_KEY, value);
   } catch {
     // Remembering the theme is a convenience; the page works without it.
+  }
+}
+
+/** The time zone a person last chose, as minutes east of UTC written out. A number of minutes, never anything from an export. */
+export function readZonePreference(): string | null {
+  try {
+    return localStorage.getItem(ZONE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function writeZonePreference(value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(ZONE_KEY);
+    else localStorage.setItem(ZONE_KEY, value);
+  } catch {
+    // Remembering the zone is a convenience; every tool starts at the device's zone without it.
   }
 }
