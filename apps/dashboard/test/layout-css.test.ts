@@ -235,10 +235,10 @@ describe("running text and titles", () => {
     expect(declared(".caption")).toMatch(/max-width:\s*70ch/);
   });
 
-  it("balances a step title, breaks list items at natural places, and sets step titles smaller in the three-card row", () => {
+  it("balances a step title, balances the short list items (so none ends on one word alone), and sets step titles smaller in the three-card row", () => {
     expect(declared(".step-card > .section-title")).toMatch(/text-wrap:\s*balance/);
-    expect(declared(".point-list li > span")).toMatch(/text-wrap:\s*pretty/);
-    expect(declared(".point-list li > span")).not.toMatch(/balance/);
+    expect(declared(".point-list li > span")).toMatch(/text-wrap:\s*balance/);
+    expect(declared(".point-list li > span")).not.toMatch(/pretty/);
     const title = rules.filter((r) => r.selector === "div.step-list > .step-card > h2" && /font-size/.test(r.body));
     expect(title).toHaveLength(1);
     expect(title[0]?.body).toMatch(/font-size:\s*var\(--text-20\)/);
