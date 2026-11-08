@@ -86,7 +86,7 @@ describe("copy module", () => {
 
   it("names every export value it promises never to read", () => {
     const never = copy.privacy.neverRows.map(([what]) => what.toLowerCase()).join(" | ");
-    for (const word of ["message text", "photos and videos", "locations", "display names", "group chat titles", "purchases"]) expect(never).toContain(word);
+    for (const word of ["message text", "photos and videos", "locations", "display names", "group chat titles", "purchases", "login history"]) expect(never).toContain(word);
   });
 });
 

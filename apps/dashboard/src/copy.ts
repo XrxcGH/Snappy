@@ -263,7 +263,7 @@ export const tools = {
   statusNeeds: { export: "Needs an export", friends: "Needs a friends list", chats: "Needs chat history", memories: "Needs a Memories list" },
   backLink: "Back to tools",
   readsHeading: "What this reads",
-  readsNever: "It never reads message text, media, locations, display names or login history.",
+  readsNever: "It never reads message text, media, locations, display names, or login history.",
   workingLabel: "Working on your results",
   get failedNote(): string {
     return onDesktop("Snappy could not finish this. Reload the page and try again.", "Snappy could not finish this. Restart Snappy and try again.");
@@ -492,6 +492,7 @@ export const privacy = {
     ["Display names"],
     ["Group chat titles"],
     ["Captions, bios, email, and phone"],
+    ["Login history"],
     ["Purchases, support, and My AI data"],
   ] as const,
   whatHeader: "What",

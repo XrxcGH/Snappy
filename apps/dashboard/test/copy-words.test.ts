@@ -41,6 +41,17 @@ describe("Start page words", () => {
   });
 });
 
+describe("the never-reads lists", () => {
+  it("names login history on the Privacy page, the list people read for the promise, as it does on every tool page", () => {
+    expect(copy.privacy.neverRows.map(([what]) => what)).toContain("Login history");
+    expect(copy.tools.readsNever).toMatch(/login history/);
+  });
+
+  it("writes the Tools frame's list with the Oxford comma the brand guide asks for", () => {
+    expect(copy.tools.readsNever).toBe("It never reads message text, media, locations, display names, or login history.");
+  });
+});
+
 describe("numbers", () => {
   /** Functions whose number is a label, not a count of things: a step, an exit code, a size limit in megabytes. */
   const LABELS = new Set(["common.stepPrefix", "terminal.codeLabel", "terminal.doneAnnounce", "terminal.confirmFolderBody"]);
