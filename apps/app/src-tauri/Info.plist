@@ -4,7 +4,7 @@
 <dict>
 	<!-- Merged into the macOS app's Info.plist by tauri build (Tauri also looks for a file of this name beside tauri.conf.json).
 	     macOS accepts only dotted numbers in CFBundleShortVersionString, so the beta tag lives in SnappyReleaseVersion,
-	     in the disk image name and in the in-app Beta label. Keep these in step with tauri.conf.json:
+	     in the disk image name and in the in-app Beta label. Keep these in step with tauri.conf.json and tauri.macos.conf.json:
 	     apps/app/test/macos-config.test.ts fails when they differ. -->
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
