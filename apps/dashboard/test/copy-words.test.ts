@@ -41,6 +41,25 @@ describe("Start page words", () => {
   });
 });
 
+describe("the Privacy page's line about each system's web view", () => {
+  it("names the system, says the web view is a separate program Snappy does not control, and claims no test it has not had", () => {
+    expect(copy.privacy.desktopOther).toBe("On Linux, the app uses WebKitGTK, a separate program that Snappy does not control. Its network behavior has not been checked.");
+    expect(copy.privacy.desktopMac).toMatch(/^On macOS, the app uses the system’s own web view, a separate component that Snappy does not control\.$/);
+    expect(copy.privacy.desktopWindows).toMatch(/^On Windows, the app uses Microsoft WebView2, a separate program that Snappy does not control\.$/);
+  });
+
+  it("does not say we, and does not call the web view an engine, in any of the three", () => {
+    for (const line of [copy.privacy.desktopWindows, copy.privacy.desktopMac, copy.privacy.desktopOther]) {
+      expect(line).not.toMatch(/\bwe\b|web engine/i);
+    }
+  });
+
+  it("says nothing was tested on Linux, where the Windows and macOS lines say what was", () => {
+    expect(copy.privacy.desktopOther).not.toMatch(/test/i);
+    expect(copy.privacy.desktopMacTest).toMatch(/automated test/);
+  });
+});
+
 describe("the never-reads lists", () => {
   it("names login history on the Privacy page, the list people read for the promise, as it does on every tool page", () => {
     expect(copy.privacy.neverRows.map(([what]) => what)).toContain("Login history");

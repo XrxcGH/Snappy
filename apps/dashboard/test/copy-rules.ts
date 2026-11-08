@@ -54,7 +54,7 @@ export const LIMITS = {
  * Snap Map, My AI), and month names in dates. Keep this short.
  */
 export const PROPER_WORDS = new Set([
-  "Snappy", "Snapchat", "Microsoft", "Windows", "Mac", "Safari", "GitHub", "JavaScript", "May", "Snap", "Snaps", "Memories", "Memory", "Spotlight", "Map", "Settings", "My", "Data", "All", "Time", "AI", "Inc", "Profile", "Friends", "User", "Chat", "Export",
+  "Snappy", "Snapchat", "Microsoft", "Windows", "Linux", "WebKitGTK", "Mac", "Safari", "GitHub", "JavaScript", "May", "Snap", "Snaps", "Memories", "Memory", "Spotlight", "Map", "Settings", "My", "Data", "All", "Time", "AI", "Inc", "Profile", "Friends", "User", "Chat", "Export",
   "January", "February", "March", "April", "June", "July", "August", "September", "October", "November", "December",
   "Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Aug", "Sep", "Sept", "Oct", "Nov", "Dec",
 ]);

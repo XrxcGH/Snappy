@@ -515,7 +515,8 @@ export const privacy = {
   desktopMac: "On macOS, the app uses the system’s own web view, a separate component that Snappy does not control.",
   desktopMacTest: "In one automated test on a build computer, the app and its web view made no outside connection.",
   desktopMacLimit: "That test cannot see everything your computer does, and a system update can change the web view.",
-  desktopOther: "The app uses your system’s web engine, a separate program. We have not checked what it does on its own.",
+  // The shell reports "other" for Linux, the one system left (apps/app/src/desktop-platform.ts). Nothing has been checked there.
+  desktopOther: "On Linux, the app uses WebKitGTK, a separate program that Snappy does not control. Its network behavior has not been checked.",
   policyHeading: "Technical details",
   networkDetail: "To check, open your browser’s developer tools. The network tab stays empty.",
   policyLabel: "Security policy in this page",
