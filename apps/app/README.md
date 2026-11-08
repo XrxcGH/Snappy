@@ -153,7 +153,7 @@ What is macOS-specific, and where:
 
 | What | Where |
 | --- | --- |
-| Bundle settings: oldest macOS (12.3), ad-hoc signature, hardened runtime off, no entitlements, dmg layout, no license click-through on the disk image (the license and notice are inside the app instead). Tauri merges this file over `tauri.conf.json` only when building for macOS | `src-tauri/tauri.macos.conf.json` |
+| Bundle settings: oldest macOS (13.3), ad-hoc signature, hardened runtime off, no entitlements, dmg layout, no license click-through on the disk image (the license and notice are inside the app instead). Tauri merges this file over `tauri.conf.json` only when building for macOS | `src-tauri/tauri.macos.conf.json` |
 | Version strings: macOS accepts only dotted numbers, so `CFBundleShortVersionString` and `CFBundleVersion` are `0.1.0` and the beta tag is in the custom key `SnappyReleaseVersion` | `src-tauri/Info.plist` (merged by Tauri), `bundleVersion` in `tauri.macos.conf.json` |
 | Menu bar: Tauri's default menu on macOS (app menu with Hide and Quit, standard Edit menu, Window, Help). No menu code of our own | none |
 | Navigation lock and new-window refusal: the same two handlers as Windows (`on_navigation`, `on_new_window`), which wry applies to the WKWebView delegates. The Windows-only `WebResourceRequested` filter has no macOS counterpart | `lib.rs` |

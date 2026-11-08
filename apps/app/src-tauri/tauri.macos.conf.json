@@ -3,7 +3,7 @@
   "bundle": {
     "licenseFile": null,
     "macOS": {
-      "minimumSystemVersion": "12.3",
+      "minimumSystemVersion": "13.3",
       "signingIdentity": "-",
       "hardenedRuntime": false,
       "bundleVersion": "0.1.0",

@@ -93,7 +93,7 @@ expect_eq "CFBundleName" "$(plist_value CFBundleName)" "Snappy"
 expect_eq "CFBundleShortVersionString" "$(plist_value CFBundleShortVersionString)" "$SHORT"
 expect_eq "CFBundleVersion" "$(plist_value CFBundleVersion)" "$SHORT"
 expect_eq "SnappyReleaseVersion" "$(plist_value SnappyReleaseVersion)" "$VERSION"
-expect_eq "LSMinimumSystemVersion" "$(plist_value LSMinimumSystemVersion)" "12.3"
+expect_eq "LSMinimumSystemVersion" "$(plist_value LSMinimumSystemVersion)" "13.3"
 expect_eq "LSApplicationCategoryType" "$(plist_value LSApplicationCategoryType)" "public.app-category.utilities"
 expect_eq "NSHighResolutionCapable" "$(plist_value NSHighResolutionCapable)" "true"
 if /usr/libexec/PlistBuddy -c "Print :NSAppTransportSecurity" "$PLIST" > /dev/null 2>&1; then
@@ -129,10 +129,10 @@ for arch in arm64 x86_64; do
   echo "minos ($arch): ${minos:-unknown}" | tee -a "$SUMMARY" "$OUT/lipo.txt"
   if [ -z "$minos" ]; then
     note "could not read the minimum macOS version of the $arch slice"
-  elif [ "$(printf '%s\n%s\n' "$minos" "12.3" | sort -V | tail -n 1)" != "12.3" ]; then
-    fail "the $arch slice needs macOS $minos, newer than the 12.3 that Info.plist promises"
+  elif [ "$(printf '%s\n%s\n' "$minos" "13.3" | sort -V | tail -n 1)" != "13.3" ]; then
+    fail "the $arch slice needs macOS $minos, newer than the 13.3 that Info.plist promises"
   else
-    ok "the $arch slice needs macOS $minos or newer, not newer than 12.3"
+    ok "the $arch slice needs macOS $minos or newer, not newer than 13.3"
   fi
 done
 otool -arch arm64 -L "$EXE" > "$OUT/linked-libraries.txt" 2>&1 || true
