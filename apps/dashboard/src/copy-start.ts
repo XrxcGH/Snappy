@@ -8,4 +8,7 @@
 export const startFlow = {
   /** Names the block that holds the progress or the problem of an import, for a screen reader. */
   statusLabel: "Import status",
+
+  // Parts of two exports. The numbers are the digits after "mydata~" in the file names, nothing else of a name.
+  mixedExports: (first: string, second: string) => `These ZIP files come from two different exports, ${first} and ${second}. Choose the parts of one export.`,
 };

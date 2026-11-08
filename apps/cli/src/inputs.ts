@@ -2,10 +2,11 @@
  * Turning command-line paths into export readers: one or more .zip files, or a folder holding
  * the parts of one export. Zips are read through random-access readers, never loaded whole.
  */
-import { mergeParsedExports, parseExportFromReader } from "@snappy-export/core";
+import { listZipEntries, mergeParsedExports, parseExportFromReader } from "@snappy-export/core";
 import type { ParsedExport } from "@snappy-export/core";
 import { CliError, fsError } from "./errors.ts";
-import { expandWildcards, isLaterPartsOnly, orderExportParts } from "./export-parts.ts";
+import { checkParts, expandWildcards, isLaterPartsOnly, orderExportParts, scanNames } from "./export-parts.ts";
+import type { PartScan } from "./export-parts.ts";
 import { openFileReader } from "./fs-reader.ts";
 import type { FileReader } from "./fs-reader.ts";
 import type { Io } from "./io.ts";
@@ -17,10 +18,27 @@ const isZip = (name: string): boolean => name.toLowerCase().endsWith(".zip");
 const isPart = (name: string): boolean => isZip(name) && !name.startsWith("._");
 const byName = (a: string, b: string): number => a.localeCompare(b, "en", { numeric: true });
 
+/** Look at the directory of one zip. Nothing inside is read; a file that cannot be opened or listed comes back as not listed. */
+async function scanPath(io: FsIo, path: string): Promise<PartScan> {
+  let reader: FileReader | undefined;
+  try {
+    reader = await io.fs.openRead(path);
+    return scanNames((await listZipEntries(reader)).entries.map((e) => e.name));
+  } catch {
+    return scanNames([]);
+  } finally {
+    await reader?.close().catch(() => undefined);
+  }
+}
+
+/** Paths whose directory shows photos and videos only (or, unreadable, whose name says so). Set by resolveZipPaths, read by requireFirstPart. */
+const mediaParts = new Map<string, boolean>();
+
 /**
  * Expand wildcards, paths and folders into a de-duplicated list of .zip files in the order
- * Snapchat numbers the parts (base name first, then -2, -3). The order is not cosmetic: a part's
- * position is its number, and a Memories file is found again by that number.
+ * Snapchat numbers the parts: the part that holds the lists first, then -2, -3. The order is not
+ * cosmetic: a part's position is its number, and a Memories file is found again by that number.
+ * What a part is comes from its directory, not its name. Parts of two different exports are refused.
  */
 export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[]> {
   if (args.length === 0) {
@@ -54,7 +72,14 @@ export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[
       throw new CliError("not-zip", `"${arg}" is not a .zip file. Use the .zip you downloaded from Snapchat.`);
     }
   }
-  return orderExportParts([...new Set(found)]);
+  const unique = [...new Set(found)];
+  const scans = await Promise.all(unique.map((path) => scanPath(io, path)));
+  const check = checkParts(unique, scans);
+  if (check.kind === "mixed") {
+    throw new CliError("mixed-exports", `These ZIP files come from two different exports, ${check.ids[0]} and ${check.ids[1]}. Choose the parts of one export.`);
+  }
+  unique.forEach((path, i) => mediaParts.set(path, scans[i]?.listed === true ? scans[i]?.pages !== true : isLaterPartsOnly([path])));
+  return check.kind === "ok" ? check.ordered : orderExportParts(unique);
 }
 
 /**
@@ -62,7 +87,9 @@ export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[
  * empty export. Say what to add instead.
  */
 export function requireFirstPart(paths: string[]): void {
-  if (isLaterPartsOnly(paths)) {
+  // Judged by what each part holds when the paths came from resolveZipPaths, by name when they did not.
+  const known = paths.length > 0 && paths.every((p) => mediaParts.has(p));
+  if (known ? paths.every((p) => mediaParts.get(p) === true) : isLaterPartsOnly(paths)) {
     throw new CliError(
       "later-parts-only",
       "These ZIP files are later parts (names end in -2, -3). Add the first part, which holds the lists, and run again.",

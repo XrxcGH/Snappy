@@ -7,7 +7,8 @@ import { LedgerFormatError, SealError, forgetMediaHandles, openLedger, sealLedge
 import type { ExportIssue, ParsedExport, Snapshot } from "@snappy-export/core";
 import { resetAnalysisCache } from "./analysis.ts";
 import { settings, start, vaultMessages } from "./copy.ts";
-import { isLaterPartsOnly, orderParts } from "./export-parts.ts";
+import { startFlow } from "./copy-start.ts";
+import { checkParts, scanPart } from "./export-parts.ts";
 import { runImport } from "./import-pipeline.ts";
 import type { ImportRunner } from "./import-pipeline.ts";
 import { exportHealth } from "./issues.ts";
@@ -123,15 +124,21 @@ export function createActions(store: Store, deps: Deps): Actions {
       return "failed";
     }
 
-    // Numbered later parts hold photos and videos only. Reading them alone would add an empty
-    // export that could replace a good one, so the person is told where the lists are instead.
-    if (isLaterPartsOnly(zips)) {
+    // What each part holds comes from its directory, not its name. Parts that hold photos and videos only would add
+    // an empty export that could replace a good one, so the person is told where the lists are instead. Parts of
+    // two different exports would merge into one set of friends, so they are refused too.
+    const check = checkParts(zips, await Promise.all(zips.map((zip) => scanPart(zip))));
+    if (check.kind === "later-only") {
       store.dispatch({ type: "import-failed", message: start.laterPartsOnly });
       return "failed";
     }
+    if (check.kind === "mixed") {
+      store.dispatch({ type: "import-failed", message: startFlow.mixedExports(check.ids[0], check.ids[1]) });
+      return "failed";
+    }
 
-    // Parts are read in export order (base name, then -2, -3), whatever order they were chosen in.
-    const ordered = orderParts(zips);
+    // Parts are read in export order: the part with the lists first, then -2, -3, whatever order they were chosen in.
+    const ordered = check.ordered;
     store.dispatch({ type: "import-started", steps: ordered.length, sample: false });
     try {
       await deps.yieldToUi(); // lets "Part 1 of N" paint before the first read

@@ -44,9 +44,9 @@ export async function expandWildcards(io: Pick<Io, "fs" | "path">, args: string[
   return out;
 }
 
-/** "mydata~1.zip" -> base "mydata~1", part 1; "mydata~1-3.zip" -> base "mydata~1", part 3. */
+/** "mydata~1.zip" -> base "mydata~1", part 1; "mydata~1-3.zip" and "mydata~1-part-3.zip" -> base "mydata~1", part 3. */
 function partOf(path: string): { base: string; part: number } {
-  const m = /^(.*?)-(\d+)\.zip$/i.exec(path);
+  const m = /^(.*?)(?:-part)?-(\d+)\.zip$/i.exec(path);
   return m ? { base: (m[1] as string).toLowerCase(), part: Number(m[2]) } : { base: path.replace(/\.zip$/i, "").toLowerCase(), part: 1 };
 }
 
@@ -63,4 +63,55 @@ export function isLaterPartsOnly(paths: string[]): boolean {
 export function orderExportParts(paths: string[]): string[] {
   const keyed = paths.map((path) => ({ path, ...partOf(path) }));
   return keyed.sort((a, b) => (a.base < b.base ? -1 : a.base > b.base ? 1 : a.part - b.part)).map((k) => k.path);
+}
+
+/** The digits Snapchat puts after "mydata~": the moment the export was requested, the same in every part of one export. */
+export function exportId(path: string): string | null {
+  return /^mydata~(\d+)/i.exec(lastSegment(path))?.[1] ?? null;
+}
+
+/** What one part holds, from its directory listing alone. */
+export interface PartScan {
+  /** The directory could be read and has entries. */
+  listed: boolean;
+  /** It holds friends.json: the first part, whatever its name. */
+  friends: boolean;
+  /** It holds a JSON file, or an HTML page outside memories/ (a later part holds photos and videos and a memories page of its own, no more). */
+  pages: boolean;
+}
+
+/** What the entry names of a part say it holds. */
+export function scanNames(names: readonly string[]): PartScan {
+  const lower = names.map((n) => n.toLowerCase());
+  const pages = lower.some((n) => n.endsWith(".json") || (n.endsWith(".html") && !n.startsWith("memories/") && !n.includes("/memories/")));
+  return { listed: names.length > 0, friends: lower.some((n) => (n.split("/").pop() ?? "") === "friends.json"), pages };
+}
+
+export type PartsCheck =
+  /** Read these paths, in this order: the part with the lists first. */
+  | { kind: "ok"; ordered: string[] }
+  /** Only photo and video parts: the lists are in a part that was not chosen. */
+  | { kind: "later-only" }
+  /** Parts of different exports: the two smallest export numbers, as digits. */
+  | { kind: "mixed"; ids: readonly [string, string] };
+
+/**
+ * Decide, from the paths and the scans (in the same order), whether these parts are one export, and in what order to read them.
+ * Two exports are told apart by the digits in the names (a browser's "(1)" copy of a part keeps its number).
+ * A part that could not be listed is judged by its name alone, so that reading it gives the person the real reason it failed.
+ */
+export function checkParts(paths: readonly string[], scans: readonly PartScan[]): PartsCheck {
+  const ids = [...new Set(paths.map(exportId).filter((id): id is string => id !== null))];
+  if (ids.length > 1) {
+    const sorted = ids.sort((a, b) => (a.length !== b.length ? a.length - b.length : a < b ? -1 : 1));
+    return { kind: "mixed", ids: [sorted[0] as string, sorted[1] as string] };
+  }
+
+  const mediaOnly = paths.every((p, i) => ((scans[i] as PartScan).listed ? !(scans[i] as PartScan).pages : /^mydata~\d+-\d+\.zip$/i.test(lastSegment(p))));
+  if (paths.length > 0 && mediaOnly) return { kind: "later-only" };
+
+  const byName = orderExportParts([...paths]);
+  const first = byName.filter((p) => (scans[paths.indexOf(p)] as PartScan).friends);
+  const rest = byName.filter((p) => !(scans[paths.indexOf(p)] as PartScan).friends);
+  return { kind: "ok", ordered: [...first, ...rest] };
 }
