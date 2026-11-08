@@ -13,7 +13,7 @@ import pkg from "../package.json" with { type: "json" };
 /** "windows" (WebView2) and "macos" (the system WebKit web view) are the two systems whose web engine has been looked at; "other" is Linux. */
 export const desktopKind = (userAgent: string): "windows" | "macos" | "other" => (/\bWindows\b/.test(userAgent) ? "windows" : /\bMacintosh\b|\bMac OS X\b/.test(userAgent) ? "macos" : "other");
 
-/** The app's own version (it matches tauri.conf.json and Cargo.toml, which a test checks). A pre-release such as 0.1.0-beta.1 is a beta. */
+/** The app's own version (it matches tauri.conf.json and Cargo.toml, which a test checks). A pre-release such as 0.1.0-beta.2 is a beta. */
 export const releaseOf = (version: string): { version: string; beta: boolean } => ({ version, beta: /-beta(\.|$)/.test(version) });
 
 export const desktopPlatform: Platform = {

@@ -13,7 +13,7 @@ const raw = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   state: "idle",
   percent: 0,
   version: null,
-  current: "0.1.0-beta.1",
+  current: "0.1.0-beta.2",
   auto: true,
   last_checked_unix: 0,
   notice_pending: false,
@@ -33,7 +33,7 @@ const status = (over: Record<string, unknown> = {}): UpdateStatus => {
 describe("what the page accepts from the shell", () => {
   it("accepts exactly the shell's fields with plain values", () => {
     const s = sanitizeStatus(raw({ state: "staged", percent: 100, version: "0.2.0", last_checked_unix: 1794000000, link_enabled: true, error: "signature", updated_to: "0.1.9" }));
-    expect(s).toEqual({ state: "staged", percent: 100, version: "0.2.0", current: "0.1.0-beta.1", auto: true, lastCheckedUnix: 1794000000, noticePending: false, linkEnabled: true, supported: true, error: "signature", updatedTo: "0.1.9" });
+    expect(s).toEqual({ state: "staged", percent: 100, version: "0.2.0", current: "0.1.0-beta.2", auto: true, lastCheckedUnix: 1794000000, noticePending: false, linkEnabled: true, supported: true, error: "signature", updatedTo: "0.1.9" });
   });
 
   it("refuses anything else as a whole", () => {
