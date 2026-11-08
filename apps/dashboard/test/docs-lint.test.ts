@@ -77,7 +77,10 @@ describe.each([...DOCS, "CONTRIBUTING.md", "SECURITY.md", path.join("docs", "REL
  */
 describe.each([...DOCS.filter((f) => !/MACOS/.test(f)), "CONTRIBUTING.md", "SECURITY.md", path.join("docs", "BRAND.md")])("%s terms", (file) => {
   const INSTALLER_LABEL = "Also delete Snappy’s saved data (history and settings)";
-  const lines = prose(file).map((l) => ({ ...l, text: l.text.replace(INSTALLER_LABEL, "") }));
+  // The brand guide's word-choices table lists the words to avoid, so its table rows are the one place they may appear.
+  const lines = prose(file)
+    .filter((l) => !(/BRAND/.test(file) && l.raw.startsWith("|")))
+    .map((l) => ({ ...l, text: l.text.replace(INSTALLER_LABEL, "") }));
 
   it("says saved history, not ledger, sealed, snapshot or saved data", () => {
     const bad = lines.filter((l) => /\b(ledger|sealed|snapshots?|saved data)\b|\bseals\b/i.test(l.text) || /turned saving on|saving turned on|turn saving on/i.test(l.text));
@@ -178,6 +181,72 @@ describe("the README's counts and option names", () => {
   it("quotes Snapchat’s option names the way the app does", () => {
     expect(body("README.md")).toMatch(/Select “Export JSON files” and “User information”, and choose “All Time” as the date range/);
     expect(body(path.join("docs", "EXPORT-GUIDE.md"))).toMatch(/\*\*Date range: “All Time”\*\*/);
+  });
+});
+
+describe("the brand guide names every feature and every command", () => {
+  const brand = (): string => prose(path.join("docs", "BRAND.md")).map((l) => l.raw).join("\n");
+
+  it("lists every tool on the Tools page by its title, in the feature names", async () => {
+    const { TOOLS } = await import("../src/tools/registry.ts");
+    const text = brand();
+    const missing = TOOLS.map((t) => t.title).filter((title) => !new RegExp(`^\\| ${title} \\|`, "m").test(text));
+    expect(missing).toEqual([]);
+    for (const name of ["Tools", "Guided removal", "Keep list"]) expect(text, name).toMatch(new RegExp(`^\\| ${name} \\|`, "m"));
+  });
+
+  it("has a row for every documented command in the command-to-feature table", async () => {
+    const { COMMAND_NAMES } = await import("../../cli/src/cli.ts");
+    const text = brand();
+    const table = text.slice(text.indexOf("### Commands and features"), text.indexOf("### American English"));
+    const missing = COMMAND_NAMES.filter((name) => !new RegExp(`\`${name}\``).test(table));
+    expect(missing).toEqual([]);
+  });
+
+  it("adds the word choices for saved history, sample data, Save and check in Snapchat", () => {
+    const text = brand();
+    for (const row of ["saved history", "sample data", "Save (a file or a list)", "check in Snapchat", "may have removed you or closed their account"]) expect(text, row).toContain(`| ${row} |`);
+    expect(text).toMatch(/Never use a word the person did not choose or see elsewhere in Snappy/);
+  });
+});
+
+describe("the README mentions guided removal, the keep list and the guides", () => {
+  const readme = (): string => prose("README.md").map((l) => l.raw).join("\n");
+
+  it("says one thing each about guided removal, the keep list, saving a history, the Export guide, the Privacy page and duplicates", () => {
+    const text = readme();
+    expect(text).toMatch(/Guided removal takes you through the list one person at a time/);
+    expect(text).toMatch(/keep list protects friends you choose to keep/);
+    expect(text).toMatch(/save it with a passphrase in Settings/);
+    expect(text).toMatch(/The Export guide page says what to select/);
+    expect(text).toMatch(/the Privacy page says what Snappy reads and what it skips/);
+    expect(text).toMatch(/Likely duplicates are counted from dates, types and sizes/);
+  });
+});
+
+describe("the export guide for a Mac and for the app", () => {
+  const guide = (): string => prose(path.join("docs", "EXPORT-GUIDE.md")).map((l) => l.raw).join("\n");
+
+  it("has a Terminal block with Mac paths, no quotes around a path that starts with a tilde, and pbcopy", () => {
+    // The commands sit in fenced blocks, which prose() leaves out, so this one reads the file as written.
+    const text = readFileSync(path.join(root, "docs", "EXPORT-GUIDE.md"), "utf8");
+    const mac = text.slice(text.indexOf("### On a Mac"), text.indexOf("### Options"));
+    expect(mac).toMatch(/inspect ~\/Downloads\/mydata\*\.zip/);
+    expect(mac).not.toMatch(/"~\//);
+    expect(mac).toMatch(/\| pbcopy/);
+    expect(mac).toMatch(/Open safe files after downloading/);
+  });
+
+  it("has a Using the app section that says Run asks for the ZIP files and Copy is for the command line tool", () => {
+    const text = guide();
+    expect(text).toMatch(/^## Using the app$/m);
+    expect(text).toMatch(/Run asks you to choose your ZIP files first/);
+    expect(text).toMatch(/\*\*Copy\*\* copies the command for the command line tool, not for the app/);
+  });
+
+  it("writes Export your Memories with the capital, as the app does", () => {
+    expect(guide()).toMatch(/\| 1\. Export your Memories \|/);
+    expect(guide()).not.toMatch(/Export your memories/);
   });
 });
 

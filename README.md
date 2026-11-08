@@ -4,8 +4,8 @@ Snappy helps you tidy your Snapchat friends list and rescue your Memories, using
 
 ![Snappy in a light and a dark theme, each with the Overview page in a desktop window and the Cleanup queue on a phone](docs/images/readme-header.webp)
 
-- **Cleanup queue.** Finds disappeared friends (people who may have removed you), unaccepted requests, and quiet friends, each with a confidence level and the evidence behind it. Saved chats and Snaps both count as activity, so a friend you only Snap with is not called quiet.
-- **Memories rescue.** Plans a local backup of your Memories, shows a storage meter against a 5 GB cap that you can change, and restores each file’s exact capture time. In a newer export the files are inside the ZIP files, and Snappy pairs each one with its list entry by that exact time.
+- **Cleanup queue.** Finds disappeared friends (people who may have removed you), unaccepted requests, and quiet friends, each with a confidence level and the evidence behind it. Saved chats and Snaps both count as activity, so a friend you only Snap with is not called quiet. Guided removal takes you through the list one person at a time, and the keep list protects friends you choose to keep. You remove people yourself, in Snapchat.
+- **Memories rescue.** Plans a local backup of your Memories, shows a storage meter against a 5 GB cap that you can change, and restores each file’s exact capture time. In a newer export the files are inside the ZIP files, and Snappy pairs each one with its list entry by that exact time. Likely duplicates are counted from dates, types and sizes, never by looking at a picture.
 - **Tools.** Twenty-two small tools on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup, a year in review and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
 - **Native apps and a command line tool.** Snappy is an app you install: a Windows beta is the first one, a macOS beta is built and tested by automation (see [docs/MACOS.md](docs/MACOS.md)), and Linux and phone apps are planned. There is also a command line tool named `snappy-export`.
 
@@ -67,7 +67,7 @@ Request your data in Snapchat under Settings, then My Data. Select “Export JSO
 
 ### 3. Use the app
 
-Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the tools: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
+Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the tools: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app. To keep your history for next time, save it with a passphrase in Settings. The Export guide page says what to select when you request your export, and the Privacy page says what Snappy reads and what it skips.
 
 ### 4. Use the command line
 

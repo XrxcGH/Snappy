@@ -52,6 +52,58 @@ No all-caps strings in the interface. Emphasis comes from weight and size, never
 | Who reaches out first | Who tends to start the exchanges in each one-to-one chat |
 | Activity calendar | Your chats and Snaps by day, week and kind |
 | Memories timeline gaps | Months with no Memories, and the busiest stretch |
+| Export check | Whether your export is complete enough to use |
+| Export reminder | A calendar reminder to request your next export |
+| Friends backup | Your friends lists saved as a file, to check against a later export |
+| Friend count history | How your friend count grew and shrank, month by month |
+| Closest and fading | Friends you chat and Snap with most, and friends who may be fading |
+| Friendship anniversaries | Friendships that reach a whole year soon |
+| Blocked and ignored review | People you blocked, ignored or hid from suggestions |
+| Waiting on a reply | Friends who may be waiting on a reply |
+| Chat and Snap habits | When you chat and Snap most |
+| Memories on this day | Memories you took on this day in earlier years |
+| Rescue manifest | A list of the Memories a rescue saves, to check a rescue folder later |
+| Safety checklist | A short account safety list that you check off yourself |
+| Privacy tune-up | A checklist for your Snapchat privacy settings, checked off by you |
+| Storage planner | A plan for saving your Memories under a storage goal |
+| Tools | The page that lists these small tools, grouped by what they read |
+| Guided removal | The Cleanup queue one person at a time, for you to remove in Snapchat |
+| Keep list | People you chose to keep, who stay out of the Cleanup queue |
+
+### Commands and features
+
+Command names are short and do not always match the feature they run. This table is the one place that says which is which. Several commands run in the app too, on the Export guide and Tools pages.
+
+| Command | Feature |
+|---|---|
+| `analyze` | Cleanup queue, Disappeared friends, Unaccepted requests and Quiet friends |
+| `memories` | Memories rescue |
+| `inspect` | The shape report on the Export guide page |
+| `keep`, `unkeep` | Keep list |
+| `history` | Saved history (`ledger` still works) |
+| `demo` | Sample exports |
+| `check` | Export check |
+| `remind` | Export reminder |
+| `since` | Since your last export |
+| `year` | Year in review |
+| `closest` | Closest and fading |
+| `anniversaries` | Friendship anniversaries |
+| `backup` | Friends backup |
+| `blocked` | Blocked and ignored review |
+| `lookalikes` | Lookalike usernames |
+| `friend-count` | Friend count history |
+| `friends` | Friends table |
+| `replies` | Waiting on a reply |
+| `reply-speed` | Reply speed |
+| `reach-out` | Who reaches out first |
+| `habits` | Chat and Snap habits |
+| `calendar` | Activity calendar |
+| `storage` | Storage planner |
+| `on-this-day` | Memories on this day |
+| `gaps` | Memories timeline gaps |
+| `rescue` | Rescue manifest: it checks a rescue against a list, and the rescue itself is `memories` |
+| `safety` | Safety checklist |
+| `privacy` | Privacy tune-up |
 
 ### American English
 
@@ -67,6 +119,13 @@ Use US spelling and conventions everywhere: color, gray, organize, analyze, canc
 | Unaccepted requests | Failed adds | Nothing failed. |
 | Your export | Your data dump | Calm and accurate. |
 | On this device | Locally, client-side | Plain language. |
+| saved history | ledger, sealed history, saved data, snapshot | One name for what a passphrase protects: past exports, the keep list and your marks. |
+| Save history | Seal history | The button says what happens. Sealing and encryption go under Technical details. |
+| sample data | invented data, made-up exports, demo, synthetic | One name for the built-in fake data in the dashboard. The command line says sample exports. |
+| Save (a file or a list) | Download | In the app there is no download, and the file dialog says save. |
+| check in Snapchat | check in the app | In Snappy’s own words, “the app” is Snappy. |
+| may have removed you or closed their account | removed you, banned you, unadded you | Snappy infers, and a deleted or renamed account looks the same. |
+| tools, background work | helpers, workers | A developer word goes under Technical details. |
 
 ---
 
@@ -448,6 +507,8 @@ Plain, specific, calm. Short sentences, active voice, and the next step first. N
 **Confirmations.** Past tense and specific: "Report saved." "Backup saved."
 
 **Buttons and labels.** Verbs, sentence case, one to three words: "Add export", "Review queue", "Save report", "Remove 12 friends", "Cancel".
+
+**Never use a word the person did not choose or see elsewhere in Snappy.** If a developer word is needed, put it under Technical details.
 
 **Avoid:** Oops, Whoops, Awesome, Simply, Just, unfriend, ghost, purge, stalker, exposed, leaked.
 

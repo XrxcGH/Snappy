@@ -8,7 +8,7 @@ Snappy only reads **your own** official “Download My Data” export, on your o
 
 | Option | Select? | Why |
 |---|---|---|
-| 1. Export your memories | Yes (if you want Memories rescue) | Newer exports put your Memories files inside the ZIP files, and the list in the JSON files gives each one’s exact capture time. Snappy pairs them by that time and restores it. Media is treated as opaque files: Snappy never looks at it. |
+| 1. Export your Memories | Yes (if you want Memories rescue) | Newer exports put your Memories files inside the ZIP files, and the list in the JSON files gives each one’s exact capture time. Snappy pairs them by that time and restores it. Media is treated as opaque files: Snappy never looks at it. |
 | 2. Export JSON files | **Yes, required** | Snappy reads JSON only. HTML-only exports are rejected. |
 | 3. User information | **Yes, required** | Contains your friends list (current, removed by you, blocked, requests). |
 | 4. Chat and Snap history | Optional | Snappy uses it only as metadata: who, direction, type, and time. It protects friends you chat or Snap with and helps spot quiet ones. Many friends only exchange Snaps, so Snap history matters as much as chats. Message text is never read or kept. If you leave it off, you lose that protection. |
@@ -28,6 +28,10 @@ Snappy only reads **your own** official “Download My Data” export, on your o
 ## Command line tool
 
 The commands in this guide run in `snappy-export`, the Snappy command line tool. The Snappy app does not include it. It is a separate download from the Snappy repository on GitHub, it needs Node 22.18 or later, and the README in its `apps/cli` folder says how to install and run it. Open a terminal in the folder where you downloaded it before you run a command below.
+
+## Using the app
+
+In the Snappy app, open **Export guide** and press **Run** on a command. Run asks you to choose your ZIP files first (choose every part at once), then prints the same text the terminal would, inside the app. **Copy** copies the command for the command line tool, not for the app.
 
 ## Memories in a newer export
 
@@ -68,6 +72,17 @@ Run it on **all your ZIP files in one command**. The steps below are for Windows
    If the folder also holds ZIP files from another export, use the first form so only your three files are read. Snappy puts the parts in order itself (the name without a number first, then `-2`, then `-3`), so the order you type them in does not matter.
 
 4. Read the report line by line. If you are happy with it, copy it by adding `| Set-Clipboard` to the end of the same command, then paste it where you need it.
+
+### On a Mac
+
+Open Terminal (press Command and Space, type `Terminal`, and press Return). Go to the folder where you downloaded the Snappy command line tool, then run the same command with a Mac path. Leave the quotes off a path that starts with `~`, so the shell turns `~` into your home folder and fills in the wildcard:
+
+```bash
+cd ~/Documents/Snappy
+npm run snappy-export -- inspect ~/Downloads/mydata*.zip
+```
+
+To copy the report, add `| pbcopy` to the end of the command and paste it where you need it. If Safari unzipped your download into a folder, turn off “Open safe files after downloading” in Safari’s settings and download it again.
 
 ### Options
 
