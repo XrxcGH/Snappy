@@ -168,7 +168,9 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
         const saved = outFiles(session, { id, result: state.result, now: () => Date.now(), key: options.key });
         // The output may tell the person to add --download. Run never downloads, so say where that works.
         const download = NETWORK_HINT.test(view.plainText()) ? h("p", { class: "command-hint" }, terminal.downloadNote) : null;
-        root.replaceChildren(...[view.element, chip(state.result), download, saved, h("div", { class: "command-toolbar" }, copy, close)].filter((n): n is HTMLElement => n !== null));
+        // The buttons that act on the whole run come before the files, so a keyboard user reaches Copy output and Close
+        // without passing a Save button for every file (a real export saves hundreds).
+        root.replaceChildren(...[view.element, chip(state.result), download, h("div", { class: "command-toolbar" }, copy, close), saved].filter((n): n is HTMLElement => n !== null));
         // The reading starts at the top, not at the last line.
         view.finish();
         // Back to the Run button, unless the person has moved on to something else.

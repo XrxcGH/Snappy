@@ -102,7 +102,20 @@ describe("the files list in the panel", () => {
     expect(section.querySelector(".caption")?.textContent).toBe("2 files, 2.39 MB");
     expect(section.querySelectorAll(".out-file-name").map((n) => n.textContent)).toEqual(["memories/a.jpg", "memories/b.mp4"]);
     const labels = section.querySelectorAll("button").map((b) => b.getAttribute("aria-label") ?? b.textContent);
-    expect(labels).toEqual(["Save a.jpg", "Save b.mp4", terminal.saveAllButton, terminal.clearOutButton]);
+    // Save all and Clear come before the one-by-one list, so the Tab order is the reading order.
+    expect(labels).toEqual([terminal.saveAllButton, terminal.clearOutButton, "Save a.jpg", "Save b.mp4"]);
+  });
+
+  it("puts Copy output and Close, then Save all and Clear files, before the Save button of every file, so they are not 50 Tab stops away", async () => {
+    const many = Array.from({ length: 50 }, (_, i) => file(`memories/f${i}.jpg`, 1));
+    const { el } = await drawn(many);
+    const order = el.querySelectorAll("button").map((b) => b.getAttribute("aria-label") ?? b.textContent);
+    expect(order.slice(0, 4)).toEqual([terminal.copyOutputButton, terminal.closeButton, terminal.saveAllButton, terminal.clearOutButton]);
+    expect(order).toHaveLength(4 + 50);
+    expect(order[4]).toBe("Save f0.jpg");
+    // The reading order is the same: the toolbar sits above the files section in the page.
+    const all = el.descendants();
+    expect(all.indexOf(el.querySelector(".command-toolbar") as FakeElement)).toBeLessThan(all.indexOf(el.querySelector(".out-files") as FakeElement));
   });
 
   it("lists the first fifty and counts the rest", async () => {
@@ -115,16 +128,17 @@ describe("the files list in the panel", () => {
   it("saves a file and saves everything when the buttons are pressed, and says when it cannot", async () => {
     const { el } = await drawn([file("memories/a.jpg", 3, NOW), file("memories/b.jpg", 3, NOW)]);
     const buttons = el.querySelector(".out-files")?.querySelectorAll("button") as FakeElement[];
-    buttons[0]?.click();
+    const named = (label: string): FakeElement => buttons.find((b) => (b.getAttribute("aria-label") ?? b.textContent) === label) as FakeElement;
+    named("Save a.jpg").click();
     expect(saved.map((s) => s.name)).toEqual(["a.jpg"]);
-    buttons[2]?.click();
+    named(terminal.saveAllButton).click();
     expect(saved.map((s) => s.name)).toEqual(["a.jpg", "rescued-memories.zip"]);
   });
 
   it("forgets the files on Clear, and the list goes", async () => {
     const { el, controller } = await drawn([file("memories/a.jpg")]);
     const buttons = el.querySelector(".out-files")?.querySelectorAll("button") as FakeElement[];
-    buttons[buttons.length - 1]?.click();
+    buttons.find((b) => b.textContent === terminal.clearOutButton)?.click();
     expect(controller.files("memories-rescue")).toEqual([]);
     expect(el.querySelector(".out-files")).toBeNull();
     expect(controller.state("memories-rescue").kind).toBe("finished");

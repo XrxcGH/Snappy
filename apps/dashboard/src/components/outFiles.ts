@@ -54,7 +54,7 @@ export function outFiles(session: TerminalSession, options: OutFilesOptions): HT
     h("h3", { class: "section-title" }, terminal.outHeading),
     h("p", { class: "caption" }, terminal.outCount(count, formatBytes(bytes))),
     stopped ? h("p", { class: "command-hint" }, terminal.outLostNote) : null,
-    h("ul", { class: "plain-list out-list" }, ...rows, files.length > LISTED_FILES ? h("li", { class: "caption" }, terminal.outMore(files.length - LISTED_FILES)) : null),
+    // Save all and Clear come first, then the one-by-one list: the Tab order is the reading order, and the list can be fifty stops long.
     h(
       "div",
       { class: "actions" },
@@ -62,5 +62,6 @@ export function outFiles(session: TerminalSession, options: OutFilesOptions): HT
       button({ label: terminal.clearOutButton, variant: "quiet", key: `${options.key}:clear-out`, onclick: () => controller.clearFiles(options.id) }),
     ),
     problem,
+    h("ul", { class: "plain-list out-list" }, ...rows, files.length > LISTED_FILES ? h("li", { class: "caption" }, terminal.outMore(files.length - LISTED_FILES)) : null),
   );
 }
