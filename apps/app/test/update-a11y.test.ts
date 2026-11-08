@@ -69,6 +69,36 @@ describe("the words only assistive technology hears", () => {
   });
 });
 
+describe("Windows high contrast (forced colors) in update.css", () => {
+  const css = source("update.css");
+  const block = (): string => {
+    const start = css.indexOf("@media (forced-colors: active)");
+    if (start < 0) return "";
+    let depth = 0;
+    for (let i = css.indexOf("{", start); i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      if (css[i] === "}" && --depth === 0) return css.slice(start, i + 1);
+    }
+    return css.slice(start);
+  };
+
+  it("gives the download bar a border track and draws the filled parts in the system highlight color", () => {
+    const rules = block();
+    expect(rules).not.toBe("");
+    expect(rules).toMatch(/\.update-bar\s*\{[^}]*border:\s*1px solid CanvasText/);
+    expect(rules).toMatch(/\.update-bar\s*\{[^}]*box-shadow:\s*none/);
+    for (const selector of [".update-bar-fill", ".update-wait"]) expect(rules, selector).toContain(selector);
+    expect(rules).toMatch(/background:\s*Highlight/);
+    expect(rules).toMatch(/forced-color-adjust:\s*none/);
+  });
+
+  it("uses system colors only inside the forced-colors block, and tokens everywhere else", () => {
+    const outside = css.replace(block(), "");
+    expect(outside).not.toMatch(/\b(CanvasText|Highlight|HighlightText|ButtonText)\b/);
+    expect(outside).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(/);
+  });
+});
+
 describe("the names of the banner buttons", () => {
   it("say what the first-run notice's Turn off button turns off, and leave the self-explaining buttons alone", () => {
     expect(actionAriaLabel("turnOff")).toBe("Turn off update checks");

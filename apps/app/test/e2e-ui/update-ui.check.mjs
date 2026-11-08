@@ -32,8 +32,8 @@ const ok = (cond, name, extra = "") => {
 const browser = await chromium.launch({ headless: true });
 
 /** A fresh page with the stand-in shell. `status` is what update_status answers; `calls` records every command. */
-async function open(status, { hash = "#/start", width = 900, height = 800, scheme = "light" } = {}) {
-  const context = await browser.newContext({ viewport: { width, height }, colorScheme: scheme, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130 Safari/537.36" });
+async function open(status, { hash = "#/start", width = 900, height = 800, scheme = "light", forcedColors = "none" } = {}) {
+  const context = await browser.newContext({ viewport: { width, height }, colorScheme: scheme, forcedColors, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130 Safari/537.36" });
   await context.addInitScript(
     ({ base, status: first }) => {
       const shell = { status: { ...base, ...first }, calls: [], afterCheck: null, rejectInstall: false };
@@ -140,6 +140,35 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   await refresh(dl, { state: "staged", percent: 100 });
   ok((await banner(dl)).includes("Updating now.") && !(await banner(dl)).includes("Downloading"), "the finished download is announced by the next banner appearing in the live region");
   await dl.context().close();
+
+  // Windows high contrast (forced colors): the bar has a visible track and the filled part is drawn in the highlight color.
+  const forced = await open({ state: "downloading", percent: 60, version: "0.2.0" }, { forcedColors: "active" });
+  const paint = (selector) => forced.evaluate((sel) => {
+    const probe = document.createElement("span");
+    probe.style.backgroundColor = "Highlight";
+    document.body.append(probe);
+    const highlight = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    const el = document.querySelector(sel);
+    const css = getComputedStyle(el);
+    return { fill: css.backgroundColor, highlight, border: css.borderTopWidth, borderStyle: css.borderTopStyle, shadow: css.boxShadow };
+  }, selector);
+  const barPaint = await paint(".update-bar");
+  ok(barPaint.border === "1px" && barPaint.borderStyle === "solid" && barPaint.shadow === "none", "in forced colors the download bar has a border track", JSON.stringify(barPaint));
+  const fillPaint = await paint(".update-bar-fill");
+  ok(fillPaint.fill === fillPaint.highlight, "and its filled part is drawn in the highlight color", JSON.stringify(fillPaint));
+  await forced.context().close();
+  const forcedWait = await open({ state: "staged", percent: 100, version: "0.2.0" }, { forcedColors: "active" });
+  const waitPaint = await forcedWait.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.backgroundColor = "Highlight";
+    document.body.append(probe);
+    const highlight = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return { fill: getComputedStyle(document.querySelector(".update-wait")).backgroundColor, highlight };
+  });
+  ok(waitPaint.fill === waitPaint.highlight, "the countdown bar is drawn in the highlight color too", JSON.stringify(waitPaint));
+  await forcedWait.context().close();
 
   const late = await open({ state: "downloading", percent: 80, version: "0.2.0" });
   await late.waitForTimeout(150);

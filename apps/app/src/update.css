@@ -32,3 +32,10 @@
 .update-card .actions { margin-bottom: var(--space-3); }
 .update-result:empty { display: none; }
 .update-result { margin: 0; font-weight: 600; }
+
+/* Windows high contrast: forced colors drop background colors and box shadows, so the bars would vanish. The track gets a
+   border in the text color and the filled part is drawn in the system highlight color, which forced colors leave alone. */
+@media (forced-colors: active) {
+  .update-bar { border: 1px solid CanvasText; box-shadow: none; }
+  .update-bar-fill, .update-wait { background: Highlight; forced-color-adjust: none; }
+}
