@@ -209,6 +209,18 @@ describe("the page", () => {
     for (const n of notes) expect(n).not.toMatch(/[a-z]+-[a-z]+-[a-z]+/);
   });
 
+  it("states the fixed rule (exchanges needed and share) under the result, also when nothing was found, and names the options", async () => {
+    const { state } = crafted();
+    const { root } = await renderSettled(view, state);
+    const line = copy.limitsLine(5, 70);
+    expect(line).toBe("A chat needs 5 exchanges, and one side must start 70% or more. The command line tool changes these with --min-exchanges and --share.");
+    expect(text(root, ".caption")).toContain(line);
+    const [a] = names as [string];
+    const empty = await renderSettled(view, real([ev(a, "unknown", 3)]));
+    expect(text(empty.root, ".empty-title")).toEqual([copy.empty.title]);
+    expect(text(empty.root, ".caption")).toContain(line);
+  });
+
   it("shows each kind of note with its count", async () => {
     const [a, b, c] = names as [string, string, string];
     const events: ChatEvent[] = [

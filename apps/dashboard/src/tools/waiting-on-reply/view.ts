@@ -81,6 +81,8 @@ function noteText(n: insights.waitingOnReply.WaitingNote, result: WaitingResult)
   }
 }
 
+const limitsCaption = (limits: WaitingResult["limits"]): HTMLElement => h("p", { class: "caption" }, copy.limitsLine(limits.youDays, limits.themDays));
+
 export const view = toolView<WaitingResult, Record<string, never>>({
   meta,
   copy,
@@ -90,7 +92,7 @@ export const view = toolView<WaitingResult, Record<string, never>>({
     const { report, limits } = result;
     // The empty state is drawn here, not by the frame, so the notes below it still say what was left out and why.
     if (report.summary.waitingOnYou + report.summary.waitingOnThem + report.summary.oneSided === 0) {
-      return [emptyState({ icon: meta.icon, spot: "empty", category: meta.category, title: copy.empty.title, body: copy.empty.body })];
+      return [emptyState({ icon: meta.icon, spot: "empty", category: meta.category, title: copy.empty.title, body: copy.empty.body }), limitsCaption(limits)];
     }
     return [
       section(
@@ -105,6 +107,7 @@ export const view = toolView<WaitingResult, Record<string, never>>({
       waitingSection(copy.youHeading, copy.youLine(limits.youDays), copy.youNoneLine, report.waitingOnYou, "waiting-on-reply:you"),
       waitingSection(copy.themHeading, copy.themLine(limits.themDays), copy.themNoneLine, report.waitingOnThem, "waiting-on-reply:them"),
       oneSidedSection(result),
+      limitsCaption(limits),
     ];
   },
   notes: (result) => [{ kind: "info", text: copy.hintNote }, ...result.report.notes.map((n) => noteText(n, result))],

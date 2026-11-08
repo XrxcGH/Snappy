@@ -221,7 +221,15 @@ describe("the page", () => {
     const batches = root.querySelectorAll("table").find((t) => rowsOf(t)[0]?.[0] === "Batch 1") as FakeElement;
     expect(rowsOf(order)).toHaveLength(12);
     expect(rowsOf(batches)).toHaveLength(10);
-    expect(text(root, ".caption")).toEqual([copy.moreStepsLine(28), copy.moreBatchesLine(4)]);
+    expect(text(root, ".caption")).toEqual([copy.moreStepsLine(28), copy.moreBatchesLine(4), copy.batchSizeLine("1 GB")]);
+  });
+
+  it("says the batch size is fixed on this page and names the option of the command line tool", async () => {
+    const many: MemoryItem[] = [];
+    for (let year = 2000; year < 2005; year++) many.push(memory(year, "image", 300));
+    const { root } = await renderSettled(view, real(many, 100));
+    const line = text(root, ".caption").find((t) => t.startsWith("Batches are up to"));
+    expect(line).toBe("Batches are up to 1 GB here. The command line tool changes that with --batch-gb.");
   });
 
   it("says oldest first when asked to", async () => {

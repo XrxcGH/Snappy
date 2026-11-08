@@ -73,6 +73,8 @@ export const copy = {
 
   batchesHeading: "Batches",
   batchesLine: (n: number, size: string) => `${countOf(n, "batch", "batches")} of up to ${size}, for what fits under your goal.`,
+  /** Under the batches: the size is fixed on this page, and the command line tool takes another. */
+  batchSizeLine: (size: string) => `Batches are up to ${size} here. The command line tool changes that with --batch-gb.`,
   batchesCaption: "Batches of Memories to save",
   batchHeader: "Batch",
   yearsHeader: "Years",

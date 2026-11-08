@@ -3,6 +3,7 @@
  * The people in the lists are the sample's friends; their usernames are canaries that may appear in the result
  * lists and nowhere else (not in a note, an announcement, a label or a document title).
  */
+import { insights } from "@snappy-export/core";
 import type { ChatEvent, FriendRecord, ParsedExport } from "@snappy-export/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
@@ -195,6 +196,14 @@ describe("the page", () => {
     expect(notes).toEqual(expect.arrayContaining([copy.noTimeNote(1), copy.futureNote(1), copy.noPersonNote(1), copy.notFriendsNote(1), copy.unknownDirectionNote(1)]));
   });
 
+  it("states the fixed limits under the result, from the limits core used, and names the options that change them", async () => {
+    const { state } = crafted();
+    const { root } = await renderSettled(view, state);
+    const d = insights.waitingOnReply.WAITING_DEFAULTS;
+    expect(text(root, ".caption")).toContain(copy.limitsLine(d.waitingOnYouDays, d.waitingOnThemDays));
+    expect(copy.limitsLine(3, 7)).toBe("The limits are fixed here: 3 days of silence for you and 7 days for them. The command line tool changes them with --you-days and --them-days.");
+  });
+
   it("announces the counts politely once, and without a name", async () => {
     const { state } = crafted();
     await renderSettled(view, state);
@@ -212,6 +221,8 @@ describe("when nothing is waiting", () => {
     expect(text(root, ".empty-body")).toEqual([copy.empty.body]);
     expect(root.querySelectorAll("ul.rows")).toHaveLength(0);
     expect(text(root, ".tool-notes li")).toEqual([copy.hintNote]);
+    // The limits matter most when nothing was found, so they are said here too.
+    expect(text(root, ".caption")).toContain(copy.limitsLine(3, 7));
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.replies));
   });
 

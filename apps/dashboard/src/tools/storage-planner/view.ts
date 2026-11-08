@@ -128,6 +128,7 @@ function batchSection(plan: Plan): HTMLElement {
       ]),
     ),
     plan.batches.length > shown.length ? h("p", { class: "caption" }, copy.moreBatchesLine(plan.batches.length - shown.length)) : null,
+    h("p", { class: "caption" }, copy.batchSizeLine(formatBytes(plan.batchBytes))),
   );
 }
 

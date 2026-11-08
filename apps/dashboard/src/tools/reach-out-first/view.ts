@@ -70,6 +70,8 @@ function noteOf(n: ReachOutNote): ToolNote {
   }
 }
 
+const limitsCaption = (settings: ReachOutReport["settings"]): HTMLElement => h("p", { class: "caption" }, copy.limitsLine(settings.minExchanges, Math.round(settings.mostlyShare * 100)));
+
 export const view = toolView<ReachOutReport, ReachOutParams>({
   meta,
   copy,
@@ -96,7 +98,7 @@ export const view = toolView<ReachOutReport, ReachOutParams>({
     // The empty state is drawn here, not by the frame, so the notes below it still say what was left out and why.
     const { overall, settings } = r;
     if (overall.exchanges === 0 || overall.youShare === null) {
-      return [emptyState({ icon: meta.icon, spot: "empty", category: meta.category, title: copy.empty.title, body: copy.empty.body })];
+      return [emptyState({ icon: meta.icon, spot: "empty", category: meta.category, title: copy.empty.title, body: copy.empty.body }), limitsCaption(settings)];
     }
     const you = Math.round(overall.youShare * 100);
     const percent = Math.round(settings.mostlyShare * 100);
@@ -114,6 +116,7 @@ export const view = toolView<ReachOutReport, ReachOutParams>({
       ),
       sideSection(copy.themHeading, copy.themCaption, copy.themRuleLine(settings.minExchanges, percent), copy.themNoneLine, r.mostlyThem, "them"),
       sideSection(copy.youHeading, copy.youCaption, copy.youRuleLine(settings.minExchanges, percent), copy.youNoneLine, r.mostlyYou, "you"),
+      limitsCaption(settings),
     ];
   },
   notes: (r): ToolNote[] => [{ kind: "info", text: copy.hintNote }, ...r.notes.map(noteOf)],
