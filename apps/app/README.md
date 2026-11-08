@@ -13,7 +13,7 @@ not verified, and [docs/MACOS.md](../../docs/MACOS.md) for the macOS build.
 
 | Path | What |
 | --- | --- |
-| `src-tauri/` | The shell: `tauri.conf.json`, one capability file, `lib.rs` (window, navigation lock, WebView2 settings, eight commands), `readonly.rs` (the read-only file table), `src/updater/` (the update check, see below), `update-public-keys.txt` (the two public update keys: placeholders until the maintainer fills them), `build_guards.rs` (the build's release rules), icons made from `brand/logo/png/app-icon-1024.png`. |
+| `src-tauri/` | The shell: `tauri.conf.json`, one capability file, `lib.rs` (window, navigation lock, WebView2 settings, eight commands), `readonly.rs` (the read-only file table), `src/updater/` (the update check, see below), `update-public-keys.txt` (the two public update keys, the maintainer's real ones; a release build refuses placeholders and test keys), `build_guards.rs` (the build's release rules), icons made from `brand/logo/png/app-icon-1024.png`. |
 | `src/entry.ts` | The default entry: tells the dashboard it runs in the desktop app, then starts it. "Choose ZIP files" is the page's own file input and the zip is read by the dashboard's background worker. No shell command, no path, no IPC. |
 | `src/desktop-platform.ts` | What the app tells the dashboard (`apps/dashboard/src/platform.ts`): it is the desktop app (adds a note to the Privacy page) and it shows no "Open in Snapchat" buttons. |
 | `src/entry-native-reader.ts` | The fallback entry (build with `SNAPPY_READER=native`): picks zips in a dialog Rust shows and reads them with the shell's read-only `read_range` command. |
