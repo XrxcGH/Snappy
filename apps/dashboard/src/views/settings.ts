@@ -1,12 +1,15 @@
 import { licenses } from "snappy:licenses";
 import { announce } from "../announce.ts";
 import { brand, routes, settings, shell } from "../copy.ts";
+import { shellCopy, whatsNew } from "../copy-shell.ts";
+import { REPOSITORY_ADDRESS, buildDiagnostics } from "../diagnostics.ts";
 import type { Theme, State } from "../reducer.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button } from "../components/button.ts";
 import { icon } from "../components/icon.ts";
 import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
+import { copyTextButton } from "../components/listActions.ts";
 import { notice } from "../components/notice.ts";
 import { platform } from "../platform.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
@@ -18,7 +21,7 @@ export const settingsView: View = (ctx) =>
     "div",
     { class: "view" },
     pageHeader(routes.settings.title, undefined, { icon: "settings" }),
-    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), aboutSection()),
+    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), helpSection(ctx), aboutSection()),
   );
 
 /**
@@ -136,6 +139,23 @@ function deleteSection(ctx: ViewContext): HTMLElement {
 
   showStart();
   return section(settings.deleteHeading, box);
+}
+
+/**
+ * Help and feedback: Copy diagnostics (version, system, counts, never names), the repository address as text to copy
+ * (the desktop app cannot open links), and what is new in the version that is running.
+ */
+function helpSection(ctx: ViewContext): HTMLElement {
+  const entry = whatsNew.find((w) => w.version === (platform().release?.version ?? brand.version));
+  return section(
+    shellCopy.helpHeading,
+    h("p", {}, shellCopy.diagnosticsNote),
+    h("div", { class: "actions" }, copyTextButton({ label: shellCopy.copyDiagnosticsButton, key: "copy-diagnostics", done: shellCopy.diagnosticsCopiedAnnounce, text: () => buildDiagnostics(ctx.store.get(), platform(), typeof navigator === "undefined" ? {} : navigator) })),
+    h("p", {}, shellCopy.reportNote),
+    h("p", {}, `${shellCopy.repositoryLabel}: `, h("code", { class: "repository" }, REPOSITORY_ADDRESS)),
+    h("div", { class: "actions" }, copyTextButton({ label: shellCopy.copyAddressButton, key: "copy-address", done: shellCopy.addressCopiedAnnounce, text: () => REPOSITORY_ADDRESS })),
+    entry ? subsection(shellCopy.whatsNewHeading, h("ul", { class: "plain-list" }, ...entry.lines.map((line) => h("li", {}, line)))) : null,
+  );
 }
 
 function aboutSection(): HTMLElement {
