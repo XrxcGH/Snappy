@@ -275,9 +275,15 @@ fn build_updater(app: &tauri::App) -> Option<updater::Updater> {
     let config = app.config();
     let data = app.path().app_local_data_dir().ok()?;
     let product = config.product_name.clone().unwrap_or_else(|| "Snappy".into());
-    let publisher = config.bundle.publisher.clone().unwrap_or_default();
-    updater::for_app(&data, &product, &publisher, busy)
+    updater::for_app(&data, &product, INSTALLER_PUBLISHER, busy)
 }
+
+/// The publisher the installer records its folder under (`HKCU\Software\<publisher>\<product name>`), which the
+/// updater reads to know it runs from the per-user install. It is written out here and not read from the config,
+/// because Tauri leaves `bundle.publisher` out of the config it embeds in the program: reading it gave an empty
+/// name, the record was never found, and every installed copy said it could not update itself. A test compares
+/// this with `bundle.publisher` in tauri.conf.json, which the installer uses.
+const INSTALLER_PUBLISHER: &str = "Snappy contributors";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -409,3 +415,15 @@ mod tests {
 #[cfg(test)]
 #[path = "../build_guards.rs"]
 mod build_guards;
+
+// The installer's publisher, written out in this file (see INSTALLER_PUBLISHER), is the one in the config the installer reads.
+#[cfg(test)]
+mod installer_publisher_tests {
+    use super::INSTALLER_PUBLISHER;
+
+    #[test]
+    fn is_the_publisher_the_installer_uses() {
+        let conf: serde_json::Value = serde_json::from_str(include_str!("../tauri.conf.json")).expect("tauri.conf.json is JSON");
+        assert_eq!(conf["bundle"]["publisher"].as_str(), Some(INSTALLER_PUBLISHER));
+    }
+}

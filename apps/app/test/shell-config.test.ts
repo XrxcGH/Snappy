@@ -34,6 +34,18 @@ const lib = read("src-tauri", "src", "lib.rs");
 const readonlyRs = read("src-tauri", "src", "readonly.rs");
 const buildRs = read("src-tauri", "build.rs");
 
+describe("the installer's record that the updater looks for", () => {
+  it("is found under the publisher named in the code, which is the publisher in tauri.conf.json", () => {
+    // The first full run of the update drill found that every installed copy said "This copy can't update itself": the
+    // updater read the publisher from the config embedded in the program, and Tauri leaves `bundle.publisher` out of that
+    // copy, so it looked for the installer's registry key under an empty publisher and never found it.
+    const named = /const INSTALLER_PUBLISHER: &str = "([^"]+)";/.exec(lib)?.[1];
+    expect(named).toBeDefined();
+    expect(named).toBe((conf.bundle as { publisher?: string }).publisher);
+    expect(code(lib)).not.toMatch(/bundle\s*\.\s*publisher/);
+  });
+});
+
 /** Rust source with comments removed, so a rule that forbids a word is not tripped by prose. */
 const code = (rs: string): string => rs.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/ .*$/gm, "");
 /** Everything before the unit tests, which legitimately create and delete scratch files. */
