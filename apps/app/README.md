@@ -140,7 +140,7 @@ automated test in `tools/macos/` (see "macOS build" below).
 ## macOS build
 
 One universal app (`aarch64` and `x86_64` in one executable), ad-hoc signed, in a `.dmg` (plus an `.app.tar.gz` for the
-updater later; no `.pkg`). Everything about it is built on GitHub's Apple silicon runners; no Mac is needed or
+updater later, made by the smoke test only for now; no `.pkg`). Everything about it is built on GitHub's Apple silicon runners; no Mac is needed or
 available to the maintainers.
 
 ```
