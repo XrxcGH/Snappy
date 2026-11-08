@@ -198,6 +198,74 @@ describe("analyze with a sealed ledger", () => {
     expect(after.out).not.toMatch(/^ {2}ghost_2 /m);
   });
 
+  it("says name, not friend, for a name the saved history has never seen, without echoing it", async () => {
+    const dir = tempDir("an");
+    const file = join(dir, "h.sealed");
+    const { earlier } = writeDemoPair(dir);
+    await run(["analyze", earlier, "--history", file], makeIo({ env }));
+
+    const mixed = await run(["keep", "ghost_1", "nobody_x", "--history", file], makeIo({ env }));
+    expect(mixed.out).toContain("2 names added to your keep list. 2 names in total.");
+    expect(mixed.out).toContain("1 name is not in your saved history, so it may not match anyone yet. Check the spelling.");
+    expect(mixed.out).not.toMatch(/ghost_|nobody_x/);
+
+    const unknownOnly = await run(["keep", "nobody_y", "--history", file], makeIo({ env }));
+    expect(unknownOnly.out).toContain("1 name added to your keep list. 3 names in total.");
+
+    const known = await run(["keep", "ghost_2", "--history", file], makeIo({ env }));
+    expect(known.out).toContain("1 friend added to your keep list.");
+    expect(known.out).not.toContain("not in your saved history");
+
+    const off = await run(["unkeep", "nobody_x", "--history", file], makeIo({ env }));
+    expect(off.out).toContain("1 name taken off your keep list.");
+  });
+
+  it("calls every name a name while there is no saved history to check it against", async () => {
+    const file = join(tempDir("an"), "empty.sealed");
+    const { out } = await run(["keep", "sam_01", "--history", file], makeIo({ env }));
+    expect(out).toContain("1 name added to your keep list. 1 name in total.");
+    expect(out).toContain("1 name is not in your saved history");
+  });
+
+  it("keep --list prints the count and the names, sorted, and nothing else about the history", async () => {
+    const dir = tempDir("an");
+    const file = join(dir, "h.sealed");
+    const { earlier } = writeDemoPair(dir);
+    await run(["analyze", earlier, "--history", file], makeIo({ env }));
+    await run(["keep", "ghost_2", "ghost_1", "--history", file], makeIo({ env }));
+
+    const listed = await run(["keep", "--list", "--history", file], makeIo({ env }));
+    expect(listed.code).toBe(0);
+    expect(listed.out).toBe("2 names on your keep list.\n\n  ghost_1\n  ghost_2\n\nNothing here has left this device.\n");
+    // Listing changes nothing: the same two names are still protected and no name was added.
+    expect((await run(["keep", "--list", "--ledger", file], makeIo({ env }))).out).toContain("2 names on your keep list.");
+    const one = join(dir, "one.sealed");
+    await run(["keep", "ghost_1", "--history", one], makeIo({ env }));
+    expect((await run(["keep", "--list", "--history", one], makeIo({ env }))).out).toContain("1 name on your keep list.");
+  });
+
+  it("keep --list says the list is empty, and asks for no passphrase when there is no saved history", async () => {
+    const file = join(tempDir("an"), "none.sealed");
+    const io = makeIo({ env: {} });
+    const { code, out } = await run(["keep", "--list", "--history", file], io);
+    expect(code).toBe(0);
+    expect(out).toContain("Your keep list is empty. Use snappy-export keep to add friends.");
+    expect(io.asked).toEqual([]);
+    expect(existsSync(file)).toBe(false);
+
+    const dir = tempDir("an");
+    const made = join(dir, "h.sealed");
+    const { earlier } = writeDemoPair(dir);
+    await run(["analyze", earlier, "--history", made], makeIo({ env }));
+    expect((await run(["keep", "--list", "--history", made], makeIo({ env }))).out).toContain("Your keep list is empty.");
+  });
+
+  it("keep --list takes no names, and unkeep has no --list", async () => {
+    expect((await run(["keep", "--list", "sam_01"])).err).toContain("--list shows your keep list and takes no names.");
+    expect((await run(["unkeep", "--list"])).err).toContain("To see your keep list, run: snappy-export keep --list");
+    expect((await run(["help", "keep"])).out).toContain("snappy-export keep --list");
+  });
+
   it("shows snapshot dates and friend counts in ledger status, never usernames", async () => {
     const dir = tempDir("an");
     const ledger = join(dir, "ledger.sealed");
