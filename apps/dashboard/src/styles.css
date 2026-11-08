@@ -741,7 +741,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 */
 @media (min-width: 72rem) {
   /* Text blocks keep the measure in every context; a block in a narrower column is already narrower. */
-  .view :is(p, .plain-list, .point-list, .steps, .tool-notes, .mark-list) { max-width: var(--col); }
+  .view :is(p, .plain-list, .point-list, .steps, .tool-notes, .mark-list, .mbars, .hbars) { max-width: var(--col); }
   .view :is(.notice, .notice-group, .tool-reads) { max-width: var(--col); }
   .site-footer-inner .caption { max-width: var(--col); }
   /* An empty state is a full-width card whose illustration and words sit together in the middle. */

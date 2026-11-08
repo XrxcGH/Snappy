@@ -154,6 +154,15 @@ describe("the Overview findings below the wide layout", () => {
   });
 });
 
+describe("the month and day bar lists", () => {
+  it("keep the text measure on a wide screen, so a label is never 900 px from its value", () => {
+    const measure = rules.filter((r) => r.selector === ".view :is(p, .plain-list, .point-list, .steps, .tool-notes, .mark-list, .mbars, .hbars)");
+    expect(measure).toHaveLength(1);
+    expect(measure[0]?.body).toMatch(/max-width:\s*var\(--col\)/);
+    expect(measure[0]?.media.join(" ")).toMatch(/min-width:\s*72rem/);
+  });
+});
+
 describe("a very long username", () => {
   it("breaks anywhere in a username, and a username in a table's name column or in a chip is at most 22 characters wide", () => {
     expect(declared(".username")).toMatch(/overflow-wrap:\s*anywhere/);
