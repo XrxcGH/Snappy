@@ -92,7 +92,7 @@ export function keepListSection(actions: Pick<Actions, "keep" | "unkeep">, allow
               }),
             );
           },
-          { key: "keep-list", className: "rows keep-rows" },
+          { key: "keep-list", className: "rows keep-rows", skipLink: true },
         );
 
   const details = h("details", { class: "keep-list" }, disclosureSummary(lists.keepHeading(allowlist.length), "keep-list-summary"), detailsBody(h("p", {}, lists.keepBody), form, rows));

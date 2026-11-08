@@ -66,6 +66,10 @@ export const lists = {
   summaryQuiet: (n: number) => `${formatCount(n)} quiet`,
   summaryQueue: (n: number) => `${formatCount(n)} to review`,
 
+  // A long list: a link, shown when it has keyboard focus, that jumps past the rows. The end mark is read by screen readers only.
+  skipToEnd: "Skip to end of list",
+  endOfList: "End of list",
+
   // Related tools at the end of a page, and the Tools card on the Overview.
   relatedLabel: "Related tools",
   relatedBackupNote: "Back up your friends before you remove anyone.",

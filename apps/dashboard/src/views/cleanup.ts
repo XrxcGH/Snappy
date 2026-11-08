@@ -151,7 +151,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
         )
       : view.guided
         ? guidedPanel(ctx, a, shown)
-        : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: !a.sample, showCategory: true }), { key: "queue-review", className: "rows candidate-list" }),
+        : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: !a.sample, showCategory: true }), { key: "queue-review", className: "rows candidate-list", skipLink: true }),
   ];
 }
 
@@ -240,7 +240,7 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
     pagedList(
       items,
       (candidate, index) => guidedRow(actions, candidate, checked.has(candidate.key), items, a, index, profileLinksShown(a)),
-      { key: "queue-guided", className: "rows guided-list" },
+      { key: "queue-guided", className: "rows guided-list", skipLink: true },
     ),
   );
 }
@@ -292,7 +292,7 @@ function protectedSection(actions: Actions, items: readonly Candidate[], profile
     { class: "protected" },
     disclosureSummary(cleanup.protectedHeading(items.length), "protected-summary"),
     h("p", {}, cleanup.protectedBody),
-    pagedList(items, (candidate, index) => candidateRow({ candidate, actions, mode: "protected", index, profileLinks, showCategory: true }), { key: "queue-protected", className: "rows candidate-list" }),
+    pagedList(items, (candidate, index) => candidateRow({ candidate, actions, mode: "protected", index, profileLinks, showCategory: true }), { key: "queue-protected", className: "rows candidate-list", skipLink: true }),
   );
   details.open = protectedOpen;
   details.addEventListener("toggle", () => {

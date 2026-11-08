@@ -35,7 +35,7 @@ function candidateList(a: Analysis, items: readonly Candidate[], actions: Action
       const reasons = protectedBy.get(c.key) ?? [];
       return candidateRow({ candidate: { ...c, protectedBy: reasons }, actions, mode: reasons.length > 0 ? "protected" : "review", index, profileLinks: !a.sample });
     },
-    { key, className: "rows candidate-list" },
+    { key, className: "rows candidate-list", skipLink: true },
   );
 }
 

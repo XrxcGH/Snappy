@@ -1,5 +1,6 @@
 import { announce } from "../announce.ts";
 import { common } from "../copy.ts";
+import { lists } from "../copy-lists.ts";
 import { formatCount } from "../format.ts";
 import { h } from "../dom.ts";
 import { button } from "./button.ts";
@@ -12,12 +13,17 @@ export function resetPaging(): void {
   shownByKey.clear();
 }
 
+/** A list that asks for a skip link gets it once this many rows are showing. */
+export const SKIP_FROM = 8;
+
 export interface PagedListOptions {
   /** Identifies the list across repaints. */
   key: string;
   pageSize?: number;
   /** Class for the list element. */
   className?: string;
+  /** Add a "Skip to end of list" link for keyboard users once SKIP_FROM rows or more are showing. Off by default: a short or one-control row needs none. */
+  skipLink?: boolean;
 }
 
 /** A list that renders a page of rows and a "Show more" button; long exports can hold thousands of people. */
@@ -62,5 +68,14 @@ export function pagedList<T>(items: readonly T[], renderItem: (item: T, index: n
 
   paintRows(0, shown);
   paintFooter();
-  return h("div", { class: "paged" }, list, footer);
+
+  // Every row has several controls (copy, why, keep, open), so a long list is a long run of Tab stops. The link jumps to the
+  // mark after the rows, so the next Tab reaches "Show more" or whatever follows the list.
+  const end = h("span", { class: "list-end sr-only", tabindex: "-1" }, lists.endOfList);
+  const skip = h("a", { class: "list-skip", href: "#main" }, lists.skipToEnd);
+  skip.addEventListener("click", (event) => {
+    event.preventDefault();
+    end.focus();
+  });
+  return h("div", { class: "paged" }, options.skipLink === true && shown >= SKIP_FROM ? skip : null, list, options.skipLink === true ? end : null, footer);
 }
