@@ -428,6 +428,47 @@ for (const [width, scheme] of [[320, "light"], [320, "dark"], [1400, "dark"], [7
   await page.context().close();
 }
 
+// ---------------------------------------------------------------------------------------------- the banner takes no room at the top
+for (const [width, height] of [[1280, 800], [420, 700]]) {
+  const page = await open({}, { hash: "#/start", width, height });
+  const top = () => page.evaluate(() => Math.round(document.querySelector("h1").getBoundingClientRect().top));
+  const before = await top();
+  const scrollBefore = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  await refresh(page, { state: "staged", percent: 100, version: "0.2.0" });
+  ok((await banner(page)).includes("Updating now."), `a banner appears at ${width}px`);
+  ok((await top()) === before, `and the page heading does not move at ${width}px`, `${before} -> ${await top()}`);
+  const box = await page.evaluate(() => {
+    const s = document.querySelector(".update-slot").getBoundingClientRect();
+    const v = document.querySelector("#main .outlet .view").getBoundingClientRect();
+    return { slotLeft: Math.round(s.left), slotWidth: Math.round(s.width), viewLeft: Math.round(v.left), viewWidth: Math.round(v.width), slotBottom: Math.round(s.bottom), slotTop: Math.round(s.top), vh: innerHeight, position: getComputedStyle(document.querySelector(".update-slot")).position };
+  });
+  ok(box.position === "fixed" && Math.abs(box.slotLeft - box.viewLeft) <= 1 && Math.abs(box.slotWidth - box.viewWidth) <= 1, `the banner lines up with the content column at ${width}px`, JSON.stringify(box));
+  ok(box.slotBottom <= box.vh && box.slotTop > before, `and floats over the bottom of the window at ${width}px`, JSON.stringify(box));
+  const scrollAfter = await page.evaluate(() => document.scrollingElement.scrollHeight);
+  ok(scrollAfter > scrollBefore, `the page keeps room at its end for it at ${width}px, so nothing stays hidden`, `${scrollBefore} -> ${scrollAfter}`);
+  await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight));
+  const footer = await page.evaluate(() => ({ footerBottom: Math.round(document.querySelector(".site-footer").getBoundingClientRect().bottom), slotTop: Math.round(document.querySelector(".update-slot").getBoundingClientRect().top) }));
+  ok(footer.footerBottom <= footer.slotTop, `at the end of the page the footer is above the banner at ${width}px`, JSON.stringify(footer));
+  await refresh(page, { state: "idle", version: null });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const gone = { top: await top(), height: await page.evaluate(() => document.documentElement.style.getPropertyValue("--update-slot-h")), banner: (await banner(page)).trim() };
+  ok(gone.top === before && gone.height === "0px" && gone.banner === "", `and when it goes, the page is as before at ${width}px`, JSON.stringify(gone));
+  await page.context().close();
+}
+
+// ---------------------------------------------------------------------------------------------- Settings card spacing
+{
+  const page = await open({ last_checked_unix: 1794000000 }, { hash: "#/settings", width: 1280, height: 800 });
+  const gap = await page.evaluate(() => {
+    const button = document.querySelector('.update-card [data-key="update:check-now"]').getBoundingClientRect();
+    // The switch itself: its label carries padding and a matching negative margin for the tap target, so the box is not the gap.
+    const toggle = document.querySelector("#update-auto").getBoundingClientRect();
+    return Math.round(toggle.top - button.bottom);
+  });
+  ok(gap === 16, "the Updates card has one 16 px gap between Check now and the switch", String(gap));
+  await page.context().close();
+}
+
 // ---------------------------------------------------------------------------------------------- focus and keyboard
 {
   const page = await open({ state: "staged", percent: 100, version: "0.2.0" }, { hash: "#/overview" });

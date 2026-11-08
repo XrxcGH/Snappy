@@ -118,6 +118,27 @@ export function mountUpdates(bridge: Bridge): Mounted {
   const slot = h("div", { class: "update-slot", role: "status", "aria-live": "polite", tabindex: "-1" });
   document.getElementById("main")?.prepend(slot);
 
+  // ---- place -----------------------------------------------------------------------------------------------------------
+  // The banner floats over the bottom of the window (see update.css), so it takes no room at the top of the page. It lines up
+  // with the content column, and the page keeps room for it at its end: both are measured here and set as custom properties.
+  const place = (): void => {
+    const main = document.getElementById("main");
+    const column = main?.querySelector(".outlet .view") ?? main;
+    const rect = column?.getBoundingClientRect();
+    if (rect && rect.width > 0) {
+      setVar(slot, "--update-left", `${Math.round(rect.left)}px`);
+      setVar(slot, "--update-width", `${Math.round(rect.width)}px`);
+    }
+    setVar(document.documentElement, "--update-slot-h", `${slot.childElementCount ? Math.ceil(slot.getBoundingClientRect().height) : 0}px`);
+  };
+  window.addEventListener("resize", place);
+  if (typeof ResizeObserver === "function") {
+    const watch = new ResizeObserver(place);
+    watch.observe(slot);
+    const main = document.getElementById("main");
+    if (main) watch.observe(main);
+  }
+
   // ---- the idle claim -------------------------------------------------------------------------------------------
   const idle = (): boolean => pageIsIdle(location.hash, touched, document.querySelectorAll('input[type="password"], [aria-busy="true"]').length);
   // An import started from a file input or a drop means results will be on the page.
@@ -228,6 +249,7 @@ export function mountUpdates(bridge: Bridge): Mounted {
     const focused = hadFocus ? active.dataset.key : undefined;
     shown = signature;
     slot.replaceChildren(...(banner ? [bannerElement(banner)] : []));
+    place();
     // Keep focus where the person had it. If that button is gone, focus moves to the banner's place (or to the page's main
     // area when there is no banner), never back to the top of the document. A banner never takes focus that was elsewhere.
     if (hadFocus) {
@@ -354,6 +376,7 @@ export function mountUpdates(bridge: Bridge): Mounted {
   window.addEventListener("hashchange", () => {
     if (!isQuietRoute(location.hash)) touched = true;
     inject();
+    place();
     paintBanner();
     void refresh();
   });

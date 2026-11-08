@@ -1,8 +1,21 @@
 /* The desktop app's update interface (update-ui.ts). Added to the desktop build only. Design tokens only, no fixed colors.
    Works from 320 px to wide: the banner is one block in the main area, with its buttons under the text on a phone. */
 
-.update-slot { margin: 0 auto var(--gap-section); max-width: var(--content-w); }
+/* The banner floats at the bottom of the window, over the page and out of the flow, so it never pushes the page heading down
+   when it appears or changes. It sits in the content column: update-ui.ts measures the column and sets --update-left and
+   --update-width, and --update-slot-h (its height, 0 when empty). The page keeps that much room at its end and focus is
+   scrolled clear of it, so it hides nothing for good. It is first in the document, so the keyboard reaches it early. */
+.update-slot {
+  position: fixed; z-index: 25; bottom: var(--space-4);
+  left: var(--update-left, var(--gutter)); width: var(--update-width, calc(100% - 2 * var(--gutter)));
+  margin: 0;
+}
 .update-slot:empty { display: none; }
+.update-slot .banner { background: var(--surface-raised); box-shadow: var(--shadow-lg); }
+body:has(.update-slot:not(:empty)) { padding-bottom: calc(var(--update-slot-h, 0px) + var(--space-8)); }
+html:has(.update-slot:not(:empty)) { scroll-padding-bottom: calc(var(--update-slot-h, 0px) + var(--space-8)); }
+/* The confirmation toast keeps its place above the banner instead of under it. */
+body:has(.update-slot:not(:empty)) .toast-host { bottom: calc(var(--update-slot-h, 0px) + var(--space-8)); }
 
 .update-banner {
   align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);
@@ -29,7 +42,6 @@
 @keyframes update-wait { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .update-wait { animation: none; } }
 
-.update-card .actions { margin-bottom: var(--space-3); }
 .update-result:empty { display: none; }
 .update-result { margin: 0; font-weight: 600; }
 
