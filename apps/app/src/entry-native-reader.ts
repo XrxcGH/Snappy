@@ -8,6 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { desktopPlatform } from "./desktop-platform.ts"; // sets the platform; must come before the dashboard starts
 import { setPlatform } from "../../dashboard/src/platform.ts";
 import "../../dashboard/src/main.ts"; // starts the dashboard when loaded
+import "./update-entry.ts"; // the update banner, card and notice (Windows)
 import { nativeImport } from "./native-import.ts";
 import { nativeZip } from "./native-zip.ts";
 import type { PickedFile } from "./ipc-reader.ts";

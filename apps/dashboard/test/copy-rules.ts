@@ -44,7 +44,7 @@ export const LIMITS = {
  * Snap Map, My AI), and month names in dates. Keep this short.
  */
 export const PROPER_WORDS = new Set([
-  "Snappy", "Snapchat", "Microsoft", "Windows", "JavaScript", "May", "Snap", "Snaps", "Memories", "Memory", "Spotlight", "Map", "Settings", "My", "Data", "All", "Time", "AI", "Inc", "Profile", "Friends", "User", "Chat", "Export",
+  "Snappy", "Snapchat", "Microsoft", "Windows", "GitHub", "JavaScript", "May", "Snap", "Snaps", "Memories", "Memory", "Spotlight", "Map", "Settings", "My", "Data", "All", "Time", "AI", "Inc", "Profile", "Friends", "User", "Chat", "Export",
   "January", "February", "March", "April", "June", "July", "August", "September", "October", "November", "December",
   "Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Aug", "Sep", "Sept", "Oct", "Nov", "Dec",
 ]);
@@ -69,8 +69,10 @@ export const PREFIX_PATHS = [/^common\.stepPrefix\(/];
 
 /** Verbs a button may start with, plus the two noun-only labels the interface already uses. */
 export const BUTTON_FIRST_WORDS = new Set([
-  "Add", "Apply", "Back", "Cancel", "Change", "Choose", "Clear", "Close", "Continue", "Copy", "Delete", "Dismiss", "Done", "Download", "Edit", "Export", "Go", "Import", "Keep", "Lock", "Menu", "Next", "Open", "Pick", "Print", "Read",
-  "Remove", "Rescue", "Reset", "Retry", "Review", "Run", "Save", "Seal", "Select", "Set", "Show", "Start", "Stop", "Switch", "Try", "Undo", "Unlock", "Update", "Use", "View",
+  "Add", "Apply", "Back", "Cancel", "Change", "Check", "Choose", "Clear", "Close", "Continue", "Copy", "Delete", "Dismiss", "Done", "Download", "Edit", "Export", "Go", "Import", "Keep", "Lock", "Menu", "Next", "Open", "Pick", "Print", "Read",
+  "Remove", "Rescue", "Reset", "Restart", "Retry", "Review", "Run", "Save", "Seal", "Select", "Set", "Show", "Start", "Stop", "Switch", "Turn", "Try", "Undo", "Unlock", "Update", "Use", "View",
+  // Short answers of the desktop app's update banner and first-run notice (apps/app/src/update-copy.ts).
+  "Later", "OK",
 ]);
 
 /** The Start page promises a different headline than its menu label ("Start"); every other page title equals its menu label. */

@@ -205,8 +205,10 @@ async function toolStyles() {
 /**
  * `entry` lets a native shell bundle its own entry file, which sets the platform (src/platform.ts) and then
  * imports src/main.ts, in place of the plain web one. The page, its policy and its checks are the same.
+ * `extraCss` is the path of a stylesheet that same shell adds after the dashboard's own rules. Without it the output is
+ * exactly what it was, byte for byte, so the web build is unaffected by what a shell adds.
  */
-export async function buildDashboard({ outDir = path.join(here, "dist"), entry = path.join(here, "src", "main.ts") } = {}) {
+export async function buildDashboard({ outDir = path.join(here, "dist"), entry = path.join(here, "src", "main.ts"), extraCss } = {}) {
   const [{ entries, files }, fonts, tokens, own, tools, sprite, template, favicon] = await Promise.all([
     licenseData(),
     fontCss(),
@@ -218,7 +220,8 @@ export async function buildDashboard({ outDir = path.join(here, "dist"), entry =
     readFile(path.join(repoRoot, "brand", "logo", "snappy-favicon.svg")),
   ]);
 
-  const style = (await transform(`${fonts}\n${tokens}\n${own}\n${tools}`, { loader: "css", minify: true, legalComments: "none" })).code;
+  const extra = extraCss ? `\n${await readFile(extraCss, "utf8")}` : "";
+  const style = (await transform(`${fonts}\n${tokens}\n${own}\n${tools}${extra}`, { loader: "css", minify: true, legalComments: "none" })).code;
   const workerSource = await bundleWorker("import-worker.ts");
   const terminalWorkerSource = await bundleTerminalWorker();
   const script = await bundleScript(entries, workerSource, terminalWorkerSource, entry);

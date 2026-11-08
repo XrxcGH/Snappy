@@ -26,6 +26,6 @@ if (reader === "native" && process.env.CI && !process.env.SNAPPY_ALLOW_NATIVE_RE
   throw new Error("The native reader is a fallback and is not built in CI unless SNAPPY_ALLOW_NATIVE_READER=1 is set on purpose.");
 }
 
-const result = await buildDashboard({ outDir, entry: path.join(here, "..", "src", READERS[reader]) });
+const result = await buildDashboard({ outDir, entry: path.join(here, "..", "src", READERS[reader]), extraCss: path.join(here, "..", "src", "update.css") });
 console.log(`Built ${result.file} (${(result.bytes / 1024).toFixed(0)} KB) for the desktop shell, reader: ${reader}.`);
 console.log(`CSP: ${result.csp.replace(/'sha256-[^']+'/g, "'sha256-...'")}`);

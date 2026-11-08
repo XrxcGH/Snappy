@@ -1,0 +1,32 @@
+/* The desktop app's update interface (update-ui.ts). Added to the desktop build only. Design tokens only, no fixed colors.
+   Works from 320 px to wide: the banner is one block in the main area, with its buttons under the text on a phone. */
+
+.update-slot { margin: 0 auto var(--gap-section); max-width: var(--content-w); }
+.update-slot:empty { display: none; }
+
+.update-banner {
+  align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+.update-main { display: grid; gap: var(--space-2); flex: 1 1 14rem; min-width: 0; }
+.update-text { margin: 0; overflow-wrap: anywhere; }
+.update-caution { margin: 0; }
+.update-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); flex: none; }
+.update-action { min-height: var(--target-min-pointer); }
+@media (pointer: coarse) { .update-action { min-height: var(--target-min); } }
+
+/* The status color is on the left bar, as in the other banners; the text stays in the normal text color. */
+.update-ready, .update-countdown, .update-updated { --c-solid: var(--success-border); }
+.update-failed, .update-unsupported { --c-solid: var(--warning-border); }
+
+.update-bar { height: 0.5rem; border-radius: var(--radius-bar); background: var(--surface-sunken); overflow: hidden; }
+.update-bar-fill { height: 100%; width: var(--update-progress, 0%); background: var(--primary); border-radius: var(--radius-bar); }
+
+/* The countdown is a bar that empties over the five seconds before the update starts, so the wait can be seen without a changing number. */
+.update-wait { height: 0.25rem; border-radius: var(--radius-bar); background: var(--primary); transform-origin: left center; animation: update-wait 5s linear forwards; }
+@keyframes update-wait { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .update-wait { animation: none; } }
+
+.update-card .actions { margin-bottom: var(--space-3); }
+.update-result:empty { display: none; }
+.update-result { margin: 0; font-weight: 600; }

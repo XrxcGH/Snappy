@@ -10,3 +10,4 @@
  */
 import "./desktop-platform.ts"; // sets the platform; must come before the dashboard starts
 import "../../dashboard/src/main.ts"; // starts the dashboard when loaded
+import "./update-entry.ts"; // the update banner, card and notice (Windows); added to the page from outside

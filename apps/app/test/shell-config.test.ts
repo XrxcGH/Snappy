@@ -181,9 +181,10 @@ describe("the desktop frontend", () => {
   // The page has two inline scripts (a small theme script and the app), so its policy lists two hashes where the header lists one 'self'.
   const withoutHashes = (csp: string): string => csp.replace(/&#39;/g, "'").replace(/'(sha256-[^']+|self)'/g, "'hash'").replace(/('hash' )+'hash'/g, "'hash'");
 
-  it("is the plain file input with the background worker: the default build contains no shell command and no Tauri API", () => {
+  it("is the plain file input with the background worker: the default build calls only the five update commands, no reader command and no plugin", () => {
     const html = frontendBuild(undefined);
-    expect(html).not.toMatch(/pick_zips|read_range|close_file|__TAURI|ipc\.localhost|plugin:fs|plugin:dialog/);
+    expect(html).not.toMatch(/pick_zips|read_range|close_file|plugin:fs|plugin:dialog|plugin:shell|plugin:http/);
+    for (const command of UPDATE_COMMANDS) expect(html).toContain(command);
     expect(html).toContain("Choose ZIP files");
   });
 
