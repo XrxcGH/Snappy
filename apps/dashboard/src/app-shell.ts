@@ -125,12 +125,15 @@ export function buildShell(root: HTMLElement, ctx: ViewContext): Shell {
     menu.setAttribute("aria-expanded", String(open));
   };
   menu.addEventListener("click", () => setMenu(nav.dataset.open !== "true"));
-  nav.addEventListener("keydown", (e) => {
+  // Escape closes the open menu from inside it and from the Menu button itself (where focus stays after opening it).
+  const closeOnEscape = (e: KeyboardEvent): void => {
     if (e.key === "Escape" && nav.dataset.open === "true") {
       setMenu(false);
       menu.focus();
     }
-  });
+  };
+  nav.addEventListener("keydown", closeOnEscape);
+  menu.addEventListener("keydown", closeOnEscape);
 
   // One slim line: what this is, and a small Clear button. Sample data is never saved.
   const sampleStrip = region(
