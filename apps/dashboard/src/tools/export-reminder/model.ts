@@ -90,7 +90,8 @@ export function reminderOptions(data: ToolData, params: ReminderParams): { optio
   return {
     lastSource,
     options: {
-      now: data.now,
+      // With no workspace the page holds no read date (0), and a wait counted from the start of 1970 is no answer.
+      now: data.now > 0 ? data.now : Date.now(),
       lastExportAt,
       intervalMonths: blank(params.months) ? null : Number(params.months),
       timed,

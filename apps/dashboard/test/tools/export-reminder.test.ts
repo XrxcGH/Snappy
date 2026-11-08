@@ -240,6 +240,22 @@ describe("the page", () => {
     expect(root.querySelectorAll(".tool-notes")).toHaveLength(0);
   });
 
+  it("counts from today, never from 1970, when the workspace holds no read date", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    try {
+      const r = computeExportReminder(dataOf(emptyState()), UTC);
+      expect(dataOf(emptyState()).now).toBe(0);
+      expect(r.dueAt).toBe(dayAt(2026, 10, 1));
+      expect(r.dueAt).toBeGreaterThan(dayAt(2000, 1, 1));
+      const page = await renderSettled(view, emptyState());
+      expect(text(page.root, ".tool-result .summary")[0]).toBe(copy.dueLine(formatDate(dayAt(2026, 10, 1))));
+      expect(page.root.querySelector(".tool-result .summary")?.textContent).not.toContain("1970");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("works with the sample data and with no data at all, and says when no date is known", async () => {
     const withSample = await renderSettled(view, sample);
     expect(withSample.root.querySelector(".tool-result .summary")?.textContent).toMatch(/^Request your next export on [A-Z][a-z]{2} \d{1,2}, \d{4}\.$/);
