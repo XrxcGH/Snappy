@@ -52,14 +52,14 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
   };
 
   const flow: ImportFlow = {
-    files: async (files, options = {}) => {
+    files: async (files, options) => {
       if (files.length === 0) return;
       // JSON files taken from an unzipped export are read as the folder they came from (and nothing else is).
       if (!files.some((f) => /\.zip$/i.test(f.name ?? ""))) {
         const loose = files.map((f) => ({ path: f.name ?? "", blob: f as Blob, lastModified: (f as { lastModified?: number }).lastModified }));
         if (hasDataFiles(loose)) return flow.folder(loose);
       }
-      return settle(() => actions.importZips(files, options));
+      return settle(() => (options === undefined ? actions.importZips(files) : actions.importZips(files, options)));
     },
     folder: async (files) => {
       if (files.length === 0) return;
