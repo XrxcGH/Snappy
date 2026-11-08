@@ -20,6 +20,7 @@ import { assignInputNames } from "./input-names.ts";
 import { TerminalBuffer } from "./ansi.ts";
 import type { OutFile, RunFile, RunHandle, RunResult, Runner } from "./run-types.ts";
 import { terminal } from "../copy.ts";
+import { terminalTools } from "../copy-tools.ts";
 
 export type PanelState =
   | { kind: "idle" }
@@ -154,7 +155,8 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     e.pendingQuestion = null;
     setActive(id);
     set(id, { kind: "running" });
-    deps.announce(terminal.startedAnnounce);
+    // The title goes first, so several blocks on one page can be told apart ("Show the commands: running").
+    deps.announce(terminalTools.startedFor(spec.title));
 
     const files = deps.getFiles();
     const names = assignInputNames(files.map((f) => f.name));

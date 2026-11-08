@@ -9,6 +9,7 @@ import type { ControllerDeps } from "../src/terminal/controller.ts";
 import type { OutFile, RunHandle, RunHooks, RunInput, RunResult, Runner } from "../src/terminal/run-types.ts";
 import { createTerminalSession } from "../src/terminal/session.ts";
 import { terminal } from "../src/copy.ts";
+import { terminalTools } from "../src/copy-tools.ts";
 
 interface Started {
   input: RunInput;
@@ -71,8 +72,20 @@ describe("a read-only command", () => {
     expect(controller.transcript("inspect").plainText()).toBe("hello\n");
     expect(controller.exitLabel("inspect")).toBe("Done");
     expect(seen).toContain("running");
-    expect(announced[0]).toEqual([terminal.startedAnnounce, false]);
+    // The title leads, so several blocks on one page can be told apart.
+    expect(announced[0]).toEqual([`${COMMANDS.inspect.title}: running`, false]);
+    expect(announced[0]?.[0]).toBe(terminalTools.startedFor(COMMANDS.inspect.title));
     expect(announced.at(-1)).toEqual([terminal.doneAnnounce(COMMANDS.inspect.title, "Done", 0), false]);
+  });
+
+  it("says which block started: the start announcement of two commands differs by their titles", async () => {
+    for (const id of ["help", "demo-run"] as const) {
+      const { controller, announced } = setup({ getFiles: () => [] });
+      controller.request(id);
+      await tick();
+      expect(announced[0]?.[0]).toBe(`${COMMANDS[id].title}: running`);
+    }
+    expect(terminalTools.startedFor("Show the commands")).toBe("Show the commands: running");
   });
 
   it("starts at once for a command that needs no file", async () => {
