@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "build:dashboard": "npm run build -w @snappy-export/dashboard",
+    "screenshots": "npm run build:dashboard && node tools/screenshots/capture.mjs && node tools/mobile/ios-webkit.mjs --out out/screenshots/ios --phones \"iPhone SE (3rd gen),iPhone 15,iPhone 15 Pro Max\" --tool year-in-review --tool-scroll \"At a glance\" && node tools/screenshots/compose.mjs",
     "snappy-export": "node --experimental-strip-types --disable-warning=ExperimentalWarning apps/cli/src/main.ts"
   },
   "devDependencies": {
