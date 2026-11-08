@@ -1,6 +1,7 @@
 /**
  * Sample data for "Use sample data": two made-up exports, 120 days apart, built in the
- * browser from core's synthetic generator. Nothing here comes from a real account.
+ * browser from core's synthetic generator. Nothing here comes from a real account. The Memories files declare
+ * plausible sizes (megabytes, though they hold a few bytes), so the storage meter and the planner have numbers.
  */
 import { addSnapshot, bytesReader, emptyLedger, mergeParsedExports, parseExportFromReader, snapshotFromExport, syntheticExportZip } from "@snappy-export/core";
 import type { ParsedExport } from "@snappy-export/core";
@@ -16,9 +17,9 @@ async function parseZip(zip: Uint8Array): Promise<ParsedExport> {
 
 export async function buildSampleWorkspace(onStep: (step: number) => Promise<void> | void = () => {}): Promise<Workspace> {
   await onStep(0);
-  const earlier = await parseZip(syntheticExportZip({ now: SAMPLE_NOW, phase: 1, realisticMemories: true }));
+  const earlier = await parseZip(syntheticExportZip({ now: SAMPLE_NOW, phase: 1, realisticMemories: true, storageShowcase: true }));
   await onStep(1);
-  const later = await parseZip(syntheticExportZip({ now: SAMPLE_NOW, phase: 2, realisticMemories: true }));
+  const later = await parseZip(syntheticExportZip({ now: SAMPLE_NOW, phase: 2, realisticMemories: true, storageShowcase: true }));
   await onStep(2);
 
   let ledger = emptyLedger();
