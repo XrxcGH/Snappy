@@ -7,7 +7,7 @@
  * Chrome is driven over the debugging port that adb forwards to this computer only.
  *
  *   npm run build:dashboard
- *   PLAYWRIGHT_DIR=<folder with playwright installed> node tools/mobile/android-capture.mjs [--out docs/images/android] [--port 4317]
+ *   PLAYWRIGHT_DIR=<folder with playwright installed> node tools/mobile/android-capture.mjs [--out docs/images/android] [--port 4317] [--schemes light,dark]
  *
  * Needs the Android SDK and a virtual device (see android.mjs) and Playwright (see ios-webkit.mjs).
  */
@@ -24,10 +24,11 @@ const exe = process.platform === "win32" ? ".exe" : "";
 const SCREENS = ["overview", "disappeared", "requests", "quiet", "cleanup", "memories", "privacy", "guide", "settings"];
 
 function parseArgs(argv) {
-  const out = { out: path.join(root, "docs", "images", "android"), port: 4317 };
+  const out = { out: path.join(root, "docs", "images", "android"), port: 4317, schemes: ["light", "dark"] };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--out") out.out = path.resolve(argv[++i]);
     else if (argv[i] === "--port") out.port = Number(argv[++i]);
+    else if (argv[i] === "--schemes") out.schemes = argv[++i].split(",");
     else throw new Error(`Unknown option: ${argv[i]}`);
   }
   return out;
@@ -63,16 +64,35 @@ async function main() {
   const fw = sh("forward", "tcp:9333", "localabstract:chrome_devtools_remote");
   if (fw.status) throw new Error(`adb forward failed: ${fw.stderr}`);
   const { chromium } = loadPlaywright();
-  const browser = await chromium.connectOverCDP("http://127.0.0.1:9333");
+  // A freshly started Chrome resets the first debugging connections while it loads the page: retry for a while.
+  let browser;
+  for (let attempt = 1; !browser; attempt++) {
+    try {
+      browser = await chromium.connectOverCDP("http://127.0.0.1:9333");
+    } catch (e) {
+      if (attempt >= 12) throw e;
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+  }
   try {
     const page = browser.contexts().flatMap((c) => c.pages()).find((p) => p.url().startsWith(`http://localhost:${opts.port}`));
     if (!page) throw new Error("The dashboard tab was not found in Chrome on the emulator.");
-    for (const scheme of ["light", "dark"]) {
+    for (const scheme of opts.schemes) {
       sh("shell", "cmd", "uimode", "night", scheme === "dark" ? "yes" : "no");
       await page.waitForTimeout(1200);
       // The theme choice is remembered in this browser, so forget the last pass's choice first: every pass starts from the default.
       await page.evaluate(() => { try { localStorage.removeItem("snappy-theme"); } catch { /* blocked */ } });
-      await page.reload({ waitUntil: "load" });
+      // Chrome may still be finishing its first navigation, which aborts a reload: try again.
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await page.waitForLoadState("load", { timeout: 60000 });
+          await page.reload({ waitUntil: "load" });
+          break;
+        } catch (e) {
+          if (attempt >= 4) throw e;
+          await page.waitForTimeout(4000);
+        }
+      }
       await page.getByRole("button", { name: "Use sample data" }).click();
       await page.waitForTimeout(2500);
       // Dark is the dashboard's default whatever the device says, so each pass sets its theme with the header toggle and the
