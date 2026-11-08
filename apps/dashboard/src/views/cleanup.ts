@@ -71,8 +71,28 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     const shown = sortCandidates(filterCandidates(all, { ...view, query: searchQuery(QUEUE) }), queueSort);
     const summary = summaryLine(shown.length, total, kept);
     slot.replaceChildren();
-    append(slot, listParts(ctx, a, view, shown, summary));
-    return shown.length === 0 ? noMatchText(view) : summary;
+    append(slot, listParts(ctx, a, view, shown, summary, clear));
+    return statusOf(view);
+  };
+  /**
+   * What a change is announced as: the new count line, or "No one matches", or in guided mode the progress. A repainted
+   * paragraph is not a live region (a region that did not exist before its text is often not spoken), so the change is
+   * announced through the page's own live region, once, after the list has repainted.
+   */
+  const statusOf = (v: CleanupView): string => {
+    const shown = filterCandidates(all, { ...v, query: searchQuery(QUEUE) });
+    if (shown.length === 0) return noMatchText(v);
+    const checked = new Set(a.workspace.checkedOff);
+    return v.guided ? cleanup.progressText(shown.filter((c) => checked.has(c.key)).length, shown.length) : summaryLine(shown.length, total, kept);
+  };
+  /** Back to the whole queue: every filter, the search and the order. */
+  const clear = (): void => {
+    clearSearches();
+    queueSort = "likely";
+    resetPaging();
+    // The store change repaints the whole page, which reads the cleared search and order.
+    actions.setCleanupView({ category: "all", confidence: "all" });
+    announce(statusOf({ ...view, category: "all", confidence: "all" }));
   };
   paintSlot();
 
@@ -81,7 +101,11 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     // warning and comes first. When they were, the quiet note about it follows the list, so the top of the
     // page holds the one warning that matters before any action (two notices at most above the fold).
     a.hasChats ? null : notice("warning", cleanup.noChatProtection(a.source === "ledger")),
-    controls(actions, view, {
+    controls(view, {
+      onFilter: (patch) => {
+        actions.setCleanupView(patch);
+        announce(statusOf({ ...view, ...patch }));
+      },
       onSearch: (query) => {
         setSearchQuery(QUEUE, query);
         resetPaging();
@@ -109,21 +133,12 @@ const filtersActive = (view: CleanupView): boolean => view.category !== "all" ||
 /** Why nobody is shown: the search alone has its own words; otherwise a filter is the reason. */
 const noMatchText = (view: CleanupView): string => (view.category === "all" && view.confidence === "all" ? lists.noMatchSearch : cleanup.noMatch);
 
-/** Back to the whole queue: every filter, the search and the order. */
-function clearFilters(actions: Actions): void {
-  clearSearches();
-  queueSort = "likely";
-  resetPaging();
-  // The store change repaints the whole page, which reads the cleared search and order.
-  actions.setCleanupView({ category: "all", confidence: "all" });
-}
-
 /** What sits under the controls: the count line, the warning, Save and Copy, and the rows. */
-function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: readonly Candidate[], summary: string): Child[] {
+function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: readonly Candidate[], summary: string, onClear: () => void): Child[] {
   const { actions } = ctx;
   return [
     // The count line and Save and Copy share one line.
-    h("div", { class: "list-bar" }, h("p", { class: "summary", role: "status" }, summary), listActions(shown, { fileName: cleanup.csvFile })),
+    h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: cleanup.csvFile })),
     // The consequence is stated before any action, in both modes.
     notice("warning", cleanup.removalWarning),
     shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
@@ -132,7 +147,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
           "div",
           { class: "empty-inline" },
           h("p", {}, noMatchText(view)),
-          filtersActive(view) ? h("div", { class: "actions" }, button({ label: lists.clearFiltersButton, key: "clear-filters", onclick: () => clearFilters(actions) })) : null,
+          filtersActive(view) ? h("div", { class: "actions" }, button({ label: lists.clearFiltersButton, key: "clear-filters", onclick: onClear })) : null,
         )
       : view.guided
         ? guidedPanel(ctx, a, shown)
@@ -157,11 +172,13 @@ function selectField(id: string, label: string, key: string, value: string, opti
 }
 
 interface ControlHandlers {
+  /** A choice kept in the store: the category, the confidence or the mode. */
+  onFilter: (patch: Partial<CleanupView>) => void;
   onSearch: (query: string) => void;
   onSort: (order: QueueSort) => void;
 }
 
-function controls(actions: Actions, view: CleanupView, handlers: ControlHandlers): HTMLElement {
+function controls(view: CleanupView, handlers: ControlHandlers): HTMLElement {
   const categoryOptions: [string, string][] = [
     ["all", cleanup.allCategories],
     ...(["ghost", "one-way", "dormant"] as const).map((c): [string, string] => [c, categories[c].label]),
@@ -180,16 +197,16 @@ function controls(actions: Actions, view: CleanupView, handlers: ControlHandlers
     h(
       "div",
       { class: "filters", role: "group", "aria-label": cleanup.filtersLabel },
-      selectField("filter-category", cleanup.categoryLabel, "filter-category", view.category, categoryOptions, (v) => actions.setCleanupView({ category: v as CleanupView["category"] })),
-      selectField("filter-confidence", cleanup.confidenceLabel, "filter-confidence", view.confidence, confidenceOptions, (v) => actions.setCleanupView({ confidence: v as CleanupView["confidence"] })),
+      selectField("filter-category", cleanup.categoryLabel, "filter-category", view.category, categoryOptions, (v) => handlers.onFilter({ category: v as CleanupView["category"] })),
+      selectField("filter-confidence", cleanup.confidenceLabel, "filter-confidence", view.confidence, confidenceOptions, (v) => handlers.onFilter({ confidence: v as CleanupView["confidence"] })),
       selectField("filter-sort", lists.sortLabel, "filter-sort", queueSort, sortOptions, (v) => handlers.onSort(v as QueueSort)),
     ),
     listSearch({ listKey: QUEUE, onChange: handlers.onSearch }),
     h(
       "div",
       { class: "segmented", role: "group", "aria-label": cleanup.modeLabel },
-      button({ label: cleanup.modeReview, key: "mode-review", pressed: !view.guided, onclick: () => actions.setCleanupView({ guided: false }) }),
-      button({ label: cleanup.modeGuided, key: "mode-guided", pressed: view.guided, onclick: () => actions.setCleanupView({ guided: true }) }),
+      button({ label: cleanup.modeReview, key: "mode-review", pressed: !view.guided, onclick: () => handlers.onFilter({ guided: false }) }),
+      button({ label: cleanup.modeGuided, key: "mode-guided", pressed: view.guided, onclick: () => handlers.onFilter({ guided: true }) }),
     ),
   );
 }
@@ -205,7 +222,7 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
     { class: "guided", "aria-label": cleanup.guidedLabel },
     // With no profile link to open (the desktop app, the sample data) the note says to copy the username instead.
     h("p", {}, profileLinksShown(a) ? cleanup.guidedNote : lists.guidedNoteNoLinks),
-    h("div", { class: "guided-progress" }, h("p", { class: "summary", role: "status" }, text), slideIn(progressBar({ label: cleanup.progressLabel, value: done / items.length, valueText: text }), 0)),
+    h("div", { class: "guided-progress" }, h("p", { class: "summary" }, text), slideIn(progressBar({ label: cleanup.progressLabel, value: done / items.length, valueText: text }), 0)),
     done > 0
       ? h(
           "div",
