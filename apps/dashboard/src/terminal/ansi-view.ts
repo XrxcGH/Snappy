@@ -1,7 +1,7 @@
 /**
  * Draws a TerminalBuffer in the page. Every line is a div.t-line holding span.t-run elements, built
  * with h() only: the text goes in as text, the only attribute is class, and the classes come from the
- * closed list in ansi.ts (plus the two structural names t-line and t-run). No markup string, no style
+ * closed list in ansi.ts (plus the structural names t-line, t-art and t-run). No markup string, no style
  * attribute. Drawing is batched on a short timer, not on animation frames (a hidden tab runs none), and
  * only the lines that changed are touched. While a command runs the view follows new output unless the
  * person scrolled up; when it ends the view goes back to the first line, so the reading starts at the top.
@@ -47,8 +47,13 @@ const defaultSchedule = (fn: () => void, ms: number): (() => void) => {
   return () => clearTimeout(id);
 };
 
+/** Box-drawing and block characters (U+2500 to U+259F): the logo and any other drawing built from them. */
+const ART = /[\u2500-\u259f]/;
+
+/** A line holding any of those is drawn tight (class t-art) so the pieces touch the lines above and below. */
 function lineElement(line: Line): HTMLElement {
-  return h("div", { class: "t-line" }, ...line.runs.map((run) => h("span", { class: run.cls === "" ? "t-run" : `t-run ${run.cls}` }, run.text)));
+  const art = line.runs.some((run) => ART.test(run.text));
+  return h("div", { class: art ? "t-line t-art" : "t-line" }, ...line.runs.map((run) => h("span", { class: run.cls === "" ? "t-run" : `t-run ${run.cls}` }, run.text)));
 }
 
 export function createLogView(options: LogViewOptions): LogView {
@@ -142,22 +147,29 @@ export function createLogView(options: LogViewOptions): LogView {
   };
 }
 
+/** The probe is this many characters long, so the width of one is measured to a fraction of a pixel. */
+const PROBE_CHARS = 100;
+
 /**
- * How many characters fit across an output area placed in `host`, measured with a hidden probe of ten
- * characters in the area's own font and the area's own padding. One column is kept free for the scrollbar
- * the finished output may gain, and the result is clamped to 24 to 100. A line the command did not fit to that width (its help text)
- * wraps in the area, so nothing is cut off at the edge.
+ * How many characters fit across an output area placed in `host`. The hidden area is the real one in every
+ * way that changes its width: the same font and padding, and the same scrollbar gutter (styles.css gives
+ * .t-measure no rule that takes either away), so what it holds is what the real area holds, with nothing
+ * kept back. The width of one character is measured from a probe of a hundred. The result is clamped to 24
+ * to 100. A command that fits its lines to that many columns is not wrapped again by the page; a line it
+ * did not fit wraps in the area, so nothing is cut off at the edge.
  */
 export function measureColumns(host: HTMLElement, fallback = 80): number {
-  const probe = h("span", { class: "t-probe", "aria-hidden": "true" }, "0000000000");
+  const probe = h("span", { class: "t-probe", "aria-hidden": "true" }, "0".repeat(PROBE_CHARS));
   const area = h("div", { class: "t-log t-measure", "aria-hidden": "true" }, probe);
   host.appendChild(area);
   try {
-    const char = probe.getBoundingClientRect().width / 10;
+    const char = probe.getBoundingClientRect().width / PROBE_CHARS;
     const style = getComputedStyle(area);
     const width = area.clientWidth - (parseFloat(style.paddingLeft) || 0) - (parseFloat(style.paddingRight) || 0);
     if (!(char > 0) || !(width > 0)) return fallback;
-    return Math.max(MIN_COLUMNS, Math.min(100, Math.floor(width / char) - 1));
+    // clientWidth is a whole number of pixels, so the real width can be half a pixel less: that much is kept back, which is
+    // never a whole column, and a line of exactly this many characters never wraps by a rounding error.
+    return Math.max(MIN_COLUMNS, Math.min(100, Math.floor((width - 0.5) / char)));
   } catch {
     return fallback;
   } finally {

@@ -626,6 +626,9 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: min(24rem, 70vh); scrollbar-gutter: stable;
 }
 .t-line { min-height: 1.5em; }
+/* The logo and any other drawing of box and block characters: the line is exactly as tall as the characters,
+   so the pieces touch the lines above and below instead of showing a gap, and nothing spaces the letters out. */
+.t-art { min-height: 0; line-height: 1; letter-spacing: 0; font-variant-ligatures: none; }
 .t-trimmed { color: var(--text-muted); font-style: italic; }
 .t-probe { position: absolute; visibility: hidden; white-space: pre; }
 .ansi-violet { color: var(--accent-fg); }
@@ -637,7 +640,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .ansi-info { color: var(--info-fg); }
 .ansi-slate, .ansi-dim { color: var(--text-muted); }
 .ansi-bold { font-weight: 700; }
-.t-measure { position: absolute; inset-inline: 0; visibility: hidden; max-height: 0; padding-block: 0; overflow: hidden; }
+/* The measuring area keeps .t-log's own overflow and scrollbar gutter, so its width is the real one. */
+.t-measure { position: absolute; inset-inline: 0; visibility: hidden; max-height: 0; padding-block: 0; }
 
 /* The panel under a command: confirmation, passphrase question, output, buttons, and how it ended. */
 .command-panel { position: relative; display: grid; gap: var(--space-3); }

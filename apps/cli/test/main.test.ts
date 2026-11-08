@@ -20,8 +20,9 @@ describe("help and version", () => {
       expect(out).toContain("▐█████████▌");
       expect(out).toContain("Snappy");
       for (const name of ["analyze", "memories", "inspect", "keep", "unkeep", "history status", "demo", "help"]) expect(out).toContain(name);
-      expect(out).toContain("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
-      expect(out).toContain(NOT_AFFILIATED);
+      const flat = out.replace(/\s+/g, " ");
+      expect(flat).toContain("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
+      expect(flat).toContain(NOT_AFFILIATED);
       expect(NOT_AFFILIATED).toBe(
         "Snappy is an independent tool. It is not affiliated with, endorsed by, or sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.",
       );

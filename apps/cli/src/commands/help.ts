@@ -4,7 +4,7 @@ import { CliError } from "../errors.ts";
 import { INSIGHT_COMMANDS } from "../insight-commands.ts";
 import type { InsightGroup } from "../insights-command.ts";
 import type { Io } from "../io.ts";
-import { NOT_AFFILIATED, PRIVACY_IMPORT } from "../render.ts";
+import { NOT_AFFILIATED, PRIVACY_IMPORT, wrapText } from "../render.ts";
 import { createTerm } from "../term.ts";
 import { ANALYZE_USAGE } from "./analyze.ts";
 import { DEMO_USAGE } from "./demo.ts";
@@ -66,6 +66,21 @@ function rowsOf(group: InsightGroup | "More"): Row[] {
   return [...CORE_ROWS[group], ...INSIGHT_COMMANDS.filter((c) => c.group === group).map((c) => ({ synopsis: c.synopsis, summary: c.summary }))];
 }
 
+/**
+ * One command of the overview: the synopsis, then its summary. A summary that does not fit on the line continues
+ * under itself; on a screen too narrow for that, it goes on the next line, indented under the synopsis.
+ */
+function listRow(row: Row, width: number, columns: number): string[] {
+  const summary = row.summary.replace(/\.$/, "");
+  const lead = `  ${row.synopsis.padEnd(width)}  `;
+  const room = columns - lead.length;
+  if (room >= 28 || lead.length + summary.length <= columns) {
+    const [first = "", ...rest] = wrapText(summary, Math.max(room, 1));
+    return [`${lead}${first}`, ...rest.map((l) => " ".repeat(lead.length) + l)];
+  }
+  return [`  ${row.synopsis}`, ...wrapText(summary, Math.max(columns - 4, 1)).map((l) => `    ${l}`)];
+}
+
 export function helpCommand(args: string[], io: Io, version: string): number {
   // help takes --no-color like every command, before or after the topic. Any other option is a mistake.
   const { values: flags, positionals } = parseFlags<{ "no-color"?: boolean }>("help", args, { "no-color": { type: "boolean" }, help: { type: "boolean", short: "h" } });
@@ -81,26 +96,25 @@ export function helpCommand(args: string[], io: Io, version: string): number {
 
   const term = createTerm({ env: io.env, isTTY: io.interactive, columns: io.columns, noColorFlag: flags["no-color"] });
   const width = Math.max(...GROUPS.flatMap((g) => rowsOf(g).map((r) => r.synopsis.length)));
-  const listing = GROUPS.flatMap((group) => [
-    term.bold(group),
-    ...rowsOf(group).map((r) => `  ${r.synopsis.padEnd(width)}  ${r.summary.replace(/\.$/, "")}`),
-    "",
-  ]);
+  // Lines are fitted to the width of the screen here, so a window narrower than the list does not wrap them a second time.
+  const columns = Math.max(20, io.columns);
+  const listing = GROUPS.flatMap((group) => [term.bold(group), ...rowsOf(group).flatMap((r) => listRow(r, width, columns)), ""]);
+  const paragraph = (text: string): string[] => wrapText(text, columns);
   io.out.write(
     [
       ...term.banner(),
       "",
       `Version ${version}`,
       "",
-      "Usage: snappy-export <command> [options]",
+      ...paragraph("Usage: snappy-export <command> [options]"),
       "",
       ...listing,
-      "<ZIP files...> means .zip files, or a folder with every part of one export.",
-      'Run "snappy-export help <command>" for its options. Add --verbose to see short codes for bug reports.',
+      ...paragraph("<ZIP files...> means .zip files, or a folder with every part of one export."),
+      ...paragraph('Run "snappy-export help <command>" for its options. Add --verbose to see short codes for bug reports.'),
       "",
-      PRIVACY_IMPORT,
+      ...paragraph(PRIVACY_IMPORT),
       "",
-      NOT_AFFILIATED,
+      ...paragraph(NOT_AFFILIATED),
       "",
     ].join("\n"),
   );

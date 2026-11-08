@@ -157,13 +157,21 @@ describe("what the view builds", () => {
     expect(inside.some((n) => n.tagName === "script" || n.tagName === "b")).toBe(false);
   });
 
-  it("only ever uses the two structural classes and the closed list", () => {
+  it("only ever uses the structural classes and the closed list", () => {
     const { log, el } = view();
-    log.write(`${ESC}[1;2;31;32;33;34;90;38;5;99;38;2;255;154;99mx`);
+    log.write(`${ESC}[1;2;31;32;33;34;90;38;5;99;38;2;255;154;99mx\n▐██▌\n`);
     log.flush();
     for (const node of el.descendants()) {
-      for (const cls of node.className.split(" ").filter(Boolean)) expect(["t-line", "t-run", ...ANSI_CLASSES], cls).toContain(cls);
+      for (const cls of node.className.split(" ").filter(Boolean)) expect(["t-line", "t-art", "t-run", ...ANSI_CLASSES], cls).toContain(cls);
     }
+  });
+
+  it("marks the lines drawn with box and block characters, and only those", () => {
+    const { log, el } = view();
+    log.write("plain words\n   ▐████▌  Snappy\n┌─┐ ▀▄▌▐ ░▒▓\nbars ▰▰▱ and dots ·•\n");
+    log.flush();
+    const lines = el.childNodes.filter((c): c is FakeElement => c instanceof FakeElement && c.classList.contains("t-line"));
+    expect(lines.map((l) => l.classList.contains("t-art"))).toEqual([false, true, true, false, false]);
   });
 
   it("survives random hostile output with the same guarantees", () => {

@@ -73,7 +73,7 @@ describe("the width the commands are asked to fit", () => {
     host.appendChild = ((child: FakeElement) => {
       child.clientWidth = width;
       for (const el of child.descendants()) {
-        if (el.classList.contains("t-probe")) (el as unknown as { getBoundingClientRect: () => { width: number } }).getBoundingClientRect = () => ({ width: char * 10 });
+        if (el.classList.contains("t-probe")) (el as unknown as { getBoundingClientRect: () => { width: number } }).getBoundingClientRect = () => ({ width: char * 100 });
       }
       return add(child);
     }) as typeof host.appendChild;
@@ -84,14 +84,21 @@ describe("the width the commands are asked to fit", () => {
     (globalThis as Record<string, unknown>).getComputedStyle = () => ({ paddingLeft: "16px", paddingRight: "16px" });
   });
 
-  it("is the number of characters that fit, less one for the scrollbar", () => {
-    // (384 - 32) / 8 = 44 characters across; one is kept free.
+  it("is the number of characters that really fit, with no column held back", () => {
+    // (386 - 32) / 8 = 44.25 characters across: 44 columns, and a line of 44 fits.
+    expect(measureColumns(hostOf(386))).toBe(44);
+    // Exactly 44 characters wide, less the half pixel clientWidth may have rounded up: one fewer, never one more.
     expect(measureColumns(hostOf(384))).toBe(43);
+  });
+
+  it("measures a probe of a hundred characters, so one character is known to a fraction of a pixel", () => {
+    // 8.4 px a character: (500 - 32) / 8.4 = 55.7 columns.
+    expect(measureColumns(hostOf(500, 8.4))).toBe(55);
   });
 
   it("goes below the old floor of 40 on a phone, down to a narrow minimum", () => {
     // A 320 px phone gives the box about 262 px of text, so a few more than 30 characters are asked for.
-    expect(measureColumns(hostOf(294))).toBe(31);
+    expect(measureColumns(hostOf(294))).toBe(32);
     expect(measureColumns(hostOf(200))).toBe(MIN_COLUMNS);
     expect(MIN_COLUMNS).toBeLessThan(40);
     expect(MIN_COLUMNS).toBeGreaterThanOrEqual(20); // the helper refuses fewer
@@ -115,6 +122,20 @@ describe("the output box styles", () => {
     expect(log).toMatch(/white-space:\s*pre-wrap/);
     expect(log).toMatch(/overflow-wrap:\s*anywhere/);
     expect(log).not.toMatch(/white-space:\s*pre;/);
+  });
+
+  it("measures in an area that has the real area's overflow and scrollbar gutter, so the width is the real one", () => {
+    // The measuring area is a .t-log too; its own rule may hide it and take it out of the flow, but must not change its overflow.
+    expect(rule(".t-measure")).not.toMatch(/overflow/);
+    expect(rule(".t-measure")).not.toMatch(/scrollbar-gutter/);
+    expect(rule(".t-log")).toMatch(/scrollbar-gutter:\s*stable/);
+  });
+
+  it("draws a line of box and block characters tight, so the logo's pieces touch", () => {
+    const art = rule(".t-art");
+    expect(art).toMatch(/line-height:\s*1;/);
+    expect(art).toMatch(/letter-spacing:\s*0;/);
+    expect(art).toMatch(/font-variant-ligatures:\s*none/);
   });
 
   it("does not trap scrolling on a touch screen, and does not outgrow a short screen", () => {
