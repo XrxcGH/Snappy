@@ -21,7 +21,7 @@ node tools/mobile/ios-webkit.mjs --out out/screenshots/ios --phones "iPhone SE (
 node tools/screenshots/compose.mjs
 ```
 
-1. `capture.mjs` takes the desktop pictures at 1440 by 900 and the phone-size Chromium pictures at 390 by 844 (at 2x), in both themes. It checks that each page really rendered in the theme in its name, and that each picture after the sample data was loaded shows the Sample data banner. It writes full-size PNG files to `out/screenshots`, which git ignores.
+1. `capture.mjs` takes the desktop pictures at 1440 by 900 and the phone-size Chromium pictures at 390 by 844 (at 2x), in both themes. It checks that each page really rendered in the theme in its name, and that each picture after the sample data was loaded shows the Sample data banner. A page with a long list is first scrolled to its results, and a picture ends in the gap between two cards, never through one, so a picture can be a little shorter than the window. It writes full-size PNG files to `out/screenshots`, which git ignores.
 2. `ios-webkit.mjs` takes the iPhone-size pictures in WebKit (the engine inside iOS Safari) for the Overview page and one tool page. It also checks for sideways scrolling and any network attempt.
 3. `compose.mjs` turns the captures into the WebP files here and builds `readme-header.webp`. It uses the headless Chromium that Playwright provides, so no image library is needed.
 
@@ -38,10 +38,10 @@ The picture for the repository’s social preview is not in this folder. It is `
 | Start, before any data | ![Start page in the light theme](desktop-start-light.webp) | ![Start page in the dark theme](desktop-start-dark.webp) |
 | Overview | ![Overview page in the light theme](desktop-overview-light.webp) | ![Overview page in the dark theme](desktop-overview-dark.webp) |
 | Unaccepted requests | ![Unaccepted requests page in the light theme](desktop-unaccepted-requests-light.webp) | ![Unaccepted requests page in the dark theme](desktop-unaccepted-requests-dark.webp) |
-| Cleanup queue | ![Cleanup queue page in the light theme](desktop-cleanup-queue-light.webp) | ![Cleanup queue page in the dark theme](desktop-cleanup-queue-dark.webp) |
-| Memories rescue | ![Memories rescue page in the light theme](desktop-memories-rescue-light.webp) | ![Memories rescue page in the dark theme](desktop-memories-rescue-dark.webp) |
-| Tools | ![Tools page in the light theme](desktop-tools-hub-light.webp) | ![Tools page in the dark theme](desktop-tools-hub-dark.webp) |
-| Friends table tool | ![Friends table tool in the light theme](desktop-tool-friends-table-light.webp) | ![Friends table tool in the dark theme](desktop-tool-friends-table-dark.webp) |
+| Cleanup queue | ![Cleanup queue page in the light theme, with the filters, the warning and the first four people to review](desktop-cleanup-queue-light.webp) | ![Cleanup queue page in the dark theme, with the filters, the warning and the first four people to review](desktop-cleanup-queue-dark.webp) |
+| Memories rescue | ![Memories rescue page in the light theme, with the counts, files found and the storage cap with its meter](desktop-memories-rescue-light.webp) | ![Memories rescue page in the dark theme, with the counts, files found and the storage cap with its meter](desktop-memories-rescue-dark.webp) |
+| Tools | ![Tools page in the light theme, with the Your export and Friends groups of helpers](desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with the Your export and Friends groups of helpers](desktop-tools-hub-dark.webp) |
+| Friends table tool, scrolled to the table | ![Friends table tool in the light theme, scrolled to the table of friends with dates, counts and hints](desktop-tool-friends-table-light.webp) | ![Friends table tool in the dark theme, scrolled to the table of friends with dates, counts and hints](desktop-tool-friends-table-dark.webp) |
 | Year in review tool | ![Year in review tool in the light theme](desktop-tool-year-in-review-light.webp) | ![Year in review tool in the dark theme](desktop-tool-year-in-review-dark.webp) |
 | In-app terminal, finished demo run | ![In-app terminal after the demo command finished, light theme](desktop-terminal-demo-run-light.webp) | ![In-app terminal after the demo command finished, dark theme](desktop-terminal-demo-run-dark.webp) |
 | Privacy | ![Privacy page in the light theme](desktop-privacy-light.webp) | ![Privacy page in the dark theme](desktop-privacy-dark.webp) |
@@ -52,9 +52,9 @@ The picture for the repository’s social preview is not in this folder. It is `
 | Page | Light | Dark |
 |---|---|---|
 | Overview | ![Overview on a phone, light theme](phone-overview-light.webp) | ![Overview on a phone, dark theme](phone-overview-dark.webp) |
-| Tools | ![Tools page on a phone, light theme](phone-tools-hub-light.webp) | ![Tools page on a phone, dark theme](phone-tools-hub-dark.webp) |
+| Tools | ![Tools page on a phone, light theme, with the first two helpers](phone-tools-hub-light.webp) | ![Tools page on a phone, dark theme, with the first two helpers](phone-tools-hub-dark.webp) |
 | Cleanup queue | ![Cleanup queue on a phone, light theme](phone-cleanup-queue-light.webp) | ![Cleanup queue on a phone, dark theme](phone-cleanup-queue-dark.webp) |
-| Year in review tool | ![Year in review tool on a phone, light theme](phone-tool-year-in-review-light.webp) | ![Year in review tool on a phone, dark theme](phone-tool-year-in-review-dark.webp) |
+| Year in review tool | ![Year in review tool on a phone, light theme, with its At a glance counts](phone-tool-year-in-review-light.webp) | ![Year in review tool on a phone, dark theme, with its At a glance counts](phone-tool-year-in-review-dark.webp) |
 
 ## iPhone sizes in WebKit
 

@@ -18,9 +18,9 @@ Every picture here is a real capture of Snappy’s built-in sample data: invente
 | Light | Dark |
 |---|---|
 | ![Overview page in the light theme, with counts for disappeared friends, unaccepted requests, quiet friends, the cleanup queue and Memories](docs/images/desktop-overview-light.webp) | ![Overview page in the dark theme, with counts for disappeared friends, unaccepted requests, quiet friends, the cleanup queue and Memories](docs/images/desktop-overview-dark.webp) |
-| ![Cleanup queue in the light theme, with a warning that removing a friend cannot be undone and the first people to review](docs/images/desktop-cleanup-queue-light.webp) | ![Cleanup queue in the dark theme, with a warning that removing a friend cannot be undone and the first people to review](docs/images/desktop-cleanup-queue-dark.webp) |
-| ![Tools page in the light theme, with small helpers grouped by what they read](docs/images/desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with small helpers grouped by what they read](docs/images/desktop-tools-hub-dark.webp) |
-| ![Memories rescue in the light theme, with counts and a storage meter](docs/images/desktop-memories-rescue-light.webp) | ![Memories rescue in the dark theme, with counts and a storage meter](docs/images/desktop-memories-rescue-dark.webp) |
+| ![Cleanup queue in the light theme, with the filters, a warning that removing a friend cannot be undone, and the first four people to review](docs/images/desktop-cleanup-queue-light.webp) | ![Cleanup queue in the dark theme, with the filters, a warning that removing a friend cannot be undone, and the first four people to review](docs/images/desktop-cleanup-queue-dark.webp) |
+| ![Tools page in the light theme, with the first helpers, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with the first helpers, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-dark.webp) |
+| ![Memories rescue in the light theme, with the counts, the files found in the export, and the storage cap with its meter](docs/images/desktop-memories-rescue-light.webp) | ![Memories rescue in the dark theme, with the counts, the files found in the export, and the storage cap with its meter](docs/images/desktop-memories-rescue-dark.webp) |
 
 A command shown in the app has Copy and Run. Run works inside the app, on invented data here:
 
@@ -32,8 +32,8 @@ The same pages fit a phone-size screen. These are captures at 390 by 844 pixels:
 
 | Overview | Tools | Cleanup queue | Year in review |
 |---|---|---|---|
-| ![Overview on a phone, light theme](docs/images/phone-overview-light.webp) | ![Tools page on a phone, light theme](docs/images/phone-tools-hub-light.webp) | ![Cleanup queue on a phone, light theme](docs/images/phone-cleanup-queue-light.webp) | ![Year in review tool on a phone, light theme](docs/images/phone-tool-year-in-review-light.webp) |
-| ![Overview on a phone, dark theme](docs/images/phone-overview-dark.webp) | ![Tools page on a phone, dark theme](docs/images/phone-tools-hub-dark.webp) | ![Cleanup queue on a phone, dark theme](docs/images/phone-cleanup-queue-dark.webp) | ![Year in review tool on a phone, dark theme](docs/images/phone-tool-year-in-review-dark.webp) |
+| ![Overview on a phone, light theme](docs/images/phone-overview-light.webp) | ![Tools page on a phone, light theme, with the first two helpers](docs/images/phone-tools-hub-light.webp) | ![Cleanup queue on a phone, light theme](docs/images/phone-cleanup-queue-light.webp) | ![Year in review tool on a phone, light theme, with its At a glance counts](docs/images/phone-tool-year-in-review-light.webp) |
+| ![Overview on a phone, dark theme](docs/images/phone-overview-dark.webp) | ![Tools page on a phone, dark theme, with the first two helpers](docs/images/phone-tools-hub-dark.webp) | ![Cleanup queue on a phone, dark theme](docs/images/phone-cleanup-queue-dark.webp) | ![Year in review tool on a phone, dark theme, with its At a glance counts](docs/images/phone-tool-year-in-review-dark.webp) |
 
 These were made in a headless browser, and the iPhone sizes in Safari’s engine (WebKit), not on a phone. The phone apps are planned, and their own screenshots come with them.
 
