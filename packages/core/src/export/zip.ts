@@ -8,7 +8,7 @@
 
 export interface ZipDirectoryInfo {
   entryCount: number;
-  /** Newest entry mtime in epoch ms (plausible values only), if any entry has one. */
+  /** Newest mtime in epoch ms (plausible values only) of the .json files under json/, or of any entry when there are none. */
   newestMtime?: number;
 }
 
@@ -16,6 +16,16 @@ const LOW = Date.UTC(1990, 0, 1);
 const HIGH = Date.UTC(2100, 0, 1);
 
 const plausible = (ms: number): boolean => Number.isFinite(ms) && ms >= LOW && ms <= HIGH;
+
+/**
+ * A data file of the export: a .json file under a folder named "json". Its stored time is when
+ * Snapchat wrote the export; the photos and videos next to it keep the times they were taken or
+ * saved, and a zipper that repacks the media stamps them "now". So these times date the export first.
+ */
+export function isJsonDataEntry(name: string): boolean {
+  const path = name.replace(/\\/g, "/").toLowerCase();
+  return path.endsWith(".json") && path.split("/").slice(0, -1).includes("json");
+}
 
 /** DOS date/time carries no zone; reading it as UTC keeps results deterministic (error < 1 day). */
 function dosToMs(date: number, time: number): number {
@@ -55,6 +65,16 @@ export function u64(view: DataView, at: number): number {
   return view.getUint32(at, true) + view.getUint32(at + 4, true) * 4294967296;
 }
 
+/** True when the bytes just before `end` spell ".json" in any letter case. */
+function endsWithJson(bytes: Uint8Array, end: number): boolean {
+  const tail = ".json";
+  if (end < tail.length) return false;
+  for (let i = 0; i < tail.length; i++) {
+    if (((bytes[end - tail.length + i] as number) | 0x20) !== tail.charCodeAt(i)) return false;
+  }
+  return true;
+}
+
 /**
  * Inspect the central directory. Returns undefined when it cannot be located or is
  * inconsistent; callers then rely on the zip library to produce its own failure.
@@ -81,6 +101,7 @@ export function readZipDirectory(zip: Uint8Array, maxEntries: number): ZipDirect
   if (count > maxEntries) return { entryCount: count };
 
   let newest: number | undefined;
+  let newestJson: number | undefined;
   let p = dirOffset;
   for (let i = 0; i < count; i++) {
     if (p + 46 > zip.length || view.getUint32(p, true) !== 0x02014b50) return undefined;
@@ -92,8 +113,13 @@ export function readZipDirectory(zip: Uint8Array, maxEntries: number): ZipDirect
     if (next > zip.length) return undefined;
 
     const mtime = centralEntryMtime(view, p, extraStart, extraStart + extraLen);
-    if (mtime !== undefined && (newest === undefined || mtime > newest)) newest = mtime;
+    if (mtime !== undefined) {
+      if (newest === undefined || mtime > newest) newest = mtime;
+      // Only a name that can be a data file is decoded (the check is on bytes first, so media names are never turned into strings).
+      if ((newestJson === undefined || mtime > newestJson) && endsWithJson(zip, p + 46 + nameLen) && isJsonDataEntry(new TextDecoder().decode(zip.subarray(p + 46, p + 46 + nameLen)))) newestJson = mtime;
+    }
     p = next;
   }
-  return newest === undefined ? { entryCount: count } : { entryCount: count, newestMtime: newest };
+  const dated = newestJson ?? newest;
+  return dated === undefined ? { entryCount: count } : { entryCount: count, newestMtime: dated };
 }

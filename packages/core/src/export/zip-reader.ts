@@ -45,7 +45,7 @@ import {
   zipUnreadableIssue,
 } from "./parse.ts";
 import type { Entry, Outcome, Outcomes, PartLabel, Target, TargetValues } from "./parse.ts";
-import { centralEntryMtime, u64 } from "./zip.ts";
+import { centralEntryMtime, isJsonDataEntry, u64 } from "./zip.ts";
 
 // ------------------------------------------------------------------ readers ---
 
@@ -116,7 +116,7 @@ export interface ZipEntryInfo {
 export interface ZipListing {
   entries: ZipEntryInfo[];
   issues: ExportIssue[];
-  /** Newest plausible entry mtime in epoch ms (what parseExportZip reports as exportedAt). */
+  /** Newest plausible mtime in epoch ms of the data files under json/ (any entry when there are none): what parseExportZip reports as exportedAt. */
   newestMtime?: number;
 }
 
@@ -414,6 +414,7 @@ export async function listZipEntries(reader: RandomAccessReader, label: PartLabe
 
     const entries: ZipEntryInfo[] = [];
     let newest: number | undefined;
+    let newestJson: number | undefined;
     // `buf` holds directory bytes [bufStart, bufStart + buf.length); `p` is the next record.
     let buf: Uint8Array = new Uint8Array(0);
     let view = viewOf(buf);
@@ -472,7 +473,10 @@ export async function listZipEntries(reader: RandomAccessReader, label: PartLabe
       entries.push(info);
 
       const mtime = centralEntryMtime(view, at, extraAt, extraAt + extraLen);
-      if (mtime !== undefined && (newest === undefined || mtime > newest)) newest = mtime;
+      if (mtime !== undefined) {
+        if (newest === undefined || mtime > newest) newest = mtime;
+        if ((newestJson === undefined || mtime > newestJson) && isJsonDataEntry(info.name)) newestJson = mtime;
+      }
       p += total;
     }
 
@@ -480,7 +484,8 @@ export async function listZipEntries(reader: RandomAccessReader, label: PartLabe
     if (dir.count !== undefined && dir.count !== entries.length) {
       issues.push(issue("warning", "zip-entry-count-mismatch", `The ZIP file says it holds ${dir.count} ${dir.count === 1 ? "item" : "items"}, but Snappy found ${entries.length}. It may be damaged.`));
     }
-    return newest === undefined ? { entries, issues } : { entries, issues, newestMtime: newest };
+    const dated = newestJson ?? newest;
+    return dated === undefined ? { entries, issues } : { entries, issues, newestMtime: dated };
   } catch {
     // The reader failed or lied about its size; its own message is not ours to repeat.
     return fail(zipUnreadableIssue(label));
