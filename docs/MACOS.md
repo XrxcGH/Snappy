@@ -69,13 +69,13 @@ Your export files are never touched by Snappy.
 
 Snappy reads your export and never changes it: it opens the ZIP files read-only. It reads friend usernames and dates, and skips message text, photos, videos, locations and display names. Snappy itself sends nothing over a network, and its page is not allowed to connect to anything.
 
-**One open question.** The window is drawn by the web view that comes with macOS (WebKit), a separate component that Snappy does not control. The Privacy page in the app says this. In one automated test on a GitHub computer, the app and its web view made no connection to an outside address in 60 seconds. That test cannot see everything, it was one computer and one macOS version, and a macOS update can change the web view. [RELEASES.md](RELEASES.md) has the details.
+**One open question.** The window is drawn by the web view that comes with macOS (WebKit), a separate component that Snappy does not control. The Privacy page in the app says this. In one automated test on a GitHub computer, the app and its web view made no connection to an outside address in 60 seconds. That test cannot see everything, it was one computer and one macOS version, and a macOS update can change the web view. A second test with a stand-in page (not Snappy) found that the web view cancels a link, a new window or a redirect to another address before it sends any request. [RELEASES.md](RELEASES.md) has the details and the limits.
 
 ## What to try first
 
 1. Open **Start** and choose **Use sample data** to look around with made-up friends. Nothing about the sample is saved.
 2. Choose **Choose ZIP files**, and pick every ZIP part of your export at once. This opens the Mac’s file dialog, which no automated test has used yet: tell us if it does anything unexpected.
-3. On **Start**, choose **Set passphrase**, then lock and unlock the saved history. This uses a part of the web view (Web Crypto) that has not been checked on a Mac.
+3. On **Start**, choose **Set passphrase**, then lock and unlock the saved history. A test with a stand-in page showed that the web view’s encryption (Web Crypto) works under the app’s address, but nobody has typed a passphrase into Snappy itself on a Mac.
 4. Click into the passphrase and filter fields and try Cmd+C, Cmd+V and Cmd+A. The Edit menu is there, but typing into a field has not been tried on a Mac.
 
 ## Report a problem without sharing personal data

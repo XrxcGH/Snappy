@@ -159,7 +159,8 @@ What is macOS-specific, and where:
 | Navigation lock and new-window refusal: the same two handlers as Windows (`on_navigation`, `on_new_window`), which wry applies to the WKWebView delegates. The Windows-only `WebResourceRequested` filter has no macOS counterpart | `lib.rs` |
 | The page's address: `tauri://localhost` (Windows uses `http://tauri.localhost`); both are in the allow-list | `lib.rs` |
 | Platform flag: `desktopKind` reads the user agent; `macos` shows the macOS Privacy note, which names no WebView2 | `src/desktop-platform.ts`, `copy.ts` (`privacy.desktopMac*`) |
-| CI build and smoke test | `.github/workflows/desktop-smoke.yml` job `macos-universal-build`, `tools/macos/` |
+| No updater: the update check is Windows only (`updater::for_app` returns `None` elsewhere, and the update interface mounts only when `desktop` is `windows`), so the macOS app makes no connection of its own | `src-tauri/src/updater/mod.rs`, `src/update-entry.ts` |
+| CI build and smoke test: `smoke.sh` (bundle, launch, window, menu, 60-second network watch with a positive control, quit), `netwatch.py` (the sampler; it counts the WebKit helper processes too, because they are not children of the app), `windows.swift`, and a WebKit stand-in (`webkit-probe.swift`, `probe.sh`, `probe-server.py`) that tries to reach a loopback server from a plain WKWebView | `.github/workflows/desktop-smoke.yml` job `macos-universal-build`, `tools/macos/` |
 
 `test/macos-config.test.ts` guards the config and the `cfg(windows)` gates. The smoke test needs a macOS runner
 and is described in [docs/RELEASES.md](../../docs/RELEASES.md) (what CI checks, and what it cannot).
