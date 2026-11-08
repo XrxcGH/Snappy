@@ -234,12 +234,14 @@ export class HistoryReader {
     if (this.noConversation >= WARN_MIN_COUNT && unmatchedShare > UNMATCHED_WARN_SHARE) {
       issues.push(issue("warning", "chats-unmatched-many", `${this.noConversation} of ${this.noConversation + this.events.length} ${noun}s in ${file} were skipped because no conversation matched them. Some results may be wrong.`));
     } else if (this.noConversation > 0) {
-      issues.push(issue("info", `${code}-conversation-unknown`, `${this.noConversation} ${noun}${this.noConversation === 1 ? " has" : "s have"} could not be matched to a conversation and ${verb(this.noConversation)} skipped.`));
+      issues.push(issue("info", `${code}-conversation-unknown`, `${this.noConversation} ${noun}${this.noConversation === 1 ? "" : "s"} could not be matched to a conversation and ${verb(this.noConversation)} skipped.`));
     }
     if (this.conversations >= WARN_MIN_COUNT && this.groups / this.conversations > GROUPS_WARN_SHARE) {
       issues.push(issue("warning", "chats-mostly-groups", `Snappy treated ${this.groups} of ${this.conversations} conversations in ${file} as group chats. The layout may differ, so results may be wrong.`));
     } else if (this.conversations > 0 && this.groups === this.conversations) {
-      issues.push(issue("info", `${code}-all-groups`, `Snappy treated all ${this.conversations} conversations as group chats. The export layout may differ from what it expects.`));
+      issues.push(issue("info", `${code}-all-groups`, this.conversations === 1
+        ? "Snappy treated the only conversation as a group chat. The export layout may differ from what it expects."
+        : `Snappy treated all ${this.conversations} conversations as group chats. The export layout may differ from what it expects.`));
     }
     return { chats: this.events, issues };
   }

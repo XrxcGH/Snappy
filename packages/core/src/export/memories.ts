@@ -157,7 +157,7 @@ export function attachBundledMedia(
     issues.push(issue("info", "memories-links-empty", "No Memory has a download link. Snappy uses the files inside the export instead."));
   }
   if (result.method === "offset-time") {
-    const hours = (h: number): string => `${Math.abs(h)} hour${Math.abs(h) === 1 ? "" : "s"} ${h < 0 ? "behind" : "ahead of"} UTC`;
+    const hours = (h: number): string => (h === 0 ? "set to UTC" : `${Math.abs(h)} hour${Math.abs(h) === 1 ? "" : "s"} ${h < 0 ? "behind" : "ahead of"} UTC`);
     issues.push(issue("info", "memories-time-offset", result.extraOffsetHours.length === 0
       ? `The Memories files keep their times on a clock ${hours(result.offsetHours)}. Snappy allowed for that.`
       : `The Memories files keep their times on a clock that was ${[result.offsetHours, ...result.extraOffsetHours].map(hours).join(" or ")}. Snappy allowed for both.`));
@@ -171,11 +171,13 @@ export function attachBundledMedia(
   const notFound = missing - ambiguous;
   if (notFound > 0) {
     issues.push(issue("warning", "memories-unmatched-items",
-      `${notFound} of ${items.length} saved Memories ${notFound === 1 ? "has" : "have"} no file in your ZIP files.`));
+      `${notFound} of ${items.length} saved ${items.length === 1 ? "Memory" : "Memories"} ${notFound === 1 ? "has" : "have"} no file in your ZIP files.`));
   }
   if (ambiguous > 0) {
     issues.push(issue("warning", "memories-ambiguous-items",
-      `${ambiguous} saved ${ambiguous === 1 ? "Memory" : "Memories"} share a time with others, so Snappy did not guess. Their files are in your ZIP files.`));
+      ambiguous === 1
+        ? "1 saved Memory shares a time with others, so Snappy did not guess. Its file is in your ZIP files."
+        : `${ambiguous} saved Memories share a time with others, so Snappy did not guess. Their files are in your ZIP files.`));
   }
   return { memories, pairing, issues };
 }
