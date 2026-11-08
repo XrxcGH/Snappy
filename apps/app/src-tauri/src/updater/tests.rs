@@ -12,7 +12,7 @@ use serde_json::Value;
 use super::install_kind::Fake;
 use super::store::scratch_dir;
 use super::testserver::{Reply, Request, Server};
-use super::transport_windows::WinHttp;
+use super::transport_windows::SystemTransport;
 use super::*;
 
 const BASE_PATH: &str = "/XrxcGH/Snappy";
@@ -170,7 +170,7 @@ impl Rig {
                 paths: Paths::new(self.dir.join("updates")),
             },
             Deps {
-                transport: Arc::new(WinHttp),
+                transport: Arc::new(SystemTransport),
                 probe: self.probe.clone(),
                 launcher: self.launcher.clone(),
                 clock: Arc::new(move || clock.load(Ordering::SeqCst)),
@@ -512,7 +512,7 @@ fn a_build_without_real_keys_downloads_and_installs_nothing() {
         running_text: "0.1.5".into(),
         paths: rig.paths(),
     };
-    let up = Updater::new(cfg, Deps { transport: Arc::new(WinHttp), probe: rig.probe.clone(), launcher: rig.launcher.clone(), clock: Arc::new(|| START), busy: Arc::new(|| false) });
+    let up = Updater::new(cfg, Deps { transport: Arc::new(SystemTransport), probe: rig.probe.clone(), launcher: rig.launcher.clone(), clock: Arc::new(|| START), busy: Arc::new(|| false) });
     up.set_auto(true);
     up.run_check(false);
     assert_eq!(up.status().error, Some("keys"));

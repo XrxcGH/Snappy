@@ -56,3 +56,15 @@ The text below is a draft. It is built into the desktop app only, and the web bu
 | First-run notice | Snappy checks GitHub for updates when it opens. Change this in Settings. (Buttons: OK, Turn off.) |
 
 The earlier draft of the Settings line said “Sends nothing about you.” It was changed because an IP address, and the fact that a Snappy app asked, are things about the person.
+
+## Installer facts
+
+These were read from the NSIS script that the Tauri tooling generated for the Windows beta build (`target/release/nsis/x64/installer.nsi`, tauri-cli 2.12). They were not run: an install is a step for the first-release drill.
+
+- The program starts the installer with `/P /UPDATE /R`. `/P` is the passive progress window, `/UPDATE` is update mode, and `/R` starts the app again when the install ends (only in passive and silent modes).
+- In update mode the installer skips the reinstall page, does not run the uninstaller first, skips the WebView2 download, and does not delete app data. The uninstaller removes the app’s data folders only when the person ticks the box in the uninstaller and update mode is off.
+- With `allowDowngrades` set to `false` in the config, passive, silent and update runs stop when the installer is older than the installed version. The comparison is a semantic version one, so `0.1.0` is newer than `0.1.0-beta.1`.
+- The per-user installer records its folder in `HKCU\Software\<publisher>\<product name>` (the default value), and as `InstallLocation` under `HKCU\Software\Microsoft\Windows\CurrentVersion\Uninstall\<product name>`. The program reads the first of these to decide whether it is the installed copy.
+- The program file carries the version as its product and file version (`0.1.0-beta.1` for the beta). The installer file carries the numeric version.
+
+Not run: the interactive installer, `/UPDATE` over a real install, data preservation across an update, Smart App Control, and an install on a machine without WebView2.

@@ -10,7 +10,6 @@
 //! between asset hosts once, and an exact pair would strand every installed copy the next time
 //! it does. The host rule is defence in depth; the signature is the root of trust.
 
-use std::net::IpAddr;
 use std::sync::atomic::AtomicU64;
 use std::time::{Duration, Instant};
 
@@ -81,10 +80,6 @@ fn host_allowed(host: &str, hop: usize) -> bool {
     host == "github.com" || host == "githubusercontent.com" || host.ends_with(".githubusercontent.com")
 }
 
-fn is_ip_literal(host: &str) -> bool {
-    host.starts_with('[') || host.parse::<IpAddr>().is_ok()
-}
-
 /// Checks one address for request number `hop` (0 for the first). See the module comment.
 pub fn check_url(raw: &str, hop: usize, policy: Policy) -> Result<Target, PolicyError> {
     if !clean_text(raw) {
@@ -116,7 +111,8 @@ pub fn check_url(raw: &str, hop: usize, policy: Policy) -> Result<Target, Policy
             return Err(PolicyError::Host);
         }
     } else {
-        if is_ip_literal(&host) {
+        // `domain()` is None for an IPv4 or IPv6 host, in any spelling the parser understands (2130706433, 0x7f.1, [::1]).
+        if url.domain().is_none() {
             return Err(PolicyError::IpHost);
         }
         if host.ends_with('.') || !host.is_ascii() || host.split('.').any(|label| label.starts_with("xn--")) || !host_allowed(&host, hop) {

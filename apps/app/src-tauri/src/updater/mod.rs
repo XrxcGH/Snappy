@@ -754,7 +754,7 @@ pub fn for_app(data_dir: &Path, product: &str, publisher: &str, busy: Arc<dyn Fn
     Some(Updater::new(
         config,
         Deps {
-            transport: Arc::new(transport_windows::WinHttp),
+            transport: Arc::new(transport_windows::SystemTransport),
             probe: Arc::new(launch_windows::SystemProbe { product_key: format!(r"Software\{publisher}\{product}") }),
             launcher: Arc::new(launch_windows::WindowsLauncher),
             clock: Arc::new(clock),

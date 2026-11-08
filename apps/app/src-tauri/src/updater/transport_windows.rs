@@ -152,9 +152,9 @@ fn require_modern_tls(session: &Handle) -> Result<(), NetError> {
 
 /// The WinHTTP transport. It holds no state: every request opens and closes its own handles.
 #[derive(Debug, Default, Clone, Copy)]
-pub struct WinHttp;
+pub struct SystemTransport;
 
-impl Transport for WinHttp {
+impl Transport for SystemTransport {
     fn get(&self, target: &Target, options: &FetchOptions, sink: Sink<'_>) -> Result<Hop, NetError> {
         let left = || options.deadline.saturating_duration_since(Instant::now());
         if left().is_zero() {
@@ -247,7 +247,7 @@ mod tests {
 
     fn get(server: &Server, path: &str, opts: &FetchOptions) -> (Result<(), NetError>, Vec<u8>) {
         let mut body = Vec::new();
-        let result = fetch(&WinHttp, &server.url(path), Policy::Loopback, opts, &mut |b| {
+        let result = fetch(&SystemTransport, &server.url(path), Policy::Loopback, opts, &mut |b| {
             body.extend_from_slice(b);
             Ok(())
         });
@@ -330,12 +330,12 @@ mod tests {
         let dead_url = dead.url("/x");
         drop(dead);
         let mut sink = |_: &[u8]| Ok(());
-        assert_eq!(fetch(&WinHttp, &dead_url, Policy::Loopback, &options(10, true), &mut sink), Err(NetError::Offline));
+        assert_eq!(fetch(&SystemTransport, &dead_url, Policy::Loopback, &options(10, true), &mut sink), Err(NetError::Offline));
 
         let slow = Server::start(|_| Reply::ok(b"late".to_vec()).after(Duration::from_secs(9)));
         let quick = FetchOptions { max_body: 10, require_length: true, deadline: Instant::now() + Duration::from_secs(15), idle: Duration::from_millis(1_200), length_out: None };
         let started = Instant::now();
-        assert_eq!(fetch(&WinHttp, &slow.url("/x"), Policy::Loopback, &quick, &mut sink), Err(NetError::Timeout));
+        assert_eq!(fetch(&SystemTransport, &slow.url("/x"), Policy::Loopback, &quick, &mut sink), Err(NetError::Timeout));
         assert!(started.elapsed() < Duration::from_secs(8), "the idle limit ends the wait long before the server answers");
     }
 
@@ -344,7 +344,7 @@ mod tests {
         let server = Server::start(|_| Reply::ok(b"x".to_vec()));
         let expired = FetchOptions { max_body: 10, require_length: true, deadline: Instant::now(), idle: Duration::from_secs(5), length_out: None };
         let mut sink = |_: &[u8]| Ok(());
-        assert_eq!(fetch(&WinHttp, &server.url("/x"), Policy::Loopback, &expired, &mut sink), Err(NetError::Timeout));
+        assert_eq!(fetch(&SystemTransport, &server.url("/x"), Policy::Loopback, &expired, &mut sink), Err(NetError::Timeout));
         assert!(server.requests().is_empty(), "no request once the time is up");
     }
 }

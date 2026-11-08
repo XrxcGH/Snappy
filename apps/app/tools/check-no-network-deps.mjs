@@ -1,15 +1,23 @@
 /**
- * Fails when the Rust dependency tree of the app shell contains a way to make network connections.
+ * Fails when the program contains a way to make network connections other than the one update check.
  *
- * Snappy's privacy contract is that the app makes no network connections. This check keeps the
- * compiled-in code honest: it asks Cargo for the dependency tree of every release target and fails
- * when an HTTP client, a TLS library, a WebSocket library or the async runtime's socket support shows up.
+ * Snappy's privacy contract is that nothing about the person leaves the device. The page may not connect at all, and
+ * the desktop program's only network use is the update check (src-tauri/src/updater): one request for a small file on
+ * github.com and, if a newer version exists, one for its installer. This check keeps the compiled-in code honest in three ways.
  *
- *   node apps/app/tools/check-no-network-deps.mjs [--target <triple> ...]
+ *   1. Crates. It asks Cargo for the dependency tree of every release target and fails when an HTTP client, a TLS
+ *      library, a WebSocket library or the async runtime's socket support shows up. The update check uses none of
+ *      them: it calls the operating system (WinHTTP, through the windows-sys crate) and verifies with minisign-verify.
+ *   2. Source. The program's own Rust may use WinHTTP only in updater/transport_windows.rs, start a process only in
+ *      updater/launch_windows.rs, and use no other way to download (see network-surface.mjs for every rule).
+ *   3. The built program (--exe). It must import winhttp.dll and not WinINet, URLMon or BITS, and a release build must hold no test
+ *      setting, test identity or test key.
+ *
+ *   node apps/app/tools/check-no-network-deps.mjs [--target <triple> ...] [--sources-only] [--exe <snappy.exe>]
  *
  * Needs cargo and a network the first time (Cargo downloads crate metadata). Build time only; the app makes no calls.
  *
- * Desktop targets (Windows, macOS, Linux) must be completely clean.
+ * Desktop targets (Windows, macOS, Linux) must be completely clean of the banned crates.
  *
  * Mobile targets (Android, iOS) are a known exception. The `tauri` crate links `reqwest` (and its hyper
  * and tower stack) on those two platforms, but only calls it in development builds, to proxy the dev
@@ -19,11 +27,14 @@
  * INTERNET permission in the release workflow, because that is the check the operating system enforces.
  */
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkBinary, checkRepository, peImports } from "./network-surface.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const manifest = path.join(here, "..", "src-tauri", "Cargo.toml");
+const repoRoot = path.resolve(here, "..", "..", "..");
 
 const DESKTOP = [
   "x86_64-pc-windows-msvc",
@@ -90,25 +101,66 @@ function checkTarget(target, mobile) {
   return { found, problems };
 }
 
+/** The TEST public keys the repository knows: they must never be in a release program. */
+function knownTestKeys() {
+  const keys = new Set();
+  const dir = path.join(here, "..", "src-tauri", "src", "updater");
+  for (const [file, pick] of [
+    ["testdata/signatures.json", (j) => Object.values(j.keys ?? {})],
+    ["testdata/real-tauri.json", (j) => [j.publicKey]],
+  ]) {
+    try {
+      for (const k of pick(JSON.parse(readFileSync(path.join(dir, file), "utf8")))) if (typeof k === "string") keys.add(k);
+    } catch {
+      // A missing fixture file means there is nothing to look for from it.
+    }
+  }
+  const source = readFileSync(path.join(dir, "keys.rs"), "utf8");
+  for (const m of source.matchAll(/"(dW50cnVzdGVkIGNvbW1lbnQ6[A-Za-z0-9+/=]+)"/g)) keys.add(m[1]);
+  return [...keys];
+}
+
 function main() {
   const argv = process.argv.slice(2);
   const picked = [];
-  for (let i = 0; i < argv.length; i++) if (argv[i] === "--target") picked.push(argv[++i]);
-  const targets = picked.length ? picked : [...DESKTOP, ...MOBILE];
+  let exe;
+  let sourcesOnly = false;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--target") picked.push(argv[++i]);
+    else if (argv[i] === "--exe") exe = argv[++i];
+    else if (argv[i] === "--sources-only") sourcesOnly = true;
+  }
   let failed = false;
-  for (const target of targets) {
-    const mobile = MOBILE.includes(target) || (!DESKTOP.includes(target) && /android|ios/.test(target));
-    const { found, problems } = checkTarget(target, mobile);
+  const section = (title, problems) => {
     if (problems.length) {
       failed = true;
-      console.log(`FAIL ${target}`);
+      console.log(`FAIL ${title}`);
       for (const p of problems) console.log(`     ${p}`);
-    } else {
-      console.log(`ok   ${target}${found.length ? `  (known tauri development-proxy crates: ${found.join(", ")}; not called in release builds)` : ""}`);
+    } else console.log(`ok   ${title}`);
+  };
+
+  section("sources (WinHTTP, processes and other routes are confined to their files)", checkRepository(repoRoot));
+  if (exe) {
+    const bytes = readFileSync(exe);
+    const imports = peImports(bytes);
+    section(`built program ${path.basename(exe)} (imports: ${imports.join(", ")})`, checkBinary(imports, bytes, knownTestKeys()));
+  }
+  if (!sourcesOnly && !exe) {
+    const targets = picked.length ? picked : [...DESKTOP, ...MOBILE];
+    for (const target of targets) {
+      const mobile = MOBILE.includes(target) || (!DESKTOP.includes(target) && /android|ios/.test(target));
+      const { found, problems } = checkTarget(target, mobile);
+      if (problems.length) {
+        failed = true;
+        console.log(`FAIL ${target}`);
+        for (const p of problems) console.log(`     ${p}`);
+      } else {
+        console.log(`ok   ${target}${found.length ? `  (known tauri development-proxy crates: ${found.join(", ")}; not called in release builds)` : ""}`);
+      }
     }
   }
   if (failed) {
-    console.log("\nA dependency that can reach the network entered the app. Remove it, or if it is truly needed, the privacy contract needs an owner decision first.");
+    console.log("\nSomething that can reach the network, other than the one update check, entered the app. Remove it, or if it is truly needed, the privacy contract needs an owner decision first.");
     process.exit(1);
   }
 }
