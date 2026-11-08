@@ -255,7 +255,7 @@ Orange stays clearly apart from the warning gold. `contrast.mjs` measures the di
 - Always pair the color with the category icon and its text label. Color is never the only signal.
 - Never use a category color for a status, inside a notice, or as body text on a plain ground.
 - Moss (olive green) belongs to Quiet friends only. It is not the success status, which is a cooler, bluer green, and it never means "OK" or "done". The moon icon and the label tell them apart.
-- Counts that belong to no area, such as friends and snapshots, use the neutral scope: `--surface-sunken` fill, `--text-muted` text and `--border-strong` edge.
+- Counts that belong to no area, such as friends and exports read, use the neutral scope: `--surface-sunken` fill, `--text-muted` text and `--border-strong` edge.
 - The five hues keep their distance from the status hues (warning gold, success green, info blue) and from confidence slate. Orange is the one that sits between two statuses: it is measured against the warning gold (above) and it is nearer to danger red (perceptual distance 7 to 12, hue gap 22 to 34 degrees). Where two sit close, the icon and the label tell them apart: danger always shows its warning icon and words, and Memories rescue always shows its own icon and name.
 
 **Violet tints.** A four-step scale of neutral washes for backgrounds and borders. They are not accents.
@@ -392,7 +392,7 @@ Easing is `cubic-bezier(0.2, 0, 0, 1)`.
 | `i-import`, `i-export`, `i-file-zip` | Add your export, save a report, the export file |
 | `i-overview` | Overview |
 | `i-people` | Friends, new friends |
-| `i-snapshots` | Snapshots in your history |
+| `i-snapshots` | Exports in your saved history |
 | `i-guide` | Export guide, About |
 | `i-photo`, `i-video` | Photos, videos |
 | `i-file`, `i-file-missing` | A file of unknown type, a file not included in the export |

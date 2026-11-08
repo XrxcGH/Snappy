@@ -151,4 +151,4 @@ Run `npm run snappy-export -- help <command>` to see a command’s options.
 
 ## Your saved history
 
-Snappy keeps a saved history (the “ledger”) of past friend lists, so it can spot people who disappeared between exports. It contains usernames, so Snappy seals it with a passphrase. Use 12 or more characters. If you forget the passphrase, the saved history cannot be recovered.
+Snappy keeps a saved history of past friend lists, so it can spot people who disappeared between exports. It contains usernames, so Snappy encrypts it with a passphrase. Use 12 or more characters. If you forget the passphrase, the saved history cannot be recovered.

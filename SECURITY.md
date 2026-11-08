@@ -18,7 +18,7 @@ Examples of reports we want:
 
 - Any path where message text, display names, group titles, locations, media content, file names or download links could be read, kept, printed, saved or sent when they should not be.
 - Anything that lets text from an export run as code in the dashboard (script injection, unsafe links, content-policy gaps).
-- Weaknesses in how the history and allowlist are sealed with a passphrase, or in how passphrases are handled.
+- Weaknesses in how the saved history and keep list are encrypted with a passphrase, or in how passphrases are handled.
 - Unsafe file handling in the Memories rescue (paths that escape the output folder, overwriting existing files).
 - Problems in how the optional download follows links or redirects.
 - Anything that lets an update be installed without the maintainer's signature, that makes the update check follow an address it should refuse, or that lets the page choose what is installed.

@@ -10,7 +10,7 @@ Snappy is **content-blind**. The full contract is at the top of `packages/core/s
 2. The only person-identifying value it keeps is a friend's username. Group titles become opaque hashes.
 3. Nothing leaves the device. No telemetry, no analytics, no network calls in the core library. There are two exceptions: the optional, off-by-default Memories download in the command-line tool, and the Windows app's update check (one fixed github.com address, no ID and none of your data, can be turned off, made by the native program and never by the page; see `docs/UPDATES.md`).
 4. Errors, warnings and reports never echo usernames, text, links or file names. Describe things by field name or count. Keep each issue’s code stable: it is part of the API, and people see it only with `--verbose`.
-5. Saved history is sealed with a passphrase.
+5. Saved history is encrypted with a passphrase.
 
 **Never use real data.** All tests and examples use synthetic exports made by the built-in generators. Do not attach or paste a real Snapchat export, or any piece of one, to an issue or pull request. If you need to show a file's layout, use the structure-only `inspect` command and read its output before sharing.
 
@@ -47,7 +47,7 @@ The dashboard runs the command line's commands inside the page: every command sh
 - **Output is text.** Command output is drawn with `h()` as text in spans with classes from a closed list (`terminal/ansi.ts`). Never use `innerHTML`, never set a style attribute: the page's policy forbids both.
 - **Lock and Delete data clear the commands too.** The command blocks live outside the dashboard's store. `createActions` takes `onWipe`, which `main.ts` points at `session.reset()`: it stops a Run, empties every transcript and saved file, and drops the picked export files. A new place that holds results on the page needs to be cleared there.
 - **Stop is a stop.** A command that reads the export calls `throwIfStopped(io)` (`apps/cli/src/inputs.ts`) after each load step, because cut-off reads look like damaged files to the parser. `worker.test.ts` stops a read part way and fails on any false diagnosis.
-- **Saved history is one file.** The dashboard and the command line read and write the same sealed file (`packages/core/src/ledger/saved.ts`). Change that format in core, and both follow.
+- **Saved history is one format in separate stores.** The dashboard (and the commands run in its terminal) keep the encrypted file in the browser’s or the app’s storage, and the command line tool keeps its own in `~/.snappy`, so neither one reads the other’s. Both use the format in `packages/core/src/ledger/saved.ts`. Change that format in core, and both follow.
 
 ## Adding a dashboard tool
 

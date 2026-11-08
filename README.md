@@ -51,7 +51,7 @@ The Windows beta shows this same dashboard in its own window. Beta 2 adds an aut
 3. Everything runs on this device, apart from the two optional network features in item 5. The app’s page is one HTML file with a policy that blocks all network access.
 4. There is no account, no telemetry, and no analytics.
 5. There are two network features, and nothing else touches the network. One is `snappy-export memories --download` in the command line tool. It is off by default, it prints a notice, and it contacts only the links inside your own export (newer exports have no links, so it has nothing to download). The other is the Windows app’s update check: one fixed address on github.com, no ID and none of your data, and you can turn it off in Settings ([docs/UPDATES.md](docs/UPDATES.md)). The app’s page itself can never connect to anything.
-6. Your history is stored only if you choose, sealed with your passphrase (PBKDF2 and AES-256-GCM). Snappy never stores the passphrase.
+6. Your saved history is kept only if you choose, encrypted with your passphrase (PBKDF2 and AES-256-GCM). Snappy never stores the passphrase.
 7. Output never echoes message text, display names, group titles, locations, or download links.
 8. Tests seed every one of those values into a synthetic export and fail if any of them reaches an output.
 
@@ -67,7 +67,7 @@ Request your data in Snapchat under Settings, then My Data. Select JSON files an
 
 ### 3. Use the app
 
-Open Snappy and choose Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the helpers: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: saved with your history if you turned saving on, and kept until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
+Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the helpers: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
 
 ### 4. Use the command line
 
@@ -81,11 +81,11 @@ npm run snappy-export -- demo --run
 
 | Command | What it does |
 |---|---|
-| `snappy-export analyze <ZIP files or folder...>` | Reads the export, updates your sealed ledger, and prints the cleanup queue. |
+| `snappy-export analyze <ZIP files or folder...>` | Reads the export, updates your saved history, and prints the cleanup queue. |
 | `snappy-export memories <ZIP files or folder...> --out <folder>` | Copies bundled Memories with their capture date restored. Add `--dry-run` to preview, or `--download` for link-only items. |
 | `snappy-export inspect <ZIP files or folder...>` | Prints the structure of the JSON files (field names and types), never a value. Photos, videos, and web pages are only counted. Options: `--show-keys`, `--layout`, `--memory-links`, `--mtime-check`, and `--checks-only`. |
 | `snappy-export keep <username...>` and `snappy-export unkeep <username...>` | Protects friends from the cleanup queue. |
-| `snappy-export ledger status` | Lists the exports in your history: dates and friend counts, never usernames. |
+| `snappy-export history status` | Lists the exports in your saved history: dates and friend counts, never usernames. |
 | `snappy-export demo` | Writes two invented exports and prints commands to try them. |
 
 Twenty-two more commands (`check`, `storage`, `backup`, `closest`, `remind`, `since`, `year`, and others) are listed in [apps/cli/README.md](apps/cli/README.md#more-commands). Run `snappy-export help` to see them all.
@@ -99,7 +99,7 @@ npm run snappy-export -- memories mydata~1234567890123.zip mydata~1234567890123-
 npm run snappy-export -- memories mydata~1234567890123.zip --out rescued-memories --layout year-month
 ```
 
-Several ZIP files, a folder of ZIP files, or a wildcard such as `"mydata*.zip"` are the parts of one export. Snappy puts them in the order Snapchat numbers them (the name without a number, then `-2`, then `-3`), whatever order you type them in. Without `--no-save`, `analyze` keeps one sealed file (your saved history of past exports, with your keep list inside) in `~/.snappy/` so each new export is compared with the earlier ones. Disappeared friends need at least two exports. The passphrase comes from `--passphrase-file`, then `SNAPPY_PASSPHRASE`, then a hidden prompt.
+Several ZIP files, a folder of ZIP files, or a wildcard such as `"mydata*.zip"` are the parts of one export. Snappy puts them in the order Snapchat numbers them (the name without a number, then `-2`, then `-3`), whatever order you type them in. Without `--no-save`, `analyze` keeps one encrypted file (your saved history of past exports, with your keep list inside) in `~/.snappy/` so each new export is compared with the earlier ones. Disappeared friends need at least two exports. The passphrase comes from `--passphrase-file`, then `SNAPPY_PASSPHRASE`, then a hidden prompt.
 
 Exit codes: 0 done, 1 could not run, 2 the export has errors, 3 Memories finished with some failed items. More detail is in [apps/cli/README.md](apps/cli/README.md).
 
@@ -115,8 +115,8 @@ Snapchat has not published the exact layout of its export, so Snappy reads it to
 ## Repository layout
 
 ```
-packages/core     Parsing, ledger, detectors, cleanup queue, Memories planning,
-                  metadata writers, sealing, and synthetic test data (@snappy-export/core)
+packages/core     Parsing, saved history, detectors, cleanup queue, Memories planning,
+                  metadata writers, encryption, and synthetic test data (@snappy-export/core)
 apps/cli          The snappy command
 apps/dashboard    The dashboard (builds to one HTML file that the apps show)
 apps/app          The desktop app: the dashboard in a native window (Tauri)

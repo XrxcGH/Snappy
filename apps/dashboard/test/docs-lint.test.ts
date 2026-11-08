@@ -71,6 +71,21 @@ describe.each([...DOCS, "CONTRIBUTING.md", "SECURITY.md", path.join("docs", "REL
 });
 
 /**
+ * One name for what a passphrase protects: the saved history. The words ledger, sealed, snapshot and saved data are
+ * the developer's, and "turned saving on" points to a switch that does not exist (saving means setting a passphrase).
+ * The installer's own checkbox label is quoted as the installer shows it, so it is the one exception.
+ */
+describe.each([...DOCS.filter((f) => !/MACOS/.test(f)), "CONTRIBUTING.md", "SECURITY.md", path.join("docs", "BRAND.md")])("%s terms", (file) => {
+  const INSTALLER_LABEL = "Also delete Snappy’s saved data (history and settings)";
+  const lines = prose(file).map((l) => ({ ...l, text: l.text.replace(INSTALLER_LABEL, "") }));
+
+  it("says saved history, not ledger, sealed, snapshot or saved data", () => {
+    const bad = lines.filter((l) => /\b(ledger|sealed|snapshots?|saved data)\b|\bseals\b/i.test(l.text) || /turned saving on|saving turned on|turn saving on/i.test(l.text));
+    expect(bad.map((l) => `${file}:${l.n}: ${l.text.slice(0, 90)}`)).toEqual([]);
+  });
+});
+
+/**
  * The network claims. Beta 2 added the update check, so a sentence that says there is one network use, only one, or
  * none must name it, in every document and string a person reads. A claim that stays true for the command line
  * tool alone has to say so.

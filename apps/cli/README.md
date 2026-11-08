@@ -19,20 +19,20 @@ The script runs `node --experimental-strip-types apps/cli/src/main.ts`, so there
 
 | Command | What it does |
 |---|---|
-| `snappy-export analyze <ZIP files or folder...>` | Reads the export, updates your sealed ledger (your saved history of past exports), and prints the cleanup queue: disappeared friends, unaccepted requests, and quiet friends. Saved chats and Snaps both count as recent activity. It also summarizes how the Memories list matches the files in the ZIP files (counts only). |
+| `snappy-export analyze <ZIP files or folder...>` | Reads the export, updates your saved history (your past exports), and prints the cleanup queue: disappeared friends, unaccepted requests, and quiet friends. Saved chats and Snaps both count as recent activity. It also summarizes how the Memories list matches the files in the ZIP files (counts only). |
 | `snappy-export memories <ZIP files or folder...> --out <folder>` | Plans the Memories rescue, shows the storage meter, and copies the files bundled in the export with their exact capture time restored. `--download` is for older exports that have links. |
 | `snappy-export inspect <ZIP files or folder...>` | Prints the structure of the export (field names, types, bucketed counts), never a value. |
-| `snappy-export keep <username...>` / `snappy-export unkeep <username...>` | Manages the sealed keep list: friends who never appear in the cleanup queue. |
-| `snappy-export ledger status` | Lists the exports in your ledger: dates and friend counts, never usernames. |
+| `snappy-export keep <username...>` / `snappy-export unkeep <username...>` | Manages the keep list in your saved history: friends who never appear in the cleanup queue. |
+| `snappy-export history status` | Lists the exports in your saved history: dates and friend counts, never usernames. `ledger status` still works. |
 | `snappy-export demo [--run]` | Writes two invented exports and prints the commands to try them. |
 
-Several ZIP files, a folder of ZIP files, or a wildcard such as `"mydata*.zip"` are the parts of one export. Snappy puts them in the order Snapchat numbers them (the name without a number, then `-2`, then `-3`), whatever order you type them in. To compare two exports, give the older one with `--earlier`, or let the ledger remember it between runs.
+Several ZIP files, a folder of ZIP files, or a wildcard such as `"mydata*.zip"` are the parts of one export. Snappy puts them in the order Snapchat numbers them (the name without a number, then `-2`, then `-3`), whatever order you type them in. To compare two exports, give the older one with `--earlier`, or let your saved history remember it between runs.
 
 Exit codes: 0 done, 1 could not run, 2 the export has errors (analyze, inspect, and the commands below), 3 Memories finished with some failed items.
 
 ## More commands
 
-These twenty-two commands read your export and answer one question each. All of them work offline, and none reads message text, photos, videos, locations, or login history. Each one prints text, and takes `--json`, `--verbose`, and `--no-color`. Run `npm run snappy-export -- help <command>` for its options. A command writes a file only when you pass an output option such as `--out`, and never replaces a file unless you add `--force`. The ledger is read only by `friend-count` and `since`, and never changed.
+These twenty-two commands read your export and answer one question each. All of them work offline, and none reads message text, photos, videos, locations, or login history. Each one prints text, and takes `--json`, `--verbose`, and `--no-color`. Run `npm run snappy-export -- help <command>` for its options. A command writes a file only when you pass an output option such as `--out`, and never replaces a file unless you add `--force`. Your saved history is read only by `friend-count` and `since`, and never changed.
 
 **Your export**
 
@@ -40,7 +40,7 @@ These twenty-two commands read your export and answer one question each. All of 
   `npm run snappy-export -- check "mydata*.zip"`
 - `snappy-export remind`: makes a calendar file that reminds you to request your next export. It holds no personal data, and the ZIP files are read only to find your last export date.
   `npm run snappy-export -- remind "mydata*.zip" --out reminder.ics`
-- `snappy-export since`: shows what changed since your last export: friends added, friends who may have left, and how your requests went. It compares with your sealed history or with `--earlier`, and `--out` saves the changes as a CSV file that lists usernames.
+- `snappy-export since`: shows what changed since your last export: friends added, friends who may have left, and how your requests went. It compares with your saved history or with `--earlier`, and `--out` saves the changes as a CSV file that lists usernames.
   `npm run snappy-export -- since "mydata*.zip" --earlier "older*.zip"`
 - `snappy-export year`: sums up one year of chats, Snaps, new friends and Memories. It reads dates, directions and types only, so it prints no usernames.
   `npm run snappy-export -- year "mydata*.zip" --year 2025`
@@ -57,7 +57,7 @@ These twenty-two commands read your export and answer one question each. All of 
   `npm run snappy-export -- blocked "mydata*.zip" --counts`
 - `snappy-export lookalikes`: finds usernames that look alike, such as two names that differ by a dot or a digit. A pair proves nothing, so it only says a pair may be worth a second look. `--counts` prints no usernames.
   `npm run snappy-export -- lookalikes "mydata*.zip" --counts`
-- `snappy-export friend-count`: shows how your friend count grew and shrank, month by month, from the dates in your export. With a ledger it also compares the two. `--no-save` skips the ledger.
+- `snappy-export friend-count`: shows how your friend count grew and shrank, month by month, from the dates in your export. With a saved history it also compares the two. `--no-save` skips it.
   `npm run snappy-export -- friend-count "mydata*.zip" --no-save`
 - `snappy-export friends`: lists your friends in one table, with the day you added each one and your last chat or Snap. It can sort and filter, and `--out` saves the table as a CSV file that lists usernames.
   `npm run snappy-export -- friends "mydata*.zip" --sort last --desc --limit 10`
@@ -114,11 +114,11 @@ The folder `apps/cli/test/verify-memories-output.ts` has an independent checker 
 ~/.snappy/ledger.sealed   past friend lists and your keep list, sealed with your passphrase
 ```
 
-One file holds everything. It uses core’s format (PBKDF2 to AES-256-GCM) and is written atomically: a temp file in the same folder, then a rename, with owner-only permissions where the OS supports them. The keep list and the guided-removal checkmarks ride inside it, so the dashboard and the command line read and write the very same file. Pass `--ledger <path>` to use another location.
+One file holds everything. It uses core’s format (PBKDF2 to AES-256-GCM) and is written atomically: a temp file in the same folder, then a rename, with owner-only permissions where the OS supports them. The keep list and the guided-removal checkmarks ride inside it. The dashboard and the command line use the same format but separate stores: the dashboard keeps its saved history in the browser’s or the app’s storage, and the command line keeps its own in this file, so neither one sees the other’s. Pass `--history <path>` to use another location (`--ledger` still works).
 
-An older command line kept the keep list in a second file, `ledger.allowlist.sealed`. If your ledger does not carry the keep list yet, Snappy reads that file once, saves the list in the ledger the next time something is saved, and then ignores it. It never deletes or rewrites the older file. A Snappy build from before this change reads the new file as having two extra snapshots, so keep using the newer build on a ledger the newer build has written.
+An older command line kept the keep list in a second file, `ledger.allowlist.sealed`. If your saved history does not carry the keep list yet, Snappy reads that file once, saves the list in the saved history the next time something is saved, and then ignores it. It never deletes or rewrites the older file. A Snappy build from before this change reads the new file as having two extra exports, so keep using the newer build on a saved history the newer build has written.
 
-The passphrase comes from `--passphrase-file <path>`, then the `SNAPPY_PASSPHRASE` environment variable, then a hidden prompt (asked twice when the ledger is new). It is never accepted as an argument and never written anywhere. `analyze --no-save` neither reads nor writes the ledger and asks for nothing.
+The passphrase comes from `--passphrase-file <path>`, then the `SNAPPY_PASSPHRASE` environment variable, then a hidden prompt (asked twice when the saved history is new). It is never accepted as an argument and never written anywhere. `analyze --no-save` neither reads nor writes the saved history and asks for nothing.
 
 ## Running the commands in the dashboard
 
@@ -136,4 +136,4 @@ Color is off for `NO_COLOR`, `--no-color`, `TERM=dumb` and output that is not a 
 npx vitest run apps/cli
 ```
 
-Tests drive each command as a function with injected streams, over synthetic exports in a temp folder. They include a canary test (no seeded message text, display name, group title, location, caption, link, or ZIP entry name reaches any output, CSV, JSON, report, file name, or decrypted ledger), an end-to-end Memories rescue of a three-part synthetic export checked by the independent script above, and a source scan (only `memories-download.ts` may use the network).
+Tests drive each command as a function with injected streams, over synthetic exports in a temp folder. They include a canary test (no seeded message text, display name, group title, location, caption, link, or ZIP entry name reaches any output, CSV, JSON, report, file name, or decrypted saved history), an end-to-end Memories rescue of a three-part synthetic export checked by the independent script above, and a source scan (only `memories-download.ts` may use the network).
