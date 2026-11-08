@@ -50,7 +50,7 @@ The Windows beta shows this same dashboard in its own window. Beta 2 adds an aut
 2. The only personal value it handles is a friend’s username, shown in a monospace font.
 3. Everything runs on this device. The app’s page is one HTML file with a policy that blocks all network access.
 4. There is no account, no telemetry, and no analytics.
-5. The one network feature is `snappy-export memories --download`. It is off by default, it prints a notice, and it contacts only the links inside your own export. Newer exports have no links, so for them it has nothing to download and Snappy does not touch the network.
+5. There are two network features, and nothing else touches the network. One is `snappy-export memories --download` in the command line tool. It is off by default, it prints a notice, and it contacts only the links inside your own export (newer exports have no links, so it has nothing to download). The other is the Windows app’s update check: one fixed address on github.com, no ID and none of your data, and you can turn it off in Settings ([docs/UPDATES.md](docs/UPDATES.md)). The app’s page itself can never connect to anything.
 6. Your history is stored only if you choose, sealed with your passphrase (PBKDF2 and AES-256-GCM). Snappy never stores the passphrase.
 7. Output never echoes message text, display names, group titles, locations, or download links.
 8. Tests seed every one of those values into a synthetic export and fail if any of them reaches an output.

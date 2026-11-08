@@ -8,7 +8,7 @@ Snappy is **content-blind**. The full contract is at the top of `packages/core/s
 
 1. It never reads message text, media, locations, display names or other personal details. Parsers keep only a short allowlist of fields and drop everything else at the parse boundary.
 2. The only person-identifying value it keeps is a friend's username. Group titles become opaque hashes.
-3. Nothing leaves the device. No telemetry, no analytics, no network calls in the core library. The one exception is the optional, off-by-default Memories download in the command-line tool.
+3. Nothing leaves the device. No telemetry, no analytics, no network calls in the core library. There are two exceptions: the optional, off-by-default Memories download in the command-line tool, and the Windows app's update check (one fixed github.com address, no ID and none of your data, can be turned off, made by the native program and never by the page; see `docs/UPDATES.md`).
 4. Errors, warnings and reports never echo usernames, text, links or file names. Describe things by field name or count. Keep each issue’s code stable: it is part of the API, and people see it only with `--verbose`.
 5. Saved history is sealed with a passphrase.
 
@@ -39,7 +39,7 @@ The layout:
 The dashboard runs the command line's commands inside the page: every command shown in the app has a Copy button and a Run button. Run starts a Web Worker (a helper), gives the command a virtual file system and no network, and draws the output in a panel. A few rules keep that safe and keep the two tools alike.
 
 - **Ports, not Node.** Nothing the commands import may reach for `node:` modules, `process` or `Buffer`. Files, paths and the saved-history lock come through `io.fs`, `io.path` and `io.lock` (`apps/cli/src/ports.ts`). `node-ports.ts`, `node-io.ts` and `main.ts` are the only Node files. `apps/cli/test/portable.test.ts` walks the imports from `cli.ts` and fails on a slip. The one exception is `memories-download.ts`, which the dashboard build replaces with a stub that can only refuse.
-- **No network in the app.** `--download` and `--concurrency` are refused, in the page and again in the helper (`apps/dashboard/src/terminal/policy.ts`). The page's security policy keeps `connect-src 'none'`.
+- **No network in the page.** `--download` and `--concurrency` are refused, in the page and again in the helper (`apps/dashboard/src/terminal/policy.ts`). The page's security policy keeps `connect-src 'none'`.
 - **One command catalog.** Every command the app shows is an entry in `apps/dashboard/src/terminal/commands.ts`: its words are written in code, never parsed from text. A new command needs an entry, a title in `copy.ts`, and a line in the catalog test that checks its flags against the command line's own option table.
 - **Every command is a command block.** Use `commandBlock` from `components/commandBlock.ts`; never write a `<pre>` with a command by hand. `command-blocks.test.ts` renders every page and fails when a command has no Copy and Run, or is not in the catalog.
 - **Same output both ways.** `terminal-parity.test.ts` runs the commands through the helper and through the command line on the same synthetic export and requires the same text and exit codes. Extend it when you add a command.

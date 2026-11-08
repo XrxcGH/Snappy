@@ -8,7 +8,7 @@ It was first run in full on 8 November 2026, on one Windows 11 computer, and the
 
 - Windows 10 or 11, 64-bit, with Node 22.18 or newer, Rust, the Visual Studio C++ build tools and PowerShell.
 - The repository, and `npm ci --ignore-scripts` run once. Building the three test installers takes a while and needs a network for the first build (Cargo and the NSIS tool).
-- No real Snappy running. The updater refuses to run while another `snappy.exe` exists, and the drill would report that as a failure.
+- A real Snappy may stay open. The test program is named `snappy-e2e.exe` (not `snappy.exe`), the updater counts other copies by program file name, and the drill ends only processes that run from `%LOCALAPPDATA%\Snappy E2E` (found by path, never by image name), plus web engine processes that use the test app's own data folder. A real Snappy is neither counted nor ended. (An earlier version of the drill ended every `snappy.exe` on the computer.)
 
 ## Run it
 
@@ -24,7 +24,7 @@ At the end the drill removes the test app, its data and its registry key (not wi
 
 ## What is safe about it
 
-- The test build has its own identity: `Snappy E2E`, identifier `com.snappy.e2e`. Its install folder is `%LOCALAPPDATA%\Snappy E2E`, its data is `%LOCALAPPDATA%\com.snappy.e2e`, and its registry key is its own. It cannot touch a real Snappy.
+- The test build has its own identity: `Snappy E2E`, identifier `com.snappy.e2e`. Its program is `snappy-e2e.exe`, its install folder is `%LOCALAPPDATA%\Snappy E2E`, its data is `%LOCALAPPDATA%\com.snappy.e2e`, and its registry key is its own. It does not touch a real Snappy's files, data, registry key or process.
 - It is built with the `dev-update-endpoint` feature, which `build.rs` refuses unless the identity above is set and refuses outright when `SNAPPY_RELEASE=1`. In that build the updater trusts only the TEST keys the drill makes for the run, and talks only to a server on `127.0.0.1` (HTTP or HTTPS). Every other rule stays on: certificate checks, size caps, strict parsing.
 - The private test keys are made in a temporary folder with no passphrase, used to sign, and deleted at the end. They are never written to the repository or printed.
 
@@ -37,7 +37,7 @@ At the end the drill removes the test app, its data and its registry key (not wi
 | `stripped-signature`, `wrong-url` | A manifest with no signature, and one whose installer address is not the exact built one, are refused: the app asked, never counted it as a check, and saved no error (the `manifest` error is shown live in the page, not written to `updater.json`). |
 | `redirect-foreign` | A redirect to another host is refused before any request to it (`policy`). |
 | `oversize`, `no-length`, `content-encoding` | An installer larger than 64 MiB, one without a length, and one with a content encoding are refused (`size`). |
-| `downgrade`, `same-version` | A lower or equal version is ignored. |
+| `downgrade`, `same-version` | A lower or equal version, with a signature, is ignored: the manifest is accepted and counted as a check, the installer is never requested, and nothing is staged or saved as an error. (They once carried an empty signature, which is refused before the versions are compared, so they proved nothing.) |
 | `offline` | A dead server makes no noise and stages nothing. |
 | `toggle-off`, `first-launch` | With the setting off, and on the very first launch before the notice, the server sees zero requests. |
 | `rotation` | A release signed by the recovery key is accepted by the old key list and installs. After it, a release signed by the old signing key is refused. |
