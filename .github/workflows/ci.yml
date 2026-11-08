@@ -54,6 +54,31 @@ jobs:
       - name: Build the dashboard
         run: npm run build:dashboard
 
+  # The Rust of the desktop shell, including the updater: its end-to-end tests talk to a server on 127.0.0.1 and use only
+  # TEST keys. Windows only, because the updater is. (The loopback test feature is built by hand for the update drill and
+  # is named in no workflow.)
+  rust-tests:
+    name: Desktop shell Rust tests (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # The shell embeds the built page, so the page is built first.
+      - name: Build the page the shell embeds
+        run: node apps/app/scripts/build-frontend.mjs
+      - name: Unit and loopback tests
+        working-directory: apps/app/src-tauri
+        run: cargo test --lib --locked
+
   # The desktop and phone shells must not gain a way to reach the network. This reads Cargo's
   # dependency tree for every release target (desktop and mobile) and fails if an HTTP client, a TLS
   # library or similar appears. It needs no system libraries and takes under a minute.

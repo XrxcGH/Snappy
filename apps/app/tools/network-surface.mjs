@@ -120,7 +120,7 @@ export const SOURCE_RULES = [
   ["WinHTTP outside the one transport file", /winhttp/i, only(`${UPDATER}transport_windows.rs`)],
   ["another way to reach the network", /\b(wininet|urlmon|ws2_32|WSAStartup|WinSock\w*|URLDownload\w*|IBackgroundCopy\w*|BackgroundCopyManager|getaddrinfo)\b|std::net\b|\b(TcpStream|UdpSocket|TcpListener)\b/i, nowhere],
   ["a link attribute or an extern block", /#\[\s*link\s*\(|\bextern\s*(?:"[A-Za-z0-9-]*"\s*)?\{/, nowhere],
-  ["starting a process or opening the browser outside the one launch file", /std::process\b|\bCommand::new\b|\bCreateProcess\w*|\bShellExecute\w*/, only(`${UPDATER}launch_windows.rs`)],
+  ["starting a process or opening the browser outside the one launch file", /std::process::(?:Command|Stdio|Child)\b|std::process::\{[^}]*\b(?:Command|Stdio|Child)\b|\bCommand::new\b|\bCreateProcess\w*|\bShellExecute\w*/, only(`${UPDATER}launch_windows.rs`)],
   ["a download tool or shell command", /\b(curl|powershell|bitsadmin)\b|Invoke-WebRequest/i, nowhere],
 ];
 

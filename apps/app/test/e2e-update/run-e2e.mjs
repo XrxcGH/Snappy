@@ -43,7 +43,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ps = (script) => execFileSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8" }).trim();
 
 const work = mkdtempSync(path.join(os.tmpdir(), "snappy-e2e-"));
-const tauri = (...a) => spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", ["tauri", ...a], { cwd: appDir, encoding: "utf8", shell: true });
+// Arguments go through the shell (npx.cmd), where an empty value would vanish and a spaced one would split: quote them.
+const quote = (a) => (a === "" ? '""' : /\s/.test(a) ? `"${a}"` : a);
+const tauri = (...a) => spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", ["tauri", ...a.map(quote)], { cwd: appDir, encoding: "utf8", shell: true });
 
 // ------------------------------------------------------------------------------------------------ keys (TEST only, never kept)
 function makeKey(name) {
@@ -53,7 +55,7 @@ function makeKey(name) {
   return { file, pub: readFileSync(`${file}.pub`, "utf8").trim() };
 }
 const sign = (key, file, version) => {
-  const r = tauri("signer", "sign", "-f", key.file, "-p", "", "--app-version", version, `"${file}"`);
+  const r = tauri("signer", "sign", "-f", key.file, "-p", "", "--app-version", version, file);
   if (r.status !== 0) throw new Error(`signing failed: ${r.stderr}`);
   return readFileSync(`${file}.sig`, "utf8").trim();
 };
