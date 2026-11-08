@@ -19,6 +19,9 @@
 //!
 //! Apart from the update check, nothing here opens a network connection.
 
+#[cfg(test)]
+#[path = "../build_guards.rs"]
+mod build_guards; // the build script's release rules, tested here
 mod readonly;
 pub mod updater;
 
