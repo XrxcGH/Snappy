@@ -905,9 +905,10 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .import-status { display: grid; gap: var(--gap-card); min-width: 0; scroll-margin-block: var(--space-4); }
 /* The drop zone while a read is going: quiet and solid, so it no longer looks like an open invitation. */
 .dropzone-busy { border-style: solid; border-color: var(--border); background: var(--surface-sunken); }
-/* The folder chooser under the drop zone: one short line and a quiet button, wrapping on a narrow screen. */
+/* The folder chooser under the drop zone: one short line and a quiet button, wrapping on a narrow screen. The line is as
+   tall as the button, so the row's top is the line's top and the gap above the row is the step's own gap. */
 .folder-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
-.folder-row > p { margin: 0; }
+.folder-row > p { margin: 0; display: flex; align-items: center; min-height: var(--target-min); }
 /* Files dragged over the page: a note over the whole window. It takes no pointer events, so the drop reaches the page. */
 .drop-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; pointer-events: none; background: var(--surface-sunken); border: 3px dashed var(--accent-fg); }
 .drop-overlay[hidden] { display: none; }

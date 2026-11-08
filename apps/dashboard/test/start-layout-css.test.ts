@@ -27,6 +27,14 @@ describe("the Start page's block of the style sheet", () => {
     expect(remOf(/max-width:\s*([^;]+);/.exec(body)?.[1] ?? "")).toBeGreaterThanOrEqual(11);
   });
 
+  it("makes the folder row's line as tall as its button, so the gap above the row stays on the spacing scale", () => {
+    // Centered in a taller row, a shorter line starts lower than the row: the layout audit then measures an off-scale gap (27.5 px) above it.
+    const body = rule(".folder-row > p");
+    expect(body).toMatch(/min-height:\s*var\(--target-min\)/);
+    expect(body).toMatch(/align-items:\s*center/);
+    expect(body).toMatch(/margin:\s*0/);
+  });
+
   it("lays the import status out full width above the steps, and styles only classes the Start page builds", () => {
     expect(rule(".import-status")).toMatch(/min-width:\s*0/);
     for (const selector of [".dropzone-busy", ".folder-row", ".sample-row", ".latest-line", ".drop-overlay"]) expect(block, selector).toContain(selector);
