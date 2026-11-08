@@ -4,19 +4,18 @@ import type { Analysis, QueueSort } from "../analysis.ts";
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
-import { saveTextFile } from "../download.ts";
 import { categories, cleanup, common, routes } from "../copy.ts";
 import { lists } from "../copy-lists.ts";
 import { platform } from "../platform.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
-import { queueToCsv, queueToText } from "../queue-export.ts";
 import { button, profileLink, routeLink } from "../components/button.ts";
 import { candidateRow } from "../components/candidateRow.ts";
 import { clearSearches, listSearch, searchQuery, setSearchQuery } from "../components/listSearch.ts";
 import { categoryOfCandidate, categoryTag } from "../components/category.ts";
 import { confidenceBadge } from "../components/confidenceBadge.ts";
 import { icon } from "../components/icon.ts";
+import { listActions } from "../components/listActions.ts";
 import { disclosureSummary, emptyState, pageHeader, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pagedList, resetPaging } from "../components/pagedList.ts";
@@ -115,7 +114,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
     h("p", { class: "summary", role: "status" }, summary),
     // The consequence is stated before any action, in both modes.
     notice("warning", cleanup.removalWarning),
-    listActions(shown),
+    listActions(shown, { fileName: cleanup.csvFile }),
     shown.length === 0
       ? h(
           "div",
@@ -179,32 +178,6 @@ function controls(actions: Actions, view: CleanupView, handlers: ControlHandlers
       button({ label: cleanup.modeReview, key: "mode-review", pressed: !view.guided, onclick: () => actions.setCleanupView({ guided: false }) }),
       button({ label: cleanup.modeGuided, key: "mode-guided", pressed: view.guided, onclick: () => actions.setCleanupView({ guided: true }) }),
     ),
-  );
-}
-
-function listActions(items: readonly Candidate[]): HTMLElement {
-  return h(
-    "div",
-    { class: "list-actions" },
-    h(
-      "div",
-      { class: "actions" },
-      button({
-        label: cleanup.saveList,
-        icon: "export",
-        key: "save-list",
-        disabled: items.length === 0,
-        onclick: () => announce(saveTextFile(cleanup.csvFile, queueToCsv(items), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
-      }),
-      button({
-        label: cleanup.copyList,
-        icon: "copy",
-        key: "copy-list",
-        disabled: items.length === 0,
-        onclick: () => void copyText(queueToText(items)).then((ok) => announce(ok ? cleanup.listCopied : common.copyFailed)),
-      }),
-    ),
-    h("p", {}, cleanup.listHelp),
   );
 }
 

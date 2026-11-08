@@ -28,6 +28,9 @@ export const lists = {
   sortOptions: { likely: "Most likely first", newest: "Newest first", oldest: "Oldest first", confidence: "Highest confidence" },
   clearFiltersButton: "Clear filters",
 
+  // The spreadsheet file each finding list saves, by the list's key ("ghost" is Disappeared friends, "one-way" Unaccepted requests, "dormant" Quiet friends).
+  areas: { ghost: { csvFile: "snappy-disappeared.csv" }, "one-way": { csvFile: "snappy-requests.csv" }, dormant: { csvFile: "snappy-quiet.csv" } },
+
   // Memories rescue, in the desktop app, where Run holds only a small test.
   rescueLimitNote: (mb: number) => `Run copies a small test here, up to ${mb} MB. A full rescue needs the command line tool.`,
   rescueGuideLine: "The guide says how to get it.",

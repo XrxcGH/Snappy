@@ -13,6 +13,7 @@ import { routeLink } from "../components/button.ts";
 import { CATEGORY_ICON } from "../components/category.ts";
 import type { CategoryId } from "../components/category.ts";
 import { candidateRow } from "../components/candidateRow.ts";
+import { listActions } from "../components/listActions.ts";
 import { listSearch, searchQuery, setSearchQuery } from "../components/listSearch.ts";
 import { emptyState, factList, pageHeader, section } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
@@ -41,7 +42,7 @@ function candidateList(a: Analysis, items: readonly Candidate[], actions: Action
  * One finding list with its search box and its count line. Typing narrows the rows in place (only the part under the
  * box repaints, so the box keeps focus), and the count line says "3 of 10 match" instead of the order.
  */
-function searchableList(a: Analysis, items: readonly Candidate[], actions: Actions, key: string, countLine: (n: number) => string): HTMLElement {
+function searchableList(a: Analysis, items: readonly Candidate[], actions: Actions, key: keyof typeof lists.areas, countLine: (n: number) => string): HTMLElement {
   const slot = h("div", { class: "list-slot" });
   const summaryOf = (shown: number): string => (searchQuery(key).trim() === "" ? countLine(items.length) : lists.matchCount(shown, items.length));
   const paint = (): string => {
@@ -50,6 +51,8 @@ function searchableList(a: Analysis, items: readonly Candidate[], actions: Actio
     const summary = summaryOf(shown.length);
     slot.replaceChildren(
       h("p", { class: "summary" }, summary),
+      // Save and Copy hold the rows that are showing, so a search narrows the file too.
+      listActions(shown, { fileName: lists.areas[key].csvFile, help: false }),
       shown.length === 0 ? h("p", { class: "empty-inline" }, lists.noMatchSearch) : candidateList(a, shown, actions, key),
     );
     return shown.length === 0 ? lists.noMatchSearch : summary;

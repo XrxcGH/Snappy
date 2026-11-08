@@ -1,0 +1,46 @@
+/**
+ * "Save list" and "Copy list" for a list of people: a spreadsheet file, or the usernames one per line. Used above the
+ * Cleanup queue and above each finding list, with the rows that are showing. The file holds usernames, a category,
+ * the confidence word and core's evidence sentence, nothing else (see queue-export.ts).
+ */
+import type { Candidate } from "@snappy-export/core";
+import { announce } from "../announce.ts";
+import { copyText } from "../clipboard.ts";
+import { common, cleanup } from "../copy.ts";
+import { h } from "../dom.ts";
+import { saveTextFile } from "../download.ts";
+import { queueToCsv, queueToText } from "../queue-export.ts";
+import { button } from "./button.ts";
+
+export interface ListActionsOptions {
+  /** The name of the saved file, such as "snappy-disappeared.csv". */
+  fileName: string;
+  /** Add the one line that says what each button gives. */
+  help?: boolean;
+}
+
+export function listActions(items: readonly Candidate[], options: ListActionsOptions): HTMLElement {
+  return h(
+    "div",
+    { class: "list-actions" },
+    h(
+      "div",
+      { class: "actions" },
+      button({
+        label: cleanup.saveList,
+        icon: "export",
+        key: "save-list",
+        disabled: items.length === 0,
+        onclick: () => announce(saveTextFile(options.fileName, queueToCsv(items), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
+      }),
+      button({
+        label: cleanup.copyList,
+        icon: "copy",
+        key: "copy-list",
+        disabled: items.length === 0,
+        onclick: () => void copyText(queueToText(items)).then((ok) => announce(ok ? cleanup.listCopied : common.copyFailed)),
+      }),
+    ),
+    options.help === false ? null : h("p", {}, cleanup.listHelp),
+  );
+}

@@ -196,7 +196,7 @@ describe("no command can be shown any other way", () => {
   it("lets only the command block put a command on the clipboard", () => {
     const users = files.filter((f) => /from "\.\.?\/(?:\.\.\/)?clipboard\.ts"/.test(uncommented(f))).map(rel);
     // The command block copies commands; the panel copies output; the cleanup and username components copy their own text.
-    for (const file of users) expect(["src/components/commandBlock.ts", "src/components/terminalPanel.ts", "src/components/usernameChip.ts", "src/views/cleanup.ts"], file).toContain(file);
+    for (const file of users) expect(["src/components/commandBlock.ts", "src/components/terminalPanel.ts", "src/components/usernameChip.ts", "src/components/listActions.ts", "src/views/cleanup.ts"], file).toContain(file);
     expect(users).toContain("src/components/commandBlock.ts");
   });
 
