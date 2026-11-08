@@ -127,6 +127,8 @@ export function bannerFor(status: UpdateStatus, local: Local, idle: boolean): Ba
 /** What "Check now" answers once the check has ended. */
 export function checkResult(status: UpdateStatus): "upToDate" | "unreachable" | "couldNotCheck" | null {
   if (status.state === "checking" || status.state === "downloading") return null;
+  // A newer version is known (the banner says so): "You’re up to date." would contradict it.
+  if (status.version !== null) return null;
   if (status.error === null) return "upToDate";
   return UNREACHABLE.includes(status.error) ? "unreachable" : "couldNotCheck";
 }

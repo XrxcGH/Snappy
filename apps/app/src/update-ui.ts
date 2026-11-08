@@ -63,6 +63,30 @@ const POLL_BUSY_MS = 1000;
 const POLL_LAUNCH_MS = 5000;
 const POLL_LAUNCH_WINDOW_MS = 60_000;
 const UPDATED_TOAST_MS = 6000;
+/** A request ("Check now", "Update now") is shown as under way until the shell is seen working on it, or this long has passed. */
+const PENDING_MS = 5000;
+const POLL_PENDING_MS = 400;
+
+/**
+ * A request the person made that the shell has not visibly taken up yet. The shell does its work on another thread, so right
+ * after the request it can still say "idle". The request stays pending until the shell was seen working and is done, or
+ * its "last checked" time moved, or a few seconds passed (a check that is refused or ends at once changes neither).
+ */
+interface Pending {
+  until: number;
+  sawBusy: boolean;
+  last: number;
+}
+
+const startPending = (status: UpdateStatus | null): Pending => ({ until: Date.now() + PENDING_MS, sawBusy: false, last: status?.lastCheckedUnix ?? 0 });
+
+function settle(pending: Pending | null, status: UpdateStatus): Pending | null {
+  if (!pending) return null;
+  const busy = status.state === "checking" || status.state === "downloading" || status.state === "installing";
+  if (busy) pending.sawBusy = true;
+  const done = (pending.sawBusy && !busy) || status.lastCheckedUnix !== pending.last || Date.now() >= pending.until;
+  return done ? null : pending;
+}
 
 export interface Mounted {
   /** Asks the shell for its status and repaints. */
@@ -81,14 +105,16 @@ export function mountUpdates(bridge: Bridge): Mounted {
   let status: UpdateStatus | null = null;
   let local = freshLocal();
   let touched = false;
-  let checking = false; // "Check now" was pressed and has not ended yet
+  let checking: Pending | null = null; // "Check now" was pressed and has not ended yet
+  let updating: Pending | null = null; // "Update now" was pressed and the shell has not taken it up yet
   let result: ReturnType<typeof checkResult> = null;
   let pollTimer: ReturnType<typeof setTimeout> | undefined;
   let countdownTimer: ReturnType<typeof setTimeout> | undefined;
   let countdownFor: string | null = null;
   let shown = "";
 
-  const slot = h("div", { class: "update-slot", role: "status", "aria-live": "polite" });
+  // tabindex -1: a place for focus to go when the button that had it is replaced (see paintBanner).
+  const slot = h("div", { class: "update-slot", role: "status", "aria-live": "polite", tabindex: "-1" });
   document.getElementById("main")?.prepend(slot);
 
   // ---- the idle claim -------------------------------------------------------------------------------------------
@@ -115,6 +141,8 @@ export function mountUpdates(bridge: Bridge): Mounted {
         local = { ...local, cancelled: version };
         break;
       case "updateNow":
+        updating = startPending(status);
+        paintBanner(); // "Checking…" at once, not after the shell's first answer
         await bridge.check();
         break;
       case "restartNow":
@@ -155,14 +183,22 @@ export function mountUpdates(bridge: Bridge): Mounted {
   };
 
   const paintBanner = (): void => {
-    const banner = status ? bannerFor(status, local, idle()) : null;
+    const base = status ? bannerFor(status, local, idle()) : null;
+    // While "Update now" has not been taken up yet, the banner already says so instead of offering the same button again.
+    const banner: Banner | null = updating && base && (base.kind === "available" || base.kind === "failed") ? { kind: "progress", text: copy.checkingLabel, actions: [] } : base;
     const signature = banner ? `${banner.kind}|${banner.text}|${banner.percent ?? ""}|${banner.actions.join(",")}` : "";
     if (signature === shown) return;
-    const focused = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.key : undefined;
+    const active = document.activeElement;
+    const hadFocus = active instanceof HTMLElement && slot.contains(active);
+    const focused = hadFocus ? active.dataset.key : undefined;
     shown = signature;
     slot.replaceChildren(...(banner ? [bannerElement(banner)] : []));
-    // Keep focus where the person had it if the same button exists again; never move focus to the banner.
-    if (focused?.startsWith("update:")) slot.querySelector<HTMLElement>(`[data-key="${focused}"]`)?.focus();
+    // Keep focus where the person had it. If that button is gone, focus moves to the banner's place (or to the page's main
+    // area when there is no banner), never back to the top of the document. A banner never takes focus that was elsewhere.
+    if (hadFocus) {
+      const same = focused ? slot.querySelector<HTMLElement>(`[data-key="${focused}"]`) : null;
+      (same ?? (banner ? slot : document.getElementById("main")))?.focus();
+    }
     // The countdown applies the update itself unless it is cancelled, left, or no longer idle.
     clearTimeout(countdownTimer);
     countdownFor = null;
@@ -185,7 +221,10 @@ export function mountUpdates(bridge: Bridge): Mounted {
   const cardVersion = h("p", { class: "caption" });
   const cardLast = h("p", { class: "caption" });
   const cardResult = h("p", { class: "update-result", role: "status", "aria-live": "polite" });
-  const cardCheck = button({ label: copy.checkNowButton, key: "update:check-now", onclick: () => void checkNow() });
+  // aria-disabled, not disabled, while a check runs: a disabled button loses the keyboard focus it has.
+  const cardCheck = button({ label: copy.checkNowButton, key: "update:check-now", onclick: () => {
+    if (cardCheck.getAttribute("aria-disabled") !== "true") void checkNow();
+  } });
   const cardToggle = h("input", { type: "checkbox", class: "check-input", role: "switch", id: "update-auto", "data-key": "update:auto" });
   cardToggle.addEventListener("change", () => void bridge.setAuto(cardToggle.checked).then(() => refresh()));
   const card = section(
@@ -212,18 +251,19 @@ export function mountUpdates(bridge: Bridge): Mounted {
     cardVersion.textContent = copy.versionLabel(status.current);
     cardLast.textContent = status.lastCheckedUnix > 0 ? copy.lastChecked(whenText(status.lastCheckedUnix)) : copy.neverChecked;
     cardToggle.checked = status.auto;
-    const busy = checking || status.state === "checking" || status.state === "downloading";
-    cardCheck.disabled = busy;
+    const busy = checking !== null || status.state === "checking" || status.state === "downloading";
+    if (busy) cardCheck.setAttribute("aria-disabled", "true");
+    else cardCheck.removeAttribute("aria-disabled");
     cardCheck.querySelector("span")?.replaceChildren(busy ? copy.checkingLabel : copy.checkNowButton);
     cardResult.textContent = !busy && result ? { upToDate: copy.upToDateNote, unreachable: copy.unreachableNote, couldNotCheck: copy.couldNotCheckNote }[result] : "";
   };
 
   const checkNow = async (): Promise<void> => {
-    checking = true;
+    checking = startPending(status);
     result = null;
     paintCard();
     await bridge.check();
-    schedule(300);
+    schedule(POLL_PENDING_MS);
   };
 
   // ---- Privacy block -----------------------------------------------------------------------------------------------
@@ -251,11 +291,13 @@ export function mountUpdates(bridge: Bridge): Mounted {
     const first = status === null;
     status = next;
     if (next.updatedTo && !local.updatedFor) local = { ...local, updatedFor: next.updatedTo };
-    if (checking && status.state !== "checking") {
-      // The shell may not have started yet: wait for a result only once it has a "last checked" or an error to show.
-      checking = false;
-      result = checkResult(status);
+    if (checking) {
+      // The shell may not have started yet ("idle" right after the request): the result is shown only once the shell was
+      // seen working and is done, or its "last checked" time moved, or a few seconds passed.
+      checking = settle(checking, status);
+      if (!checking) result = checkResult(status);
     }
+    updating = settle(updating, status);
     // Showing the first-run notice is what tells the shell it was shown: it then allows automatic checks from the next launch.
     if (first && status.noticePending) {
       local = { ...local, noticeOpen: true };
@@ -264,7 +306,8 @@ export function mountUpdates(bridge: Bridge): Mounted {
     paintBanner();
     paintCard();
     inject();
-    if (status.state === "checking" || status.state === "downloading" || status.state === "installing" || checking) schedule(POLL_BUSY_MS);
+    if (checking || updating) schedule(POLL_PENDING_MS);
+    else if (status.state === "checking" || status.state === "downloading" || status.state === "installing") schedule(POLL_BUSY_MS);
     else if (Date.now() - startedAt < POLL_LAUNCH_WINDOW_MS) schedule(POLL_LAUNCH_MS);
   }
 

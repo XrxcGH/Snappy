@@ -7,11 +7,12 @@
  * headless Chromium with a scripted stand-in for the shell: no window is shown and no network is used. It feeds the page a
  * synthetic export whose first friend is named like markup, to prove the update banner cannot be built from export text.
  */
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { syntheticExportZip } from "@snappy-export/core";
 import { describe, expect, it } from "vitest";
@@ -30,13 +31,14 @@ export function hostileExportZip(): Uint8Array {
 }
 
 describe.skipIf(!playwright)("the update interface in the built desktop page (headless Chromium)", () => {
-  it("shows every banner, the Settings card and the Privacy block, fits from 320 px to wide in light and dark, and ignores export text", { timeout: 300_000 }, () => {
+  it("shows every banner, the Settings card and the Privacy block, fits from 320 px to wide in light and dark, and ignores export text", { timeout: 300_000 }, async () => {
     const dir = mkdtempSync(path.join(os.tmpdir(), "snappy-update-ui-"));
     try {
       execFileSync(process.execPath, [path.join(app, "scripts", "build-frontend.mjs"), "--out", path.join(dir, "frontend")], { stdio: "pipe", env: { ...process.env, CI: "" } });
       const zip = path.join(dir, "hostile.zip");
       writeFileSync(zip, hostileExportZip());
-      const out = execFileSync(process.execPath, [path.join(here, "e2e-ui", "update-ui.check.mjs"), path.join(dir, "frontend", "index.html"), zip], {
+      // Asynchronous: the check takes over a minute, and a blocking call would starve the test runner's own messages.
+      const { stdout: out } = await promisify(execFile)(process.execPath, [path.join(here, "e2e-ui", "update-ui.check.mjs"), path.join(dir, "frontend", "index.html"), zip], {
         env: { ...process.env, PLAYWRIGHT_DIR: playwright },
         encoding: "utf8",
         timeout: 280_000,

@@ -114,6 +114,12 @@ describe("what Check now answers", () => {
     for (const error of ["offline", "timeout", "status", "policy", "tls", "manifest"]) expect(checkResult(status({ error })), error).toBe("unreachable");
     for (const error of ["busy", "keys", "disk", "signature", "unsupported"]) expect(checkResult(status({ error })), error).toBe("couldNotCheck");
   });
+
+  it("says nothing while a newer version is known, so it never contradicts the banner", () => {
+    expect(checkResult(status({ version: "0.2.0" }))).toBeNull();
+    expect(checkResult(status({ version: "0.2.0", error: "unsupported" }))).toBeNull();
+    expect(checkResult(status({ version: null }))).toBe("upToDate");
+  });
 });
 
 describe("the page's claim that it is idle", () => {

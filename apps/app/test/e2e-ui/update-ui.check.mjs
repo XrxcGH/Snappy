@@ -38,6 +38,10 @@ async function open(status, { hash = "#/start", width = 900, height = 800, schem
     ({ base, status: first }) => {
       const shell = { status: { ...base, ...first }, calls: [], afterCheck: null, rejectInstall: false };
       window.__shell = shell;
+      // A page whose clock can be moved forward, to be past the first minute after launch (when the page polls on its own).
+      const realNow = Date.now.bind(Date);
+      window.__skew = 0;
+      Date.now = () => realNow() + window.__skew;
       window.__TAURI_INTERNALS__ = {
         transformCallback: () => 0,
         invoke: async (command, args) => {
@@ -204,7 +208,7 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   await page.waitForTimeout(2600);
   ok((await card.innerText()).includes("Can’t reach GitHub."), "and says Can’t reach GitHub. when the shell reports an offline error");
   await page.evaluate(() => {
-    window.__shell.afterCheck = null;
+    window.__shell.afterCheck = (s) => void (s.status.last_checked_unix += 1); // a completed check moves "last checked"
     Object.assign(window.__shell.status, { error: null, state: "idle" });
   });
   await page.getByRole("button", { name: "Check now" }).click();
@@ -228,6 +232,104 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   await other.context().close();
 }
 
+// ---------------------------------------------------------------------------------------------- review fixes: feedback, race, stale result
+{
+  // "Update now" shows that it is working at once and follows the shell to the end, long after the launch minute.
+  const page = await open({ state: "idle", version: "0.2.0" }, { hash: "#/overview" });
+  ok((await banner(page)).includes("Snappy 0.2.0 is available."), "the available banner is shown");
+  await page.evaluate(() => {
+    window.__skew = 120_000; // two minutes after launch: the page no longer polls on its own
+    window.__shell.afterCheck = (s) => {
+      setTimeout(() => (s.status.state = "checking"), 600);
+      setTimeout(() => Object.assign(s.status, { state: "downloading", percent: 40 }), 1200);
+      setTimeout(() => Object.assign(s.status, { state: "staged", percent: 100 }), 1800);
+    };
+  });
+  await page.getByRole("button", { name: "Update now" }).click();
+  await page.waitForTimeout(80);
+  ok((await banner(page)).includes("Checking…") && !(await banner(page)).includes("Update now"), "Update now answers at once with a working label", await banner(page));
+  await page.waitForTimeout(2600);
+  ok((await banner(page)).includes("Update ready. Restart to finish."), "the banner follows the shell to the staged state without a focus event", await banner(page));
+  await page.context().close();
+
+  // The same from a failed banner.
+  const failed = await open({ state: "failed", version: "0.2.0", error: "install" }, { hash: "#/overview" });
+  await failed.evaluate(() => {
+    window.__skew = 120_000;
+    window.__shell.afterCheck = (s) => {
+      setTimeout(() => Object.assign(s.status, { state: "checking", error: null }), 500);
+      setTimeout(() => Object.assign(s.status, { state: "staged", percent: 100 }), 1300);
+    };
+  });
+  await failed.getByRole("button", { name: "Update now" }).click();
+  await failed.waitForTimeout(2200);
+  ok((await banner(failed)).includes("Update ready."), "a failed banner's Update now also ends on the new state", await banner(failed));
+  await failed.context().close();
+
+  // Check now: a shell that only reports "checking" 700 ms after the request, and ends with an error.
+  const card = await open({}, { hash: "#/settings" });
+  await card.evaluate(() => {
+    window.__shell.afterCheck = (s) => {
+      setTimeout(() => (s.status.state = "checking"), 700);
+      setTimeout(() => Object.assign(s.status, { state: "idle", error: "offline" }), 1900);
+    };
+  });
+  await card.getByRole("button", { name: "Check now" }).click();
+  await card.waitForTimeout(1100);
+  const midway = await card.locator(".update-card").innerText();
+  ok(!midway.includes("You’re up to date."), "the card does not claim up to date before the check ran", midway);
+  await card.waitForTimeout(2200);
+  ok((await card.locator(".update-card").innerText()).includes("Can’t reach GitHub."), "and ends on the real result", await card.locator(".update-card").innerText());
+  ok(!(await card.locator(".update-card").innerText()).includes("You’re up to date."), "never up to date for a failed check");
+  await card.context().close();
+
+  // A known newer version and "You’re up to date." never appear together.
+  const known = await open({ version: "0.2.0" }, { hash: "#/settings" });
+  await known.getByRole("button", { name: "Check now" }).click();
+  await known.waitForTimeout(5600);
+  ok(!(await known.locator(".update-card").innerText()).includes("You’re up to date."), "no up-to-date note beside an available-version banner", await known.locator(".update-card").innerText());
+  ok((await banner(known)).includes("Snappy 0.2.0 is available."), "the banner still says it is available");
+  await known.context().close();
+}
+
+// ---------------------------------------------------------------------------------------------- focus after a banner action
+{
+  const press = async (page, name) => {
+    await page.getByRole("button", { name }).focus();
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(300);
+    return page.evaluate(() => {
+      const a = document.activeElement;
+      return { tag: a?.tagName, inBody: a === document.body, cls: a?.className ?? "", id: a?.id ?? "" };
+    });
+  };
+  const notBody = (f) => !f.inBody && f.tag !== "HTML";
+  const later = await open({ state: "staged", percent: 100, version: "0.2.0" }, { hash: "#/overview" });
+  ok(notBody(await press(later, "Later")), "after Later focus stays in the page (not the top of the document)");
+  await later.context().close();
+  const notice = await open({ notice_pending: true });
+  ok(notBody(await press(notice, "OK")), "after OK focus stays in the page");
+  await notice.context().close();
+  const off = await open({ notice_pending: true });
+  ok(notBody(await press(off, "Turn off")), "after Turn off focus stays in the page");
+  await off.context().close();
+  const update = await open({ state: "idle", version: "0.2.0" }, { hash: "#/overview" });
+  const f = await press(update, "Update now");
+  ok(notBody(f) && f.cls.includes("update-slot"), "after Update now focus moves to the banner's place, where the progress shows", JSON.stringify(f));
+  await update.context().close();
+  const settings = await open({ last_checked_unix: 1794000000 }, { hash: "#/settings" });
+  await settings.evaluate(() => (window.__shell.afterCheck = (s) => void (s.status.last_checked_unix += 1)));
+  await settings.getByRole("button", { name: "Check now" }).focus();
+  await settings.keyboard.press("Enter");
+  await settings.waitForTimeout(300);
+  ok((await settings.evaluate(() => document.activeElement?.getAttribute("data-key"))) === "update:check-now", "Check now keeps focus while it is checking (aria-disabled, not disabled)");
+  ok((await settings.evaluate(() => document.querySelector('[data-key="update:check-now"]').getAttribute("aria-disabled"))) === "true", "and says it is busy");
+  await settings.waitForTimeout(1500);
+  ok((await settings.evaluate(() => document.activeElement?.getAttribute("data-key"))) === "update:check-now", "and still has it when the check ends");
+  ok((await settings.evaluate(() => document.querySelector('[data-key="update:check-now"]').getAttribute("aria-disabled"))) === null, "no longer busy");
+  await settings.context().close();
+}
+
 // ---------------------------------------------------------------------------------------------- narrow, dark, wide
 for (const [width, scheme] of [[320, "light"], [320, "dark"], [1400, "dark"], [768, "light"]]) {
   const page = await open({ state: "staged", percent: 100, version: "0.2.0", last_checked_unix: 1794000000 }, { hash: "#/overview", width, height: 700, scheme });
@@ -240,6 +342,11 @@ for (const [width, scheme] of [[320, "light"], [320, "dark"], [1400, "dark"], [7
   };
   await fits("banner");
   await shot(page, `ready-${width}-${scheme}`);
+  await refresh(page, { state: "failed", version: "0.2.0", error: "signature", link_enabled: true });
+  ok((await page.locator(".update-slot .btn").count()) === 2, `the failed banner has both buttons at ${width}px ${scheme}`);
+  await fits("failed banner with both buttons");
+  await shot(page, `failed-link-${width}-${scheme}`);
+  await refresh(page, { state: "staged", percent: 100, error: null, link_enabled: false });
   const buttons = await page.locator(".update-slot .btn").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
   ok(buttons.every((h) => h >= 36), `buttons are at least 36px tall at ${width}px`, buttons.join(","));
   await page.evaluate(() => (location.hash = "#/settings"));
