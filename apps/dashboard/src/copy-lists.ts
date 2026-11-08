@@ -46,6 +46,10 @@ export const lists = {
   // What confidence means, said once on each list page. The longer hint for each level is inside "Why this appears".
   confidenceKey: "Confidence is how many signals agree. It is a guess.",
 
+  // The Overview when the results come from the saved history and no export is loaded: Memories are not saved with it.
+  cardMemoriesLedger: "Not saved with your history",
+  countsHeadingLedger: "In your saved history",
+
   // Related tools at the end of a page, and the Tools card on the Overview.
   relatedLabel: "Related tools",
   relatedBackupNote: "Back up your friends before you remove anyone.",

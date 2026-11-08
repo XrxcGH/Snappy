@@ -74,7 +74,7 @@ function findingsList(a: Analysis): HTMLElement {
       scope: "memories",
       route: "memories",
       index: 4,
-      ...(memories > 0 ? { figure: formatCount(memories), unit: overview.unitMemories(memories) } : { status: overview.cardMemoriesNone }),
+      ...(memories > 0 ? { figure: formatCount(memories), unit: overview.unitMemories(memories) } : { status: a.source === "ledger" ? lists.cardMemoriesLedger : overview.cardMemoriesNone }),
     }),
   ];
   return h("div", { class: "tiles tiles-findings findings" }, ...rows);
@@ -99,7 +99,7 @@ function countsSection(a: Analysis): HTMLElement {
   const sent = a.parsed?.friends.sentRequests.length ?? 0;
   const latest = a.parsed?.exportedAt;
   return section(
-    overview.countsHeading,
+    a.source === "ledger" ? lists.countsHeadingLedger : overview.countsHeading,
     statGrid(
       stat(overview.friends, formatCount(friends), { icon: "people" }),
       stat(overview.sentRequests, formatCount(sent), { icon: "export" }),
