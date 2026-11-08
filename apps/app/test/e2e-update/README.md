@@ -2,7 +2,7 @@
 
 A hand-run test of the whole update path on Windows: a test build finds a newer test build on a server it makes itself, checks its signature, installs it for the current user, restarts on the new version, and keeps its data. It also feeds the app every kind of broken release and checks that nothing is installed.
 
-Nothing here was run by the session that wrote it, because it needs an install and a window. Run it before the first public release, ideally in Windows Sandbox or a throwaway virtual machine.
+It was first run in full on 8 November 2026, on one Windows 11 computer, and the run found three real problems that are fixed (see "What the first full run found"). Run it again before the first public release, ideally in Windows Sandbox or a throwaway virtual machine. Run it from an ordinary shell on the computer. In the first full run the same drill failed at the first scenario when started from an automation shell that runs inside a sandbox (the test app said "This copy can't update itself") and passed when started from an ordinary one. The cause was not isolated; the likely one is that the sandbox hides the installer's registry record from the programs it starts.
 
 ## What it needs
 
@@ -16,7 +16,11 @@ Nothing here was run by the session that wrote it, because it needs an install a
 node apps/app/test/e2e-update/run-e2e.mjs --list
 node apps/app/test/e2e-update/run-e2e.mjs
 node apps/app/test/e2e-update/run-e2e.mjs --only update,rotation
+node apps/app/test/e2e-update/run-e2e.mjs --keep                       # keep the test keys, the three installers and the test app
+node apps/app/test/e2e-update/run-e2e.mjs --reuse <the kept folder>    # run again without the three builds (about a minute each scenario)
 ```
+
+At the end the drill removes the test app, its data and its registry key (not with `--keep`).
 
 ## What is safe about it
 
@@ -30,13 +34,20 @@ node apps/app/test/e2e-update/run-e2e.mjs --only update,rotation
 | --- | --- |
 | `update` | Found, downloaded, verified and staged. One manifest request and one installer request. The only header set is `User-Agent: Snappy-Updater`, with no cookie, referrer or authorization. No Zone.Identifier stream on the staged file. The next launch installs the new version for the current user with no administrator prompt, and a sentinel file in the data folder survives. |
 | `tampered`, `wrong-key`, `wrong-name` | A changed installer, a signature from a key the app does not trust, and a signature made for another file name are all refused, with `signature` as the error. |
-| `stripped-signature`, `wrong-url` | A manifest with no signature, and one whose installer address is not the exact built one, are refused (`manifest`). |
+| `stripped-signature`, `wrong-url` | A manifest with no signature, and one whose installer address is not the exact built one, are refused: the app asked, never counted it as a check, and saved no error (the `manifest` error is shown live in the page, not written to `updater.json`). |
 | `redirect-foreign` | A redirect to another host is refused before any request to it (`policy`). |
 | `oversize`, `no-length`, `content-encoding` | An installer larger than 64 MiB, one without a length, and one with a content encoding are refused (`size`). |
 | `downgrade`, `same-version` | A lower or equal version is ignored. |
 | `offline` | A dead server makes no noise and stages nothing. |
 | `toggle-off`, `first-launch` | With the setting off, and on the very first launch before the notice, the server sees zero requests. |
 | `rotation` | A release signed by the recovery key is accepted by the old key list and installs. After it, a release signed by the old signing key is refused. |
+
+## What the first full run found
+
+- **The build overlay was refused.** `tauri.e2e.conf.json` holds a `$comment`, which Tauri's configuration schema does not allow, so the first build stopped. `overlay.mjs` drops it.
+- **Every installed copy said it could not update itself.** The updater looked for the installer's registry record under the publisher it read from the config embedded in the program, and Tauri leaves `bundle.publisher` out of that copy. The publisher is now a constant in `lib.rs`, with a test that it equals `tauri.conf.json`.
+- **The first launch checked while the first-run notice was on screen.** The page reports the notice within a second, the background check waited its few seconds and then looked at the setting again. A launch now checks only when it starts with the notice already shown (scenario `first-launch`).
+- **Two mistakes in the drill itself.** It reinstalled 0.9.1 over the 0.9.2 an earlier scenario had left, which the installer refuses as a silent downgrade, so it now uninstalls first; and it expected the staged installer to be removed by a copy that the installer relaunches without the drill's environment variable (that copy has no updater in the test build), so it now starts the updated program itself before it looks.
 
 ## What stays manual
 

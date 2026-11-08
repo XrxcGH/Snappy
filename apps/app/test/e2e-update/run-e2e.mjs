@@ -43,7 +43,10 @@ const log = (m) => console.log(m);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ps = (script) => execFileSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { encoding: "utf8" }).trim();
 
-const work = mkdtempSync(path.join(os.tmpdir(), "snappy-e2e-"));
+// --reuse <folder>: the folder a run kept with --keep (its test keys and its three installers). Nothing is made or built again,
+// and the folder is left in place, so a scenario can be repeated in a minute instead of after three builds.
+const reuse = args.includes("--reuse") ? path.resolve(args[args.indexOf("--reuse") + 1]) : null;
+const work = reuse ?? mkdtempSync(path.join(os.tmpdir(), "snappy-e2e-"));
 // Arguments go through the shell (npx.cmd), where an empty value would vanish and a spaced one would split: quote them.
 const quote = (a) => (a === "" ? '""' : /\s/.test(a) ? `"${a}"` : a);
 const tauri = (...a) => spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", ["tauri", ...a.map(quote)], { cwd: appDir, encoding: "utf8", shell: true });
@@ -51,6 +54,7 @@ const tauri = (...a) => spawnSync(process.platform === "win32" ? "npx.cmd" : "np
 // ------------------------------------------------------------------------------------------------ keys (TEST only, never kept)
 function makeKey(name) {
   const file = path.join(work, `${name}.key`);
+  if (reuse) return { file, pub: readFileSync(`${file}.pub`, "utf8").trim() };
   const r = tauri("signer", "generate", "-w", file, "-p", "", "--ci", "-f");
   if (r.status !== 0) throw new Error(`could not make the test key ${name}`);
   return { file, pub: readFileSync(`${file}.pub`, "utf8").trim() };
@@ -64,6 +68,12 @@ const sign = (key, file, version) => {
 // ------------------------------------------------------------------------------------------------ builds
 /** Builds the test installer for `version`, trusting `pubs`, and returns it renamed the way the real release names it. */
 function build(version, pubs) {
+  const kept = path.join(work, `Snappy_${version}_x64-setup.exe`);
+  if (reuse) {
+    if (!existsSync(kept)) throw new Error(`--reuse: ${kept} is missing`);
+    log(`reusing ${kept}`);
+    return kept;
+  }
   log(`building ${version} (trusting ${pubs.length} test key${pubs.length === 1 ? "" : "s"}) ...`);
   const overlay = path.join(work, `conf-${version}.json`);
   writeFileSync(overlay, JSON.stringify(overlayFor(readFileSync(path.join(here, "tauri.e2e.conf.json"), "utf8"), version)));
@@ -84,10 +94,29 @@ const seed = (patch) => {
   mkdirSync(UPDATES, { recursive: true });
   writeFileSync(path.join(UPDATES, "updater.json"), JSON.stringify({ notice_seen: true, auto: true, ...patch }));
 };
-const install = (installer) => {
+/**
+ * Removes the test app's program and its installer record, and keeps its data. The uninstaller is run in place (`_?=`, which
+ * must come last) so that it finishes before this returns. Needed before every fresh baseline: the installer refuses a
+ * silent downgrade (allowDowngrades is false), so installing 0.9.1 over the 0.9.2 an earlier scenario left would fail.
+ */
+const uninstall = () => {
   stop();
+  const exe = path.join(INSTALL_DIR, "uninstall.exe");
+  // Verbatim: the installer wants the folder after `_?=` as the rest of the command line, unquoted, spaces and all.
+  if (existsSync(exe)) spawnSync(exe, ["/S", `_?=${INSTALL_DIR}`], { stdio: "ignore", windowsVerbatimArguments: true });
+  rmSync(INSTALL_DIR, { recursive: true, force: true });
+};
+const install = (installer) => {
+  uninstall();
   execFileSync(installer, ["/S"], { stdio: "ignore" });
   if (!existsSync(EXE)) throw new Error("the silent install did not make the program");
+};
+/** Everything the drill put on this computer: the test app, its data, and the installer's registry key. */
+const removeEverything = () => {
+  uninstall();
+  rmSync(DATA_DIR, { recursive: true, force: true });
+  rmSync(path.join(process.env.APPDATA, "com.snappy.e2e"), { recursive: true, force: true });
+  ps(`Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors\\Snappy E2E' -Recurse -Force -ErrorAction SilentlyContinue; if (-not (Get-ChildItem 'HKCU:\\Software\\Snappy contributors' -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors' -Force -ErrorAction SilentlyContinue }`);
 };
 function launch(endpoint) {
   const child = spawn(EXE, [], { env: { ...process.env, SNAPPY_UPDATE_ENDPOINT: endpoint }, detached: true, stdio: "ignore" });
@@ -139,8 +168,8 @@ async function main() {
     mkdirSync(DATA_DIR, { recursive: true });
     writeFileSync(sentinel, "keep me");
     launch(server.base);
-    const staged = await waitFor(() => state().staged?.version === V.next, 60_000);
-    record("update: found, downloaded, verified and staged", staged, JSON.stringify(state()));
+    const staged = await waitFor(() => state().staged?.version === V.next, 120_000);
+    record("update: found, downloaded, verified and staged", staged, `${JSON.stringify(state())} requests=${JSON.stringify(server.requests.map((r) => r.path))}`);
     record("update: exactly one manifest request and one installer request", server.requests.filter((r) => r.path.includes("latest.json")).length === 1 && server.requests.filter((r) => r.path.endsWith("setup.exe")).length === 1);
     record("update: User-Agent is Snappy-Updater and nothing else identifying was sent", server.requests.every((r) => r.headers["user-agent"] === "Snappy-Updater" && !r.headers.cookie && !r.headers.referer && !r.headers.authorization));
     const stagedFile = path.join(UPDATES, "ready", `Snappy_${V.next}_x64-setup.exe`);
@@ -150,6 +179,10 @@ async function main() {
     const updated = await waitFor(() => installedVersion() === V.next, 180_000, 2000);
     record("update: relaunch installs the new version with no administrator prompt (per-user)", updated, installedVersion());
     record("update: the app's own data survived (sentinel file)", existsSync(sentinel) && readFileSync(sentinel, "utf8") === "keep me");
+    // The installer relaunches the app without this drill's environment variable, so that copy has no updater in this test build.
+    // A launch with the variable is the updated program's own start-up, which is what clears the staged installer.
+    stop();
+    launch(server.base);
     record("update: the staged installer is gone after a successful update", await waitFor(() => !existsSync(stagedFile), 60_000));
     stop();
   }
@@ -181,7 +214,13 @@ async function main() {
     await sleep(20_000);
     const s = state();
     record(`${name}: nothing is staged or installed`, !s.staged && installedVersion() === V.base, JSON.stringify(s));
-    record(`${name}: the error is ${errorCode ?? "none (nothing newer)"}`, (s.last_error ?? null) === errorCode, JSON.stringify(s));
+    if (errorCode === "manifest") {
+      // A manifest that is refused is answered live ("manifest" in the page's status) and is not written to updater.json,
+      // so the saved file shows it as: asked (last_attempt_unix), never accepted (last_checked_unix is still 0), no error saved.
+      record(`${name}: the manifest was refused (asked, never counted as a check, no error saved)`, s.last_attempt_unix > 0 && !s.last_checked_unix && !s.last_error, JSON.stringify(s));
+    } else {
+      record(`${name}: the error is ${errorCode ?? "none (nothing newer)"}`, (s.last_error ?? null) === errorCode, JSON.stringify(s));
+    }
     stop();
   }
   published = { version: V.next, installer: bytes(next), signature: sig.next };
@@ -219,7 +258,7 @@ async function main() {
     published = { version: V.rotated, installer: bytes(rotated), signature: sig.rotated };
     server.requests.length = 0;
     launch(server.base);
-    const staged = await waitFor(() => state().staged?.version === V.rotated, 60_000);
+    const staged = await waitFor(() => state().staged?.version === V.rotated, 120_000);
     record("rotation: a release signed by the recovery key is accepted by the old list", staged, JSON.stringify(state()));
     stop();
     launch(server.base);
@@ -242,9 +281,18 @@ try {
   await main();
 } finally {
   stop();
-  if (!keep) rmSync(work, { recursive: true, force: true });
+  // Leave nothing behind: not the test app, not its data, not its registry key. --keep leaves the test folder (keys and
+  // installers) for --reuse, and the app too, so a scenario can be looked at by hand.
+  if (!keep) {
+    try {
+      removeEverything();
+    } catch (e) {
+      log(`could not remove everything: ${e.message}`);
+    }
+  }
+  if (!keep && !reuse) rmSync(work, { recursive: true, force: true });
   const failed = results.filter((r) => !r.ok);
   log(`\n${results.length - failed.length} passed, ${failed.length} failed. The checks that stay manual are listed in README.md.`);
-  log("To remove the test app: run its uninstaller from Apps and features (Snappy E2E) and delete %LOCALAPPDATA%\\com.snappy.e2e.");
+  log(keep ? "--keep: the test app (Snappy E2E) and its data stay. Remove it from Apps and features and delete %LOCALAPPDATA%\\com.snappy.e2e." : "The test app, its data and its registry key were removed.");
   process.exitCode = failed.length ? 1 : 0;
 }

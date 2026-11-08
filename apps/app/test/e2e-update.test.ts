@@ -103,6 +103,16 @@ describe("the configuration overlay of the drill", () => {
   it("is what the drill passes to the build", () => {
     expect(readFileSync(path.join(drill, "run-e2e.mjs"), "utf8")).toContain("overlayFor(");
   });
+
+  it("is installed over a clean slate and removed at the end, because the installer refuses a silent downgrade", () => {
+    // The first full run stopped when the drill reinstalled 0.9.1 over the 0.9.2 that the update scenario had left (exit code 1),
+    // and a run left the test app, its data and its registry key behind.
+    const script = readFileSync(path.join(drill, "run-e2e.mjs"), "utf8");
+    expect(script).toMatch(/const install = \(installer\) => \{\s*uninstall\(\);/);
+    expect(script).toContain("windowsVerbatimArguments: true");
+    expect(script).toContain("removeEverything()");
+    expect(script).toContain("HKCU:\\\\Software\\\\Snappy contributors\\\\Snappy E2E");
+  });
 });
 
 describe("the drill", () => {
