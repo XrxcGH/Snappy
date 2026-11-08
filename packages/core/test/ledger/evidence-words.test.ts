@@ -78,6 +78,10 @@ describe("disappeared friends evidence", () => {
   const friends = crowd(12);
   const two = (): Candidate => findGhosts([snap("a", 0, { friends: [...friends, "alice"] }), snap("b", 40, { friends })], { now: NOW })[0]!;
 
+  it("names the friends list, the Snapchat data file, not a friend list", () => {
+    expect(detailOf(two(), "absent-from-latest-export")).toBe("Not in the friends list of the latest export (Feb 10, 2025).");
+  });
+
   it("says neither export shows the removal for two exports, and None of the n for more", () => {
     expect(detailOf(two(), "not-deleted-by-you")).toBe("Neither export shows you removing this friend, so the reason is unknown.");
     const three = findGhosts([snap("a", 0, { friends: [...friends, "alice"] }), snap("b", 20, { friends: [...friends, "alice"] }), snap("c", 40, { friends })], { now: NOW })[0]!;

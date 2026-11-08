@@ -148,7 +148,7 @@ export const protection: Record<string, string> = {
 };
 
 export const start = {
-  promiseLead: "Sort your Snapchat friend list and Memories from your own data export.",
+  promiseLead: "Tidy your Snapchat friends list and rescue your Memories, from your own data export.",
   get trustChips(): readonly [string, string, string] {
     return ["Stays on this device", "Reads names and dates only", onDesktop("Works without internet", "Works offline")];
   },
@@ -589,7 +589,7 @@ export const settings = {
     return onDesktop("Snappy could not delete the saved history. Close other Snappy tabs and try again.", "Snappy could not delete the saved history. Close other Snappy windows and try again.");
   },
   aboutHeading: "About",
-  aboutBody: "Snappy reads your own Snapchat export on this device to tidy your friends list and rescue your Memories.",
+  aboutBody: "Tidy your Snapchat friends list and rescue your Memories, from your own data export. Snappy reads it on this device.",
   versionLabel: (v: string) => `Version ${v}`,
   licensesHeading: "Licenses",
   // The same on the web and in the app: the licenses are listed below, so the note does not point to a folder the app does not have.

@@ -42,6 +42,19 @@ describe("Start page words", () => {
   });
 });
 
+describe("one tagline and one spelling of the list", () => {
+  const TAGLINE = "Tidy your Snapchat friends list and rescue your Memories, from your own data export.";
+
+  it("uses the same sentence on Start and in About", () => {
+    expect(copy.start.promiseLead).toBe(TAGLINE);
+    expect(copy.settings.aboutBody).toBe(`${TAGLINE} Snappy reads it on this device.`);
+  });
+
+  it("writes friends list for the list Snapchat exports, never friend list", () => {
+    expect(hits(/\bfriend list\b/i)).toEqual([]);
+  });
+});
+
 describe("the Cleanup queue lead", () => {
   it("says the person removes people, in Snapchat, so it cannot read as Snappy removing anyone", () => {
     expect(copy.cleanup.lead).toBe("Everyone Snappy found, in one list. Keep anyone who should stay, and remove people yourself in Snapchat.");

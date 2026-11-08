@@ -1,6 +1,6 @@
 # Snappy
 
-Snappy helps you tidy your Snapchat friends list and rescue your Memories, using only the data export Snapchat gives you.
+Tidy your Snapchat friends list and rescue your Memories, from your own data export.
 
 ![Snappy in a light and a dark theme, each with the Overview page in a desktop window and the Cleanup queue on a phone](docs/images/readme-header.webp)
 

@@ -210,6 +210,19 @@ describe("the brand guide names every feature and every command", () => {
   });
 });
 
+describe("one tagline and one spelling of the list in the documents", () => {
+  const TAGLINE = "Tidy your Snapchat friends list and rescue your Memories, from your own data export.";
+
+  it("opens the README and the brand guide with the tagline", () => {
+    expect(prose("README.md").map((l) => l.raw)).toContain(TAGLINE);
+    expect(prose(path.join("docs", "BRAND.md")).map((l) => l.raw).join("\n")).toContain(`**${TAGLINE}**`);
+  });
+
+  it.each(["README.md", path.join("docs", "BRAND.md"), path.join("docs", "EXPORT-GUIDE.md"), path.join("apps", "cli", "README.md"), path.join("docs", "BETA.md")])("%s writes friends list, never friend list", (file) => {
+    expect(prose(file).filter((l) => /\bfriend list\b/i.test(l.text)).map((l) => `${file}:${l.n}`)).toEqual([]);
+  });
+});
+
 describe("the README mentions guided removal, the keep list and the guides", () => {
   const readme = (): string => prose("README.md").map((l) => l.raw).join("\n");
 

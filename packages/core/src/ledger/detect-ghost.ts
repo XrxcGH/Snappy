@@ -118,7 +118,7 @@ export function findGhosts(snapshots: Snapshot[], opts: { now: number; exclude?:
     const evidence: Evidence[] = [
       {
         signal: "absent-from-latest-export",
-        detail: `Not in the friend list of the latest export (${formatDay(latest.takenAt)}).`,
+        detail: `Not in the friends list of the latest export (${formatDay(latest.takenAt)}).`,
         weight: W_ABSENT,
         at: latest.takenAt,
       },

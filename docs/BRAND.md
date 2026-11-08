@@ -6,7 +6,7 @@ For contributors and anyone using the Snappy assets. The design tokens in [`bran
 
 ## 1. Snappy in one page
 
-**Snappy helps you organize your Snapchat world from your own data export.** It builds a tidy, current friend list: who is still a friend, unaccepted requests, quiet friends, a careful clean-up queue and a backup. It sorts Memories into year and month folders with their dates restored, makes duplicates and storage visible, and shows who is waiting on a reply. It runs on your own device, as a command line tool and a local dashboard.
+**Tidy your Snapchat friends list and rescue your Memories, from your own data export.** It builds a tidy, current friends list: who is still a friend, unaccepted requests, quiet friends, a careful clean-up queue and a backup. It sorts Memories into year and month folders with their dates restored, makes duplicates and storage visible, and shows who is waiting on a reply. It runs on your own device, as a command line tool and a local dashboard.
 
 **Personality.** Calm, capable, tidy and a little warm. Quick, never childish, never alarmist. Snappy talks like a careful friend who is good at putting things in order: plain, specific and steady.
 
@@ -478,7 +478,7 @@ Easing is `cubic-bezier(0.2, 0, 0, 1)`.
 
 ## 8. Voice and microcopy
 
-Plain, specific, calm. Short sentences, active voice, and the next step first. No exclamation marks, no emoji, no jokes about anyone's friend list, no alarm.
+Plain, specific, calm. Short sentences, active voice, and the next step first. No exclamation marks, no emoji, no jokes about anyone's friends list, no alarm.
 
 **Import.** Name the step, then say where the data stays.
 - "Add your Snapchat data export. Your export stays on this device."
@@ -501,7 +501,7 @@ Plain, specific, calm. Short sentences, active voice, and the next step first. N
 - "Snappy could not read friends.json. The file may be incomplete. Check that every part of the export finished downloading."
 
 **Empty states.** Name what will appear and how to get it.
-- "No export yet. Add your Snapchat data export to see your friend list in order."
+- "No export yet. Add your Snapchat data export to see your friends list in order."
 - "Your Cleanup queue is empty. Friends you choose to review will appear here."
 
 **Confirmations.** Past tense and specific: "Report saved." "Backup saved."
