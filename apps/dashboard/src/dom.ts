@@ -35,10 +35,15 @@ export function append(parent: Node, children: readonly Child[]): void {
   }
 }
 
-/** Create an element: h("button", { class: "btn", onclick }, "Label"). Children are nodes or plain text. */
+/**
+ * Create an element: h("button", { class: "btn", onclick }, "Label"). Children are nodes or plain text.
+ * A list made here says it is a list: Safari and VoiceOver drop the role from a list that has its bullets removed
+ * (list-style: none), and most of the app's lists have none. Chromium keeps the role either way, so this changes nothing there.
+ */
 export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = {}, ...children: Child[]): HTMLElementTagNameMap[K] {
   const el = document.createElement(tag);
   applyProps(el, props);
+  if (tag === "ul" && !el.hasAttribute("role")) el.setAttribute("role", "list");
   append(el, children);
   return el;
 }
