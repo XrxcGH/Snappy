@@ -1,25 +1,34 @@
 # Snappy Windows beta
 
-This page is for people testing the first Snappy installer for Windows. It says what the beta is, how to install it, where it keeps its data, how to remove it, what to try first and how to report a problem without sharing anything personal.
+This page is for people testing the Snappy installer for Windows. It says what the beta is, how to install it, where it keeps its data, how to remove it, what to try first and how to report a problem without sharing anything personal.
 
 ## What the beta is
 
 Snappy is the dashboard from this repository in its own window: the cleanup queue, Memories rescue, the Tools page and the in-app commands. It reads the Snapchat export that you already have, on your computer.
 
-This is an early test build, version `0.1.0-beta.1`. Expect rough edges, and please report them.
+This is an early test build, version `0.1.0-beta.2`. Expect rough edges, and please report them.
 
 - It is **unsigned**. Windows warns you before it runs the installer (see below).
-- It **does not update itself**. To get a newer beta, download the newer installer and run it. A later release will check GitHub for updates when it opens, which you can turn off: [UPDATES.md](UPDATES.md) says what that sends. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
-- It has **no telemetry** and no account. Snappy itself sends nothing over a network.
+- It **checks for updates by itself** (new in beta 2). See [Updates](#updates) below, which says what the check sends and how to turn it off. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
+- It has **no telemetry** and no account. Apart from the update check, Snappy itself sends nothing over a network.
 - It installs **for your user only**. It does not need administrator rights.
 - It is the 64-bit Windows build only. It needs Windows 10 or 11 and Microsoft’s WebView2 runtime, which Windows 11 includes. If the runtime is missing, the installer downloads it from Microsoft.
 
+## What is new in beta 2
+
+- **It checks for updates by itself.** When Snappy opens, it asks GitHub whether a newer version exists, and it can install a signed update for you. See [Updates](#updates).
+- **The in-app terminal says the same version as the app.** Beta 1 printed `Version 0.1.0` in the help text while the app said `0.1.0-beta.1`.
+- **The terminal’s output is tidier.** The logo’s bars join up, and the help list is fitted to the width of the window instead of wrapping twice.
+- **Use sample data** is a button near the top of the Start page, so you do not have to scroll to it.
+- **The Settings page says where the license texts are.** Beta 1 pointed at a licenses folder that the Windows install does not have; each license is now opened from its name in Settings, under About.
+- **A branded installer.** It has Snappy’s own pictures, and **Create desktop shortcut** is no longer ticked by default. The uninstaller’s box is worded more clearly (see [Remove Snappy](#remove-snappy-and-everything-it-stored)).
+
 ## Install
 
-1. Download `Snappy_0.1.0-beta.1_x64-setup.exe` and, if you have it, `Snappy_0.1.0-beta.1_x64-setup.exe.sha256`.
-2. Check the file. In PowerShell, run `(Get-FileHash .\Snappy_0.1.0-beta.1_x64-setup.exe -Algorithm SHA256).Hash` and compare the result with the text in the `.sha256` file. The letters and digits must be the same, whatever the case. A match shows the file is complete and is the one that was published with that checksum.
+1. Download `Snappy_0.1.0-beta.2_x64-setup.exe` and, if you have it, `Snappy_0.1.0-beta.2_x64-setup.exe.sha256`.
+2. Check the file. In PowerShell, run `(Get-FileHash .\Snappy_0.1.0-beta.2_x64-setup.exe -Algorithm SHA256).Hash` and compare the result with the text in the `.sha256` file. The letters and digits must be the same, whatever the case. A match shows the file is complete and is the one that was published with that checksum.
 3. Open the installer. Windows may show a blue window titled “Windows protected your PC”. Choose **More info**, then **Run anyway**.
-4. Follow the installer. It has one language (English) and installs to your user folder. When it finishes, start Snappy from the Start menu.
+4. Follow the installer. It has one language (English) and installs to your user folder, `%LOCALAPPDATA%\Snappy` unless you pick another. The pages are Welcome, License, Install location and Finish. The Finish page has two boxes: **Run Snappy** (ticked) and **Create desktop shortcut** (not ticked, so a desktop shortcut is your choice). Snappy always gets a Start menu shortcut. If you leave **Run Snappy** ticked, Snappy starts when you choose Finish; on the maintainers’ busy test computer that took about a minute and a half, and the cause was not found, so if nothing happens, wait, or start Snappy from the Start menu.
 
 **Why Windows warns you.** Signing an installer means a company vouches for who built it, and it costs money and a registration. This beta is not signed, so Windows cannot tell who made it and shows the warning for any installer it has not seen many people download. It is not a sign that the file is damaged, but it is why the checksum step matters.
 
@@ -27,28 +36,41 @@ If Windows 11 has **Smart App Control** turned on, it blocks unsigned installers
 
 ## Where Snappy keeps its data
 
-Snappy puts files in these places on Windows. The list comes from installing, running and uninstalling the beta on one Windows 11 computer.
+Snappy puts files in these places on Windows. The list comes from installing, running and uninstalling beta 2 through the installer’s own pages on one Windows 11 computer, with made-up data.
 
 | What | Where |
 | --- | --- |
-| The program | A folder named Snappy that the installer picks for your user (`snappy.exe` and `uninstall.exe`). An installer for one user normally proposes `%LOCALAPPDATA%\Snappy`. The maintainers’ test used a different folder, so that default was not checked. |
+| The program | `%LOCALAPPDATA%\Snappy` (the folder the installer proposes), holding `snappy.exe` and `uninstall.exe`. |
 | Start menu shortcut | `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Snappy.lnk` |
-| Desktop shortcut | `%USERPROFILE%\Desktop\Snappy.lnk`. A silent install made it. |
+| Desktop shortcut | `%USERPROFILE%\Desktop\Snappy.lnk`, only if you tick **Create desktop shortcut** on the Finish page. A silent install (the `/S` option) makes it without asking. |
 | Apps and features entry | The registry key `HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Uninstall\Snappy`. It names the version and the publisher, Snappy contributors. |
-| Snappy’s saved data and the web engine’s profile | `%LOCALAPPDATA%\com.snappy.export`, which holds one folder, `EBWebView`. This is where Microsoft’s WebView2 keeps what the page stores: your theme choice, your sealed history if you set a passphrase, and the engine’s own cache and settings. |
-| The installer’s memory of its folder | The registry key `HKEY_CURRENT_USER\Software\Snappy contributors\Snappy`, which holds the install folder. |
+| The web engine’s profile and Snappy’s saved data | `%LOCALAPPDATA%\com.snappy.export\EBWebView`. This is where Microsoft’s WebView2 keeps what the page stores: your theme choice, your sealed history if you set a passphrase, and the engine’s own cache and settings. |
+| The update check’s notes | `%LOCALAPPDATA%\com.snappy.export\updates`. A small file, `updater.json` (about 300 bytes: the on or off setting, whether the first-run notice was shown, when the last check was made, counters and short error codes), a lock file, and the folders `ready` and `tmp` where a downloaded update waits. No address, name or export data is kept there. |
+| The installer’s memory of its folder | The registry key `HKEY_CURRENT_USER\Software\Snappy contributors\Snappy`, which holds the install folder and the installer language. |
 
 Snappy writes nothing next to your export and nothing in your Documents folder. It uses no `.snappy` folder: that belongs to the command line tool. Microsoft’s WebView2 runtime is a shared part of Windows, and Snappy does not install or remove it.
 
 ## Remove Snappy and everything it stored
 
-1. The beta cannot export or back up a saved history, and deleting it cannot be undone. Keep your original Snapchat export, which you can add again. Then, in Snappy, open Settings and choose **Delete data**. The tick box to delete application data in the uninstaller (step 4) removes your saved history for good too.
+1. The beta cannot export or back up a saved history, and deleting it cannot be undone. Keep your original Snapchat export, which you can add again.
 2. Close Snappy.
-3. Open Windows Settings, then Apps, then Installed apps, find **Snappy** and choose **Uninstall**. You can also run `uninstall.exe` from the install folder. This removes the program, both shortcuts and the Apps and features entry. A silent uninstall (the `/S` option) did exactly that in the maintainers’ test, and it left the data in step 5 in place.
-4. The uninstaller that Tauri builds has a tick box to delete the application data. The maintainers could not drive that window in their test, so it is **not verified** that the box removes the folder in step 5. Check it yourself.
-5. To remove the rest, delete the folder `%LOCALAPPDATA%\com.snappy.export` (paste that into the Explorer address bar). It held about 190 files, around 9 MB, after a few short runs. You can also delete the registry key `HKEY_CURRENT_USER\Software\Snappy contributors`, which only remembers the install folder.
+3. Open Windows Settings, then Apps, then Installed apps, find **Snappy** and choose **Uninstall**. You can also run `uninstall.exe` from the install folder. The first page of the uninstaller has one box, **Also delete Snappy’s saved data (history and settings)**. It is **not ticked** unless you tick it.
+4. **With the box ticked**, the uninstaller removes the program, the shortcuts, the Apps and features entry, the installer’s registry key, and the folder `%LOCALAPPDATA%\com.snappy.export` with everything in it (the web engine’s profile, your sealed history and the update notes).
+5. **With the box not ticked** (and with a silent uninstall, the `/S` option, which cannot show the box), the uninstaller removes the program, the shortcuts and the Apps and features entry, and it leaves two things: the folder `%LOCALAPPDATA%\com.snappy.export` (in the maintainers’ test about 196 files and 10.8 MB after a short first run) and the registry key `HKEY_CURRENT_USER\Software\Snappy contributors`. That is deliberate: a copy installed again later finds your saved history where you left it. To remove them by hand, delete the folder (paste its path into the Explorer address bar) and the registry key, which only remembers the install folder.
+6. If you would rather clear the saved history first and keep the program, open Settings in Snappy and choose **Delete data**.
 
-Your export files are never touched by Snappy or by the uninstaller.
+An installer does not delete data without the tick. The uninstaller does not ask again, so tick the box if you want the data gone. Your export files are never touched by Snappy or by the uninstaller.
+
+## Updates
+
+New in beta 2. The wording on this page about what the check sends is a draft that the project owner has not approved yet, and it is hedged on purpose: [UPDATES.md](UPDATES.md) is the decision record, and it is what the program was built to do.
+
+- **What it does.** A few seconds after the window opens, Snappy asks one fixed address on github.com for a small file that names the newest version, at most once an hour. If the file names a newer version, Snappy downloads the installer from GitHub, checks its signature against two keys built into the program, and keeps it ready. It applies the update the next time Snappy opens, or when you choose **Update now** (or **Restart now**) and nothing is in progress. It does not install a lower version, and it does not run while another Snappy window or a copy outside the install folder is open.
+- **The first time.** The first launch shows a short notice, “Snappy checks GitHub for updates when it opens. Change this in Settings.”, with **OK** and **Turn off**. Snappy makes no check until that notice has been shown, and it counts as shown when it appears, not when you answer it: in the maintainers’ test the first check went out about four seconds after the first window opened, with the notice still on screen. **Turn off** stops every check after that one. (Whether the first check should wait for your answer is an open decision for the project owner.)
+- **Where to see it and turn it off.** Settings has an **Updates** card with the version, a **Check now** button, the box **Check for updates on launch** (tick or untick it at any time) and a line saying when the last check was made. Turning the box off stops every automatic request.
+- **What it sends.** According to [UPDATES.md](UPDATES.md): one request for the small file and, only if a newer version exists, one request for the installer. The only header the program sets is `User-Agent: Snappy-Updater`. There is no query string, no ID, no version number and none of your data. GitHub, your network and any proxy on the way can see your IP address, the time and that a Snappy app asked. Windows may look up a proxy configuration. The request is made by `snappy.exe` and never by the page, whose security policy still forbids every connection. This says nothing about Microsoft’s WebView2 (see below).
+- **What was seen.** In the maintainers’ test of the installed beta 2 on one computer, pressing **Check now** made one connection from `snappy.exe` to `github.com` on port 443 and no other connection left the computer from any process of the app, WebView2’s included, in the minutes watched. There is no published release yet, so GitHub answers “not found”: Settings then says “Couldn’t check. Try again.” and nothing else appears. That is one computer at one moment.
+- **Not verified.** An update through a proxy, the real GitHub redirects (they need a published release), and a check made on launch after the first hour. The update drill in `apps/app/test/e2e-update` runs the update path against a local test server, not against GitHub.
 
 ## Use it with your own export
 
@@ -56,7 +78,7 @@ Snappy reads your export and never changes it. It opens the ZIP files read-only,
 
 - It reads friend usernames and dates. It skips message text, photos, videos, locations and display names.
 - Snappy itself sends nothing over a network, and its page is not allowed to connect to anything.
-- **One open question.** The window is drawn by Microsoft’s WebView2, a separate program that Snappy does not control. In one test on one computer, a sign-in part of WebView2 connected to Microsoft in the background, although Snappy’s own page made no request. Snappy turns that part off, and the connection stopped in later tests on that computer. A WebView2 update could change that, and nothing in the build can check it. The Privacy page in the app says the same, and [RELEASES.md](RELEASES.md) has the details. In a check of this beta (three launches, runtime 157, one computer), Snappy’s processes opened no connection to an outside address. That says nothing about other computers or later runtimes. If you need certainty, block outbound connections for `msedgewebview2.exe` in your firewall. The maintainers have not tested that rule.
+- **One open question.** The window is drawn by Microsoft’s WebView2, a separate program that Snappy does not control. In one test on one computer, a sign-in part of WebView2 connected to Microsoft in the background, although Snappy’s own page made no request. Snappy turns that part off, and the connection stopped in later tests on that computer. A WebView2 update could change that, and nothing in the build can check it. The Privacy page in the app says the same, and [RELEASES.md](RELEASES.md) has the details. In a check of beta 2 (installed by the wizard, about nine minutes of use across three launches, runtime 157, one computer, the sockets of the whole process tree sampled about every 0.1 to 2 seconds), the only connections to an outside address came from `snappy.exe` to `github.com` on port 443, and none came from `msedgewebview2.exe`. The sampler can miss a connection shorter than its interval. That says nothing about other computers or later runtimes. If you need certainty, block outbound connections for `msedgewebview2.exe` in your firewall. The maintainers have not tested that rule.
 - Pressing Run on a command runs it inside the app. Files it makes are kept in the app until you press Save.
 
 Never send your export, or any file from it, to anyone, including the people who make Snappy.
