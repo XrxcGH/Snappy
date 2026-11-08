@@ -24,6 +24,16 @@ export interface Variant {
   expect: string[];
   /** Friends found in the merged import (omit when the row is about the notices only). */
   friends?: number;
+  /** What the chat and Snap events came out as (omit when the row is not about them). */
+  events?: EventCounts;
+}
+
+/** Counts of the metadata-only events of an import: by direction, and how many conversations were filed as groups. */
+export interface EventCounts {
+  sent: number;
+  received: number;
+  unknown: number;
+  groups: number;
 }
 
 const OWNER = "me_user";
@@ -140,6 +150,7 @@ export function buildVariants(): Variant[] {
   const add = (id: string, title: string, parts: VariantPart[], expectCodes: string[], friends?: number): void => {
     out.push({ id, title, parts, expect: expectCodes, ...(friends !== undefined && { friends }) });
   };
+  const last = (): Variant => out[out.length - 1] as Variant;
   const withFriends = (friends: unknown, rest: Files = {}): Files => ({ ...baseFiles(), "json/friends.json": friends, ...rest });
 
   add("v00", "baseline: per-conversation chat and Snaps, Saved Media", [part(baseFiles())], [], 30);
@@ -168,6 +179,18 @@ export function buildVariants(): Variant[] {
   add("v29", "a stray chat_history.json in chat_media", [part({ ...baseFiles(), "chat_media/chat_history.json": { stray: [{ From: "x", "Media Type": "TEXT", Created: "2024-01-01 10:00:00 UTC", Content: "x", IsSender: true }] } })], [], 30);
   add("v30", "unicode, short and spaced usernames", [part(withFriends({ Friends: ["zoë", "я_друг", "a", "two words", "名前"].map((n, i) => friendEntry(n, i)) }))], [], 5);
   add("v31", "chat keyed by display name", [part({ ...baseFiles(), "json/chat_history.json": Object.fromEntries(range(30).map((i) => [`Person ${i}`, [{ From: `friend_${i}`, "Media Type": "TEXT", Created: "2024-02-01 10:00:00 UTC", Content: "x", "Conversation Title": `Person ${i}`, IsSender: false }]])) })], ["chats-mostly-groups"], 30);
+
+  // Flat layouts: one list of entries per direction, or one bare list, instead of one list per conversation.
+  const received = (kind: string) => range(30).map((i) => ({ From: `friend_${i}`, "Media Type": kind, Created: "2024-03-01 10:00:00 UTC" }));
+  const sentTo = (kind: string) => range(30).map((i) => ({ To: `friend_${i}`, "Media Type": kind, Created: "2024-03-01 10:05:00 UTC" }));
+  const flatCounts: EventCounts = { sent: 30, received: 30, unknown: 0, groups: 0 };
+  add("v01", "Snaps as Received and Sent Snap History", [part({ "json/friends.json": friendsJson(), "json/snap_history.json": { "Received Snap History": received("IMAGE"), "Sent Snap History": sentTo("IMAGE") } })], ["memories-missing"], 30);
+  last().events = flatCounts;
+  add("v02", "chats as Received and Sent Saved Chat History", [part({ "json/friends.json": friendsJson(), "json/chat_history.json": { "Received Saved Chat History": received("TEXT"), "Sent Saved Chat History": sentTo("TEXT") } })], ["memories-missing","snap-history-missing"], 30);
+  last().events = flatCounts;
+  const bare = [...received("IMAGE").map((e) => ({ ...e, IsSender: false })), ...sentTo("IMAGE").map((e) => ({ ...e, IsSender: true }))];
+  add("v33", "Snaps as one flat list", [part({ "json/friends.json": friendsJson(), "json/snap_history.json": bare })], ["memories-missing","snap-top-level-array"], 30);
+  last().events = flatCounts;
   return out;
 }
 
@@ -176,7 +199,19 @@ export function buildVariants(): Variant[] {
 export interface VariantResult {
   codes: string[];
   friends: number;
+  events: EventCounts;
   merged: ParsedExport;
+}
+
+function countEvents(merged: ParsedExport): EventCounts {
+  const counts: EventCounts = { sent: 0, received: 0, unknown: 0, groups: 0 };
+  const groups = new Set<string>();
+  for (const c of merged.chats) {
+    counts[c.direction] += 1;
+    if (c.isGroup) groups.add(c.conversation);
+  }
+  counts.groups = groups.size;
+  return counts;
 }
 
 /** Read the parts the way the importers do (each part, then the merge) and list the issue codes the person would see. */
@@ -185,5 +220,5 @@ export async function runVariant(variant: Variant, now = Date.UTC(2025, 0, 1)): 
   for (const [index, p] of variant.parts.entries()) parsed.push(await parseExportFromReader(bytesReader(p.bytes), { part: index + 1 }));
   const merged = parsed.length === 1 ? (parsed[0] as ParsedExport) : mergeParsedExports(parsed);
   const codes = [...new Set([...merged.issues, ...validateExport(merged, { now })].map((i) => i.code))].sort();
-  return { codes, friends: merged.friends.friends.length, merged };
+  return { codes, friends: merged.friends.friends.length, events: countEvents(merged), merged };
 }

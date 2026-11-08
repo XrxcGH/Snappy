@@ -110,7 +110,7 @@ describe("parseSnapHistoryJson", () => {
 
 describe("the fields the streaming reader keeps", () => {
   it("are the allowlisted ones: every kept name is an allowlist alias", () => {
-    const allow = compileAllow({ any: ["issender", "from", "sender", "username", "mediatype", "type", "createdmicroseconds", "created", "createdat", "timestamp", "date", "conversationtitle", "title", "groupname"] });
+    const allow = compileAllow({ any: ["issender", "from", "sender", "username", "to", "mediatype", "type", "createdmicroseconds", "created", "createdat", "timestamp", "date", "conversationtitle", "title", "groupname"] });
     for (const name of HISTORY_KEEP_FIELDS) {
       expect(Object.keys(readAllowed({ [name]: "x" }, allow)), name).toEqual(["any"]);
     }
@@ -118,7 +118,7 @@ describe("the fields the streaming reader keeps", () => {
 
   it("include the real spellings, in any letter case, and never message text", () => {
     const kept = new Set(HISTORY_KEEP_FIELDS.map((n) => n.toLowerCase()));
-    for (const real of ["IsSender", "From", "Media Type", "Created(microseconds)", "Created", "Conversation Title"]) {
+    for (const real of ["IsSender", "From", "To", "Media Type", "Created(microseconds)", "Created", "Conversation Title"]) {
       expect(kept.has(real.toLowerCase()), real).toBe(true);
     }
     expect([...kept].filter((n) => /content|text|caption|body|message|location/.test(n))).toEqual([]);

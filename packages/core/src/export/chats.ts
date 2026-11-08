@@ -20,6 +20,8 @@ const NOUN: Record<HistoryFile, string> = { chat: "message", snap: "Snap" };
 const ENTRY_ALLOW = compileAllow({
   isSender: ["issender"],
   from: ["from", "sender", "username"],
+  // Who a sent entry went to: read only in a flat list (a bare list or a "Sent ..." section), where it names the conversation.
+  to: ["to"],
   mediaType: ["mediatype", "type"],
   // Microseconds is the most precise and avoids timezone-less strings, so it gets its own field and wins.
   createdUs: ["createdmicroseconds"],
@@ -42,6 +44,7 @@ export function spellings(words: string[][], literal: string[] = []): string[] {
 export const HISTORY_KEEP_FIELDS: readonly string[] = [
   ...spellings([["is", "sender"]]),
   ...spellings([["from"], ["sender"], ["username"]]),
+  ...spellings([["to"]]),
   ...spellings([["media", "type"], ["type"]]),
   ...spellings([["created", "microseconds"]], ["Created(microseconds)", "Created (microseconds)"]),
   ...spellings([["created"], ["created", "at"], ["timestamp"], ["date"]]),
@@ -52,7 +55,12 @@ export const HISTORY_KEEP_FIELDS: readonly string[] = [
  * Top-level sections that are flat message lists rather than per-conversation containers, matched
  * on the normalised key and anchored: a friend called "savedchat_fan" is a username, not a section.
  */
-const FLAT_SECTION = /^(?:(?:received|sent)?savedchat(?:history)?|chathistory(?:all)?)\d*$/;
+const FLAT_SECTION = /^(?:(?:received|sent)?savedchat(?:history)?|(?:received|sent)?snaphistory|chathistory(?:all)?)\d*$/;
+
+/** "Received ..." and "Sent ..." sections say the direction of every entry in them. */
+function sectionDirection(normalisedKey: string): "sent" | "received" | undefined {
+  return normalisedKey.startsWith("sent") ? "sent" : normalisedKey.startsWith("received") ? "received" : undefined;
+}
 
 /**
  * Could this container key be a Snapchat username (letters, digits, "_", "-", "."; 3 to 15
@@ -112,6 +120,8 @@ export class HistoryReader {
   private entered = false;
   private rawKey = "";
   private key: string | undefined = undefined;
+  /** Direction named by a flat section ("Sent Snap History"), when it names one. */
+  private sectionDir: "sent" | "received" | undefined = undefined;
   private rows: Row[] = [];
   private others = new Set<string>();
   private titleSignal = false;
@@ -137,7 +147,9 @@ export class HistoryReader {
     this.entered = true;
     this.rawKey = rawKey;
     const trimmed = rawKey.trim();
-    this.key = trimmed === "" || FLAT_SECTION.test(normKey(trimmed)) ? undefined : trimmed;
+    const flat = trimmed === "" || FLAT_SECTION.test(normKey(trimmed));
+    this.key = flat ? undefined : trimmed;
+    this.sectionDir = flat && trimmed !== "" ? sectionDirection(normKey(trimmed)) : undefined;
     if (rawKey === "") {
       this.issues.push(issue("warning", `${this.code}-top-level-array`, `${this.file} looks different from what Snappy expects. Conversations may be grouped wrongly.`));
     }
@@ -162,19 +174,24 @@ export class HistoryReader {
       this.badTimestamps++;
       return;
     }
-    const sent = asBool(f.isSender);
+    const key = this.key;
+    // In a flat list the section name ("Sent ...", "Received ...") is the direction when the entry does not say.
+    const sent = asBool(f.isSender) ?? (key === undefined && this.sectionDir !== undefined ? this.sectionDir === "sent" : undefined);
     const from = asText(f.from);
     const title = asText(f.title);
     const row: Row = { at, kind: kindOf(f.mediaType), sent };
-    const key = this.key;
 
     if (key === undefined) {
-      // A flat list has no conversation key: the title (group) or the sender of a received message (1:1) must name the chat.
+      // A flat list has no conversation key: the title (group), the sender of a received entry or the
+      // recipient of a sent one (1:1) must name the chat.
+      const to = sent === true ? asText(f.to) : undefined;
       if (title !== undefined) {
         if (sent === undefined) this.directionUnknown++;
         this.events.push({ conversation: groupId(title), isGroup: true, direction: directionOf(sent), kind: row.kind, at });
       } else if (sent === false && from !== undefined && normUser(from) !== "") {
         this.events.push({ conversation: normUser(from), isGroup: false, direction: "received", kind: row.kind, at });
+      } else if (to !== undefined && normUser(to) !== "") {
+        this.events.push({ conversation: normUser(to), isGroup: false, direction: "sent", kind: row.kind, at });
       } else {
         this.noConversation++;
       }
