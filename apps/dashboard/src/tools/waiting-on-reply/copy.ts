@@ -16,7 +16,7 @@ export const copy = {
   reads: "Who sent each saved chat and Snap and when, counted per person in one-to-one chats.",
   empty: {
     title: "Nobody looks to be waiting",
-    body: "No chat looks unanswered or one-sided. An export can miss messages, so check in the app if you expect more.",
+    body: "No chat looks unanswered or one-sided. An export can miss messages, so check in Snapchat if you expect more.",
   },
 
   doneAnnounce: (you: number, theirs: number, oneSided: number): string =>
@@ -49,7 +49,7 @@ export const copy = {
   unitSince: (date: string): string => `since ${date}`,
   unitSentReceived: (sent: number, received: number): string => `${sent} sent, ${received} received`,
 
-  hintNote: "These are hints. An export can miss messages, so check in the app.",
+  hintNote: "These are hints. An export can miss messages, so check in Snapchat.",
   invalidNowNote: "Snappy could not read today’s date, so it left the lists empty.",
   noEventsNote: "Your export has no saved chats or Snaps to check.",
   noOneToOneNote: "Your saved chats are all group chats, which Snappy leaves out.",

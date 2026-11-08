@@ -17,7 +17,7 @@ export const copy = {
   reads: "Who sent each saved chat and Snap and when, counted per person in one-to-one chats.",
   empty: {
     title: "No clear starters yet",
-    body: "No chat has exchanges with a known starter. An export can miss messages, so check in the app if you expect more.",
+    body: "No chat has exchanges with a known starter. An export can miss messages, so check in Snapchat if you expect more.",
   },
 
   doneAnnounce: (theirs: number, yours: number): string =>
@@ -57,7 +57,7 @@ export const copy = {
   exchangesCell: (n: number): string => countOf(n, "exchange", "exchanges"),
   shareCell: (percent: string): string => `${percent} of exchanges`,
 
-  hintNote: "These are hints. An export can miss messages, so check in the app.",
+  hintNote: "These are hints. An export can miss messages, so check in Snapchat.",
   invalidNowNote: "Snappy could not read today’s date, so it left the lists empty.",
   noEventsNote: "Your export has no saved chats or Snaps to check.",
   noOneToOneNote: "Your saved chats are all group chats, which Snappy leaves out.",
