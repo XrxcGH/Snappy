@@ -7,6 +7,13 @@ export interface ValidateHints {
   expectedFriendCount?: number;
   /** Epoch ms "now" (injected: core never reads the clock). Used to spot future timestamps when exportedAt is unknown. */
   now?: number;
+  /**
+   * Go on although the friends list is empty and removed friends are listed (the issue
+   * `friends-empty-but-deleted` marks itself `overridable`): it is then a warning, not an error.
+   * A front end sets it only when there is no saved history to compare with, because the error
+   * protects a comparison between exports, and a first export has nothing to compare.
+   */
+  allowEmptyFriends?: boolean;
 }
 
 const COUNT_MISMATCH_RATIO = 0.05;
@@ -130,7 +137,8 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
       out.push(issue("error", "no-friends-section", "This export has no friends list, so Snappy cannot analyze it. Request it again with User information selected."));
     }
   } else if (f.friends.length === 0 && f.deletedFriends.length > 0) {
-    out.push(issue("error", "friends-empty-but-deleted", `The friends list is empty, but ${f.deletedFriends.length} removed ${f.deletedFriends.length === 1 ? "friend is" : "friends are"} listed. The export may be incomplete, so results may be wrong.`));
+    const message = `The friends list is empty, but ${f.deletedFriends.length} removed ${f.deletedFriends.length === 1 ? "friend is" : "friends are"} listed. The export may be incomplete, so results may be wrong.`;
+    out.push(hints.allowEmptyFriends === true ? issue("warning", "friends-empty-but-deleted", message) : { ...issue("error", "friends-empty-but-deleted", message), overridable: true });
   }
 
   const dupes = duplicateCount(f.friends) + duplicateCount(f.sentRequests);

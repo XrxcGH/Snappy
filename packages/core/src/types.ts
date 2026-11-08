@@ -139,6 +139,11 @@ export interface ExportIssue {
   code: string;
   /** Human text. MUST NOT contain user-data values (usernames, text, URLs, coordinates). */
   message: string;
+  /**
+   * An error the person may choose to go on with anyway (the front end then asks validateExport
+   * again with the matching option, which turns it into a warning). Absent on every other issue.
+   */
+  overridable?: boolean;
 }
 
 /**
