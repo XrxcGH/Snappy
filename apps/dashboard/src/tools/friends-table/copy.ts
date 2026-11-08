@@ -92,7 +92,7 @@ export const copy = {
   downloadLabel: "Download CSV",
   downloadNote: "The file lists the friends in the table above, with usernames. Keep it private.",
 
-  hintNote: "Hints are guesses from saved chats and Snaps. An export can miss messages, so check in the app.",
+  hintNote: "Hints are guesses from saved chats and Snaps. An export can miss messages, so check in Snapchat.",
   invalidNowNote: "Snappy could not read today’s date, so it left the table empty.",
   noFriendsNote: "Your export has no usable friends, so the table is empty.",
   noEventsNote: "Your export has no saved chats or Snaps, so the chat columns are empty.",

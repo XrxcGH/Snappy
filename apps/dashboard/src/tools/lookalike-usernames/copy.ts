@@ -18,7 +18,7 @@ export const copy = {
   reads: "Usernames in your friends, requests and blocked lists, compared with each other.",
   empty: {
     title: "No lookalike names",
-    body: "Snappy found no pairs of usernames that look alike. It only compares names, so check in the app if you are unsure.",
+    body: "Snappy found no pairs of usernames that look alike. It only compares names, so check in Snapchat if you are unsure.",
   },
 
   doneAnnounce: (found: number): string => (found > 0 ? `Check finished. ${pairs(found)} may be worth a second look.` : "Check finished. No lookalike pairs found."),
