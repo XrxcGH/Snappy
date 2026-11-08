@@ -144,16 +144,19 @@ async function bundleWorker(entry, plugins = []) {
 }
 
 /**
- * The command helper's build leaves the command line's downloader out: that one module is the only
- * place the command line uses the network, and the app makes no connection at all. Its import is
- * answered with a stub of the same names that can only refuse (src/terminal/stubs).
+ * The command helper's build leaves two of the command line's modules out, each answered with a stub of the same
+ * names (src/terminal/stubs). The downloader is the only place the command line uses the network, and the app makes
+ * no connection at all, so its stub can only refuse. The folder reader serves a folder on disk, which the helper never
+ * sees (it is given the picked ZIP files), so its stub finds nothing: the code would only add to the page.
  */
+const STUBBED = { "memories-download": "memories-download.stub.ts", "folder-zip": "folder-zip.stub.ts" };
 const stubDownloader = {
   name: "snappy-stub-downloader",
   setup(b) {
-    b.onResolve({ filter: /memories-download\.ts$/ }, (args) => {
+    b.onResolve({ filter: /(memories-download|folder-zip)\.ts$/ }, (args) => {
       if (!args.resolveDir.replaceAll("\\", "/").includes("/apps/cli/src")) return undefined;
-      return { path: path.join(here, "src", "terminal", "stubs", "memories-download.stub.ts") };
+      const name = /(memories-download|folder-zip)\.ts$/.exec(args.path)?.[1];
+      return { path: path.join(here, "src", "terminal", "stubs", STUBBED[name]) };
     });
   },
 };
