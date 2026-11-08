@@ -123,8 +123,50 @@ describe("desktop wording versus web wording", () => {
       expect(web.get(path), `web ${path}`).toBe(webText);
       expect(desktop.get(path), `desktop ${path}`).toBe(desktopText);
     }
-    const changed = [...web.keys()].filter((k) => web.get(k) !== desktop.get(k)).sort();
+    // The confirmation before a command writes takes a size, so it is checked for every size it was called with: "this page"
+    // is a browser word, and the app says Snappy.
+    const BY_SIZE = /^terminal\.confirmFolderBody\(/;
+    const bySize = [...web.keys()].filter((k) => BY_SIZE.test(k));
+    expect(bySize.length).toBeGreaterThan(3);
+    for (const k of bySize) expect(desktop.get(k), k).toBe((web.get(k) ?? "").replace("in this page", "in Snappy"));
+    const changed = [...web.keys()].filter((k) => web.get(k) !== desktop.get(k) && !BY_SIZE.test(k)).sort();
     expect(changed).toEqual(DIFFERENCES.map(([path]) => path).sort());
+  });
+
+  it("lists every string of the interface that says page, window, screen, tab or browser, each one reviewed", () => {
+    // Each of these names a part of Snappy (the Start page), the app's own window, or is hidden on the desktop (the profile
+    // link and the developer tools hint). A new string with one of these words fails here until someone has read it in the app.
+    const REVIEWED = new Set([
+      "themeNote", // the web sentence; the app reads desktopThemeNote
+      "common.openInSnapchatFor", // the profile link is not drawn in the app
+      "start.sampleBody", // "this window" is Snappy's own window
+      "overview.healthMemoriesNote", // "the Memories page" is a page of Snappy
+      "tools.noExportNote", // "the Start page"
+      "tools.needs.exportFailedBody", // "the Start page"
+      "privacy.networkOk", // "Snappy's page" is the page the app shows
+      "privacy.networkUnknown", // the page's policy could not be read
+      "privacy.desktopOwnPage", // says the app shows only its own page
+      "privacy.networkDetail", // developer tools hint, not drawn in the app
+      "privacy.policyLabel", // inside Technical details
+      "privacy.policyWorker", // inside Technical details
+      "settings.storageLocked", // "the Start page"
+      "settings.lockedAnnounce", // "cleared from the screen"
+      "settings.lockBody", // "from the screen"
+      "settings.deleteBody", // "clears the screen"
+      "settings.deleteFailed", // "other Snappy windows"
+      "vaultMessages.saveFailed", // "on screen"
+      "vaultMessages.savedElsewhere", // "another window"
+      "terminal.noWorkerNote", // "This window cannot run commands here."
+    ]);
+    const found = [...new Set([...allText(DESKTOP)].filter(([p, t]) => !p.startsWith("toolcopy.") && /\b(page|pages|window|windows|screen|tab|tabs|browser)\b/.test(t)).map(([p]) => p.replace(/\(.*\)$/, "")))].sort();
+    expect(found).toEqual([...REVIEWED].sort());
+  });
+
+  it("does not call the app's own page a page where the app has no browser: the folder confirmation and the network line", () => {
+    const desktop = allText(DESKTOP);
+    expect(desktop.get("terminal.confirmFolderBody(5)")).toBe("Files stay in Snappy until you save them. Up to 5 MB.");
+    expect(desktop.get("privacy.networkOk")).toBe("Snappy’s page cannot connect to the internet. A built-in rule blocks every connection.");
+    expect(desktop.get("privacy.networkOk")).not.toMatch(/security policy/i);
   });
 
   it("gives macOS and Linux the same desktop wording as Windows, apart from the engine note on the Privacy page (which is not in the list above)", () => {

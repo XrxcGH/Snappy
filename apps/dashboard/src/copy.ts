@@ -496,7 +496,7 @@ export const privacy = {
   whatHeader: "What",
   detailHeader: "Details",
   networkHeading: "Network",
-  networkOk: "This page cannot connect to the internet. Its security policy blocks every connection.",
+  networkOk: "Snappy’s page cannot connect to the internet. A built-in rule blocks every connection.",
   get networkUnknown(): string {
     return onDesktop(
       "Snappy could not confirm this page’s security policy. Open the page again from a copy you trust.",
@@ -694,7 +694,7 @@ export const terminal = {
   notZipNote: "Choose .zip files from your export.",
   /** The confirmation before a command that writes. */
   confirmFolderTitle: "Save to a virtual folder?",
-  confirmFolderBody: (megabytes: number) => `Files stay in this page until you save them. Up to ${megabytes} MB.`,
+  confirmFolderBody: (megabytes: number) => onDesktop(`Files stay in this page until you save them. Up to ${megabytes} MB.`, `Files stay in Snappy until you save them. Up to ${megabytes} MB.`),
   confirmStoreTitle: "Update saved history?",
   get confirmStoreBody(): string {
     return onDesktop(
