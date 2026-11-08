@@ -867,5 +867,6 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .tools-card > p { flex: 1 1 14rem; min-width: 0; font-weight: 600; }
 .related { display: grid; gap: var(--space-2); }
 .related-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); }
-.related-list a { display: inline-flex; align-items: center; min-height: var(--target-min); }
+.related-list a, .next-list a { display: inline-flex; align-items: center; min-height: var(--target-min); }
+.next-list { margin: 0; padding-inline-start: var(--space-6); display: grid; gap: var(--space-1); }
 /* end track T3 */

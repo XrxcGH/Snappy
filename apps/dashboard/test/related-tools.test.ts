@@ -26,7 +26,7 @@ beforeAll(async () => {
   views.quiet = f.quietView!;
   views.cleanup = ((await import("../src/views/cleanup.ts")) as Record<string, View>).cleanupView!;
   views.memories = ((await import("../src/views/memories.ts")) as Record<string, View>).memoriesView!;
-  views.overview = ((await import("../src/views/overview.ts")) as Record<string, View>).overviewView!;
+  views.overview = ((await import("../src/views/overview.ts")) as { overviewView: View }).overviewView;
   sample = await sampleStateOf();
 }, 120_000);
 

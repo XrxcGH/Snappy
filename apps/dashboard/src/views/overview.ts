@@ -6,6 +6,7 @@ import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatCount, formatDate } from "../format.ts";
 import { routeLink } from "../components/button.ts";
+import { copyTextButton } from "../components/listActions.ts";
 import { chipIcon } from "../components/category.ts";
 import { findingCard } from "../components/findingCard.ts";
 import { healthGroup } from "../components/healthGroup.ts";
@@ -28,7 +29,7 @@ function render(a: Analysis): Child[] {
   if (a.source === "none") {
     return [emptyState({ icon: "import", spot: "import", title: overview.emptyTitle, body: overview.emptyBody, actions: [routeLink("start", overview.emptyAction, "primary")] })];
   }
-  return [allClearPanel(a), findingsList(a), toolsSection(), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];
+  return [allClearPanel(a), findingsList(a), nextStepsSection(a), toolsSection(), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];
 }
 
 /** Shown above the findings only when every area was checked and came up empty. */
@@ -78,6 +79,37 @@ function findingsList(a: Analysis): HTMLElement {
     }),
   ];
   return h("div", { class: "tiles tiles-findings findings" }, ...rows);
+}
+
+/**
+ * The counts as one hedged line for notes or for a friend: "10 may have removed me, 10 unaccepted requests, 24 quiet, 44
+ * to review." A count is left out when it could not be worked out (disappeared needs two exports, quiet needs chat
+ * history). Never a username.
+ */
+export function summaryText(a: Analysis): string {
+  const parts = [
+    a.snapshotCount >= 2 ? lists.summaryDisappeared(a.ghosts.length) : null,
+    lists.summaryRequests(a.oneWay.length),
+    a.hasChats ? lists.summaryQuiet(a.dormant.length) : null,
+    lists.summaryQueue(a.queue.items.length),
+  ].filter((part): part is string => part !== null);
+  return `${parts.join(", ")}.`;
+}
+
+/** What to do after reading the tiles, in order. A static list of links, and the counts to copy. */
+function nextStepsSection(a: Analysis): HTMLElement {
+  const steps: [label: string, href: string][] = [
+    ...(a.queue.items.length > 0 ? [[lists.nextCleanup, "#/cleanup"] as [string, string]] : []),
+    [lists.nextBackup, "#/tools/friends-backup"],
+    [lists.nextReminder, "#/tools/export-reminder"],
+    ...((a.plan?.counts.total ?? 0) > 0 ? [[lists.nextOnThisDay, "#/tools/memories-on-this-day"] as [string, string]] : []),
+  ];
+  return section(
+    lists.nextHeading,
+    h("ol", { class: "next-list", role: "list" }, ...steps.map(([label, href]) => h("li", {}, h("a", { href }, label)))),
+    h("div", { class: "actions" }, copyTextButton({ label: lists.copySummaryButton, text: () => summaryText(a), done: lists.summaryCopied, key: "copy-summary" })),
+    h("p", { class: "caption" }, lists.summaryNote),
+  );
 }
 
 /** The Tools hub as one card, so the helpers are found from the first page and not only from the menu. */

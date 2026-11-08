@@ -20,6 +20,16 @@ export interface ListActionsOptions {
 
 let counter = 0;
 
+/** A button that copies one piece of text, and says so through the live region. The text is read at the moment of the press. */
+export function copyTextButton(options: { label: string; text: () => string; done: string; key: string }): HTMLButtonElement {
+  return button({
+    label: options.label,
+    icon: "copy",
+    key: options.key,
+    onclick: () => void copyText(options.text()).then((ok) => announce(ok ? options.done : common.copyFailed)),
+  });
+}
+
 export function listActions(items: readonly Candidate[], options: ListActionsOptions): HTMLElement {
   const helpId = `list-actions-help-${++counter}`;
   const save = button({

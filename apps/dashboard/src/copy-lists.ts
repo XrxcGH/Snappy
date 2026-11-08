@@ -5,6 +5,8 @@
  * contains export values; views insert usernames and counts with textContent.
  */
 
+import { formatCount } from "./format.ts";
+
 export const lists = {
   // Guided removal where there is no profile link to open (the desktop app, and the sample data).
   copyUsernameButton: "Copy username",
@@ -49,6 +51,20 @@ export const lists = {
   // The Overview when the results come from the saved history and no export is loaded: Memories are not saved with it.
   cardMemoriesLedger: "Not saved with your history",
   countsHeadingLedger: "In your saved history",
+
+  // Overview: what to do next, and a summary of the counts to copy. The summary holds counts only, never a username.
+  nextHeading: "Next steps",
+  nextCleanup: "Start with the Cleanup queue",
+  nextBackup: "Back up your friends",
+  nextReminder: "Make an export reminder",
+  nextOnThisDay: "Find Memories from this day",
+  copySummaryButton: "Copy summary",
+  summaryNote: "The summary holds counts only, never usernames.",
+  summaryCopied: "Summary copied.",
+  summaryDisappeared: (n: number) => `${formatCount(n)} may have removed me`,
+  summaryRequests: (n: number) => `${formatCount(n)} unaccepted ${n === 1 ? "request" : "requests"}`,
+  summaryQuiet: (n: number) => `${formatCount(n)} quiet`,
+  summaryQueue: (n: number) => `${formatCount(n)} to review`,
 
   // Related tools at the end of a page, and the Tools card on the Overview.
   relatedLabel: "Related tools",
