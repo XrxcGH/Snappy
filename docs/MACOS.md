@@ -22,7 +22,7 @@ The file is `Snappy_0.1.0-beta.1_universal.dmg`.
 
 ## What it needs
 
-macOS 13.3 (Ventura) or newer. The app is a single page that macOS draws with its own WebKit web view, and the page's script needs the WebKit of Safari 16.4, which is the one macOS 13.3 ships (an older web view cannot read the script and would show a blank window). The automated test ran on macOS 26 and nothing older has been tried, so 13.3 is the oldest version that should work, not one that was run.
+macOS 13.3 (Ventura) or newer. The app is a single page that macOS draws with its own WebKit web view, and the page’s script needs the WebKit of Safari 16.4, which is the one macOS 13.3 ships (an older web view cannot read the script and would show a blank window). The automated test ran on macOS 26 and nothing older has been tried, so 13.3 is the oldest version that should work, not one that was run.
 
 ## Install
 
