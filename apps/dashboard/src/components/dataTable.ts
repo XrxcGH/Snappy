@@ -68,13 +68,13 @@ export function cellNodes(cell: TableCell): Child[] {
  * screen reader hears what it is. A frame whose table fits (every table on a phone, where rows stack) stays a plain block with no extra
  * tab stop. Where ResizeObserver does not exist the frame is left as it is.
  */
-export function scrollRegion(wrap: HTMLElement, caption: string): HTMLElement {
+export function scrollRegion(wrap: HTMLElement, caption: string, labelFor: (caption: string) => string = common.scrollTableFor): HTMLElement {
   if (typeof ResizeObserver === "undefined") return wrap;
   const sync = (): void => {
     if (wrap.scrollWidth > wrap.clientWidth + 1) {
       wrap.setAttribute("tabindex", "0");
       wrap.setAttribute("role", "region");
-      wrap.setAttribute("aria-label", common.scrollTableFor(caption));
+      wrap.setAttribute("aria-label", labelFor(caption));
     } else {
       wrap.removeAttribute("tabindex");
       wrap.removeAttribute("role");

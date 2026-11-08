@@ -8,6 +8,7 @@ import { COMMANDS, displayText, displayTextWith } from "../terminal/commands.ts"
 import type { CommandId } from "../terminal/commands.ts";
 import type { ViewContext } from "../views/context.ts";
 import { button } from "./button.ts";
+import { scrollRegion } from "./dataTable.ts";
 import { fileChip } from "./fileChip.ts";
 import { terminalPanel } from "./terminalPanel.ts";
 
@@ -38,6 +39,14 @@ export function cliToolLink(): HTMLElement {
 }
 
 let counter = 0;
+
+/**
+ * The command in code. It is a tab stop, with a name, only while it is wider than its frame and has to be scrolled with the arrow
+ * keys; a command that fits is plain text and costs a keyboard user no stop (there is one block per tool page and five on the guide).
+ */
+function codeLine(text: string): HTMLElement {
+  return scrollRegion(h("pre", { class: "code" }, h("code", {}, text)), commandNotes.textLabel, (label) => label);
+}
 
 /**
  * A command shown the same way everywhere it appears: a line saying what it does, then Copy and Run on
@@ -106,7 +115,7 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
     "div",
     { class: "command code-block" },
     h("div", { class: "command-head" }, h("p", { class: "command-title" }, spec.title), h("div", { class: "command-actions" }, copy, run)),
-    h("pre", { class: "code", tabindex: "0" }, h("code", {}, text)),
+    codeLine(text),
     options.note === undefined ? null : h("p", { class: "command-note" }, options.note),
     spec.needsFile ? fileChip(ctx.terminal, { key: options.key }) : null,
     hint,
@@ -135,7 +144,7 @@ function copyOnlyBlock(id: CommandId, options: CommandBlockOptions): HTMLElement
     "div",
     { class: "command code-block command-copy-only" },
     h("div", { class: "command-head" }, h("p", { class: "command-title" }, title), h("div", { class: "command-actions" }, copy)),
-    h("pre", { class: "code", tabindex: "0" }, h("code", {}, text)),
+    codeLine(text),
     h("p", { class: "command-note" }, commandNotes.needsTerminal),
     options.note === undefined ? null : h("p", { class: "command-note" }, options.note),
     options.cliLink === true ? cliToolLink() : null,

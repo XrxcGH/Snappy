@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Actions } from "../src/actions.ts";
 import { common, terminal } from "../src/copy.ts";
 import { commandNotes } from "../src/copy-tools.ts";
@@ -120,6 +120,59 @@ describe("the pages that show commands", () => {
       expect(block.querySelector(".command-files") !== null, id).toBe(COMMANDS[id].needsFile);
       expect(block.querySelector("input")?.getAttribute("type") ?? "none", id).toBe(COMMANDS[id].needsFile ? "file" : "none");
     }
+  });
+});
+
+describe("the command text as a tab stop", () => {
+  let callbacks: (() => void)[];
+  beforeEach(() => {
+    callbacks = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(cb: () => void) {
+          callbacks.push(cb);
+        }
+        observe(): void {}
+        disconnect(): void {}
+      },
+    );
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function drawn(copyOnly: boolean): Promise<FakeElement> {
+    const { commandBlock } = await import("../src/components/commandBlock.ts");
+    const ctx = { store: createStore(emptyState), actions: {} as Actions, terminal: testTerminal() };
+    return runInScope(new Scope(true), () => commandBlock(ctx, "help", { key: "tab", ...(copyOnly ? { copyOnly: true } : {}) })) as unknown as FakeElement;
+  }
+  const resize = (pre: FakeElement, scroll: number, client: number): void => {
+    Object.defineProperty(pre, "scrollWidth", { value: scroll, configurable: true });
+    Object.defineProperty(pre, "clientWidth", { value: client, configurable: true });
+    for (const cb of callbacks) cb();
+  };
+
+  for (const copyOnly of [false, true]) {
+    it(`is no tab stop while the command fits, and a named region while it scrolls sideways${copyOnly ? " (copy-only block)" : ""}`, async () => {
+      const pre = (await drawn(copyOnly)).querySelector("pre") as FakeElement;
+      expect(pre.hasAttribute("tabindex")).toBe(false);
+      resize(pre, 300, 300);
+      expect(pre.hasAttribute("tabindex")).toBe(false);
+      expect(pre.hasAttribute("role")).toBe(false);
+      resize(pre, 900, 300);
+      expect(pre.getAttribute("tabindex")).toBe("0");
+      expect(pre.getAttribute("role")).toBe("region");
+      expect(pre.getAttribute("aria-label")).toBe(commandNotes.textLabel);
+      resize(pre, 300, 300);
+      expect(pre.hasAttribute("tabindex")).toBe(false);
+      expect(pre.hasAttribute("aria-label")).toBe(false);
+    });
+  }
+
+  it("leaves a plain pre where the engine cannot watch sizes", async () => {
+    vi.unstubAllGlobals();
+    const pre = (await drawn(false)).querySelector("pre") as FakeElement;
+    expect(pre.hasAttribute("tabindex")).toBe(false);
+    expect(pre.querySelector("code")).not.toBeNull();
   });
 });
 

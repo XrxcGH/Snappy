@@ -32,6 +32,8 @@ export const commandNotes = {
   defaultView: "The command shows the default view.",
   /** Under a command that cannot run here, because it reads a folder or a file this page cannot open. */
   needsTerminal: "This needs a terminal.",
+  /** The name of the command text while it scrolls sideways and can be focused. */
+  textLabel: "Command text",
 };
 
 export const hubSearch = {
