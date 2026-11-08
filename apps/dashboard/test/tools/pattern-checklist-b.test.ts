@@ -4,7 +4,8 @@
  * breaks a rule fails here the moment it is written. The pages' own tests check what each page shows.
  */
 import { describe, expect, it } from "vitest";
-import { collectCopy } from "../copy-rules.ts";
+import { collectCopy, textOf } from "../copy-rules.ts";
+import { FakeElement, FakeText } from "../fake-dom.ts";
 
 const IDS = ["export-reminder", "memories-on-this-day", "reach-out-first", "rescue-manifest", "reply-speed", "since-last-export", "storage-planner", "waiting-on-reply", "year-in-review"] as const;
 
@@ -21,6 +22,20 @@ async function all(): Promise<{ id: string; text: string }[]> {
 async function matching(re: RegExp): Promise<string[]> {
   return (await all()).filter((e) => re.test(e.text)).map((e) => `${e.id}: ${e.text}`);
 }
+
+describe("a table cell with a bare value and a phrase", () => {
+  it("is read once by the lint, as the phrase a screen reader hears", () => {
+    const cell = new FakeElement("td");
+    const short = new FakeElement("span");
+    short.setAttribute("aria-hidden", "true");
+    short.appendChild(new FakeText("27"));
+    const long = new FakeElement("span");
+    long.appendChild(new FakeText("27 sent"));
+    cell.appendChild(short);
+    cell.appendChild(long);
+    expect(textOf(cell)).toBe("27 sent");
+  });
+});
 
 describe("the words of the nine pages", () => {
   it("tell people to check in Snapchat, never in the app (the app is Snappy)", async () => {

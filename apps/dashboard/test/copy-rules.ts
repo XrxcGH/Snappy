@@ -361,10 +361,13 @@ export function collectCopy(source: Record<string, unknown>): Entry[] {
 export const BLOCK_TAGS = new Set(["p", "div", "ul", "ol", "li", "section", "table", "thead", "tbody", "tr", "td", "th", "details", "summary", "header", "footer", "main", "nav", "h1", "h2", "h3", "h4", "dl", "dt", "dd", "form", "fieldset", "legend", "caption", "pre", "button", "label", "a", "select", "option"]);
 export const hasClass = (el: FakeElement, c: string): boolean => el.classList.contains(c);
 export const isInline = (el: FakeElement): boolean => !BLOCK_TAGS.has(el.tagName) || (el.tagName === "a" && !hasClass(el, "btn") && !hasClass(el, "card-link"));
-/** Text of an element; sibling elements are separated by a space, because they are separate boxes on screen. */
+/**
+ * Text of an element; sibling elements are separated by a space, because they are separate boxes on screen. An element hidden from
+ * assistive technology adds nothing: a table cell that shows a bare value ("27") beside its phrase ("27 sent") is read once.
+ */
 export function rawText(n: FakeNode): string {
   if (n instanceof FakeText) return n.data;
-  if (!(n instanceof FakeElement) || n.tagName === "svg") return "";
+  if (!(n instanceof FakeElement) || n.tagName === "svg" || n.getAttribute("aria-hidden") === "true") return "";
   // A table cell with a bare value and a full phrase draws one of them at a time: the lint reads the phrase, which holds the value.
   if (n.classList.contains("cell-short")) return "";
   let out = "";
