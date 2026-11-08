@@ -1,7 +1,7 @@
 /**
  * Draws a TerminalBuffer in the page. Every line is a div.t-line holding span.t-run elements, built
  * with h() only: the text goes in as text, the only attribute is class, and the classes come from the
- * closed list in ansi.ts (plus the structural names t-line, t-art and t-run). No markup string, no style
+ * closed list in ansi.ts (plus the structural names t-line, t-art, t-run and t-block). No markup string, no style
  * attribute. Drawing is batched on a short timer, not on animation frames (a hidden tab runs none), and
  * only the lines that changed are touched. While a command runs the view follows new output unless the
  * person scrolled up; when it ends the view goes back to the first line, so the reading starts at the top.
@@ -50,10 +50,18 @@ const defaultSchedule = (fn: () => void, ms: number): (() => void) => {
 /** Box-drawing and block characters (U+2500 to U+259F): the logo and any other drawing built from them. */
 const ART = /[\u2500-\u259f]/;
 
-/** A line holding any of those is drawn tight (class t-art) so the pieces touch the lines above and below. */
+/** A run made only of those (and spaces between them): the bars of the logo, never a word. */
+const BLOCKS_ONLY = /^ *[─-▟][─-▟ ]*$/;
+
+/**
+ * A line holding any box or block character is drawn tight (class t-art) so the pieces touch the lines above and below,
+ * and each run of only such characters gets class t-block, which draws it a hair wider so neighbors touch left and right
+ * (the system draws every character at a fractional position, and a hairline of the background shows between two blocks).
+ */
 function lineElement(line: Line): HTMLElement {
   const art = line.runs.some((run) => ART.test(run.text));
-  return h("div", { class: art ? "t-line t-art" : "t-line" }, ...line.runs.map((run) => h("span", { class: run.cls === "" ? "t-run" : `t-run ${run.cls}` }, run.text)));
+  const runClass = (run: Line["runs"][number]): string => [ "t-run", ...(BLOCKS_ONLY.test(run.text) ? ["t-block"] : []), ...(run.cls === "" ? [] : [run.cls])].join(" ");
+  return h("div", { class: art ? "t-line t-art" : "t-line" }, ...line.runs.map((run) => h("span", { class: runClass(run) }, run.text)));
 }
 
 export function createLogView(options: LogViewOptions): LogView {
@@ -147,6 +155,20 @@ export function createLogView(options: LogViewOptions): LogView {
   };
 }
 
+/**
+ * The output font is drawn from the page's own inlined font files, and the browser loads a face the first time something
+ * uses it. The output uses the regular weight, which nothing else on the page uses until the first command runs, so a
+ * measurement made before then would be taken in the fallback font, a little narrower, and ask commands for too many
+ * columns. Asking for the face now, while the person reads the page, has it loaded by the time Run is pressed.
+ */
+export function warmOutputFont(): void {
+  try {
+    void document.fonts?.load('400 14px "JetBrains Mono"').catch(() => undefined);
+  } catch {
+    // No font loading API (a test page): nothing to warm.
+  }
+}
+
 /** The probe is this many characters long, so the width of one is measured to a fraction of a pixel. */
 const PROBE_CHARS = 100;
 
@@ -159,6 +181,7 @@ const PROBE_CHARS = 100;
  * did not fit wraps in the area, so nothing is cut off at the edge.
  */
 export function measureColumns(host: HTMLElement, fallback = 80): number {
+  warmOutputFont();
   const probe = h("span", { class: "t-probe", "aria-hidden": "true" }, "0".repeat(PROBE_CHARS));
   const area = h("div", { class: "t-log t-measure", "aria-hidden": "true" }, probe);
   host.appendChild(area);

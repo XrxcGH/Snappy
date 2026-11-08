@@ -3,7 +3,7 @@ import { copyText } from "../clipboard.ts";
 import { common, terminal } from "../copy.ts";
 import { h } from "../dom.ts";
 import { onDispose } from "../reactive.ts";
-import { createLogView, measureColumns } from "../terminal/ansi-view.ts";
+import { createLogView, measureColumns, warmOutputFont } from "../terminal/ansi-view.ts";
 import type { LogView } from "../terminal/ansi-view.ts";
 import type { CommandId, CommandSpec } from "../terminal/commands.ts";
 import type { PanelState } from "../terminal/controller.ts";
@@ -58,6 +58,7 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
   const { controller } = session;
   const { id, spec } = options;
   const root = h("div", { class: "command-panel" });
+  warmOutputFont();
   let log: LogView | null = null;
   let shown = "";
 

@@ -4,7 +4,7 @@
  */
 import { readFileSync } from "node:fs";
 import { beforeAll, describe, expect, it } from "vitest";
-import { MIN_COLUMNS, createLogView, measureColumns } from "../src/terminal/ansi-view.ts";
+import { MIN_COLUMNS, createLogView, measureColumns, warmOutputFont } from "../src/terminal/ansi-view.ts";
 import type { LogView } from "../src/terminal/ansi-view.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
 
@@ -104,6 +104,24 @@ describe("the width the commands are asked to fit", () => {
     expect(MIN_COLUMNS).toBeGreaterThanOrEqual(20); // the helper refuses fewer
   });
 
+  it("asks the browser for the output font first, so a measurement is never taken in the fallback font", () => {
+    const doc = document as unknown as { fonts?: { load: (spec: string) => Promise<unknown[]> } };
+    const asked: string[] = [];
+    doc.fonts = { load: (spec) => (asked.push(spec), Promise.resolve([])) };
+    try {
+      measureColumns(hostOf(384));
+      warmOutputFont();
+      expect(asked).toEqual(['400 14px "JetBrains Mono"', '400 14px "JetBrains Mono"']);
+      // A page without the font API, or one that refuses, is not an error.
+      doc.fonts = { load: () => Promise.reject(new Error("no")) };
+      expect(() => warmOutputFont()).not.toThrow();
+      delete doc.fonts;
+      expect(() => warmOutputFont()).not.toThrow();
+    } finally {
+      delete doc.fonts;
+    }
+  });
+
   it("stops at 100 on a wide screen", () => {
     expect(measureColumns(hostOf(4000))).toBe(100);
   });
@@ -136,6 +154,10 @@ describe("the output box styles", () => {
     expect(art).toMatch(/line-height:\s*1;/);
     expect(art).toMatch(/letter-spacing:\s*0;/);
     expect(art).toMatch(/font-variant-ligatures:\s*none/);
+  });
+
+  it("closes the hairline between touching blocks with a stroke in the text's own color", () => {
+    expect(rule(".t-block")).toMatch(/-webkit-text-stroke:\s*[\d.]+em currentColor/);
   });
 
   it("does not trap scrolling on a touch screen, and does not outgrow a short screen", () => {

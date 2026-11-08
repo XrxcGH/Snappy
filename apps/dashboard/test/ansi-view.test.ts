@@ -162,7 +162,7 @@ describe("what the view builds", () => {
     log.write(`${ESC}[1;2;31;32;33;34;90;38;5;99;38;2;255;154;99mx\n▐██▌\n`);
     log.flush();
     for (const node of el.descendants()) {
-      for (const cls of node.className.split(" ").filter(Boolean)) expect(["t-line", "t-art", "t-run", ...ANSI_CLASSES], cls).toContain(cls);
+      for (const cls of node.className.split(" ").filter(Boolean)) expect(["t-line", "t-art", "t-run", "t-block", ...ANSI_CLASSES], cls).toContain(cls);
     }
   });
 
@@ -172,6 +172,19 @@ describe("what the view builds", () => {
     log.flush();
     const lines = el.childNodes.filter((c): c is FakeElement => c instanceof FakeElement && c.classList.contains("t-line"));
     expect(lines.map((l) => l.classList.contains("t-art"))).toEqual([false, true, true, false, false]);
+  });
+
+  it("marks the runs of only block characters, so a word beside the logo is not drawn thicker", () => {
+    const { log, el } = view();
+    // One run holding a word as well as blocks is not marked.
+    log.write("  ▐███▌  Snappy  ▐█▌\n");
+    // Colored runs: the bars alone are marked, the word is not.
+    log.write(`${ESC}[1m▐████▌${ESC}[0m  Snappy\n`);
+    log.flush();
+    const runs = el.querySelectorAll(".t-run").map((r) => [r.textContent, r.classList.contains("t-block")]);
+    expect(runs).toContainEqual(["  ▐███▌  Snappy  ▐█▌", false]);
+    expect(runs).toContainEqual(["▐████▌", true]);
+    expect(runs).toContainEqual(["  Snappy", false]);
   });
 
   it("survives random hostile output with the same guarantees", () => {

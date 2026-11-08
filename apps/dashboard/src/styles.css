@@ -629,6 +629,9 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 /* The logo and any other drawing of box and block characters: the line is exactly as tall as the characters,
    so the pieces touch the lines above and below instead of showing a gap, and nothing spaces the letters out. */
 .t-art { min-height: 0; line-height: 1; letter-spacing: 0; font-variant-ligatures: none; }
+/* Each block is drawn at a fractional pixel position, so two touching ones leave a hairline of background between them.
+   A stroke of the text's own color, a few hundredths of an em wide, closes it. Only runs of block characters get it. */
+.t-block { -webkit-text-stroke: 0.06em currentColor; }
 .t-trimmed { color: var(--text-muted); font-style: italic; }
 .t-probe { position: absolute; visibility: hidden; white-space: pre; }
 .ansi-violet { color: var(--accent-fg); }
