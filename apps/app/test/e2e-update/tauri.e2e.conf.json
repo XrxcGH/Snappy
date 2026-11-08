@@ -1,0 +1,13 @@
+{
+  "$comment": "Configuration overlay for the end-to-end update drill (run-e2e.mjs). It gives the test build its own identity, so it can never touch a real Snappy install or the real app's data. The drill adds a `version` for each build. Never used for a release: build.rs refuses the test feature without this identifier, and refuses it outright when SNAPPY_RELEASE=1.",
+  "productName": "Snappy E2E",
+  "identifier": "com.snappy.e2e",
+  "bundle": {
+    "windows": {
+      "allowDowngrades": false,
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}

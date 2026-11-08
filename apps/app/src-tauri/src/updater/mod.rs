@@ -721,6 +721,16 @@ fn bump_failed(st: &mut State, version: &str) {
     }
 }
 
+/// The version this program is. The end-to-end test build can be given another one at compile time (`SNAPPY_E2E_VERSION`),
+/// so two builds that differ only in version can be made without editing the manifest files.
+#[cfg(feature = "dev-update-endpoint")]
+const RUNNING_VERSION: &str = match option_env!("SNAPPY_E2E_VERSION") {
+    Some(v) => v,
+    None => env!("CARGO_PKG_VERSION"),
+};
+#[cfg(not(feature = "dev-update-endpoint"))]
+const RUNNING_VERSION: &str = env!("CARGO_PKG_VERSION");
+
 /// Where this build looks for updates: the repository's GitHub releases. The end-to-end test build
 /// (`dev-update-endpoint`) instead reads a loopback address from the environment, and has no updater
 /// at all when that is not set.
@@ -740,7 +750,7 @@ fn build_endpoint() -> Option<(Endpoint, Policy)> {
 /// than Windows (their update path is a later decision) and when the running version is unreadable.
 #[cfg(windows)]
 pub fn for_app(data_dir: &Path, product: &str, publisher: &str, busy: Arc<dyn Fn() -> bool + Send + Sync>) -> Option<Updater> {
-    let running_text = env!("CARGO_PKG_VERSION");
+    let running_text = RUNNING_VERSION;
     let (endpoint, policy) = build_endpoint()?;
     let config = Config {
         endpoint,

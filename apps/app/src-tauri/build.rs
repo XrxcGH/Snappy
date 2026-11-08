@@ -16,7 +16,7 @@ fn main() {
 /// Fails the build when a release would carry test settings or placeholder update keys (see
 /// `build_guards.rs` for the rules, which have their own unit tests).
 fn release_and_test_settings_guard() {
-    for name in ["SNAPPY_RELEASE", "TAURI_CONFIG", "SNAPPY_E2E_UNIT_TESTS", "SNAPPY_E2E_PUBKEYS"] {
+    for name in ["SNAPPY_RELEASE", "TAURI_CONFIG", "SNAPPY_E2E_UNIT_TESTS", "SNAPPY_E2E_PUBKEYS", "SNAPPY_E2E_VERSION"] {
         println!("cargo:rerun-if-env-changed={name}");
     }
     for file in ["update-public-keys.txt", "build_guards.rs", "src/updater/keys.rs", "src/updater/testdata/signatures.json", "src/updater/testdata/real-tauri.json"] {

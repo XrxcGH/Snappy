@@ -339,6 +339,33 @@ mod tests {
         assert!(started.elapsed() < Duration::from_secs(8), "the idle limit ends the wait long before the server answers");
     }
 
+    /// The certificate check has no override: a self-signed server (which the plain-HTTP loopback tests cannot cover) is refused.
+    /// Needs `node` and `openssl` on the PATH, so it is ignored by default: `cargo test --lib -- --ignored self_signed`.
+    #[test]
+    #[ignore = "needs node and openssl on the PATH"]
+    fn a_self_signed_https_server_is_refused_as_a_certificate_failure() {
+        use std::io::{BufRead, BufReader};
+        use std::process::{Command, Stdio};
+        let dir = crate::updater::store::scratch_dir("tls");
+        let made = Command::new("openssl")
+            .current_dir(&dir)
+            .env("MSYS2_ARG_CONV_EXCL", "*")
+            .args(["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", "k.pem", "-out", "c.pem", "-days", "1", "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1"])
+            .output()
+            .expect("openssl on the PATH");
+        assert!(made.status.success(), "{}", String::from_utf8_lossy(&made.stderr));
+        let script = "const https=require('https'),fs=require('fs');const s=https.createServer({key:fs.readFileSync('k.pem'),cert:fs.readFileSync('c.pem')},(q,r)=>r.end('hello'));s.listen(0,'127.0.0.1',()=>console.log(s.address().port));";
+        let mut server = Command::new("node").current_dir(&dir).args(["-e", script]).stdout(Stdio::piped()).spawn().expect("node on the PATH");
+        let mut line = String::new();
+        BufReader::new(server.stdout.take().unwrap()).read_line(&mut line).unwrap();
+        let url = format!("https://127.0.0.1:{}/x", line.trim());
+        let mut sink = |_: &[u8]| Ok(());
+        let result = fetch(&SystemTransport, &url, Policy::Loopback, &options(10, true), &mut sink);
+        let _ = server.kill();
+        assert_eq!(result, Err(NetError::Tls), "a certificate that no trusted authority signed is a failure, not a warning");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn the_overall_deadline_ends_a_slow_fetch() {
         let server = Server::start(|_| Reply::ok(b"x".to_vec()));

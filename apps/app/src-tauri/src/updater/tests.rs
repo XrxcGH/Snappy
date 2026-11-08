@@ -38,6 +38,8 @@ struct Serve {
     manifest_status: u16,
     manifest_redirect: Option<String>,
     wrong_url: bool,
+    /// The Content-Length the installer response claims, whatever its body is.
+    installer_length: Option<usize>,
 }
 
 struct SharedProbe(Mutex<Fake>);
@@ -111,6 +113,7 @@ impl Rig {
             manifest_status: 200,
             manifest_redirect: None,
             wrong_url: false,
+            installer_length: None,
         }));
         let for_server = serve.clone();
         let server = Server::start(move |req| {
@@ -127,7 +130,11 @@ impl Rig {
                 let json = format!(r#"{{"version":"{v}","notes":"ignored","platforms":{{"windows-x86_64":{{"signature":"{}","url":"{url}"}}}}}}"#, s.signature);
                 Reply::ok(json.into_bytes())
             } else if req.path == format!("{BASE_PATH}/releases/download/v{v}/Snappy_{v}_x64-setup.exe") {
-                Reply::ok(s.installer.clone())
+                let reply = Reply::ok(s.installer.clone());
+                match s.installer_length {
+                    Some(n) => reply.declaring(n),
+                    None => reply,
+                }
             } else {
                 Reply::status(404)
             }
@@ -157,8 +164,13 @@ impl Rig {
 
     /// A fresh updater over the same folder and server, as after a restart of the program.
     fn make(&self, running: &str) -> Updater {
+        self.make_trusting(running, &["x", "z"])
+    }
+
+    /// Like `make`, trusting the fixture keys named (the rotation test swaps the list).
+    fn make_trusting(&self, running: &str, trusted: &[&str]) -> Updater {
         let f = fixtures();
-        let keys = Keys::from_texts(&[f["keys"]["x"].as_str().unwrap(), f["keys"]["z"].as_str().unwrap()]).unwrap();
+        let keys = Keys::from_texts(&trusted.iter().map(|k| f["keys"][*k].as_str().unwrap().to_string()).collect::<Vec<_>>()).unwrap();
         let (clock, busy) = (self.clock.clone(), self.busy.clone());
         Updater::new(
             Config {
@@ -363,6 +375,44 @@ fn a_tampered_installer_is_refused_deleted_and_not_fetched_again_for_a_day() {
     rig.advance(86_400);
     rig.up.run_check(false);
     assert_eq!(rig.installers(), 3);
+}
+
+#[test]
+fn an_installer_over_the_size_cap_is_refused_before_any_of_it_is_read() {
+    for manual in [false, true] {
+        let rig = Rig::new("0.1.5");
+        rig.serve(|s| s.installer_length = Some(MAX_INSTALLER_BYTES as usize + 1));
+        rig.up.set_auto(true);
+        rig.up.run_check(manual);
+        let s = rig.up.status();
+        assert_eq!(s.error, Some("size"), "manual {manual}");
+        assert_eq!(s.state, if manual { "failed" } else { "idle" }, "a quiet failure unless the person asked");
+        assert!(!rig.staged_path().exists());
+        assert!(!rig.paths().part_file(&Version::parse("0.2.0").unwrap()).exists());
+        assert!(!s.link_enabled, "a network-side failure never counts toward the quiet link");
+    }
+}
+
+#[test]
+fn a_key_rotation_moves_trust_to_the_new_list_and_drops_the_old_signing_key() {
+    // Before the rotation the list is [x, z] and a release signed by x installs (every other test). After it the list is
+    // [y, z]: the old signing key x is no longer trusted, and a release signed by the new key y is.
+    let old_key_release = Rig::new("0.1.5");
+    let rotated = old_key_release.make_trusting("0.1.5", &["y", "z"]);
+    rotated.set_auto(true);
+    rotated.run_check(false); // the server offers the release signed by x
+    assert_eq!((rotated.status().state, rotated.status().error), ("failed", Some("signature")), "the old signing key is no longer accepted");
+    assert!(!old_key_release.staged_path().exists());
+
+    let new_key_release = Rig::new("0.1.5");
+    new_key_release.serve(|s| s.signature = text(&["signatures", "signedByOtherKey"])); // signed by y
+    let rotated = new_key_release.make_trusting("0.1.5", &["y", "z"]);
+    rotated.set_auto(true);
+    rotated.run_check(false);
+    assert_eq!(rotated.status().state, "staged", "a release signed by the new key installs");
+    let not_yet_rotated = new_key_release.make_trusting("0.1.5", &["x", "z"]);
+    assert_eq!(not_yet_rotated.install(true), Err(InstallError::Failed), "a copy that still trusts only x refuses to run the y-signed file");
+    assert!(new_key_release.launcher.started.lock().unwrap().is_empty());
 }
 
 #[test]

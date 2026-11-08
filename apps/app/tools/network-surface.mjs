@@ -156,7 +156,7 @@ export function checkCargoToml(file, text) {
 /** The test feature and its settings must be named nowhere in configuration or a release path. */
 export function checkTestFeatureNotInRelease(file, text) {
   const f = norm(file);
-  return /dev-update-endpoint|SNAPPY_UPDATE_ENDPOINT|SNAPPY_E2E_PUBKEYS|SNAPPY_E2E_UNIT_TESTS|com\.snappy\.e2e/.test(text) ? [`${f}: names the end-to-end test feature or its settings`] : [];
+  return /dev-update-endpoint|SNAPPY_UPDATE_ENDPOINT|SNAPPY_E2E_PUBKEYS|SNAPPY_E2E_VERSION|SNAPPY_E2E_UNIT_TESTS|com\.snappy\.e2e/.test(text) ? [`${f}: names the end-to-end test feature or its settings`] : [];
 }
 
 /** TypeScript or JavaScript of core, the command line and the dashboard must not reach the shell. */
@@ -255,7 +255,7 @@ export function peImports(buf) {
 
 const BANNED_DLLS = ["wininet.dll", "urlmon.dll", "qmgr.dll", "bitsproxy.dll", "bitsigd.dll"];
 /** Names and texts that only a test build contains. */
-export const TEST_ONLY_TEXT = ["SNAPPY_UPDATE_ENDPOINT", "SNAPPY_E2E_PUBKEYS", "com.snappy.e2e", "TEST_ONLY"];
+export const TEST_ONLY_TEXT = ["SNAPPY_UPDATE_ENDPOINT", "SNAPPY_E2E_PUBKEYS", "SNAPPY_E2E_VERSION", "com.snappy.e2e", "TEST_ONLY"];
 
 /**
  * Problems with a built Windows program: it must import winhttp.dll (it makes the update check) and none of the other
