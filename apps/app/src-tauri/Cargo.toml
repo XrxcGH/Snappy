@@ -16,13 +16,16 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 # Deliberately small: the shell and the native file dialog (shown from Rust). No file-system, http,
-# shell, opener, updater or telemetry plugin. Do not add one. serde is only for the three commands.
+# shell, opener, updater or telemetry plugin. Do not add one. The updater is our own code (src/updater): no updater plugin.
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 # The update manifest (a small JSON file) is parsed here. Already in the tree through tauri.
 serde_json = "1"
+# The update signature check (minisign, no dependencies of its own) and the digest of a rejected signature.
+minisign-verify = "0.3"
+sha2 = "0.10"
 
 # Windows only: switch off SmartScreen and autofill on the live WebView2 controller (see lib.rs).
 # Both are already dependencies of the system-webview layer; neither has any network code.

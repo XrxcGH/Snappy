@@ -1,0 +1,15 @@
+# The two PUBLIC keys that installed copies of Snappy trust for updates. Public keys only.
+#
+# PLACEHOLDER: the values below are placeholders, so no update can be verified by a build made
+# from this file. A release build (SNAPPY_RELEASE=1) refuses to compile until both are replaced
+# by the maintainer's real keys (build.rs checks this and that neither is a test key).
+#
+# Each value is the content of the `.pub` file that `tauri signer generate` writes: one long line
+# of base64. Generate the two keypairs offline, on the maintainer's own computer, and put only the
+# public halves here. The private keys and their passphrases never go in this repository.
+#
+#   signing   signs every release. Used by the maintainer's signing tool.
+#   recovery  signs only a release that rotates the keys. Kept on separate offline media.
+#
+signing = PLACEHOLDER-REPLACE-WITH-THE-SIGNING-PUBLIC-KEY
+recovery = PLACEHOLDER-REPLACE-WITH-THE-RECOVERY-PUBLIC-KEY

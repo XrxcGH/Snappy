@@ -1,0 +1,6 @@
+{
+  "note": "TEST-ONLY. Made by hand with tauri-cli 2.12.4: tauri signer generate (a throwaway key, private part not kept) and tauri signer sign --app-version 0.2.0 on a file named Snappy_0.2.0_x64-setup.exe. Public key, stand-in bytes and signature only.",
+  "publicKey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDAxNDE0Mjk2QUQ0QTIwRTAKUldUZ0lFcXRsa0pCQWFHT1prVU5qLzk0c3FsS2ltdGhyUm4rSTRVOU8zZ2Qvck5Pdk5QbmxuYVQK",
+  "contentBase64": "VEVTVC1PTkxZIHJlYWwgdGF1cmkgc2lnbmVyIHN0YW5kLWluCg==",
+  "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVUZ0lFcXRsa0pCQVp2SE1haW92WlQrZXd0MkRaNk5tS0htZ010UlZtYjRTS1NXK29Kd0xVMVAyVVBJd1oyYW9oZ0JuRDlBeS90R251cTBXVFRvNk1UMkQyVEdkdmJQalFvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzk0MTIxMDMxCWZpbGU6U25hcHB5XzAuMi4wX3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjIuMApVNFhycFVuL1pIQkNmWnJGN0tRVXh4b2pIamE1YVI4Z1kvaHdYSGJIMnBkSTdEU3hMZ0t6Z0lhZU9tdE1FTU9LTkcwZGtWVDZaRXlaSnRnNDgvVW1CZz09Cg=="
+}

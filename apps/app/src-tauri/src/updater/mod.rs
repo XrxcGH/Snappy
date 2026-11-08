@@ -2,7 +2,9 @@
 //! commands; everything that decides what is downloaded, trusted and installed lives here, in Rust.
 //! Nothing in this module takes an address, a host, a header, a version or a path from the page.
 
+pub mod keys;
 pub mod manifest;
+pub mod verify;
 
 use serde::Serialize;
 
