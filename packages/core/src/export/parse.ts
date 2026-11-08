@@ -224,7 +224,7 @@ export function combineMediaNotOpened(issues: ExportIssue[]): ExportIssue[] {
  */
 function listOnlyNote(i: ExportIssue): ExportIssue {
   return i.code === "memories-no-media-source"
-    ? issue("info", "memories-list-only", "Your ZIP files hold the Memories list but no photos or videos. Choose Export your Memories to rescue them.")
+    ? issue("info", "memories-list-only", "The ZIP files you added hold the Memories list but no photos or videos. If your export has more parts, add them. If not, choose Export your Memories to rescue them.")
     : i;
 }
 
