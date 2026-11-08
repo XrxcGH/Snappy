@@ -227,8 +227,8 @@ describe("the desktop frontend", () => {
     expect(html).toContain("Choose ZIP files");
   });
 
-  it("stays under the dashboard's own page size limit (apps/dashboard/test/build.test.ts), which this build does not raise", () => {
-    expect(Buffer.byteLength(frontendBuild(undefined))).toBeLessThan(PAGE_SIZE_LIMIT); // the same limit as apps/dashboard/test/build.test.ts
+  it("stays under the dashboard's own page size limit (apps/dashboard/test/page-size-limit.ts), which this build does not raise", () => {
+    expect(Buffer.byteLength(frontendBuild(undefined))).toBeLessThan(PAGE_SIZE_LIMIT); // the same limit as apps/dashboard/test/build.test.ts uses
   });
 
   it("tells the dashboard it runs in the desktop app before the dashboard starts, and hides the profile links", () => {
