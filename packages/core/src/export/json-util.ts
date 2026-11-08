@@ -172,6 +172,16 @@ export function parseJsonBytes(label: string, bytes: Uint8Array): { value?: unkn
   }
 }
 
+/**
+ * The note for dates that fitted none of the known shapes and were read by a best guess (see toMs).
+ * Undefined when there were none. `file` is a fixed system file name.
+ */
+export function looseDatesIssue(file: string, count: number): ExportIssue | undefined {
+  if (count <= 0) return undefined;
+  const one = count === 1;
+  return issue("info", "dates-read-loosely", `${count} ${one ? "date" : "dates"} in ${file} had an unusual format. Snappy read ${one ? "it" : "them"} as UTC, so ${one ? "it" : "they"} may be a day off.`);
+}
+
 /** "1 entry was" / "3 entries were" style pluralisation for issue messages. */
 export function entries(n: number): string {
   return `${n} entr${n === 1 ? "y" : "ies"}`;

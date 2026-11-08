@@ -53,8 +53,10 @@ export const DAY_MS = 24 * 60 * 60 * 1000;
  * and "YYYY-MM-DD HH:MM:SS UTC". Strings without a zone are read as UTC, never as machine-local
  * time, so results do not depend on where the code runs. Returns undefined when it cannot be understood.
  * Values outside 1990-01-01 .. 2100-01-01 are rejected as implausible.
+ * toMsCounting is the same conversion that calls `onLoose` when the value was read by the engine's own date parser, after none of the known
+ * shapes fitted: such a date is a guess (a day-first locale date reads month-first, say), so callers count them.
  */
-export function toMs(value: unknown): number | undefined {
+export function toMsCounting(value: unknown, onLoose?: () => void): number | undefined {
   const LOW = Date.UTC(1990, 0, 1);
   const HIGH = Date.UTC(2100, 0, 1);
   const ok = (n: number) => (Number.isFinite(n) && n >= LOW && n <= HIGH ? n : undefined);
@@ -93,9 +95,17 @@ export function toMs(value: unknown): number | undefined {
     const zoned =
       /(?:[\d\s])(?:Z|UTC|GMT|[ECMP][SD]T)\s*$/i.test(s) || /GMT[+-]\d{4}/i.test(s) || (hasTime && /\d\s*[+-]\d{2}(?::?\d{2})?\s*$/.test(s));
     const t = Date.parse(zoned ? s : `${s} UTC`);
-    return Number.isNaN(t) ? undefined : ok(t);
+    const loose = Number.isNaN(t) ? undefined : ok(t);
+    // An ISO date with an explicit offset is exact, whatever parser read it: only real guesses are counted.
+    if (loose !== undefined && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})$/i.test(s)) onLoose?.();
+    return loose;
   }
   return undefined;
+}
+
+/** Best-effort conversion of an export timestamp to epoch ms (see toMsCounting); undefined when it cannot be understood. */
+export function toMs(value: unknown): number | undefined {
+  return toMsCounting(value);
 }
 
 /** FNV-1a 32-bit hash, hex string. Stable ids only; NOT cryptographic. */

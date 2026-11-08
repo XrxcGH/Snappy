@@ -1,6 +1,6 @@
 import type { ChatEvent, ExportIssue } from "../types.ts";
-import { hashString, normUser, toMs } from "../util.ts";
-import { asBool, asText, compileAllow, entries, isRecord, issue, normKey, readAllowed } from "./json-util.ts";
+import { hashString, normUser, toMs, toMsCounting } from "../util.ts";
+import { asBool, asText, compileAllow, entries, isRecord, issue, looseDatesIssue, normKey, readAllowed } from "./json-util.ts";
 
 /**
  * The two per-conversation history files. chat_history.json holds saved chats; snap_history.json
@@ -129,6 +129,7 @@ export class HistoryReader {
   private skippedContainers = 0;
   private badEntries = 0;
   private badTimestamps = 0;
+  private looseDates = 0;
   private directionUnknown = 0;
   private noConversation = 0;
   private conversations = 0;
@@ -179,7 +180,7 @@ export class HistoryReader {
   add(rawKey: string, raw: Record<string, unknown>): void {
     this.begin(rawKey);
     const f = readAllowed(raw, ENTRY_ALLOW);
-    const at = toMs(f.createdUs) ?? toMs(f.created);
+    const at = toMs(f.createdUs) ?? toMsCounting(f.created, () => void this.looseDates++);
     if (at === undefined) {
       this.badTimestamps++;
       return;
@@ -228,6 +229,8 @@ export class HistoryReader {
     if (this.directionUnknown > 0) {
       issues.push(issue("info", `${code}-direction-unknown`, `${this.directionUnknown} ${noun}${this.directionUnknown === 1 ? " does" : "s do"} not say if you sent or received ${this.directionUnknown === 1 ? "it" : "them"}. ${this.directionUnknown === 1 ? "It still counts" : "They still count"} as activity.`));
     }
+    const looseNote = looseDatesIssue(file, this.looseDates);
+    if (looseNote !== undefined) issues.push(looseNote);
     // A small share is a note. When a large share fell out, the layout is probably not the one Snappy
     // expects and the results may be wrong: that is a warning, so the person notices it.
     const unmatchedShare = this.noConversation / Math.max(1, this.noConversation + this.events.length);

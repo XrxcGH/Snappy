@@ -1,8 +1,8 @@
 import { pairMemories } from "../memories/pair.ts";
 import type { MemoryMediaFile } from "../memories/pair.ts";
 import type { ExportIssue, MemoriesPairing, MemoryItem, MemoryMediaType } from "../types.ts";
-import { hashString, toMs } from "../util.ts";
-import { asText, compileAllow, entries, isRecord, issue, normKey, readAllowed } from "./json-util.ts";
+import { hashString, toMsCounting } from "../util.ts";
+import { asText, compileAllow, entries, isRecord, issue, looseDatesIssue, normKey, readAllowed } from "./json-util.ts";
 
 const SECTION_ALIASES = new Set(["savedmedia", "memories", "savedmemories", "media"]);
 
@@ -59,6 +59,7 @@ export function parseMemoriesJson(obj: unknown): { memories: MemoryItem[]; issue
   const usedIds = new Map<string, number>();
   let invalid = 0;
   let badDates = 0;
+  let loose = 0;
 
   for (const raw of list) {
     if (!isRecord(raw)) {
@@ -66,7 +67,7 @@ export function parseMemoriesJson(obj: unknown): { memories: MemoryItem[]; issue
       continue;
     }
     const f = readAllowed(raw, ENTRY_ALLOW);
-    const date = toMs(f.date) ?? null;
+    const date = toMsCounting(f.date, () => void loose++) ?? null;
     if (f.date !== undefined && date === null) badDates++;
 
     const links = [asText(f.directUrl), asText(f.linkUrl)].filter(
@@ -92,6 +93,8 @@ export function parseMemoriesJson(obj: unknown): { memories: MemoryItem[]; issue
 
   if (invalid > 0) issues.push(issue("warning", "memories-invalid-entries", `${entries(invalid)} in memories_history.json could not be read and ${invalid === 1 ? "was" : "were"} skipped.`));
   if (badDates > 0) issues.push(issue("info", "memories-bad-date", `${badDates} ${badDates === 1 ? "Memory has" : "Memories have"} a date Snappy could not read.`));
+  const looseNote = looseDatesIssue("memories_history.json", loose);
+  if (looseNote !== undefined) issues.push(looseNote);
   return { memories: items, issues };
 }
 

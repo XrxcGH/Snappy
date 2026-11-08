@@ -1,6 +1,6 @@
 import type { DeletedFriendRecord, ExportIssue, FriendRecord, ParsedFriends } from "../types.ts";
-import { MAX_USERNAME_LENGTH, normUser, toMs } from "../util.ts";
-import { asText, compileAllow, entries, isRecord, issue, normKey, readAllowed } from "./json-util.ts";
+import { MAX_USERNAME_LENGTH, normUser, toMsCounting } from "../util.ts";
+import { asText, compileAllow, entries, isRecord, issue, looseDatesIssue, normKey, readAllowed } from "./json-util.ts";
 
 type SectionName = keyof ParsedFriends;
 
@@ -50,7 +50,7 @@ interface ParsedEntry {
   deletedAtGuessed: boolean;
 }
 
-function parseEntry(raw: unknown, isDeleted: boolean): ParsedEntry | undefined {
+function parseEntry(raw: unknown, isDeleted: boolean, loose: { count: number }): ParsedEntry | undefined {
   // A bare string/number is ambiguous (it could be a display name), so it is not trusted as a username.
   if (!isRecord(raw)) return undefined;
 
@@ -61,14 +61,15 @@ function parseEntry(raw: unknown, isDeleted: boolean): ParsedEntry | undefined {
   if (username === "" || username.length > MAX_USERNAME_LENGTH) return undefined;
 
   const record: DeletedFriendRecord = { username };
-  const createdAt = toMs(f.createdAt);
+  const onLoose = (): void => void loose.count++;
+  const createdAt = toMsCounting(f.createdAt, onLoose);
   if (createdAt !== undefined) record.createdAt = createdAt;
-  const modifiedAt = toMs(f.modifiedAt);
+  const modifiedAt = toMsCounting(f.modifiedAt, onLoose);
   if (modifiedAt !== undefined) record.modifiedAt = modifiedAt;
 
   let deletedAtGuessed = false;
   if (isDeleted) {
-    const explicit = toMs(f.deletedAt);
+    const explicit = toMsCounting(f.deletedAt, onLoose);
     // Best-effort fallback: the export may stash the deletion time in the generic timestamps.
     const deletedAt = explicit ?? modifiedAt ?? createdAt;
     if (deletedAt !== undefined) {
@@ -103,6 +104,7 @@ export function parseFriendsJson(obj: unknown): { friends: ParsedFriends; issues
   let guessedDeletedDates = 0;
   let badSections = 0;
   let dropped = 0;
+  const loose = { count: 0 };
 
   for (const [key, value] of sections) {
     const section = SECTION_BY_ALIAS.get(normKey(key));
@@ -118,7 +120,7 @@ export function parseFriendsJson(obj: unknown): { friends: ParsedFriends; issues
     recognised++;
     const out = friends[section] as FriendRecord[];
     for (const raw of value) {
-      const parsed = parseEntry(raw, section === "deletedFriends");
+      const parsed = parseEntry(raw, section === "deletedFriends", loose);
       if (!parsed) {
         dropped++;
         continue;
@@ -142,6 +144,8 @@ export function parseFriendsJson(obj: unknown): { friends: ParsedFriends; issues
   if (guessedDeletedDates > 0) {
     issues.push(issue("info", "deleted-date-guessed", `${guessedDeletedDates} ${guessedDeletedDates === 1 ? "friend you removed has" : "friends you removed have"} no removal date. Snappy used another date from the file.`));
   }
+  const looseNote = looseDatesIssue("friends.json", loose.count);
+  if (looseNote !== undefined) issues.push(looseNote);
   if (friends.pendingRequests.length > 0) {
     issues.push(issue("info", "pending-direction-unknown", "The export does not say if pending requests were sent or received, so Snappy treats them as unknown."));
   }

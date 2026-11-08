@@ -164,6 +164,8 @@ export function buildVariants(): Variant[] {
   add("v08", "localized section names", [part(withFriends({ Freunde: range(5).map((i) => friendEntry(`friend_${i}`, i)), "Gelöschte Freunde": [{ Username: "gone_0", Date: stamp(0) }] }))], ["friends-layout-unknown","friends-no-sections"], 0);
   add("v09", "snake_case keys", [part(withFriends({ friends: range(5).map((i) => ({ username: `friend_${i}`, creation_timestamp: stamp(i) })) }))], [], 5);
   add("v10", "friends nested one level", [part(withFriends({ "User Data": friendsJson() }))], ["friends-layout-unknown","friends-no-sections"], 0);
+  const stamps = ["2023-04-01 12:30:00 UTC", "2023-04-01T12:30:00+02:00", 1680352200, "1680352200000", "04/05/2023", "Apr 5, 2023 10:00 PM"];
+  add("v11", "six date shapes, two of them guesses", [part(withFriends({ Friends: stamps.map((d, i) => ({ Username: `friend_${i}`, "Creation Timestamp": d })) }))], ["dates-read-loosely"], 6);
   add("v15", "empty Friends with deleted friends listed", [part(withFriends({ Friends: [], "Deleted Friends": range(5).map((i) => ({ Username: `gone_${i}`, Date: stamp(i) })) }))], ["friends-empty-but-deleted"], 0);
   add("v20", "a ZIP inside a ZIP", [{ name: "mydata~1700000000000.zip", bytes: zipSync({ "mydata~1700000000000.zip": [zipOf(baseFiles()), { level: 0 }] }) }], ["nested-zip"], 0);
   add("v21a", "empty file", [{ name: "mydata~1700000000000.zip", bytes: new Uint8Array(0) }], ["zip-unreadable"], 0);
