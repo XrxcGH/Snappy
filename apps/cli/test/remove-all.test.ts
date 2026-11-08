@@ -14,14 +14,14 @@ describe("removeAll", () => {
   it("removes a match that the first pass joins together from the pieces around another", () => {
     expect(removeAll("aabb", /ab/g)).toBe("");
     expect(removeAll("o<!-- x -->n", /<!--[\s\S]*?-->/g)).toBe("on");
-    expect(removeAll("<scr<script>ipt>", /<script>/g)).toBe("");
+    expect(removeAll("{ta{tag}g}", /{tag}/g)).toBe("");
     expect(removeAll("<!<!-- a -->-- b -->", /<!--[\s\S]*?-->/g)).toBe("");
     expect(removeAll("xxxyyy", /xy/g)).toBe("");
   });
 
   it("leaves nothing a second pass would remove, for any of these inputs", () => {
-    const patterns = [/ab/g, /<script>/gi, /\bon\w+=/gi, USERNAMES];
-    for (const input of ["aabbab", "<scr<SCRIPT>ipt>", "o<script>n<script>click=", "onon<script>click=click=", "ghost_ghost_12_3 oneway_7"]) {
+    const patterns = [/ab/g, /{tag}/gi, /\bon\w+=/gi, USERNAMES];
+    for (const input of ["aabbab", "{ta{TAG}g}", "o{tag}n{tag}click=", "onon{tag}click=click=", "ghost_ghost_12_3 oneway_7"]) {
       for (const pattern of patterns) {
         const once = removeAll(input, pattern);
         expect(removeAll(once, pattern), `${input} / ${pattern}`).toBe(once);
