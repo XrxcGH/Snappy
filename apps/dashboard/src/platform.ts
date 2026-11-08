@@ -16,7 +16,7 @@ export interface Platform {
   /** Reads the parts. Replaces the background reader when the parts are not ordinary browser files. */
   runImport?: ImportRunner;
   /** Set only inside the desktop app: adds its note to the Privacy page. The value is the system the app runs on. */
-  desktop?: "windows" | "other";
+  desktop?: "windows" | "macos" | "other";
   /** False hides the "Open in Snapchat" buttons. The default is to show them. */
   profileLinks?: boolean;
   /**
