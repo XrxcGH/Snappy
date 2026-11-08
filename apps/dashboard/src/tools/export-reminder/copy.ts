@@ -20,6 +20,7 @@ export const copy = {
   timeHelp: "Leave it empty for an all-day event.",
   alertHeader: "Alert before",
   alertHelp: "Whole days, from 0 to 30. Leave it empty for no alert.",
+  alertPlaceholder: "Optional",
   zoneHeader: "Time zone",
   zoneHelp: "It decides which calendar day your dates fall on.",
 

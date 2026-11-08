@@ -2,6 +2,9 @@
  * Export reminder: what it computes from the settings and the export date, and what its page shows. Synthetic data only.
  * Usernames of the sample export are canaries: none may reach a result, a note, an announcement or the page.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { insights } from "@snappy-export/core";
 import type { ParsedExport } from "@snappy-export/core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -389,6 +392,28 @@ describe("the page", () => {
     expect(text(root, "label")).toEqual([copy.lastExportHeader, copy.monthsHeader, copy.timeHeader, copy.alertHeader, copy.zoneHeader]);
     expect(field({ root } as Rendered, "reminder-last").getAttribute("type")).toBe("date");
     expect(field({ root } as Rendered, "reminder-time").getAttribute("type")).toBe("time");
+  });
+});
+
+describe("the form layout", () => {
+  it("puts the months, time of day and alert boxes in one row of equal columns, and says Optional in the empty alert box", async () => {
+    const { root } = await renderSettled(view, emptyState());
+    const rows = root.querySelectorAll(".reminder-row");
+    expect(rows).toHaveLength(1);
+    const ids = (rows[0] as FakeElement).querySelectorAll("input").map((i) => i.getAttribute("id"));
+    expect(ids).toEqual(["reminder-months", "reminder-time", "reminder-alert"]);
+    // The date and the time zone stay outside it, at the width of the column.
+    expect((rows[0] as FakeElement).querySelector("#reminder-last")).toBeNull();
+    expect((rows[0] as FakeElement).querySelector("#reminder-zone")).toBeNull();
+    expect(field({ root } as Rendered, "reminder-alert").getAttribute("placeholder")).toBe("Optional");
+    expect(field({ root } as Rendered, "reminder-months").hasAttribute("placeholder")).toBe(false);
+    const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../src/tools/export-reminder/styles.css"), "utf8");
+    // The row is as wide as the date and time zone fields (one text width), in equal columns, with the boxes at the width of their column.
+    expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*max-width: var\(--field-w\)/);
+    expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(9rem, 1fr\)\)/);
+    // The row may shrink below the width of its columns, so on a phone it never widens the form (it measured 464 px in a 343 px page).
+    expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*min-width: 0/);
+    expect(css).toMatch(/\.tool-export-reminder \.reminder-row \.input-narrow \{ max-width: none; \}/);
   });
 });
 

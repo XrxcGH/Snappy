@@ -79,9 +79,19 @@ function controls(ui: ToolUi<ReminderParams>): HTMLElement {
       "div",
       { class: "form" },
       field("reminder-last", copy.lastExportHeader, copy.lastExportHelp, textInput("reminder-last", "date", p.lastExport, false, (lastExport) => ui.set({ lastExport }))),
-      field("reminder-months", copy.monthsHeader, copy.monthsHelp, textInput("reminder-months", "number", p.months, true, (months) => ui.set({ months }), { inputmode: "numeric", min: "1", max: "120" })),
-      field("reminder-time", copy.timeHeader, copy.timeHelp, textInput("reminder-time", "time", p.time, true, (time) => ui.set({ time }))),
-      field("reminder-alert", copy.alertHeader, copy.alertHelp, textInput("reminder-alert", "number", p.alert, true, (alert) => ui.set({ alert }), { inputmode: "numeric", min: "0", max: "30" })),
+      // The three small boxes share one row of equal columns (see styles.css), so they read as one group.
+      h(
+        "div",
+        { class: "reminder-row" },
+        field("reminder-months", copy.monthsHeader, copy.monthsHelp, textInput("reminder-months", "number", p.months, true, (months) => ui.set({ months }), { inputmode: "numeric", min: "1", max: "120" })),
+        field("reminder-time", copy.timeHeader, copy.timeHelp, textInput("reminder-time", "time", p.time, true, (time) => ui.set({ time }))),
+        field(
+          "reminder-alert",
+          copy.alertHeader,
+          copy.alertHelp,
+          textInput("reminder-alert", "number", p.alert, true, (alert) => ui.set({ alert }), { inputmode: "numeric", min: "0", max: "30", placeholder: copy.alertPlaceholder }),
+        ),
+      ),
       field("reminder-zone", copy.zoneHeader, copy.zoneHelp, h("div", { class: "select-wrap" }, zone, chevron)),
     ),
   );
