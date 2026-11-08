@@ -79,5 +79,6 @@ export const copy = {
   memoriesNoFileNote: (n: number) => `${countOf(n, "Memory", "Memories")} ${n === 1 ? "has" : "have"} no matching file in your ZIP files.`,
   memoriesFilesNote: "Your Memories list is there, but these ZIP files hold no Memories files.",
   moreNote: "Your export may have more parts. Add the other ZIP files.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  // The export check is this page, so it does not send a person to itself.
+  otherNote: "Snappy found something it could not describe.",
 } as const;

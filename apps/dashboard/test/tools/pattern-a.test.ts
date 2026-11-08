@@ -5,6 +5,7 @@
  * Synthetic data only.
  */
 import { describe, expect, it } from "vitest";
+import { tools } from "../../src/copy.ts";
 import { copy as activityCalendar } from "../../src/tools/activity-calendar/copy.ts";
 import { copy as anniversaries } from "../../src/tools/anniversaries/copy.ts";
 import { copy as blockedReview } from "../../src/tools/blocked-review/copy.ts";
@@ -70,5 +71,23 @@ describe("the buttons that make a file", () => {
     expect(friendsTable.downloadLabel).toBe("Save CSV");
     expect(friendsBackup.downloadLabel).toBe("Save JSON");
     expect(hits(/\bdownload/i)).toEqual([]);
+  });
+});
+
+describe("the note for something a page cannot describe, and the word for what is left out", () => {
+  it("is the one shared note, which points to the export check; the export check itself does not point to itself", () => {
+    expect(hits(/noted something/i)).toEqual([]);
+    for (const [id, c] of Object.entries(COPIES)) {
+      // The calendar's own otherNote is about chat media; its catch-all is unknownNote.
+      const note = id === "activity-calendar" ? c.unknownNote : c.otherNote;
+      if (typeof note !== "string") continue;
+      if (id === "export-check") expect(note).toBe("Snappy found something it could not describe.");
+      else expect(note, id).toBe(tools.otherNote);
+    }
+    expect(tools.otherNote).toBe("Snappy found something it could not describe. The export check can say more.");
+  });
+
+  it("says left out for a record, a date or a gap that is not counted, and skipped only for a file", () => {
+    expect(hits(/\bSnappy (ignores?|ignored|skips?|skipped|drops?|dropped)\b|\bso it (ignored|skipped)\b/i)).toEqual([]);
   });
 });

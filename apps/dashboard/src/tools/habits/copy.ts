@@ -4,6 +4,7 @@
  * Nothing here holds an export value: counts, percentages and dates come in as arguments, and nothing
  * takes or returns a username (this tool reads times and directions only, so it has none).
  */
+import { tools } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -104,5 +105,5 @@ export const copy = {
   unknownNote: (percent: number) => (Number.isFinite(percent) ? `About ${percent}% have no known direction, so the sent share may be off.` : ""),
   zoneNote: "The time zone was moved to the nearest allowed one.",
   partialNote: "The first and last months may be partial, so Snappy does not call either of them the quietest.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: tools.otherNote,
 } as const;

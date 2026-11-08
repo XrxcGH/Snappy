@@ -3,6 +3,7 @@
  * text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts and month names come in as arguments, and no function takes or returns a username.
  */
+import { tools } from "../../copy.ts";
 import { countOf } from "../../format.ts";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -76,7 +77,7 @@ export const copy = {
   nowInvalidNote: "Snappy could not read the date on your device, so it could not tell which dates are in the future.",
   minGapNote: (n: number): string => `The shortest gap was changed to ${countOf(n, "month", "months")}.`,
   stretchNote: (n: number): string => `The busiest stretch was changed to ${countOf(n, "month", "months")}.`,
-  sinceInvalidNote: "Snappy could not use your oldest friend date, so it skipped gaps before your first Memory.",
+  sinceInvalidNote: "Snappy could not use your oldest friend date, so it left out gaps before your first Memory.",
   exportDateInvalidNote: "The export date is not usable, so Snappy used today’s date.",
   exportDateFutureNote: "The export date is in the future, so Snappy used today’s date.",
   undatedNote: (n: number): string => `${countOf(n, "Memory has", "Memories have")} no usable date, so Snappy left ${isOne(n) ? "it" : "them"} out.`,
@@ -87,5 +88,5 @@ export const copy = {
   quietNote: (n: number): string => `${isOne(n) ? "This gap" : "These gaps"} may be a quiet time. Snappy cannot tell if anything is missing.`,
   limitedNote: (n: number): string => `${countOf(n, "gap", "gaps")} at the start or end may come from a date range chosen for the export.`,
   startNote: "Early gaps count from your oldest friend date.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: tools.otherNote,
 } as const;

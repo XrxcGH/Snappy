@@ -3,6 +3,7 @@
  * kind of text they are (Heading, Header, Note, Step, Line), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts and dates come in as arguments, and no function takes a username.
  */
+import { tools } from "../../copy.ts";
 import { countOf } from "../../format.ts";
 
 const people = (n: number): string => countOf(n, "person", "people");
@@ -58,5 +59,5 @@ export const copy = {
   blankNote: (n: number, where: string): string => `${countOf(n, "row", "rows")} in your ${where} list ${has(n)} no username. Snappy leaves ${n === 1 ? "it" : "them"} out.`,
   conflictsNote: (n: number): string => `${people(n)} may be worth a second look.`,
   friendsEmptyNote: "Your friends list is empty, so Snappy cannot tell who is also a friend. The export may be short.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: tools.otherNote,
 } as const;

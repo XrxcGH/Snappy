@@ -4,6 +4,7 @@
  * Nothing here holds an export value: counts, years and dates come in as arguments, and nothing takes or returns a
  * username (this tool reads kinds and times only, so it has none).
  */
+import { tools } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -118,5 +119,5 @@ export const copy = {
   yearAdjustedNote: (year: number) => (Number.isFinite(year) ? `That year was not usable, so Snappy shows ${year}.` : ""),
   yearEmptyNote: (year: number) => (Number.isFinite(year) ? `No chats or Snaps were found in ${year}, so its calendar is empty.` : ""),
   zoneNote: "The time zone was moved to the nearest allowed one.",
-  unknownNote: "Snappy noted something it cannot describe here.",
+  unknownNote: tools.otherNote,
 } as const;

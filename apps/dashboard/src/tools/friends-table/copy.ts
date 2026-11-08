@@ -3,6 +3,7 @@
  * are (Heading, Header, Label, Cell, Note, Line, Button, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds a username: counts and dates come in as arguments, never a name.
  */
+import { tools } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const was = (n: number): string => (n === 1 ? "was" : "were");
@@ -105,5 +106,5 @@ export const copy = {
   noAddedNote: (n: number): string => `${countOf(n, "friend", "friends")} ${has(n)} no added date, so Snappy could not check them for quiet.`,
   quietNoActivityNote: "Your export has no one-to-one chats or Snaps, so Snappy did not mark anyone as quiet.",
   quietShortNote: (n: number): string => `${countOf(n, "friend", "friends")} without chats ${was(n)} not checked for quiet, since your chats start too recently.`,
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: tools.otherNote,
 } as const;

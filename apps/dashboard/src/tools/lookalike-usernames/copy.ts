@@ -4,6 +4,7 @@
  * Nothing here holds an export value: counts come in as arguments, and no function takes a username.
  * A lookalike proves nothing, so the words only ever say a pair may be worth a second look.
  */
+import { tools } from "../../copy.ts";
 import { countOf } from "../../format.ts";
 
 const pairs = (n: number): string => countOf(n, "pair", "pairs");
@@ -51,5 +52,5 @@ export const copy = {
   blankNote: (n: number): string => `${countOf(n, "row", "rows")} ${has(n)} no username. Snappy leaves ${them(n)} out.`,
   overlongNote: (n: number): string => `${countOf(n, "username", "usernames")} ${is(n)} too long to compare. Snappy leaves ${them(n)} out.`,
   crowdedNote: (n: number): string => `${countOf(n, "person", "people")} ${n === 1 ? "has a name" : "have names"} in a long numbered family. Snappy does not compare ${them(n)}.`,
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: tools.otherNote,
 } as const;

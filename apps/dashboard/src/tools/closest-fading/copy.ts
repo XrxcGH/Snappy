@@ -3,6 +3,7 @@
  * kind of text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the
  * key. Nothing here holds an export value: counts and dates come in as arguments, and no function takes a name.
  */
+import { tools } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const have = (n: number): string => (n === 1 ? "has" : "have");
@@ -67,5 +68,5 @@ export const copy = {
   futureNote: (n: number) => `${countOf(n, "entry", "entries")} ${have(n)} a date in the future. Snappy leaves ${them(n)} out.`,
   undatedNote: (n: number) => `${countOf(n, "entry", "entries")} ${have(n)} no usable date. Snappy leaves ${them(n)} out.`,
   nonFriendNote: (n: number) => `${countOf(n, "chat or Snap", "chats or Snaps")} ${n === 1 ? "is" : "are"} with ${n === 1 ? "someone" : "people"} not on your friends list. Snappy leaves ${them(n)} out.`,
-  otherNote: "Snappy noted something it cannot describe.",
+  otherNote: tools.otherNote,
 } as const;
