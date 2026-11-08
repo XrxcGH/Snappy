@@ -41,6 +41,13 @@ pub fn check(i: &Inputs) -> Result<(), String> {
     Ok(())
 }
 
+/// Base64 of "untrusted comment: minisign public key:", which every Tauri public key (the content of the .pub file) starts with.
+const PUBLIC_KEY_PREFIX: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6";
+/// Base64 of "untrusted comment: rsign encrypted secret key", which the private key file starts with.
+const SECRET_KEY_PREFIX: &str = "dW50cnVzdGVkIGNvbW1lbnQ6IHJzaWduIGVuY3J5cHRlZCBzZWNyZXQga2V5";
+/// A public key file is about 152 characters of base64 (140 to 170 covers a different key id or comment).
+const PUBLIC_KEY_LENGTHS: (usize, usize) = (140, 170);
+
 /// A release build needs two real, different public keys: not placeholders, not test keys.
 fn release_keys(key_file: &str, test_material: &str) -> Result<(), String> {
     let mut values: Vec<(&str, &str)> = Vec::new();
@@ -55,8 +62,11 @@ fn release_keys(key_file: &str, test_material: &str) -> Result<(), String> {
         if key.starts_with("PLACEHOLDER") {
             return Err(format!("the {name} update key in update-public-keys.txt is still a placeholder: a release build needs the maintainer's real public keys"));
         }
-        // Tauri's public key is the base64 of a text that starts with "untrusted comment:".
-        let shaped = key.len() >= 100 && key.starts_with("dW50cnVzdGVkIGNvbW1lbnQ6") && key.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='));
+        // A secret key file starts with the same words ("untrusted comment:"), so the prefix must be the public one.
+        if key.starts_with(SECRET_KEY_PREFIX) {
+            return Err(format!("the {name} update key in update-public-keys.txt is a PRIVATE key. Remove it from the repository history and generate a new pair: only the .pub file's content belongs here"));
+        }
+        let shaped = key.len() >= PUBLIC_KEY_LENGTHS.0 && key.len() <= PUBLIC_KEY_LENGTHS.1 && key.starts_with(PUBLIC_KEY_PREFIX) && key.bytes().all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='));
         if !shaped {
             return Err(format!("the {name} update key in update-public-keys.txt is not a Tauri public key (the content of the .pub file)"));
         }
@@ -82,6 +92,11 @@ mod tests {
         Inputs { release: true, dev_update_endpoint: false, dev_hooks: false, unit_tests_only: false, tauri_config: None, key_file, test_key_material: TEST_KEY }
     }
 
+    /// The shape of a real `tauri signer generate` private key file: the same first words as a public key, 348 characters.
+    fn private_key() -> String {
+        format!("{SECRET_KEY_PREFIX}{}", "QUFB".repeat(72))
+    }
+
     fn keys(a: &str, b: &str) -> String {
         format!("# comment\nsigning = {a}\nrecovery = {b}\n")
     }
@@ -101,7 +116,10 @@ mod tests {
             ("a test key", keys(REAL_A, TEST_KEY)),
             ("a duplicate", keys(REAL_A, REAL_A)),
             ("a short key", keys(REAL_A, "dW50cnVzdGVk")),
-            ("a wrong prefix", keys(REAL_A, &"A".repeat(120))),
+            ("a wrong prefix", keys(REAL_A, &"A".repeat(150))),
+            ("a private key", keys(REAL_A, &private_key())),
+            ("a private key in the signing line", keys(&private_key(), REAL_B)),
+            ("a far too long public-looking key", keys(REAL_A, &format!("{REAL_B}{REAL_B}"))),
             ("an order swap", format!("recovery = {REAL_B}\nsigning = {REAL_A}\n")),
             ("an extra line", format!("{}other = 1\n", keys(REAL_A, REAL_B))),
             ("a missing line", format!("signing = {REAL_A}\n")),
