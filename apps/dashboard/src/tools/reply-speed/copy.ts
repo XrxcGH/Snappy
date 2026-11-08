@@ -4,6 +4,7 @@
  * Nothing here holds an export value: counts, times and dates come in as arguments, and nothing takes or returns
  * a username (the friends tables are drawn by the view, which puts each name in the shared username element).
  */
+import { common } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const was = (n: number): string => (n === 1 ? "was" : "were");
@@ -44,7 +45,7 @@ export const copy = {
   themTypicalLabel: "Their typical time",
   youCountLabel: "Your replies",
   themCountLabel: "Their replies",
-  noValue: "-",
+  noValue: common.noFigure,
   asOfLine: (date: string): string => `Counted up to ${date}.`,
   methodLine: (hours: number): string => `A reply is a change of sender within ${hoursOf(hours)}. A run of messages counts as one turn.`,
   youNineLine: (time: string): string => `Nine in ten of your replies came within ${time}.`,
@@ -73,8 +74,8 @@ export const copy = {
   hourHeader: "Hour",
   hourYouHeader: "You",
   hourThemHeader: "Friends",
-  /** "9 am", "12 pm". */
-  unitHour: (hour: number): string => (Number.isInteger(hour) && hour >= 0 && hour < 24 ? `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "am" : "pm"}` : ""),
+  /** "9 AM", "12 PM". */
+  unitHour: (hour: number): string => (Number.isInteger(hour) && hour >= 0 && hour < 24 ? `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "AM" : "PM"}` : ""),
   /** One side of an hour: the count, and the typical time when there are enough replies. An empty time means too few. */
   hourCell: (n: number, time: string): string => (n === 0 ? "No replies" : typeof time !== "string" || time === "" ? `${countOf(n, "reply", "replies")}, too few to time` : `${countOf(n, "reply", "replies")}, ${time} typical`),
 

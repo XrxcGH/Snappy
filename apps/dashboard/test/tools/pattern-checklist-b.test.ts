@@ -83,6 +83,16 @@ describe("the words of the nine pages", () => {
     expect(await matching(/\bskipp?(ed|s|ing)?\b|\bignor|\bdropped\b/i)).toEqual([]);
   });
 
+  it("write the hour of the day as 7 PM, and an empty value as one en dash", async () => {
+    const { copy: reply } = await import("../../src/tools/reply-speed/copy.ts");
+    expect([0, 9, 12, 19, 23].map(reply.unitHour)).toEqual(["12 AM", "9 AM", "12 PM", "7 PM", "11 PM"]);
+    expect(await matching(/\b\d{1,2} (am|pm)\b/)).toEqual([]);
+    const none = (await all()).filter((e) => /\.noValue$/.test(e.id));
+    expect(none.map((e) => e.id).sort()).toEqual(["memories-on-this-day: copy.noValue", "reply-speed: copy.noValue", "year-in-review: copy.noValue"]);
+    for (const e of none) expect(e.text, e.id).toBe("–");
+    expect((await all()).filter((e) => e.text === "-")).toEqual([]);
+  });
+
   it("call the saved store the saved history: no snapshots, no switch to turn saving on", async () => {
     expect(await matching(/\bsnapshots?\b|turned saving on|saved data/i)).toEqual([]);
   });

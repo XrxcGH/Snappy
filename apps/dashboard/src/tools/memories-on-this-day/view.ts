@@ -113,7 +113,7 @@ function yearsSection(r: OnThisDayResult): HTMLElement {
     copy.yearsHeading,
     factList([
       { label: copy.datedLabel, value: formatCount(counts.dated), icon: "memories", scope: "memories" },
-      { label: copy.spanLabel, value: r.firstYear !== null && r.lastYear !== null ? copy.unitYearSpan(r.firstYear, r.lastYear) : "-", icon: "calendar", scope: "memories" },
+      { label: copy.spanLabel, value: r.firstYear !== null && r.lastYear !== null ? copy.unitYearSpan(r.firstYear, r.lastYear) : copy.noValue, icon: "calendar", scope: "memories" },
       { label: copy.leftOutLabel, value: formatCount(counts.undated + counts.future), icon: "minus", scope: "memories" },
     ]),
     dataTable(

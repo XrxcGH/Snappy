@@ -263,7 +263,7 @@ describe("the page", () => {
     ]);
     // A wide page shows the bare value its column names ("20"); the phrase is for assistive technology and a phone's card.
     expect(direction.querySelectorAll("tbody tr")[1]?.querySelectorAll("td").map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["30", "10", "20", "0"]);
-    expect(busiest.querySelectorAll("tbody tr")[0]?.querySelectorAll("td").map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["March", "40", "100%"]);
+    expect(busiest.querySelectorAll("tbody tr")[0]?.querySelectorAll("td").map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["Mar", "40", "100%"]);
     expect(rowsOf(direction)).toEqual([
       [copy.snapsRow, "10 in all", "10 sent", "0 received", "0 unknown"],
       [copy.chatsRow, "30 in all", "10 sent", "20 received", "0 unknown"],

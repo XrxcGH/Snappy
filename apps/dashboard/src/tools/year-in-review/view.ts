@@ -83,20 +83,21 @@ function glance({ tiles }: YearView): HTMLElement {
 function busiest({ activity }: YearView): HTMLElement | null {
   if (activity === null) return null;
   // Each cell shows the bare value its column names; a screen reader, and a phone with no column names, get the phrase.
-  const row = (pattern: string, name: string, tied: boolean, peak: { count: number; share: number }): TableCell[] => {
+  // A month is short in the table cell ("Mar") and long in the phrase a screen reader hears ("March is busiest").
+  const row = (pattern: string, short: string, name: string, tied: boolean, peak: { count: number; share: number }): TableCell[] => {
     const busiestName = tied ? copy.unitTied(name) : name;
     return [
       pattern,
-      { text: busiestName, label: copy.unitBusiestAt(busiestName) },
+      { text: tied ? copy.unitTied(short) : short, label: copy.unitBusiestAt(busiestName) },
       { text: formatCount(peak.count), label: copy.unitCounted(formatCount(peak.count)) },
       { text: formatPercent(peak.share), label: copy.unitOfYear(formatPercent(peak.share)) },
     ];
   };
   const rows: TableCell[][] = [];
   const month = activity.busiestMonth;
-  if (month !== null) rows.push(row(copy.monthPattern, copy.monthsLong[month.key - 1] ?? copy.noValue, month.ties > 0, month));
+  if (month !== null) rows.push(row(copy.monthPattern, copy.months[month.key - 1] ?? copy.noValue, copy.monthsLong[month.key - 1] ?? copy.noValue, month.ties > 0, month));
   const day = activity.busiestDay;
-  if (day !== null) rows.push(row(copy.dayPattern, dayText(day.key), day.ties > 0, day));
+  if (day !== null) rows.push(row(copy.dayPattern, dayText(day.key), dayText(day.key), day.ties > 0, day));
   if (rows.length === 0) return null;
   return section(copy.busiestHeading, dataTable(copy.busiestCaption, [copy.patternHeader, copy.busiestHeader, copy.countHeader, copy.shareHeader], rows));
 }

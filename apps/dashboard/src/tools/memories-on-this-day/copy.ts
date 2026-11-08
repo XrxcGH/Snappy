@@ -3,6 +3,7 @@
  * text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts, years and dates come in as arguments, and a Memory is never named.
  */
+import { common } from "../../copy.ts";
 import { countOf, formatCount } from "../../format.ts";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -39,6 +40,7 @@ export const copy = {
   yearsHeading: "Memories by year",
   datedLabel: "Dated Memories",
   spanLabel: "Years covered",
+  noValue: common.noFigure,
   leftOutLabel: "Left out",
   unitYearSpan: (first: number, last: number) => (first === last ? String(first) : `${first} to ${last}`),
   yearsCaption: "Memories in each year",

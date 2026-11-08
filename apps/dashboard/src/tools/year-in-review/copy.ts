@@ -4,6 +4,7 @@
  * Nothing here holds an export value: counts, percentages, years and dates come in as arguments, and nothing
  * takes or returns a username (this tool reads dates, directions and media types only, so it has none).
  */
+import { common } from "../../copy.ts";
 import { countOf } from "../../format.ts";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
@@ -40,7 +41,7 @@ export const copy = {
   newFriendsLabel: "New friends",
   removedLabel: "Friends removed",
   gapLabel: "Longest gap",
-  noValue: "-",
+  noValue: common.noFigure,
   /** The tile for the longest quiet stretch, in days. */
   unitGapDays: (days: number): string => (Number.isFinite(days) && days >= 0 ? countOf(days, "day", "days") : ""),
 

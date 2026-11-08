@@ -172,7 +172,7 @@ describe("computeReplySpeed", () => {
     expect(r.report.asOf).toBe(NOW);
     expect(r.report.notes.map((n) => n.code)).toEqual(expect.arrayContaining(["turns-after-window", "people-below-minimum"]));
     expect(r.shown).toEqual(r.report.friends);
-    // Every turn starts at 20:00 UTC and no reply takes an hour, so the replies are all sent in the 8 pm hour.
+    // Every turn starts at 20:00 UTC and no reply takes an hour, so the replies are all sent in the 8 PM hour.
     expect(r.hours.map((b) => [b.hour, b.youReplies, b.themReplies, b.youMedianMs, b.themMedianMs])).toEqual([[20, 14, 12, 10 * MINUTE, 17.5 * MINUTE]]);
   });
 
@@ -275,7 +275,7 @@ describe("the page", () => {
     expect(text(tables[0] as FakeElement, "tbody td")).toEqual([copy.unitTypicalCell("10 minutes"), copy.unitRepliesCell(6)]);
     // The cells show the bare value their column names; the phrase is for assistive technology (and a phone's stacked card).
     expect(((tables[0] as FakeElement).querySelectorAll("tbody td") as FakeElement[]).map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["10 minutes", "6"]);
-    expect(text(tables[4] as FakeElement, "tbody th")).toEqual(["8 pm"]);
+    expect(text(tables[4] as FakeElement, "tbody th")).toEqual(["8 PM"]);
     expect(text(tables[4] as FakeElement, "tbody td")).toEqual(["14 replies, 10 minutes typical", "12 replies, 18 minutes typical"]);
     const friendRows = (tables[5] as FakeElement).querySelectorAll("tbody tr");
     expect(friendRows).toHaveLength(2);
@@ -339,12 +339,12 @@ describe("the page", () => {
     expect(select.getAttribute("id")).toBe("reply-speed-zone");
     expect(r.root.querySelector("label[for=reply-speed-zone]")?.textContent).toBe(copy.zoneLabel);
     expect(select.querySelectorAll("option")).toHaveLength(OFFSETS.length);
-    expect(text(r.root, "tbody th").filter((t) => /[ap]m$/.test(t))).toEqual(["8 pm"]);
+    expect(text(r.root, "tbody th").filter((t) => /[AP]M$/.test(t))).toEqual(["8 PM"]);
     expect(r.root.textContent).toContain(copy.hourLine("UTC"));
     select.value = "240";
     select.fire("change");
     await settled(r.root);
-    expect(text(r.root, "tbody th").filter((t) => /[ap]m$/.test(t))).toEqual(["12 am"]);
+    expect(text(r.root, "tbody th").filter((t) => /[AP]M$/.test(t))).toEqual(["12 AM"]);
     expect(r.root.textContent).toContain(copy.hourLine("UTC+4:00"));
     expect(r.root.querySelector("select")).toBe(select);
   });
@@ -356,8 +356,8 @@ describe("the page", () => {
     const first = await renderSettled(view, state);
     expect(first.root.querySelector("#reply-speed-zone option[selected]")?.textContent).toBe("UTC-5:00");
     expect(first.root.textContent).toContain(copy.hourLine("UTC-5:00"));
-    // 20:00 UTC is 3 pm at UTC-5:00.
-    expect(text(first.root, "tbody th").filter((t) => /[ap]m$/.test(t))).toEqual(["3 pm"]);
+    // 20:00 UTC is 3 PM at UTC-5:00.
+    expect(text(first.root, "tbody th").filter((t) => /[AP]M$/.test(t))).toEqual(["3 PM"]);
     const select = first.root.querySelector("select") as FakeElement;
     select.value = "240";
     select.fire("change");
