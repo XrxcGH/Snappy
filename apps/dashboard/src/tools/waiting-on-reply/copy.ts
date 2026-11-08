@@ -3,7 +3,7 @@
  * text they are (Heading, Header, Note, Line), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts and dates come in as arguments, never a username.
  */
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const was = (n: number): string => (n === 1 ? "was" : "were");
 const has = (n: number): string => (n === 1 ? "has" : "have");
@@ -20,7 +20,7 @@ export const copy = {
   },
 
   doneAnnounce: (you: number, theirs: number, oneSided: number): string =>
-    `Replies checked. ${countOf(you, "person", "people")} may be waiting on you, ${theirs} on them, and ${countOf(oneSided, "chat", "chats")} look${oneSided === 1 ? "s" : ""} one-sided.`,
+    `Replies checked. ${countOf(you, "person", "people")} may be waiting on you, ${formatCount(theirs)} on them, and ${countOf(oneSided, "chat", "chats")} look${oneSided === 1 ? "s" : ""} one-sided.`,
 
   countsHeading: "At a glance",
   youCountLabel: "Waiting on you",
@@ -47,7 +47,7 @@ export const copy = {
 
   unitDays: (n: number): string => countOf(n, "day", "days"),
   unitSince: (date: string): string => `since ${date}`,
-  unitSentReceived: (sent: number, received: number): string => `${sent} sent, ${received} received`,
+  unitSentReceived: (sent: number, received: number): string => `${formatCount(sent)} sent, ${formatCount(received)} received`,
 
   hintNote: "These are hints. An export can miss messages, so check in Snapchat.",
   invalidNowNote: "Snappy could not read today’s date, so it left the lists empty.",

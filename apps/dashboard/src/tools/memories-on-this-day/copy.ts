@@ -3,7 +3,7 @@
  * text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts, years and dates come in as arguments, and a Memory is never named.
  */
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
@@ -44,7 +44,7 @@ export const copy = {
   yearsCaption: "Memories in each year",
   busiestHeader: "Busiest month",
   months,
-  unitBusiest: (month: number, count: number) => `${months[month - 1]} busiest (${count})`,
+  unitBusiest: (month: number, count: number) => `${months[month - 1]} busiest (${formatCount(count)})`,
   unitNoBusiest: "No busiest month",
   unitMemories: (n: number) => countOf(n, "Memory", "Memories"),
   unitYears: (n: number) => countOf(n, "year", "years"),
@@ -66,7 +66,7 @@ export const copy = {
   noIdNote: (n: number) => `${countOf(n, "Memory", "Memories")} without an id ${n === 1 ? "was" : "were"} left out.`,
   noDatesNote: "No Memories have a usable date.",
   invalidDayNote: "Snappy cannot use that day. Pick another one.",
-  windowNote: (days: number) => `The days either side were changed to ${days}.`,
+  windowNote: (days: number) => `The days either side were changed to ${formatCount(days)}.`,
   leapNote: (n: number) => `${countOf(n, "Memory", "Memories")} from Feb 29 ${n === 1 ? "is" : "are"} shown on Feb 28, since this year has no Feb 29.`,
   offsetInvalidNote: "That time zone is not valid, so Snappy used UTC.",
   otherNote: "Snappy noted something it cannot describe here.",

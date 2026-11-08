@@ -3,7 +3,7 @@
  * text they are (Heading, Header, Note, Line, Button, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts, sizes and years come in as arguments.
  */
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const memoriesOf = (n: number): string => countOf(n, "Memory", "Memories");
 
@@ -58,7 +58,7 @@ export const copy = {
   byPartHeading: "By ZIP part",
   byPartCaption: "Memories by ZIP part",
   partHeader: "Part",
-  unitPart: (n: number) => `Part ${n}`,
+  unitPart: (n: number) => `Part ${formatCount(n)}`,
   noFileLine: "No file",
 
   orderHeading: "Download order",
@@ -67,7 +67,7 @@ export const copy = {
   orderCaption: "Order to save your Memories",
   stepHeader: "Step",
   groupHeader: "Group",
-  unitStep: (n: number) => `Step ${n}`,
+  unitStep: (n: number) => `Step ${formatCount(n)}`,
   unitGroup: (type: string, year: string) => `${type}, ${year}`,
   moreStepsLine: (n: number) => `${countOf(n, "more step", "more steps")} follow in the same order.`,
 
@@ -79,7 +79,7 @@ export const copy = {
   batchHeader: "Batch",
   yearsHeader: "Years",
   partsHeader: "ZIP parts",
-  unitBatch: (n: number) => `Batch ${n}`,
+  unitBatch: (n: number) => `Batch ${formatCount(n)}`,
   unitYears: (first: string, last: string) => `${first} to ${last}`,
   unitBatchYears: (span: string, many: boolean) => `${many ? "Years" : "Year"} ${span}`,
   unitParts: (count: number, list: string) => `${count === 1 ? "Part" : "Parts"} ${list}`,
