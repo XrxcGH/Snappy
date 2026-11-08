@@ -184,6 +184,8 @@ img, svg { max-width: 100%; }
 .nav-link:hover { background: var(--tint-violet-1); }
 /* Category links show their area's color on the glyph only; the label stays ink. */
 .nav-link-cat .icon { color: var(--c-solid); }
+/* On the active item's tinted fill the area's solid color is under 3:1 in the light theme, so its glyph uses the area's text color (4.5:1 or more on that fill). */
+.nav-link[aria-current="page"].nav-link-cat .icon { color: var(--c-fg); }
 /* The active item has three signals that are not color: bold weight, the pill bar, aria-current. */
 .nav-link[aria-current="page"] { background: var(--tint-violet-3); box-shadow: none; font-weight: 700; }
 .nav-link[aria-current="page"]::before {
@@ -194,7 +196,8 @@ img, svg { max-width: 100%; }
 
 .content { min-width: 0; padding: var(--space-6) var(--gutter) var(--space-12); }
 .main { outline: none; }
-.main:focus-visible { outline: none; }
+/* After the skip link, a ring shows where keyboard focus went (a mouse click on the page does not draw it). */
+.main:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: var(--space-1); }
 /* The one column. In a single-column layout it is centered; beside the sidebar it fills the content area exactly. */
 .view { display: grid; gap: var(--gap-section); max-width: var(--content-w); margin-inline: auto; }
 .region { display: grid; gap: var(--gap-section); min-width: 0; }
@@ -242,6 +245,8 @@ img, svg { max-width: 100%; }
   .layout { display: grid; grid-template-columns: 16rem minmax(0, 1fr); align-items: start; }
   .site-footer-inner { padding-left: calc(16rem + var(--gutter)); }
   .nav { display: block; position: sticky; top: 0; border-bottom: 0; background: transparent; padding: var(--space-6) var(--space-4) var(--space-6) 0; }
+  /* In a short window the menu scrolls inside its own column, so the last links (Export guide, Privacy, Settings) are never below the fold. */
+  .nav { max-height: 100vh; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; }
 }
 
 /* ------------------------------------------------------------ page parts --- */
@@ -528,6 +533,8 @@ img, svg { max-width: 100%; }
   cursor: pointer; font-weight: 600; color: var(--text); list-style: none; line-height: 1.5;
 }
 .disclosure::-webkit-details-marker { display: none; }
+/* The ring is drawn inside the 44 px target, so it never reaches the line of text above it. */
+.disclosure:focus-visible { outline-offset: -2px; }
 .disclosure .icon { transition: transform var(--dur-fast) var(--ease); }
 details[open] > .disclosure .icon { transform: rotate(90deg); }
 .why ul { padding-bottom: var(--space-2); }
@@ -608,8 +615,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   /* The first column names the row and never wraps; the pill column fits its pill. */
   .table tbody th { white-space: nowrap; }
   .table td.cell-pill { white-space: nowrap; width: 1%; }
-  /* A username is the one name that may wrap: a long one breaks inside its cell instead of pushing the other columns off the frame. */
-  .table tbody th .username { display: inline-block; max-width: 22ch; white-space: normal; vertical-align: top; }
+  /* A username is the one name that may wrap (three classes outweigh a tool sheet's own rule for the cell): a long one breaks inside its cell instead of pushing the other columns off the frame. */
+  .view .table tbody th code.username { display: inline-block; max-width: 22ch; white-space: normal; overflow-wrap: break-word; vertical-align: top; }
   /* Real column headers say what a cell holds, so the words a stacked card needs ("Added ", " total") are hidden here. */
   .table .cell-extra { display: none; }
 }
@@ -633,7 +640,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .command-title { margin: 0; flex: 1 1 12rem; min-width: 0; color: var(--text-muted); font-size: var(--text-14); font-weight: 600; }
 .command-actions { display: flex; gap: var(--space-2); margin-inline-start: auto; }
 .command > * { min-width: 0; }
-.btn[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
+/* A button that cannot run yet is drawn in the muted pair (4.5:1 or more), not faded: it stays focusable and explains itself, so people read it. */
+.btn[aria-disabled="true"], .btn[aria-disabled="true"]:hover { background: var(--surface-sunken); color: var(--text-muted); border-color: var(--border); cursor: not-allowed; }
 /* Terminal output. The ground is the sunken surface; every color comes from a token, and each class below is
    checked against that ground in both themes by test/ansi-contrast.test.ts. Nothing here moves, so there is
    nothing to switch off for reduced motion. */

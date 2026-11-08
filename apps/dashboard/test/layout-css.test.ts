@@ -166,12 +166,14 @@ describe("the month and day bar lists", () => {
 describe("a very long username", () => {
   it("breaks anywhere in a username, and a username in a table's name column or in a chip is at most 22 characters wide", () => {
     expect(declared(".username")).toMatch(/overflow-wrap:\s*anywhere/);
-    const cell = rules.filter((r) => r.selector === ".table tbody th .username");
+    const cell = rules.filter((r) => r.selector === ".view .table tbody th code.username");
     expect(cell).toHaveLength(1);
     // The name column never wraps (dates and short names), so the username inside it must opt in to wrapping.
     expect(cell[0]?.body).toMatch(/max-width:\s*22ch/);
     expect(cell[0]?.body).toMatch(/white-space:\s*normal/);
     expect(cell[0]?.body).toMatch(/display:\s*inline-block/);
+    // break-word, not anywhere: "anywhere" lowers the column's minimum width, and the table would squeeze an ordinary name onto two lines.
+    expect(cell[0]?.body).toMatch(/overflow-wrap:\s*break-word/);
     expect(cell[0]?.media.join(" ")).toMatch(/min-width:\s*40\.01rem/);
     expect(declared(".chip .username")).toMatch(/max-width:\s*22ch/);
     expect(declared(".chip .username")).toMatch(/display:\s*inline-block/);
@@ -179,6 +181,43 @@ describe("a very long username", () => {
 
   it("does not let table cells break ordinary words, which would squeeze a column instead of scrolling the table", () => {
     for (const selector of [".table th", ".table td", ".table th, .table td"]) expect(declared(selector)).not.toMatch(/overflow-wrap:\s*anywhere/);
+  });
+});
+
+describe("keyboard and focus rules", () => {
+  it("lets the sticky menu scroll inside its own column in a short window", () => {
+    const nav = rules.filter((r) => r.selector === ".nav" && /overflow-y:\s*auto/.test(r.body));
+    expect(nav).toHaveLength(1);
+    expect(nav[0]?.media).toEqual(["(min-width: 64rem)"]);
+    expect(nav[0]?.body).toMatch(/max-height:\s*100vh/);
+    expect(nav[0]?.body).toMatch(/overscroll-behavior:\s*contain/);
+  });
+
+  it("draws the focus ring of a disclosure inside its 44 px target, so it does not strike through the text above", () => {
+    expect(declared(".disclosure:focus-visible")).toMatch(/outline-offset:\s*-2px/);
+    // The target is still made with padding and a negative margin, so the ring must not be drawn outside it.
+    expect(declared(".disclosure")).toMatch(/margin-block:\s*calc\(var\(--tap-pad\)\s*\*\s*-1\)/);
+  });
+
+  it("shows a 2 px ring on the main area when keyboard focus lands there after the skip link", () => {
+    const ring = declared(".main:focus-visible");
+    expect(ring).toMatch(/outline:\s*2px solid var\(--focus-ring\)/);
+    expect(ring).not.toMatch(/outline:\s*none/);
+  });
+});
+
+describe("states drawn with tokens", () => {
+  it("colors the glyph of the current menu item with its area's text color, which keeps 3:1 on the active fill", () => {
+    expect(declared('.nav-link[aria-current="page"].nav-link-cat .icon')).toMatch(/color:\s*var\(--c-fg\)/);
+  });
+
+  it("draws a button that cannot run yet in the muted pair, not faded by opacity", () => {
+    const disabled = declared('.btn[aria-disabled="true"]');
+    expect(disabled).toMatch(/background:\s*var\(--surface-sunken\)/);
+    expect(disabled).toMatch(/color:\s*var\(--text-muted\)/);
+    expect(disabled).not.toMatch(/opacity/);
+    // The hover color of the variant must not win over it.
+    expect(declared('.btn[aria-disabled="true"]:hover')).toMatch(/background:\s*var\(--surface-sunken\)/);
   });
 });
 
