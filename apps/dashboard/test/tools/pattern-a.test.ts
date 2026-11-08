@@ -7,9 +7,12 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { common, tools } from "../../src/copy.ts";
-import { OFFSETS } from "../../src/tools/timezone.ts";
+import { dropChosenZone as dropCalendarZone } from "../../src/tools/activity-calendar/controls.ts";
+import { dropChosenZone as dropHabitsZone } from "../../src/tools/habits/view.ts";
+import { dropChosenZone as dropGapsZone } from "../../src/tools/memories-gaps/view.ts";
+import { OFFSETS, forgetPreferredOffset, rememberOffset } from "../../src/tools/timezone.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { TOOLS } from "../../src/tools/registry.ts";
 import { copy as activityCalendar } from "../../src/tools/activity-calendar/copy.ts";
@@ -26,7 +29,7 @@ import { copy as memoriesGaps } from "../../src/tools/memories-gaps/copy.ts";
 
 import { textOf } from "../copy-rules.ts";
 import { shown } from "./cell-text.ts";
-import { renderSettled, sampleState, sampleWorkspace } from "./harness.ts";
+import { renderSettled, sampleState, sampleWorkspace, settled } from "./harness.ts";
 
 const toolsDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "tools");
 
@@ -193,6 +196,58 @@ describe("formats", () => {
     expect(habits.unitGap(48 * 3_600_000)).toBe("2 days");
     expect(habits.unitGap(500)).toBe("Under 1 second");
     expect(habits.unitGap(Number.NaN)).toBe("");
+  });
+});
+
+describe("the time zone of a page that offers one", () => {
+  const ZONES = [
+    { id: "habits", select: "habits-zone", drop: dropHabitsZone },
+    { id: "activity-calendar", select: "calendar-zone", drop: dropCalendarZone },
+    { id: "memories-gaps", select: "gaps-offset", drop: dropGapsZone },
+  ] as const;
+  const device = (east: number): void => void vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(-east);
+  const caption = (root: FakeElement): string => root.querySelector(".zone-caption")?.textContent ?? "";
+  const selected = (root: FakeElement, select: string): string => root.querySelector(`#${select} option[selected]`)?.textContent ?? "";
+
+  beforeEach(() => {
+    forgetPreferredOffset();
+    for (const z of ZONES) z.drop();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    forgetPreferredOffset();
+  });
+
+  it("opens in the device's zone, and says so under the first facts", async () => {
+    device(-300);
+    for (const z of ZONES) {
+      const root = await pageOf(z.id);
+      expect(selected(root, z.select), z.id).toBe("UTC-5:00");
+      expect(caption(root), z.id).toBe("Dates are in UTC-5:00.");
+    }
+  });
+
+  it("opens in UTC when the device is in a zone the list does not offer, and in a zone the person remembered before that", async () => {
+    device(100);
+    for (const z of ZONES) expect(selected(await pageOf(z.id), z.select), z.id).toBe("UTC");
+    rememberOffset(120);
+    for (const z of ZONES) expect(selected(await pageOf(z.id), z.select), z.id).toBe("UTC+2:00");
+  });
+
+  it("keeps a pick for that page alone, for the rest of the session", async () => {
+    device(0);
+    const state = await sampleState();
+    const [first, ...others] = ZONES;
+    const view = (id: string) => (TOOLS.find((t) => t.id === id) as (typeof TOOLS)[number]).view;
+    const r = await renderSettled(view((first as (typeof ZONES)[number]).id), state);
+    const select = r.root.querySelector(`#${(first as (typeof ZONES)[number]).select}`) as FakeElement;
+    select.value = "60";
+    select.fire("change");
+    await settled(r.root);
+    expect(caption(r.root)).toBe("Dates are in UTC+1:00.");
+    // Away and back: the same page opens where it was left; the other pages still open in the device's zone.
+    expect(selected(await renderSettled(view((first as (typeof ZONES)[number]).id), state).then((x) => x.root), (first as (typeof ZONES)[number]).select)).toBe("UTC+1:00");
+    for (const z of others) expect(selected((await renderSettled(view(z.id), state)).root, z.select), z.id).toBe("UTC");
   });
 });
 

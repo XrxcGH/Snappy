@@ -4,7 +4,7 @@
  */
 import { insights } from "@snappy-export/core";
 import type { ChatEvent, ParsedExport } from "@snappy-export/core";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import type { State, Workspace } from "../../src/reducer.ts";
@@ -13,8 +13,8 @@ import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/habits/copy.ts";
 import { descriptor } from "../../src/tools/habits/index.ts";
 import { computeHabits, MONTHS_SHOWN } from "../../src/tools/habits/model.ts";
-import { OFFSETS } from "../../src/tools/timezone.ts";
-import { view } from "../../src/tools/habits/view.ts";
+import { OFFSETS, forgetPreferredOffset } from "../../src/tools/timezone.ts";
+import { dropChosenZone, view } from "../../src/tools/habits/view.ts";
 import { RULES, collectCopy, lint, sentences, words } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { phrase } from "./cell-text.ts";
@@ -47,9 +47,16 @@ beforeAll(async () => {
   sample = await sampleState();
 }, 120_000);
 beforeEach(() => {
+  // The pages open in the device's time zone. These tests pin the device to UTC; the zone tests below move it.
+  vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(0);
+  forgetPreferredOffset();
+  dropChosenZone();
   resetAnalysisCache();
   said.length = 0;
   saved.length = 0;
+});
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 const chat = (at: number, direction: ChatEvent["direction"] = "sent"): ChatEvent => ({ conversation: CANARY, isGroup: false, direction, kind: "TEXT", at });

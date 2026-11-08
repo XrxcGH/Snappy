@@ -4,7 +4,7 @@
  * announcement or the page.
  */
 import type { ExportIssue, MemoryItem, ParsedExport } from "@snappy-export/core";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import { initialState } from "../../src/reducer.ts";
@@ -14,7 +14,8 @@ import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/memories-gaps/copy.ts";
 import { descriptor } from "../../src/tools/memories-gaps/index.ts";
 import { DEFAULT_PARAMS, computeMemoriesGaps, oldestFriendDate } from "../../src/tools/memories-gaps/model.ts";
-import { view } from "../../src/tools/memories-gaps/view.ts";
+import { forgetPreferredOffset } from "../../src/tools/timezone.ts";
+import { dropChosenZone, view } from "../../src/tools/memories-gaps/view.ts";
 import { RULES, collectCopy, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { phrase } from "./cell-text.ts";
@@ -30,8 +31,15 @@ beforeAll(async () => {
   sample = await sampleState();
 }, 120_000);
 beforeEach(() => {
+  // The pages open in the device's time zone. These tests pin the device to UTC; the zone tests below move it.
+  vi.spyOn(Date.prototype, "getTimezoneOffset").mockReturnValue(0);
+  forgetPreferredOffset();
+  dropChosenZone();
   resetAnalysisCache();
   said.length = 0;
+});
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
 /** The reference date of the crafted exports below: Nov 6, 2026, 12:00 UTC. */
@@ -227,7 +235,7 @@ describe("the page", () => {
     const { root } = await renderSettled(view, real());
     const notes = text(root, ".tool-notes li");
     expect(notes).toEqual([
-      copy.offsetNote("UTC"),
+      copy.offsetNote,
       copy.undatedNote(1),
       copy.futureNote(1),
       copy.duplicateNote(1),
@@ -339,7 +347,8 @@ describe("the controls", () => {
     offset.value = "330";
     offset.fire("change");
     await settled(r.root);
-    expect(text(r.root, ".tool-notes li")).toContain(copy.offsetNote("UTC+5:30"));
+    expect(text(r.root, ".tool-notes li")).toContain(copy.offsetNote);
+    expect(text(r.root, ".zone-caption")).toEqual(["Dates are in UTC+5:30."]);
     // 23:00 UTC plus 5:30 is already February.
     expect(tableRows(r.root.querySelectorAll("table")[1] as FakeElement)[0]).toEqual(["Busiest month", "Feb 2025", "1 Memory", "50% of dated"]);
   });

@@ -5,10 +5,21 @@
 import { icon } from "../../components/icon.ts";
 import type { ToolUi } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
-import { zoneOptions } from "../timezone.ts";
+import { startingOffset, zoneOptions } from "../timezone.ts";
 import { copy } from "./copy.ts";
 import { yearChoices } from "./model.ts";
 import type { CalendarParams } from "./model.ts";
+
+/** The zone picked on this page earlier in the session, which the page keeps for itself; null until one is picked. */
+let chosenZone: number | null = null;
+
+/** Drop the pick (for tests). */
+export const dropChosenZone = (): void => {
+  chosenZone = null;
+};
+
+/** The zone the page opens in: the one picked here earlier in the session, else the device's (or the last one remembered). */
+export const openingZone = (): number => chosenZone ?? startingOffset();
 
 function field(id: string, label: string, help: string, select: HTMLElement): HTMLElement {
   // The select draws no native arrow: the chevron is its own icon.
@@ -32,7 +43,9 @@ export function calendarControls(ui: ToolUi<CalendarParams>): HTMLElement {
   );
   zone.addEventListener("change", () => {
     const minutes = Number(zone.value);
-    if (Number.isFinite(minutes)) ui.set({ utcOffsetMinutes: minutes });
+    if (!Number.isFinite(minutes)) return;
+    chosenZone = minutes;
+    ui.set({ utcOffsetMinutes: minutes });
   });
 
   const yearId = "calendar-year";

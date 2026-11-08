@@ -7,7 +7,8 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h, setVar } from "../../dom.ts";
 import { formatCount, formatDate, formatPercent } from "../../format.ts";
-import { zoneOptions } from "../timezone.ts";
+import type { View } from "../../views/context.ts";
+import { startingOffset, zoneCaption, zoneOptions } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeHabits, DEFAULT_PARAMS } from "./model.ts";
@@ -119,7 +120,9 @@ function offsetField(ui: ToolUi<HabitsParams>): HTMLElement {
   );
   select.addEventListener("change", () => {
     const minutes = Number(select.value);
-    if (Number.isFinite(minutes)) ui.set({ utcOffsetMinutes: minutes });
+    if (!Number.isFinite(minutes)) return;
+    chosenZone = minutes;
+    ui.set({ utcOffsetMinutes: minutes });
   });
   // The select draws no native arrow: the chevron is its own icon.
   const chevron = icon("chevron-right", 16);
@@ -133,42 +136,56 @@ function offsetField(ui: ToolUi<HabitsParams>): HTMLElement {
   );
 }
 
-export const view = toolView<HabitsView, HabitsParams>({
-  meta,
-  copy,
-  params: DEFAULT_PARAMS,
-  compute: computeHabits,
-  summary: ({ result }) => (result.totals.used === 0 ? copy.emptyAnnounce : copy.summaryAnnounce(result.totals.used, result.activeDays)),
-  isEmpty: ({ result }) => result.totals.used === 0,
-  controls: offsetField,
-  render: (v) => {
-    const { result } = v;
-    return [
-      section(copy.glanceHeading, glance(v)),
-      busiest(v),
-      direction(v),
-      // The three bar lists are independent: two columns on a wide screen.
-      columns(
-        section(copy.hourHeading, barList(result.byHour.map((b) => ({ name: copy.unitHour(b.hour), count: b.total })))),
-        section(copy.weekdayHeading, barList(result.byWeekday.map((b) => ({ name: copy.weekdays[b.weekday] ?? copy.noValue, count: b.total })))),
-        v.months.length > 0
-          ? section(
-              copy.monthHeading,
-              barList(
-                v.months.map((m) => {
-                  const [year, month] = m.month.split("-");
-                  return { name: copy.unitMonth(Number(year), Number(month)), count: m.total };
-                }),
-              ),
-              v.months.length < v.monthsTotal ? h("p", { class: "caption" }, copy.monthsShownLine(v.months.length, v.monthsTotal)) : null,
-            )
-          : null,
-      ),
-    ];
-  },
-  notes: ({ result }): ToolNote[] => [
-    ...result.notes.map((n): ToolNote => ({ kind: isWarning(n.code) ? "warning" : "info", text: noteText(n) })),
-    ...(result.byMonth.length >= 2 ? [{ kind: "info", text: copy.partialNote } as const] : []),
-  ],
-  command: "habits",
-});
+/** The zone picked on this page earlier in the session, which the page keeps for itself; null until one is picked. */
+let chosenZone: number | null = null;
+
+/** Drop the pick (for tests). */
+export const dropChosenZone = (): void => {
+  chosenZone = null;
+};
+
+/** The zone the page opens in: the one picked here earlier in the session, else the device's (or the last one remembered). */
+const openingZone = (): number => chosenZone ?? startingOffset();
+
+const page = (params: HabitsParams): View =>
+  toolView<HabitsView, HabitsParams>({
+    meta,
+    copy,
+    params,
+    compute: computeHabits,
+    summary: ({ result }) => (result.totals.used === 0 ? copy.emptyAnnounce : copy.summaryAnnounce(result.totals.used, result.activeDays)),
+    isEmpty: ({ result }) => result.totals.used === 0,
+    controls: offsetField,
+    render: (v, ui) => {
+      const { result } = v;
+      return [
+        section(copy.glanceHeading, glance(v), zoneCaption(ui.params.utcOffsetMinutes)),
+        busiest(v),
+        direction(v),
+        // The three bar lists are independent: two columns on a wide screen.
+        columns(
+          section(copy.hourHeading, barList(result.byHour.map((b) => ({ name: copy.unitHour(b.hour), count: b.total })))),
+          section(copy.weekdayHeading, barList(result.byWeekday.map((b) => ({ name: copy.weekdays[b.weekday] ?? copy.noValue, count: b.total })))),
+          v.months.length > 0
+            ? section(
+                copy.monthHeading,
+                barList(
+                  v.months.map((m) => {
+                    const [year, month] = m.month.split("-");
+                    return { name: copy.unitMonth(Number(year), Number(month)), count: m.total };
+                  }),
+                ),
+                v.months.length < v.monthsTotal ? h("p", { class: "caption" }, copy.monthsShownLine(v.months.length, v.monthsTotal)) : null,
+              )
+            : null,
+        ),
+      ];
+    },
+    notes: ({ result }): ToolNote[] => [
+      ...result.notes.map((n): ToolNote => ({ kind: isWarning(n.code) ? "warning" : "info", text: noteText(n) })),
+      ...(result.byMonth.length >= 2 ? [{ kind: "info", text: copy.partialNote } as const] : []),
+    ],
+    command: "habits",
+  });
+
+export const view: View = (ctx) => page({ ...DEFAULT_PARAMS, utcOffsetMinutes: openingZone() })(ctx);

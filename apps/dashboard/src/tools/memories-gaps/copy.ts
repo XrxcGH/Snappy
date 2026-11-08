@@ -66,7 +66,7 @@ export const copy = {
   noneAnnounce: (minGap: number): string => `No gaps of ${countOf(minGap, "month", "months")} or more found.`,
   emptyAnnounce: "No Memories have a usable date.",
 
-  offsetNote: (label: string): string => `Dates use ${label}, a fixed offset that does not follow daylight saving.`,
+  offsetNote: "The time zone is a fixed offset, so it does not follow daylight saving.",
   offsetInvalidNote: "That UTC offset is not valid, so Snappy used UTC.",
   nowInvalidNote: "Snappy could not read the date on your device, so it could not tell which dates are in the future.",
   minGapNote: (n: number): string => `The shortest gap was changed to ${countOf(n, "month", "months")}.`,

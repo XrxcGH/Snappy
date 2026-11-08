@@ -6,8 +6,10 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { h, setVar } from "../../dom.ts";
 import { formatCount, formatDate, formatPercent } from "../../format.ts";
+import type { View } from "../../views/context.ts";
+import { zoneCaption } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
-import { calendarControls } from "./controls.ts";
+import { calendarControls, openingZone } from "./controls.ts";
 import { copy } from "./copy.ts";
 import { computeCalendar, DEFAULT_PARAMS } from "./model.ts";
 import type { CalendarParams, CalendarView, YearView } from "./model.ts";
@@ -225,15 +227,18 @@ function kindsByYearSection(v: CalendarView): HTMLElement | null {
   );
 }
 
-export const view = toolView<CalendarView, CalendarParams>({
-  meta,
-  copy,
-  params: DEFAULT_PARAMS,
-  compute: computeCalendar,
-  summary: ({ result }) => (result.totals.used === 0 ? copy.emptyAnnounce : copy.summaryAnnounce(result.totals.used, result.totals.activeDays)),
-  isEmpty: ({ result }) => result.totals.used === 0,
-  controls: calendarControls,
-  render: (v) => [section(copy.glanceHeading, glance(v)), yearSection(v), monthsSection(v), runsSection(v), kindsSection(v), kindsByYearSection(v)],
-  notes: ({ result }): ToolNote[] => result.notes.map((n): ToolNote => ({ kind: isWarning(n.code) ? "warning" : "info", text: noteText(n) })),
-  command: "calendar",
-});
+const page = (params: CalendarParams): View =>
+  toolView<CalendarView, CalendarParams>({
+    meta,
+    copy,
+    params,
+    compute: computeCalendar,
+    summary: ({ result }) => (result.totals.used === 0 ? copy.emptyAnnounce : copy.summaryAnnounce(result.totals.used, result.totals.activeDays)),
+    isEmpty: ({ result }) => result.totals.used === 0,
+    controls: calendarControls,
+    render: (v, ui) => [section(copy.glanceHeading, glance(v), zoneCaption(ui.params.utcOffsetMinutes)), yearSection(v), monthsSection(v), runsSection(v), kindsSection(v), kindsByYearSection(v)],
+    notes: ({ result }): ToolNote[] => result.notes.map((n): ToolNote => ({ kind: isWarning(n.code) ? "warning" : "info", text: noteText(n) })),
+    command: "calendar",
+  });
+
+export const view: View = (ctx) => page({ ...DEFAULT_PARAMS, utcOffsetMinutes: openingZone() })(ctx);

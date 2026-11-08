@@ -6,7 +6,8 @@ import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
 import { formatCount } from "../../format.ts";
-import { OFFSETS, offsetLabel } from "../timezone.ts";
+import type { View } from "../../views/context.ts";
+import { OFFSETS, offsetLabel, startingOffset, zoneCaption } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { DEFAULT_PARAMS, computeMemoriesGaps } from "./model.ts";
@@ -79,17 +80,31 @@ function selectField(id: string, label: string, options: readonly [string, strin
   return h("div", { class: "field" }, h("label", { class: "label", for: id }, label), h("div", { class: "select-wrap" }, select, chevron));
 }
 
+/** The zone picked on this page earlier in the session, which the page keeps for itself; null until one is picked. */
+let chosenZone: number | null = null;
+
+/** Drop the pick (for tests). */
+export const dropChosenZone = (): void => {
+  chosenZone = null;
+};
+
+/** The zone the page opens in: the one picked here earlier in the session, else the device's (or the last one remembered). */
+const openingZone = (): number => chosenZone ?? startingOffset();
+
 function controls(ui: ToolUi<GapsParams>): HTMLElement {
   return h(
     "div",
     { class: "filters" },
     selectField("gaps-min", copy.minGapLabel, MIN_GAPS.map((n): [string, string] => [String(n), copy.unitMonths(n)]), String(ui.params.minGapMonths), (v) => ui.set({ minGapMonths: Number(v) })),
     selectField("gaps-stretch", copy.stretchLabel, STRETCHES.map((n): [string, string] => [String(n), copy.unitMonths(n)]), String(ui.params.stretchMonths), (v) => ui.set({ stretchMonths: Number(v) })),
-    selectField("gaps-offset", copy.zoneLabel, OFFSETS.map((m): [string, string] => [String(m), offsetLabel(m)]), String(ui.params.offsetMinutes), (v) => ui.set({ offsetMinutes: Number(v) })),
+    selectField("gaps-offset", copy.zoneLabel, OFFSETS.map((m): [string, string] => [String(m), offsetLabel(m)]), String(ui.params.offsetMinutes), (v) => {
+        chosenZone = Number(v);
+        ui.set({ offsetMinutes: chosenZone });
+      }),
   );
 }
 
-function glanceSection(r: GapsResult): HTMLElement {
+function glanceSection(r: GapsResult, zone: HTMLElement): HTMLElement {
   return section(
     copy.glanceHeading,
     factList([
@@ -98,6 +113,7 @@ function glanceSection(r: GapsResult): HTMLElement {
       { label: copy.emptyFact, value: formatCount(r.range?.emptyMonths ?? 0), icon: "minus", scope: "memories" },
       { label: copy.longestFact, value: r.longestGapMonths === 0 ? copy.noGapFact : copy.unitMonths(r.longestGapMonths), icon: "quiet", scope: "memories" },
     ]),
+    zone,
   );
 }
 
@@ -131,19 +147,22 @@ function busiestSection(r: GapsResult): HTMLElement {
   return section(copy.busiestHeading, dataTable(copy.busiestCaption, [copy.highlightHeader, copy.whenHeader, copy.memoriesHeader, copy.shareHeader], rows));
 }
 
-export const view = toolView<GapsResult, GapsParams>({
-  meta,
-  copy,
-  params: DEFAULT_PARAMS,
-  compute: computeMemoriesGaps,
-  isEmpty: (r) => r.counts.dated === 0,
-  summary: (r) => (r.counts.dated === 0 ? copy.emptyAnnounce : r.gaps.length === 0 ? copy.noneAnnounce(r.minGapMonths) : copy.foundAnnounce(r.gaps.length)),
-  controls,
-  render: (r) => [glanceSection(r), gapsSection(r), busiestSection(r)],
-  notes: (r): ToolNote[] => [
-    { kind: "info", text: copy.offsetNote(offsetLabel(r.utcOffsetMinutes)) },
-    ...r.notes.map(noteOf).filter((n): n is ToolNote => n !== null),
-    ...(r.gaps.some((g) => g.kind === "start") ? [{ kind: "info", text: copy.startNote } as const] : []),
-  ],
-  command: "gaps",
-});
+const page = (params: GapsParams): View =>
+  toolView<GapsResult, GapsParams>({
+    meta,
+    copy,
+    params,
+    compute: computeMemoriesGaps,
+    isEmpty: (r) => r.counts.dated === 0,
+    summary: (r) => (r.counts.dated === 0 ? copy.emptyAnnounce : r.gaps.length === 0 ? copy.noneAnnounce(r.minGapMonths) : copy.foundAnnounce(r.gaps.length)),
+    controls,
+    render: (r) => [glanceSection(r, zoneCaption(r.utcOffsetMinutes)), gapsSection(r), busiestSection(r)],
+    notes: (r): ToolNote[] => [
+      { kind: "info", text: copy.offsetNote },
+      ...r.notes.map(noteOf).filter((n): n is ToolNote => n !== null),
+      ...(r.gaps.some((g) => g.kind === "start") ? [{ kind: "info", text: copy.startNote } as const] : []),
+    ],
+    command: "gaps",
+  });
+
+export const view: View = (ctx) => page({ ...DEFAULT_PARAMS, offsetMinutes: openingZone() })(ctx);

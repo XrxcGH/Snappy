@@ -22,7 +22,7 @@ export const copy = {
   },
 
   zoneLabel: "Time zone",
-  zoneHelp: "Days follow this time zone. Snappy starts with UTC.",
+  zoneHelp: "Days follow this time zone. Snappy starts with your device’s time zone.",
   yearLabel: "Year",
   yearHelp: "The year to list. Snappy starts with your latest.",
   latestOption: "Latest year",

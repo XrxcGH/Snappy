@@ -22,7 +22,7 @@ export const copy = {
   },
 
   zoneLabel: "Time zone",
-  zoneHelp: "Hours, days and months follow this time zone. Snappy starts with UTC.",
+  zoneHelp: "Hours, days and months follow this time zone. Snappy starts with your device’s time zone.",
   summaryAnnounce: (used: number, days: number) => `Habits counted ${things(used)} on ${countOf(days, "day", "days")}.`,
   emptyAnnounce: "Habits found nothing with a usable date.",
 
