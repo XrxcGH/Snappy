@@ -35,8 +35,8 @@ export type PanelState =
 
 export interface ControllerDeps {
   runner: Runner;
-  /** The export files the person has picked, shared by every block. */
-  getFiles(): readonly RunFile[];
+  /** The export files for a command: the ones the person picked, shared by every block, or the sample while it is showing and the command only reads. */
+  getFiles(spec: CommandSpec): readonly RunFile[];
   /** Spoken status. Failures are assertive. */
   announce(message: string, assertive?: boolean): void;
   /** How many characters wide the output area is. */
@@ -173,7 +173,7 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     // The title goes first, so several blocks on one page can be told apart ("Show the commands: running").
     deps.announce(terminalTools.startedFor(spec.title));
 
-    const files = deps.getFiles();
+    const files = deps.getFiles(spec);
     const names = assignInputNames(files.map((f) => f.name));
     let result: RunResult;
     try {
@@ -269,7 +269,7 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
       if (state.kind === "running" || state.kind === "stopping" || state.kind === "asking" || state.kind === "confirming") return;
       if (spec.network) return set(id, { kind: "unavailable", reason: "network" });
       if (!deps.workerAvailable()) return set(id, { kind: "unavailable", reason: "no-worker" });
-      if (spec.needsFile && deps.getFiles().length === 0) {
+      if (spec.needsFile && deps.getFiles(spec).length === 0) {
         set(id, { kind: "needs-file" });
         deps.announce(terminal.needsFileHint);
         return;

@@ -1,7 +1,7 @@
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { common, terminal } from "../copy.ts";
-import { cliTool, commandNotes } from "../copy-tools.ts";
+import { cliTool, commandNotes, terminalTools } from "../copy-tools.ts";
 import { h } from "../dom.ts";
 import { onDispose } from "../reactive.ts";
 import { COMMANDS, displayText, displayTextWith } from "../terminal/commands.ts";
@@ -72,12 +72,14 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
   const reason = (): string => {
     const busy = controller.busy();
     if (busy !== null && busy !== id) return terminal.busyHint;
-    if (spec.needsFile && picked.count() === 0) return terminal.needsFileHint;
+    if (spec.needsFile && picked.count() === 0 && !ctx.terminal.usesSample(spec)) return terminal.needsFileHint;
     return "";
   };
   const update = (): void => {
+    // The session runs a command that only reads on the sample while it is showing and nothing was picked.
+    ctx.terminal.sampleMode(ctx.store.get().sample !== null);
     const why = reason();
-    hint.textContent = why;
+    hint.textContent = why !== "" ? why : ctx.terminal.usesSample(spec) ? terminalTools.usingSample : "";
     const state = controller.state(id).kind;
     const working = state === "running" || state === "stopping" || state === "asking" || state === "confirming";
     const blocked = why !== "" || working;
@@ -110,6 +112,11 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
   onDispose(controller.subscribe(id, update));
   onDispose(controller.subscribeBusy(update));
   onDispose(picked.subscribe(update));
+  onDispose(
+    ctx.store.subscribe((s, previous) => {
+      if (s.sample !== previous.sample) update();
+    }),
+  );
 
   return h(
     "div",

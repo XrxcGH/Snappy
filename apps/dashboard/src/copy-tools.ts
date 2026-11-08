@@ -63,4 +63,6 @@ export const terminalTools = {
   copyFallbackFor: (fileName: string): string => `Copy text of ${fileName}`,
   copiedFile: "Text copied.",
   fallbackHint: "No file arrived? Copy the text instead.",
+  /** Under a command that read nothing the person picked, because the sample data is showing. */
+  usingSample: "Run uses the sample data.",
 };

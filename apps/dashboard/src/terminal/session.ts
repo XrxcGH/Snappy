@@ -9,9 +9,11 @@ import { platform } from "../platform.ts";
 import type { VaultStore } from "../vault.ts";
 import { createTerminalController } from "./controller.ts";
 import type { TerminalController } from "./controller.ts";
+import type { CommandSpec } from "./commands.ts";
 import { createPickedFiles } from "./picked-files.ts";
 import type { PickedFiles } from "./picked-files.ts";
 import { createRunner } from "./runner.ts";
+import { canUseSample, sampleRunFiles } from "./sample-files.ts";
 import type { Channel, RunFile } from "./run-types.ts";
 
 const MIB = 1024 * 1024;
@@ -30,8 +32,15 @@ export interface TerminalSession {
   /** Where the width of the output area comes from: the block that is about to run says so. */
   columnsFrom(source: () => number): void;
   /**
+   * The sample data is showing (or not). While it is, a command that only reads an export runs on the sample when no export was
+   * picked. The blocks keep this in step with the page's state; it is not saved.
+   */
+  sampleMode(on: boolean): void;
+  /** True when Run would use the sample for this command: the sample is showing, nothing was picked, and the command only reads. */
+  usesSample(spec: CommandSpec): boolean;
+  /**
    * Forget everything the commands showed or were given: stop a Run, clear every transcript and saved file,
-   * and drop the picked export files. The dashboard calls this when it locks or deletes its data.
+   * and drop the picked export files and the generated sample. The dashboard calls this when it locks or deletes its data.
    */
   reset(): void;
 }
@@ -48,6 +57,8 @@ export interface SessionOptions {
   afterStoreRun?: () => Promise<void>;
   /** Replaces the picked files as the source of a Run's files (tests). */
   getFiles?: () => readonly RunFile[];
+  /** The sample export's files. Default: the made-up export the dashboard's sample is built from (tests give a small stand-in). */
+  sampleFiles?: () => RunFile[];
   columns?: () => number;
   announce?: (message: string, assertive?: boolean) => void;
   now?: () => number;
@@ -91,9 +102,13 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     coarse,
     version: options.version ?? (() => platform().release?.version),
   });
+  let sampleOn = false;
+  let sample: RunFile[] | null = null;
+  const usesSample = (spec: CommandSpec): boolean => options.getFiles === undefined && sampleOn && picked.count() === 0 && canUseSample(spec);
   const controller = createTerminalController({
     runner,
-    getFiles: options.getFiles ?? (() => picked.files()),
+    // The files the person picked win. The sample is generated the first time a Run needs it and kept only until Lock or Delete data.
+    getFiles: options.getFiles ?? ((spec) => (usesSample(spec) ? (sample ??= (options.sampleFiles ?? sampleRunFiles)()) : picked.files())),
     announce: options.announce ?? speak,
     columns: () => source(),
     beforeStoreRun: options.beforeStoreRun ?? (async () => undefined),
@@ -107,9 +122,14 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     columnsFrom(next) {
       source = next;
     },
+    sampleMode(on) {
+      sampleOn = on;
+    },
+    usesSample,
     reset() {
       controller.reset();
       picked.clear();
+      sample = null;
     },
     get supported() {
       return !spawnFailed;

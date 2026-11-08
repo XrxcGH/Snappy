@@ -44,7 +44,7 @@ function setup(files = [{ name: "a.zip", blob: new Blob(["x"]) }], workerAvailab
     afterStoreRun: async () => undefined,
     workerAvailable: () => workerAvailable,
   });
-  const session: TerminalSession = { controller, picked: createPickedFiles(), outCap: 256 * 1024 * 1024, supported: true, columnsFrom: () => undefined, reset: () => controller.reset() };
+  const session: TerminalSession = { controller, picked: createPickedFiles(), outCap: 256 * 1024 * 1024, supported: true, columnsFrom: () => undefined, sampleMode: () => undefined, usesSample: () => false, reset: () => controller.reset() };
   return { session, controller, started };
 }
 
