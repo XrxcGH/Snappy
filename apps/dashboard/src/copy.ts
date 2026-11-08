@@ -582,12 +582,8 @@ export const settings = {
   aboutBody: "Snappy reads your own Snapchat export on this device to tidy your friends list and rescue your Memories.",
   versionLabel: (v: string) => `Version ${v}`,
   licensesHeading: "Licenses",
-  get licensesBody(): string {
-    return onDesktop(
-      "Three open fonts and one MIT library. License files are in the licenses folder that comes with Snappy.",
-      "Three open fonts and one MIT library. Open a name below to read its license.",
-    );
-  },
+  // The same on the web and in the app: the licenses are listed below, so the note does not point to a folder the app does not have.
+  licensesBody: "Three open font families, a digits-only font made from one of them, and one MIT library. Their license texts are below.",
 };
 
 export const passphraseHint = {

@@ -41,6 +41,13 @@ describe("Start page words", () => {
   });
 });
 
+describe("Settings licenses note", () => {
+  it("counts the font families and the digits-only font, and points to the texts below, not to a folder", () => {
+    expect(copy.settings.licensesBody).toBe("Three open font families, a digits-only font made from one of them, and one MIT library. Their license texts are below.");
+    expect(copy.settings.licensesBody).not.toMatch(/folder|comes with/);
+  });
+});
+
 describe("which app a sentence means", () => {
   it("never says in the app: inside Snappy that means Snappy, and the person is being sent to Snapchat", () => {
     expect(hits(/\b(in|from) the app\b/i)).toEqual([]);
