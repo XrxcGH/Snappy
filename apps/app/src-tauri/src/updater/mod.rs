@@ -5,6 +5,7 @@
 pub mod keys;
 pub mod manifest;
 pub mod store;
+pub mod transport;
 pub mod verify;
 
 use serde::Serialize;
