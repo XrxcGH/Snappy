@@ -95,3 +95,22 @@ export function checkParts<T extends NamedPart>(files: readonly T[], scans: read
   const rest = byName.filter((p) => !p.scan.friends);
   return { kind: "ok", ordered: [...first, ...rest].map((p) => p.file) };
 }
+
+/** A chosen or dropped thing, with what a browser says about a folder. */
+export interface ChosenFile extends NamedPart {
+  /** Set by a browser's folder chooser: the path inside the chosen folder. */
+  readonly webkitRelativePath?: string;
+}
+
+/**
+ * True when nothing chosen is a ZIP file and what was chosen looks like an export that was unzipped (Safari does that after a
+ * download): a folder, files from inside a folder, JSON files, or a folder named like an export. `folder` is set by the drop
+ * zone when a dropped item was a directory.
+ */
+export function looksUnzipped(files: readonly ChosenFile[], options: { folder?: boolean } = {}): boolean {
+  if (options.folder === true) return true;
+  return files.some((f) => {
+    const name = f.name ?? "";
+    return (f.webkitRelativePath ?? "") !== "" || /\.json$/i.test(name) || /^mydata~\d+$/i.test(name);
+  });
+}

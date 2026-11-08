@@ -16,6 +16,9 @@ export const startFlow = {
   elapsed: (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")} elapsed`,
   busy: "Wait for the current step to finish.",
 
+  // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
+  unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
+
   // An export refused only because its friends list is empty although removed friends are listed: the person may go on.
   useAnyway: "Use anyway",
 

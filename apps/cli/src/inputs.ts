@@ -14,6 +14,9 @@ import type { Io } from "./io.ts";
 type FsIo = Pick<Io, "fs" | "path">;
 
 const isZip = (name: string): boolean => name.toLowerCase().endsWith(".zip");
+const isJson = (name: string): boolean => name.toLowerCase().endsWith(".json");
+/** A folder with json/ inside, or a .json file: the export was unzipped (Safari does that after a download). */
+const UNZIPPED = "This looks like an unzipped export. Point Snappy at the ZIP files instead.";
 /** In a folder of parts, skip the "._name.zip" sidecars macOS leaves next to files copied to other drives. */
 const isPart = (name: string): boolean => isZip(name) && !name.startsWith("._");
 const byName = (a: string, b: string): number => a.localeCompare(b, "en", { numeric: true });
@@ -56,18 +59,23 @@ export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[
       throw fsError(e, "open", arg);
     }
     if (info.isDirectory) {
-      let names: string[];
+      let entries;
       try {
-        names = (await io.fs.readDir(path)).filter((d) => d.isFile && isPart(d.name)).map((d) => d.name);
+        entries = await io.fs.readDir(path);
       } catch (e) {
         throw fsError(e, "read the folder", arg);
       }
+      const names = entries.filter((d) => d.isFile && isPart(d.name)).map((d) => d.name);
       if (names.length === 0) {
+        // A browser that unzips downloads (Safari does) leaves a folder with json/ inside, not the ZIP files.
+        if (entries.some((d) => (d.isDirectory && d.name.toLowerCase() === "json") || (d.isFile && isJson(d.name)))) throw new CliError("unzipped-export", UNZIPPED);
         throw new CliError("no-zips", `No .zip files in "${arg}". Put your export parts there, or name the files.`);
       }
       found.push(...names.sort(byName).map((n) => io.path.join(path, n)));
     } else if (isZip(path)) {
       found.push(path);
+    } else if (isJson(path)) {
+      throw new CliError("unzipped-export", UNZIPPED);
     } else {
       throw new CliError("not-zip", `"${arg}" is not a .zip file. Use the .zip you downloaded from Snapchat.`);
     }

@@ -1,4 +1,4 @@
-import type { NamedBlob } from "../actions.ts";
+import type { ImportOptions, NamedBlob } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { failureClass, visibleIssues } from "@snappy-export/core";
 import { common, routes, settings, start } from "../copy.ts";
@@ -173,7 +173,7 @@ function countSection(ctx: ViewContext): HTMLElement {
 function addSection(ctx: ViewContext): HTMLElement {
   const { store, actions } = ctx;
 
-  const run = async (files: NamedBlob[]): Promise<void> => {
+  const run = async (files: NamedBlob[], options: ImportOptions = {}): Promise<void> => {
     if (files.length === 0) return;
     // A read is already going: say so, and leave it alone.
     if (store.get().import.phase === "reading") {
@@ -181,7 +181,7 @@ function addSection(ctx: ViewContext): HTMLElement {
       return;
     }
     announce(start.reading(0, files.length));
-    const result = await actions.importZips(files);
+    const result = await actions.importZips(files, options);
     const s = store.get();
     if (result === "done") {
       announce(s.import.addedToHistory === false ? start.notAdded : start.readDone);
@@ -233,7 +233,10 @@ function addSection(ctx: ViewContext): HTMLElement {
   dropzone.addEventListener("drop", (e) => {
     e.preventDefault();
     setActive(false);
-    void run([...(e.dataTransfer?.files ?? [])]);
+    const transfer = e.dataTransfer;
+    // A folder dropped from Finder or Explorer arrives as one empty file; only its directory entry says what it is.
+    const folder = [...(transfer?.items ?? [])].some((item) => item.kind === "file" && item.webkitGetAsEntry?.()?.isDirectory === true);
+    void run([...(transfer?.files ?? [])], { folder });
   });
 
   return stepSection(

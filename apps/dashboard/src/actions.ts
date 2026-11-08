@@ -8,7 +8,7 @@ import type { ExportIssue, ParsedExport, Snapshot } from "@snappy-export/core";
 import { resetAnalysisCache } from "./analysis.ts";
 import { settings, start, vaultMessages } from "./copy.ts";
 import { startFlow } from "./copy-start.ts";
-import { checkParts, scanPart } from "./export-parts.ts";
+import { checkParts, looksUnzipped, scanPart } from "./export-parts.ts";
 import { ImportCanceled, runImport } from "./import-pipeline.ts";
 import type { ImportRunner } from "./import-pipeline.ts";
 import { exportHealth } from "./issues.ts";
@@ -21,6 +21,13 @@ import type { VaultStore } from "./vault.ts";
 
 export interface NamedBlob extends Blob {
   readonly name?: string;
+  /** Set by a browser's folder chooser: the path inside the chosen folder. */
+  readonly webkitRelativePath?: string;
+}
+
+export interface ImportOptions {
+  /** A dropped item was a folder (the drop zone saw a directory entry). */
+  folder?: boolean;
 }
 
 export interface Deps {
@@ -40,7 +47,7 @@ export type ImportResult = "done" | "failed" | "canceled" | "busy";
 
 export interface Actions {
   init(savedTheme: string | null): Promise<void>;
-  importZips(files: readonly NamedBlob[]): Promise<ImportResult>;
+  importZips(files: readonly NamedBlob[], options?: ImportOptions): Promise<ImportResult>;
   /**
    * Go on with the export that was just refused for a reason the person may override (an empty friends list with removed
    * friends), when there is no saved history and no earlier export this session. Reads nothing again. Otherwise "failed".
@@ -138,12 +145,12 @@ export function createActions(store: Store, deps: Deps): Actions {
   }
   let held: Read | null = null;
 
-  async function importZips(files: readonly NamedBlob[]): Promise<ImportResult> {
+  async function importZips(files: readonly NamedBlob[], options: ImportOptions = {}): Promise<ImportResult> {
     if (working || store.get().import.phase === "reading") return "busy";
     working = true;
     held = null;
     try {
-      return await readZips(files);
+      return await readZips(files, options);
     } finally {
       working = false;
       stopping = null;
@@ -156,10 +163,11 @@ export function createActions(store: Store, deps: Deps): Actions {
     stopping?.abort();
   }
 
-  async function readZips(files: readonly NamedBlob[]): Promise<ImportResult> {
+  async function readZips(files: readonly NamedBlob[], options: ImportOptions): Promise<ImportResult> {
     const zips = files.filter((f) => ZIP_NAME.test(f.name ?? ""));
     if (zips.length === 0) {
-      store.dispatch({ type: "import-failed", message: start.notZip });
+      // An export that a browser unzipped (Safari does, after a download) is a folder or JSON files, which is not "not a ZIP file".
+      store.dispatch({ type: "import-failed", message: looksUnzipped(files, options) ? startFlow.unzipped : start.notZip });
       return "failed";
     }
 
