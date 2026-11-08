@@ -52,7 +52,7 @@ name: Release
 #
 # What it builds
 #   Windows   NSIS installer (.exe), per user. No MSI (see UPDATES below)  windows-latest
-#   macOS     .dmg for Apple silicon and for Intel                   macos-latest (Intel is cross-compiled)
+#   macOS     one universal .dmg (Apple silicon and Intel)           macos-latest (the Intel half is cross-compiled)
 #   Linux     AppImage, .deb and .rpm                                ubuntu-22.04 (oldest glibc we support)
 #   Android   universal APK and AAB                                  ubuntu-latest
 #   iOS       DISABLED, see the comment on the ios job
@@ -222,16 +222,12 @@ jobs:
             target: ""
             stage: unsigned
             expect: "exe"
-          - name: macos-arm64
+          # One universal app (Apple silicon and Intel in the same executable), built on an Apple silicon runner.
+          # The Intel half is cross-compiled and has not been started on an Intel Mac.
+          - name: macos-universal
             os: macos-latest
-            bundles: dmg
-            target: aarch64-apple-darwin
-            stage: unsigned
-            expect: "dmg"
-          - name: macos-x64
-            os: macos-latest # an Apple silicon runner; the Intel app is cross-compiled
-            bundles: dmg
-            target: x86_64-apple-darwin
+            bundles: dmg,app
+            target: universal-apple-darwin
             stage: unsigned
             expect: "dmg"
           - name: linux-x64
@@ -262,7 +258,11 @@ jobs:
           set -euo pipefail
           rustup toolchain install "$RUST_VERSION" --profile minimal --no-self-update
           rustup default "$RUST_VERSION"
-          if [ -n "$TARGET" ]; then rustup target add "$TARGET"; fi
+          if [ "$TARGET" = "universal-apple-darwin" ]; then
+            rustup target add aarch64-apple-darwin x86_64-apple-darwin
+          elif [ -n "$TARGET" ]; then
+            rustup target add "$TARGET"
+          fi
           rustc --version
       - name: Install Linux build libraries
         if: runner.os == 'Linux'
@@ -594,7 +594,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [macos-arm64, macos-x64]
+        name: [macos-universal]
     env:
       NAME: ${{ matrix.name }}
       # Fixed names, set here and never taken from the build artifact. Nothing from the artifact is written to
@@ -1011,8 +1011,7 @@ jobs:
             echo "## Files attached"
             echo
             list_files "Windows installer (.exe)" "*.exe" yes
-            list_files "macOS, Apple silicon" "*aarch64*.dmg" yes
-            list_files "macOS, Intel" "*x64.dmg" yes
+            list_files "macOS, Apple silicon and Intel (universal)" "*universal*.dmg" yes
             list_files "Linux AppImage" "*.AppImage" yes
             list_files "Linux .deb" "*.deb" yes
             list_files "Linux .rpm" "*.rpm" yes
