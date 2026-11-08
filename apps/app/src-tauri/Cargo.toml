@@ -21,6 +21,8 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
+# The update manifest (a small JSON file) is parsed here. Already in the tree through tauri.
+serde_json = "1"
 
 # Windows only: switch off SmartScreen and autofill on the live WebView2 controller (see lib.rs).
 # Both are already dependencies of the system-webview layer; neither has any network code.
@@ -32,6 +34,9 @@ windows-core = "0.62"
 # Test builds only: keeps the WEBVIEW2_* environment variables (a debugging port for Playwright, a
 # scratch profile) that release builds remove. Never enabled by the release workflow.
 dev-hooks = []
+# End-to-end update tests only: points the updater at a loopback server and trusts a TEST key
+# instead of the release keys. build.rs refuses it in a release build and outside the E2E identity.
+dev-update-endpoint = []
 
 [profile.release]
 opt-level = "s"

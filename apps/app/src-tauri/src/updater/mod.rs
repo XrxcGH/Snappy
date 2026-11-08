@@ -2,6 +2,8 @@
 //! commands; everything that decides what is downloaded, trusted and installed lives here, in Rust.
 //! Nothing in this module takes an address, a host, a header, a version or a path from the page.
 
+pub mod manifest;
+
 use serde::Serialize;
 
 /// What the page may know about updates: enums, numbers and strings the program validated itself.
