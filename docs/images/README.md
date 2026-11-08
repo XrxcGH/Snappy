@@ -1,6 +1,6 @@
 # Screenshots
 
-Every image in this folder is a real capture of the built dashboard showing Snappy’s built-in sample data (“Use sample data”): invented friends such as `ghost_1`, made by the synthetic generator in `packages/core`. None comes from a real account, and none shows a browser window or a desktop. The README uses a few of them.
+Every image in this folder is a real capture of the built dashboard showing Snappy’s built-in sample data (“Use sample data”): invented friends such as `ghost_1`, made by the synthetic generator in `packages/core`. None comes from a real account, and none shows a browser window or a desktop. The README uses a few of them. The sample’s Memories files declare sizes of a few megabytes without holding that much data, so the storage meter has numbers to show.
 
 They are made by a script, so they can be refreshed when the screens change.
 
