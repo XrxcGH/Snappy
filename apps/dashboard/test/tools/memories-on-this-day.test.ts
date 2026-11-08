@@ -171,7 +171,9 @@ describe("computeMemoriesOnThisDay", () => {
 });
 
 const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
-const tableRows = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((r) => [...text(r, "th"), ...text(r, "td")]);
+/** What a screen reader hears: a cell that shows a bare value keeps its full phrase in a hidden span, and that phrase is read here. */
+const phrases = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.querySelector(".cell-long")?.textContent ?? e.textContent);
+const tableRows = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((r) => [...phrases(r, "th"), ...phrases(r, "td")]);
 
 describe("the page", () => {
   it("shows the day, the years it came up, the years and the busiest days as tables, then notes and the command", async () => {
@@ -273,6 +275,9 @@ describe("the controls", () => {
     expect(r.root.querySelector("#otd-date")).toBe(date);
     expect(r.root.textContent).toContain(copy.lookingLine("Mar 1, 2026", false, 0));
     expect(tableRows(r.root.querySelectorAll("table")[0] as FakeElement)).toEqual([["2022", "4 years ago", "2 Memories"]]);
+    // A wide page shows the bare value its column names ("2"); the phrase is for assistive technology and a phone's card.
+    const short = (r.root.querySelectorAll("table")[0] as FakeElement).querySelectorAll("tbody td").map((td) => td.querySelector(".cell-short")?.textContent);
+    expect(short).toEqual([undefined, "2"]);
     expect(said.at(-1)).toBe(copy.foundAnnounce(2, false));
     // Clearing the field goes back to today.
     date.value = "";

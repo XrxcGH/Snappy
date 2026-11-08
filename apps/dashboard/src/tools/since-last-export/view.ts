@@ -1,4 +1,5 @@
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section, subsection } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
@@ -68,11 +69,11 @@ const HEADINGS: Record<ChangeKind, { heading: string; caption: string }> = {
   "request-no-longer-listed": { heading: copy.vanishedHeading, caption: copy.vanishedCaption },
 };
 
-/** The cell that goes with a person's date, saying what the date is. */
-function dateCell(kind: (typeof GROUPS)[number]["date"], at: number | null): string {
+/** The cell that goes with a person's date: the date alone on a wide page, and what the date is ("Friends since Apr 10, 2026") for a screen reader and a phone. */
+function dateCell(kind: (typeof GROUPS)[number]["date"], at: number | null): TableCell {
   if (at === null) return copy.noDateCell;
   const date = formatDate(at);
-  return kind === "friends-since" ? copy.friendsSinceCell(date) : kind === "removed-on" ? copy.removedOnCell(date) : copy.sentOnCell(date);
+  return { text: date, label: kind === "friends-since" ? copy.friendsSinceCell(date) : kind === "removed-on" ? copy.removedOnCell(date) : copy.sentOnCell(date) };
 }
 
 /**
@@ -134,8 +135,14 @@ function memoriesSection({ result }: SinceResult): HTMLElement | null {
 function activitySection({ result }: SinceResult): HTMLElement | null {
   const a = result.activity;
   if (!a) return null;
-  const rows = [[copy.sinceRow, copy.sentCell(a.since.sent), copy.receivedCell(a.since.received), copy.unknownCell(a.since.unknown)]];
-  if (a.earlier) rows.push([copy.earlierRow, copy.sentCell(a.earlier.sent), copy.receivedCell(a.earlier.received), copy.unknownCell(a.earlier.unknown)]);
+  const counts = (period: string, c: { sent: number; received: number; unknown: number }): TableCell[] => [
+    period,
+    { text: formatCount(c.sent), label: copy.sentCell(c.sent) },
+    { text: formatCount(c.received), label: copy.receivedCell(c.received) },
+    { text: formatCount(c.unknown), label: copy.unknownCell(c.unknown) },
+  ];
+  const rows = [counts(copy.sinceRow, a.since)];
+  if (a.earlier) rows.push(counts(copy.earlierRow, a.earlier));
   return section(
     copy.activityHeading,
     dataTable(copy.activityCaption, [copy.periodHeader, copy.sentHeader, copy.receivedHeader, copy.unknownHeader], rows),

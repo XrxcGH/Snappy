@@ -135,7 +135,12 @@ describe("computeStoragePlanner", () => {
 
 const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
 const headings = (root: FakeElement): string[] => text(root, ".section-title");
-const rowsOf = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((tr) => [...tr.querySelectorAll("th"), ...tr.querySelectorAll("td")].map((c) => c.textContent));
+/** What a screen reader hears: a cell that shows a bare value keeps its full phrase in a hidden span, and that phrase is read here. */
+const phraseOf = (c: FakeElement): string => c.querySelector(".cell-long")?.textContent ?? c.textContent;
+const rowsOf = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((tr) => [...tr.querySelectorAll("th"), ...tr.querySelectorAll("td")].map(phraseOf));
+/** What the page shows: the bare value of each cell on a wide page. */
+const shortRowsOf = (table: FakeElement): string[][] =>
+  table.querySelectorAll("tbody tr").map((tr) => [...tr.querySelectorAll("th"), ...tr.querySelectorAll("td")].map((c) => c.querySelector(".cell-short")?.textContent ?? c.textContent));
 
 describe("the page", () => {
   it("shows the goal, the tables, the notes and the command for the sample, and says nothing was downloaded", async () => {
@@ -209,6 +214,8 @@ describe("the page", () => {
     expect(rowsOf(batches).map((r) => r.slice(0, 2))).toEqual([["Batch 1", "2 Memories"], ["Batch 2", "1 Memory"], ["Batch 3", "1 Memory"]]);
     // A batch never passes 1 GB, so the third photo of 2026 starts the second batch.
     expect(rowsOf(batches)[0]).toEqual(["Batch 1", "2 Memories", "800 MB", "Year 2026", "Part 1"]);
+    // A wide page shows the bare values its column names already say.
+    expect(shortRowsOf(batches)[0]).toEqual(["Batch 1", "2", "800 MB", "2026", "1"]);
     expect(rowsOf(batches)[1]).toEqual(["Batch 2", "1 Memory", "400 MB", "Year 2026", "Part 2"]);
     expect(rowsOf(batches)[2]).toEqual(["Batch 3", "1 Memory", "700 MB", "Year 2025", "Part 2"]);
   });

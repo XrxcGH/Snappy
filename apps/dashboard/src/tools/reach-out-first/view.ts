@@ -1,5 +1,6 @@
 import { button } from "../../components/button.ts";
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { emptyState, factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
@@ -28,7 +29,12 @@ function nameRows(table: HTMLElement, names: readonly string[]): HTMLElement {
 /** One list: the rule in a line, then a table of the chats (or a line saying none were found). */
 function sideSection(heading: string, caption: string, rule: string, none: string, people: readonly ReachOutPerson[], side: "you" | "them"): HTMLElement {
   const shown = people.slice(0, SHOWN);
-  const rows = shown.map((p) => [p.username, copy.exchangesCell(p.byYou), copy.exchangesCell(p.byThem), copy.shareCell(formatPercent((side === "you" ? p.byYou : p.byThem) / p.exchanges))]);
+  // A cell shows the bare value its column names ("5"); a screen reader, and a phone with no column names, get the phrase ("5 exchanges").
+  const count = (n: number): TableCell => ({ text: formatCount(n), label: copy.exchangesCell(n) });
+  const rows = shown.map((p): TableCell[] => {
+    const share = formatPercent((side === "you" ? p.byYou : p.byThem) / p.exchanges);
+    return [p.username, count(p.byYou), count(p.byThem), { text: share, label: copy.shareCell(share) }];
+  });
   return section(
     heading,
     h("p", {}, people.length > 0 ? rule : none),

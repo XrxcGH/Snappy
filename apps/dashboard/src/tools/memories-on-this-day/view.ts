@@ -1,4 +1,5 @@
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { icon } from "../../components/icon.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -51,6 +52,10 @@ function noteOf(n: ResultNote): ToolNote {
   }
 }
 
+/** A cell that shows the bare value its column names ("2"); a screen reader, and a phone with no column names, get the phrase ("2 Memories"). */
+const memoriesCell = (n: number): TableCell => ({ text: formatCount(n), label: copy.unitMemories(n) });
+const yearsCell = (n: number): TableCell => ({ text: formatCount(n), label: copy.unitYears(n) });
+
 const dayText = (r: OnThisDayResult): string => formatDate(Date.UTC(r.target.year, r.target.month - 1, r.target.day));
 
 /** A select with its label, drawn like the other selects: the chevron is its own icon, not the browser's arrow. */
@@ -97,7 +102,7 @@ function daySection(r: OnThisDayResult): HTMLElement {
       : dataTable(
           copy.dayCaption,
           [copy.yearHeader, copy.whenHeader, copy.memoriesHeader],
-          r.years.map((y) => [String(y.year), copy.unitAgo(y.yearsAgo), copy.unitMemories(y.count)]),
+          r.years.map((y): TableCell[] => [String(y.year), copy.unitAgo(y.yearsAgo), memoriesCell(y.count)]),
         ),
   );
 }
@@ -114,7 +119,7 @@ function yearsSection(r: OnThisDayResult): HTMLElement {
     dataTable(
       copy.yearsCaption,
       [copy.yearHeader, copy.memoriesHeader, copy.busiestHeader],
-      r.byYear.map((y) => [String(y.year), copy.unitMemories(y.total), y.busiestMonth === null ? copy.unitNoBusiest : copy.unitBusiest(y.busiestMonth, y.busiestCount)]),
+      r.byYear.map((y): TableCell[] => [String(y.year), memoriesCell(y.total), y.busiestMonth === null ? copy.unitNoBusiest : copy.unitBusiest(y.busiestMonth, y.busiestCount)]),
     ),
   );
 }
@@ -125,7 +130,7 @@ function topDaysSection(r: OnThisDayResult): HTMLElement {
     dataTable(
       copy.topDaysCaption,
       [copy.dayHeader, copy.memoriesHeader, copy.yearsHeader],
-      r.topDays.map((d) => [copy.unitMonthDay(d.month, d.day), copy.unitMemories(d.count), copy.unitYears(d.years)]),
+      r.topDays.map((d): TableCell[] => [copy.unitMonthDay(d.month, d.day), memoriesCell(d.count), yearsCell(d.years)]),
     ),
   );
 }

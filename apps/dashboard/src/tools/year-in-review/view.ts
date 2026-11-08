@@ -1,5 +1,6 @@
 import type { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section, stat, statGrid } from "../../components/layout.ts";
 import { icon } from "../../components/icon.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -81,13 +82,17 @@ function glance({ tiles }: YearView): HTMLElement {
 
 function busiest({ activity }: YearView): HTMLElement | null {
   if (activity === null) return null;
-  const row = (pattern: string, name: string, tied: boolean, peak: { count: number; share: number }): string[] => [
-    pattern,
-    copy.unitBusiestAt(tied ? copy.unitTied(name) : name),
-    copy.unitCounted(formatCount(peak.count)),
-    copy.unitOfYear(formatPercent(peak.share)),
-  ];
-  const rows: string[][] = [];
+  // Each cell shows the bare value its column names; a screen reader, and a phone with no column names, get the phrase.
+  const row = (pattern: string, name: string, tied: boolean, peak: { count: number; share: number }): TableCell[] => {
+    const busiestName = tied ? copy.unitTied(name) : name;
+    return [
+      pattern,
+      { text: busiestName, label: copy.unitBusiestAt(busiestName) },
+      { text: formatCount(peak.count), label: copy.unitCounted(formatCount(peak.count)) },
+      { text: formatPercent(peak.share), label: copy.unitOfYear(formatPercent(peak.share)) },
+    ];
+  };
+  const rows: TableCell[][] = [];
   const month = activity.busiestMonth;
   if (month !== null) rows.push(row(copy.monthPattern, copy.monthsLong[month.key - 1] ?? copy.noValue, month.ties > 0, month));
   const day = activity.busiestDay;
@@ -108,12 +113,12 @@ function dates({ activity }: YearView): HTMLElement | null {
 
 function direction({ activity }: YearView): HTMLElement | null {
   if (activity === null) return null;
-  const row = (name: string, c: Counts): string[] => [
+  const row = (name: string, c: Counts): TableCell[] => [
     name,
-    copy.unitTotal(formatCount(c.total)),
-    copy.unitSent(formatCount(c.sent)),
-    copy.unitReceived(formatCount(c.received)),
-    copy.unitUnknown(formatCount(c.unknown)),
+    { text: formatCount(c.total), label: copy.unitTotal(formatCount(c.total)) },
+    { text: formatCount(c.sent), label: copy.unitSent(formatCount(c.sent)) },
+    { text: formatCount(c.received), label: copy.unitReceived(formatCount(c.received)) },
+    { text: formatCount(c.unknown), label: copy.unitUnknown(formatCount(c.unknown)) },
   ];
   return section(
     copy.directionHeading,

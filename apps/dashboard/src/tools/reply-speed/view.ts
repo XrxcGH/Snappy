@@ -1,4 +1,5 @@
 import { dataTable } from "../../components/dataTable.ts";
+import type { TableCell } from "../../components/dataTable.ts";
 import { icon } from "../../components/icon.ts";
 import { factList, section, subsection } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -20,6 +21,10 @@ const hoursOf = (report: ReplySpeedReport): number => report.windowMs / HOUR_MS;
 
 /** A reply time as words, or the dash when there is none. */
 const timeText = (ms: number | null | undefined): string => (typeof ms === "number" ? copy.unitDuration(ms) || copy.noValue : copy.noValue);
+
+/** A cell that shows the bare value its column names ("10 minutes"); a screen reader, and a phone with no column names, get the phrase ("10 minutes typical"). */
+const typicalCell = (ms: number | null | undefined): TableCell => ({ text: timeText(ms), label: copy.unitTypicalCell(timeText(ms)) });
+const repliesCell = (n: number): TableCell => ({ text: formatCount(n), label: copy.unitRepliesCell(n) });
 
 /**
  * The first column of a result table names a friend. dataTable writes plain text, so each name is put in the shared
@@ -93,7 +98,7 @@ function rankTable(caption: string, list: ReplySpeedReport["fastest"]["you"]): H
     dataTable(
       caption,
       [copy.friendHeader, copy.typicalHeader, copy.repliesHeader],
-      list.map((p) => [p.username, copy.unitTypicalCell(timeText(p.medianMs)), copy.unitRepliesCell(p.replies)]),
+      list.map((p): TableCell[] => [p.username, typicalCell(p.medianMs), repliesCell(p.replies)]),
     ),
     list.map((p) => p.username),
   );
@@ -132,7 +137,7 @@ function hourSection({ report, hours: rows }: ReplySpeedResult): HTMLElement {
 
 function friends({ report, shown }: ReplySpeedResult): HTMLElement | null {
   if (shown.length === 0) return null;
-  const side = (replies: number, spread: { medianMs: number } | null): string[] => [copy.unitRepliesCell(replies), spread === null ? copy.tooFewCell : copy.unitTypicalCell(timeText(spread.medianMs))];
+  const side = (replies: number, spread: { medianMs: number } | null): TableCell[] => [repliesCell(replies), spread === null ? copy.tooFewCell : typicalCell(spread.medianMs)];
   return section(
     copy.friendsHeading,
     h("p", {}, copy.friendsLine(report.minReplies)),
@@ -140,7 +145,7 @@ function friends({ report, shown }: ReplySpeedResult): HTMLElement | null {
       dataTable(
         copy.friendsCaption,
         [copy.friendHeader, copy.youRepliesHeader, copy.youTypicalHeader, copy.themRepliesHeader, copy.themTypicalHeader],
-        shown.map((f) => [f.username, ...side(f.youReplies, f.you), ...side(f.themReplies, f.them)]),
+        shown.map((f): TableCell[] => [f.username, ...side(f.youReplies, f.you), ...side(f.themReplies, f.them)]),
       ),
       shown.map((f) => f.username),
     ),

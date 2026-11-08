@@ -105,7 +105,8 @@ function real(o: Crafted = {}): State {
   return { ...state, vault: { ...state.vault, phase: o.saving === false ? "session" : "unlocked" } };
 }
 const dataOf = (state: State) => toolData(state);
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+/** What a screen reader hears: a cell that shows a bare value keeps its full phrase in a hidden span, and that phrase is read here. */
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.querySelector(".cell-long")?.textContent ?? e.textContent);
 const titles = (el: FakeElement): string[] => text(el, ".section-title");
 
 describe("the tool", () => {
@@ -280,6 +281,10 @@ describe("the page", () => {
     expect(text(activity, "thead th")).toEqual([copy.periodHeader, copy.sentHeader, copy.receivedHeader, copy.unknownHeader]);
     expect(text(activity, "tbody th")).toEqual([copy.sinceRow, copy.earlierRow]);
     expect(text(activity.querySelectorAll("tbody tr")[0] as FakeElement, "td")).toEqual([copy.sentCell(3), copy.receivedCell(2), copy.unknownCell(1)]);
+    // The cells show the bare value their column names ("3", "Apr 10, 2026"); the phrase is for assistive technology (and a phone's stacked card).
+    const shortOf = (row: FakeElement): (string | undefined)[] => (row.querySelectorAll("td") as FakeElement[]).map((td) => td.querySelector(".cell-short")?.textContent);
+    expect(shortOf(activity.querySelectorAll("tbody tr")[0] as FakeElement)).toEqual(["3", "2", "1"]);
+    expect(people.map((t) => shortOf(t.querySelector("tbody tr") as FakeElement))).toEqual([["Apr 10, 2026"], [undefined], ["Jan 10, 2026"], [undefined]]);
     expect(root.textContent).toContain(copy.changeLine(2, 2));
     expect(root.textContent).toContain(copy.memoriesLine(4, 2));
     expect(root.textContent).toContain(copy.compareLine("Mar 1, 2026", "May 1, 2026", 61));

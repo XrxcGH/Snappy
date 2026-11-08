@@ -1,6 +1,6 @@
 import type { insights } from "@snappy-export/core";
 import { dataTable } from "../../components/dataTable.ts";
-import type { PillKind } from "../../components/dataTable.ts";
+import type { PillKind, TableCell } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
 import { meterBlock } from "../../components/meterBlock.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -36,16 +36,24 @@ function sizeCell(t: Tally): string {
   return t.unsized > 0 ? copy.unitAtLeast(size) : size;
 }
 
-const countCell = (n: number): string => copy.unitMemories(n);
+/** A cell that shows the bare value its column names ("12"); a screen reader, and a phone with no column names, get the phrase ("12 Memories"). */
+const countCell = (n: number): TableCell => ({ text: formatCount(n), label: copy.unitMemories(n) });
+const shareCell = (share: number): TableCell => ({ text: formatPercent(share), label: copy.unitShare(formatPercent(share)) });
 
 function yearSpan(first: number | null, last: number | null): string {
   return first === last ? yearName(first) : copy.unitYears(yearName(first), yearInline(last));
 }
 
-/** The batch table's years cell: at phone width the column name is not repeated, so it says "Years 2026 to 2022". */
-function batchYears(first: number | null, last: number | null): string {
+/** The batch table's years cell: "2026 to 2022" on a wide page, and "Years 2026 to 2022" where the column name is not repeated. */
+function batchYears(first: number | null, last: number | null): TableCell {
   if (first === null && last === null) return copy.noDateLine;
-  return copy.unitBatchYears(yearSpan(first, last), first !== last);
+  return { text: yearSpan(first, last), label: copy.unitBatchYears(yearSpan(first, last), first !== last) };
+}
+
+/** The batch table's parts cell: "1, 2" on a wide page, and "Parts 1, 2" where the column name is not repeated. */
+function batchParts(parts: readonly number[]): TableCell {
+  if (parts.length === 0) return copy.noFileLine;
+  return { text: parts.join(", "), label: copy.unitParts(parts.length, parts.join(", ")) };
 }
 
 function goalSection({ plan }: StoragePlannerResult): HTMLElement {
@@ -71,7 +79,7 @@ const yearSection = (plan: Plan): HTMLElement =>
     dataTable(
       copy.byYearCaption,
       [copy.yearHeader, copy.memoriesHeader, copy.sizeHeader, copy.shareHeader, copy.fitHeader],
-      plan.byYear.map((y) => [yearName(y.year), countCell(y.items), sizeCell(y), copy.unitShare(formatPercent(y.share)), copy.fitStates[y.fit]]),
+      plan.byYear.map((y): TableCell[] => [yearName(y.year), countCell(y.items), sizeCell(y), shareCell(y.share), copy.fitStates[y.fit]]),
       { pills: { column: 4, kinds: plan.byYear.map((y) => FIT_PILL[y.fit]) } },
     ),
   );
@@ -82,7 +90,7 @@ const typeSection = (plan: Plan): HTMLElement =>
     dataTable(
       copy.byTypeCaption,
       [copy.typeHeader, copy.memoriesHeader, copy.sizeHeader, copy.shareHeader],
-      plan.byType.filter((t) => t.items > 0).map((t) => [copy.types[t.type], countCell(t.items), sizeCell(t), copy.unitShare(formatPercent(t.share))]),
+      plan.byType.filter((t) => t.items > 0).map((t): TableCell[] => [copy.types[t.type], countCell(t.items), sizeCell(t), shareCell(t.share)]),
     ),
   );
 
@@ -92,7 +100,7 @@ const partSection = (plan: Plan): HTMLElement =>
     dataTable(
       copy.byPartCaption,
       [copy.partHeader, copy.memoriesHeader, copy.sizeHeader],
-      plan.byPart.map((p) => [p.part === null ? copy.noFileLine : copy.unitPart(p.part), countCell(p.items), sizeCell(p)]),
+      plan.byPart.map((p): TableCell[] => [p.part === null ? copy.noFileLine : copy.unitPart(p.part), countCell(p.items), sizeCell(p)]),
     ),
   );
 
@@ -104,7 +112,7 @@ function orderSection(plan: Plan): HTMLElement {
     dataTable(
       copy.orderCaption,
       [copy.stepHeader, copy.groupHeader, copy.memoriesHeader, copy.sizeHeader, copy.fitHeader],
-      shown.map((c, i) => [copy.unitStep(i + 1), copy.unitGroup(copy.types[c.type], yearInline(c.year)), countCell(c.items), sizeCell(c), copy.fitStates[c.fit]]),
+      shown.map((c, i): TableCell[] => [copy.unitStep(i + 1), copy.unitGroup(copy.types[c.type], yearInline(c.year)), countCell(c.items), sizeCell(c), copy.fitStates[c.fit]]),
       { pills: { column: 4, kinds: shown.map((c) => FIT_PILL[c.fit]) } },
     ),
     plan.priority.length > shown.length ? h("p", { class: "caption" }, copy.moreStepsLine(plan.priority.length - shown.length)) : null,
@@ -119,13 +127,7 @@ function batchSection(plan: Plan): HTMLElement {
     dataTable(
       copy.batchesCaption,
       [copy.batchHeader, copy.memoriesHeader, copy.sizeHeader, copy.yearsHeader, copy.partsHeader],
-      shown.map((b) => [
-        copy.unitBatch(b.index),
-        countCell(b.items),
-        formatBytes(b.bytes),
-        batchYears(b.firstYear, b.lastYear),
-        b.parts.length > 0 ? copy.unitParts(b.parts.length, b.parts.join(", ")) : copy.noFileLine,
-      ]),
+      shown.map((b): TableCell[] => [copy.unitBatch(b.index), countCell(b.items), formatBytes(b.bytes), batchYears(b.firstYear, b.lastYear), batchParts(b.parts)]),
     ),
     plan.batches.length > shown.length ? h("p", { class: "caption" }, copy.moreBatchesLine(plan.batches.length - shown.length)) : null,
     h("p", { class: "caption" }, copy.batchSizeLine(formatBytes(plan.batchBytes))),

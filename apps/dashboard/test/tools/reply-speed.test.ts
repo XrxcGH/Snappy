@@ -102,7 +102,8 @@ function crafted(): { state: State; who: [string, string, string] } {
   return { state: real(chats), who };
 }
 
-const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+/** What a screen reader hears: a cell that shows a bare value keeps its full phrase in a hidden span, and that phrase is read here. */
+const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.querySelector(".cell-long")?.textContent ?? e.textContent);
 const rowNames = (el: FakeElement): string[] => text(el, "code.username");
 const dataOf = (state: State) => toolData(state);
 
@@ -272,6 +273,8 @@ describe("the page", () => {
     // The rankings, then the hours, then the friends.
     expect(tables.slice(0, 4).map(rowNames)).toEqual([[who[0]], [who[1]], [who[1]], [who[0]]]);
     expect(text(tables[0] as FakeElement, "tbody td")).toEqual([copy.unitTypicalCell("10 minutes"), copy.unitRepliesCell(6)]);
+    // The cells show the bare value their column names; the phrase is for assistive technology (and a phone's stacked card).
+    expect(((tables[0] as FakeElement).querySelectorAll("tbody td") as FakeElement[]).map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["10 minutes", "6"]);
     expect(text(tables[4] as FakeElement, "tbody th")).toEqual(["8 pm"]);
     expect(text(tables[4] as FakeElement, "tbody td")).toEqual(["14 replies, 10 minutes typical", "12 replies, 18 minutes typical"]);
     const friendRows = (tables[5] as FakeElement).querySelectorAll("tbody tr");

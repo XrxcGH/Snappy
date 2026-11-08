@@ -205,7 +205,8 @@ describe("availableYears", () => {
   });
 });
 
-const cells = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+/** What a screen reader hears: a cell that shows a bare value keeps its full phrase in a hidden span, and that phrase is read here. */
+const cells = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.querySelector(".cell-long")?.textContent ?? e.textContent);
 const rowsOf = (table: FakeElement): string[][] => table.querySelectorAll("tbody tr").map((tr) => [...cells(tr, "th"), ...cells(tr, "td")]);
 const headings = (root: FakeElement): string[] => root.querySelectorAll(".section-title").map((t) => t.textContent);
 const tiles = (root: FakeElement): string[][] => root.querySelectorAll(".stat").map((t) => [t.querySelector(".stat-label")?.textContent ?? "", t.querySelector(".stat-value")?.textContent ?? ""]);
@@ -260,6 +261,9 @@ describe("the page", () => {
       [copy.monthPattern, "March is busiest", "40 counted", "100% of the year"],
       [copy.dayPattern, "Mar 14, 2025 is busiest", "20 counted", "50% of the year"],
     ]);
+    // A wide page shows the bare value its column names ("20"); the phrase is for assistive technology and a phone's card.
+    expect(direction.querySelectorAll("tbody tr")[1]?.querySelectorAll("td").map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["30", "10", "20", "0"]);
+    expect(busiest.querySelectorAll("tbody tr")[0]?.querySelectorAll("td").map((td) => td.querySelector(".cell-short")?.textContent)).toEqual(["March", "40", "100%"]);
     expect(rowsOf(direction)).toEqual([
       [copy.snapsRow, "10 in all", "10 sent", "0 received", "0 unknown"],
       [copy.chatsRow, "30 in all", "10 sent", "20 received", "0 unknown"],
