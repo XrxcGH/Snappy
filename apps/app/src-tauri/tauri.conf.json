@@ -55,6 +55,12 @@
         "languages": [
           "English"
         ],
+        "customLanguageFiles": {
+          "English": "installer/English.nsh"
+        },
+        "installerHooks": "installer/hooks.nsh",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp",
         "displayLanguageSelector": false
       }
     }
