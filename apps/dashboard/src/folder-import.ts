@@ -6,6 +6,8 @@
  * memory only; the files themselves stay lazy Blobs until a byte range is asked for.
  */
 
+import { Crc32 } from "@snappy-export/core";
+
 /** A file found in a chosen or dropped folder. `path` is relative to the folder, with "/" between names. */
 export interface FolderFile {
   path: string;
@@ -99,26 +101,15 @@ export async function folderFilesFromEntries(roots: readonly DirEntry[]): Promis
 
 // ----------------------------------------------------------------------------------------------- the wrapper ---
 
-const CRC_TABLE = ((): Uint32Array => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
-
 /** CRC-32 of a Blob, read in pieces so the file is never held whole. */
 async function crcOf(blob: Blob): Promise<number> {
-  let crc = 0xffffffff;
+  const crc = new Crc32();
   const reader = blob.stream().getReader();
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) break;
-    for (let i = 0; i < value.length; i++) crc = (CRC_TABLE[(crc ^ (value[i] as number)) & 0xff] as number) ^ (crc >>> 8);
+    if (done) return crc.digest();
+    crc.update(value);
   }
-  return (crc ^ 0xffffffff) >>> 0;
 }
 
 const LIMIT = 0xffffffff;
