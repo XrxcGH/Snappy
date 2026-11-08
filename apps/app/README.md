@@ -1,11 +1,13 @@
 # Snappy desktop app
 
 The dashboard in a [Tauri 2](https://v2.tauri.app/) shell: one small native window, the system web engine
-(WebView2 on Windows), no server, no Node at run time.
+(WebView2 on Windows, the system WebKit web view on macOS), no server, no Node at run time.
 
-Status: the Windows build has been built, installed, run and uninstalled by hand. The macOS and Linux builds and
-the phone apps are not built yet. See [docs/RELEASES.md](../../docs/RELEASES.md) for installers, checksums and the
-release workflow, and for what is and is not verified.
+Status: the Windows build has been built, installed, run and uninstalled by hand. The macOS build (one universal
+app in a disk image, unsigned) is built and started by CI on every pull request that touches the shell; nobody has
+run it on a real Mac yet. The Linux build and the phone apps are not built yet. See
+[docs/RELEASES.md](../../docs/RELEASES.md) for installers, checksums and the release workflow, and for what is and is
+not verified, and [docs/MACOS.md](../../docs/MACOS.md) for the macOS build.
 
 ## What is in here
 
@@ -132,7 +134,35 @@ What was seen, all on one Windows 11 computer that is not a clean machine:
 Limits: one computer; the feature names belong to Microsoft's runtime, which updates itself, as 157 already showed;
 a build runner has no Microsoft account, so nothing automated notices a change. A firewall rule for
 `msedgewebview2.exe` should block it, but nobody has tested one (creating it needs administrator rights).
-The system web engines on macOS, Linux and Android have not been checked.
+The system web engines on Linux and Android have not been checked. The macOS one has only been looked at by the
+automated test in `tools/macos/` (see "macOS build" below).
+
+## macOS build
+
+One universal app (`aarch64` and `x86_64` in one executable), ad-hoc signed, in a `.dmg` (plus an `.app.tar.gz` for the
+updater later; no `.pkg`). Everything about it is built on GitHub's Apple silicon runners; no Mac is needed or
+available to the maintainers.
+
+```
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+npm ci --ignore-scripts
+npm run tauri -w @snappy-export/app -- build --target universal-apple-darwin --bundles dmg,app -- --locked
+```
+
+What is macOS-specific, and where:
+
+| What | Where |
+| --- | --- |
+| Bundle settings: oldest macOS (12.3), ad-hoc signature, hardened runtime off, no entitlements, dmg layout, no license click-through on the disk image (the license and notice are inside the app instead). Tauri merges this file over `tauri.conf.json` only when building for macOS | `src-tauri/tauri.macos.conf.json` |
+| Version strings: macOS accepts only dotted numbers, so `CFBundleShortVersionString` and `CFBundleVersion` are `0.1.0` and the beta tag is in the custom key `SnappyReleaseVersion` | `src-tauri/Info.plist` (merged by Tauri), `bundleVersion` in `tauri.macos.conf.json` |
+| Menu bar: Tauri's default menu on macOS (app menu with Hide and Quit, standard Edit menu, Window, Help). No menu code of our own | none |
+| Navigation lock and new-window refusal: the same two handlers as Windows (`on_navigation`, `on_new_window`), which wry applies to the WKWebView delegates. The Windows-only `WebResourceRequested` filter has no macOS counterpart | `lib.rs` |
+| The page's address: `tauri://localhost` (Windows uses `http://tauri.localhost`); both are in the allow-list | `lib.rs` |
+| Platform flag: `desktopKind` reads the user agent; `macos` shows the macOS Privacy note, which names no WebView2 | `src/desktop-platform.ts`, `copy.ts` (`privacy.desktopMac*`) |
+| CI build and smoke test | `.github/workflows/desktop-smoke.yml` job `macos-universal-build`, `tools/macos/` |
+
+`test/macos-config.test.ts` guards the config and the `cfg(windows)` gates. The smoke test needs a macOS runner
+and is described in [docs/RELEASES.md](../../docs/RELEASES.md) (what CI checks, and what it cannot).
 
 ## Notes for contributors
 
