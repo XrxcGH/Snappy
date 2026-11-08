@@ -83,6 +83,16 @@ describe("the words of the nine pages", () => {
     expect(await matching(/\bskipp?(ed|s|ing)?\b|\bignor|\bdropped\b/i)).toEqual([]);
   });
 
+  it("keep each one-liner a full sentence that starts with a verb and fits the hub tile", async () => {
+    const lines = (await all()).filter((e) => /\.oneLiner$/.test(e.id));
+    expect(lines).toHaveLength(IDS.length);
+    for (const l of lines) {
+      expect(l.text.length, l.id).toBeLessThanOrEqual(56);
+      expect(l.text, l.id).toMatch(/^(See|Make|List|Plan|Sum up) /);
+    }
+    expect(lines.find((l) => l.id.startsWith("reply-speed"))?.text).toBe("See how fast you and your friends reply.");
+  });
+
   it("write the hour of the day as 7 PM, and an empty value as one en dash", async () => {
     const { copy: reply } = await import("../../src/tools/reply-speed/copy.ts");
     expect([0, 9, 12, 19, 23].map(reply.unitHour)).toEqual(["12 AM", "9 AM", "12 PM", "7 PM", "11 PM"]);

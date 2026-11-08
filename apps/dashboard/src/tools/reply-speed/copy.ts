@@ -14,7 +14,7 @@ const hoursOf = (hours: number): string => countOf(hours, "hour", "hours");
 
 export const copy = {
   title: "Reply speed",
-  oneLiner: "See how fast you and friends reply.",
+  oneLiner: "See how fast you and your friends reply.",
   description: "See how long you and your friends take to reply in one-to-one chats. Results use only who wrote and when.",
   reads: "Who wrote each saved chat and Snap and when, in one-to-one chats.",
   empty: {
