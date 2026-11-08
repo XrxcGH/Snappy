@@ -1,5 +1,6 @@
 import type { Candidate, Evidence, FriendRecord, ParsedExport } from "../types.ts";
-import { DAY_MS, combineWeights, confidenceFromScore, formatDay, groupDigits, normUser } from "../util.ts";
+import { DAY_MS, combineWeights, confidenceFromScore, formatDay, normUser } from "../util.ts";
+import { daysText } from "./day-text.ts";
 
 /**
  * Hard ceiling for dormant candidates. Exports only contain SAVED chats, so silence in the
@@ -83,7 +84,7 @@ function assess(
   if (last === undefined) {
     evidence.push({
       signal: "no-saved-chats",
-      detail: "No saved one-to-one chat or Snap activity with this friend appears anywhere in the export.",
+      detail: "No saved chat or Snap with this friend in the export.",
       weight: NO_CHATS_WEIGHT,
     });
   } else {
@@ -92,7 +93,7 @@ function assess(
     const t = Math.min(1, Math.max(0, (silentDays / days - 1) / 2));
     evidence.push({
       signal: "last-saved-chat-old",
-      detail: `The most recent saved one-to-one chat or Snap activity with this friend is from ${formatDay(last)} (${groupDigits(silentDays)} days before the export).`,
+      detail: `Last chat or Snap: ${formatDay(last)}, ${daysText(silentDays)} before the export.`,
       weight: SILENCE_MIN_WEIGHT + (SILENCE_MAX_WEIGHT - SILENCE_MIN_WEIGHT) * t,
       at: last,
     });
@@ -106,7 +107,7 @@ function assess(
   evidence.push({
     signal: "chat-history-only-covers-saved-chats",
     detail:
-      "The export has only saved chats and Snap history, so you may have talked in ways it cannot show (unsaved chats, calls).",
+      "Only saved one-to-one chat or Snap activity counts here, so you may have talked in ways the export cannot show (group chats, unsaved chats, calls).",
     weight: 0,
   });
 

@@ -1,5 +1,6 @@
 import type { Candidate, Evidence, FriendRecord, ParsedExport } from "../types.ts";
-import { DAY_MS, combineWeights, confidenceFromScore, formatDay, groupDigits, normUser } from "../util.ts";
+import { DAY_MS, combineWeights, confidenceFromScore, formatDay, normUser } from "../util.ts";
+import { daysText } from "./day-text.ts";
 
 /**
  * Hard ceiling for one-way candidates. A sent request that was never accepted may simply
@@ -92,7 +93,7 @@ export function findOneWay(parsed: ParsedExport, opts: { now: number; minAgeDays
       if (ageDays < minAgeDays) continue;
       evidence.push({
         signal: "request-age",
-        detail: `The request was sent on ${formatDay(req.createdAt)} (${groupDigits(ageDays)} days ago) and is still not accepted.`,
+        detail: `Request sent ${formatDay(req.createdAt)}, ${daysText(ageDays)} ago. Not accepted yet.`,
         weight: ageWeight(ageDays),
         at: req.createdAt,
       });

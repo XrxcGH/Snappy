@@ -132,13 +132,13 @@ export function findGhosts(snapshots: Snapshot[], opts: { now: number; exclude?:
       deletionsObservable
         ? {
             signal: "not-deleted-by-you",
-            detail: `None of the ${sorted.length} exports record you removing this friend, so the disappearance is unexplained.`,
+            detail: sorted.length === 2 ? "Neither export shows you removing this friend, so the reason is unknown." : `None of the ${sorted.length} exports shows you removing this friend, so the reason is unknown.`,
             weight: W_NOT_DELETED,
           }
         : {
             signal: "deletions-not-observable",
             detail:
-              "Every snapshot since this person was last seen came from a screen scan, which cannot see friends you removed yourself. You may have removed them. Candidates are capped at low confidence.",
+              "The saved lists since this person was last seen cannot show friends you removed yourself, so you may have removed them. Confidence is capped at low.",
             weight: 0,
           },
     ];
@@ -161,13 +161,13 @@ export function findGhosts(snapshots: Snapshot[], opts: { now: number; exclude?:
       {
         signal: "cannot-rule-out-account-deletion",
         detail:
-          "Snapchat gives no signal when someone removes you. This person may have removed you, but a deleted, banned or renamed account looks exactly the same in an export.",
+          "Snapchat gives no signal when someone removes you. They may have removed you or closed their account, and a renamed account looks the same in an export.",
         weight: 0,
       },
       {
         signal: "cannot-rule-out-date-range",
         detail:
-          "The latest export may have used a narrower date range than the earlier ones, which would hide older friends. Re-export with All Time to be sure.",
+          "The latest export may have used a narrower date range than the earlier ones, which would hide older friends. Request a new export with “All Time” to be sure.",
         weight: 0,
       },
     );
@@ -178,7 +178,7 @@ export function findGhosts(snapshots: Snapshot[], opts: { now: number; exclude?:
       evidence.push({
         signal: "looks-like-date-range-cutoff",
         detail:
-          "Every missing friend is older than every friend still listed, which is the pattern a date-limited export produces. Candidates are capped at low confidence.",
+          "Every missing friend is older than every friend still listed, which is the pattern a date-limited export produces. Confidence is capped at low.",
         weight: 0,
       });
     }
@@ -205,13 +205,13 @@ export function findGhosts(snapshots: Snapshot[], opts: { now: number; exclude?:
  */
 function suspectExport(prev: Set<string>, cur: Set<string>, deletedEver: Set<string>): string | undefined {
   if (cur.size === 0) {
-    return "This export lists no friends at all, which usually means a broken or incomplete export rather than everyone leaving. Candidates are capped at low confidence.";
+    return "This export lists no friends at all, which usually means a broken or incomplete export rather than everyone leaving. Confidence is capped at low.";
   }
   if (prev.size === 0) return undefined;
   let vanished = 0;
   for (const key of prev) if (!cur.has(key) && !deletedEver.has(key)) vanished++;
   if (vanished / prev.size <= MASS_DISAPPEARANCE_RATIO) return undefined;
-  return `${groupDigits(vanished)} of ${groupDigits(prev.size)} friends from the previous export are missing at once, which is more likely a partial export than that many people removing you. Candidates are capped at low confidence.`;
+  return `${groupDigits(vanished)} of ${groupDigits(prev.size)} friends from the previous export are missing at once, which is more likely a partial export than that many people removing you. Confidence is capped at low.`;
 }
 
 /**
