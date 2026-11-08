@@ -177,7 +177,7 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
 
   if (explained) return out;
 
-  if (parsed.chats.length === 0 && !names.includes("chat_history.json")) {
+  if (parsed.chats.length === 0 && !names.includes("chat_history.json") && !names.includes("saved_chat_history.json")) {
     out.push(issue("info", "chat-history-missing", "No chat history was found, so quiet friends cannot be checked."));
   }
   if (!names.includes("snap_history.json")) {

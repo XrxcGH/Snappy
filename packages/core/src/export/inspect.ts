@@ -556,7 +556,7 @@ function withReadResults(
 }
 
 /** The two per-conversation histories: described as conversations, whose keys are never printed or judged. */
-const isHistoryFile = (path: string): boolean => /^(?:chat|snap)_history\.json$/i.test(path.slice(path.lastIndexOf("/") + 1));
+const isHistoryFile = (path: string): boolean => /^(?:chat|snap|saved_chat)_history\.json$/i.test(path.slice(path.lastIndexOf("/") + 1));
 
 /** Fixed remarks for a file that could not be described. */
 const STREAM_NOTES = { malformed: "unparseable json", depth: "too large to describe", limit: "too large to describe", source: "could not be decompressed" } as const;

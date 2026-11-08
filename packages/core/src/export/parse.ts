@@ -50,6 +50,14 @@ export const TARGET_NAMES = {
 /** @internal */
 export type Target = keyof typeof TARGET_NAMES;
 
+/** Other file names that hold the same data as a target (lower case). The name in TARGET_NAMES wins when both exist. */
+const TARGET_ALIASES: { readonly [K in Target]?: readonly string[] } = {
+  chats: ["saved_chat_history.json"],
+};
+
+/** Every lower-case file name a target is read from, its own first. */
+const namesOf = (target: Target): readonly string[] => [TARGET_NAMES[target], ...(TARGET_ALIASES[target] ?? [])];
+
 /**
  * The files a reader front end streams instead of parsing in memory: all four. The two histories
  * are by far the biggest and hold the message text; the friends and Memories lists hold display
@@ -99,18 +107,25 @@ const underJsonFolder = (path: string): boolean => path.split("/").slice(0, -1).
  */
 function pickTargets(entries: Entry[]): Map<Target, Entry> {
   const chosen = new Map<Target, Entry>();
-  const rank = (e: Entry): [number, number, string] => [underJsonFolder(e.path) ? 0 : 1, e.path.split("/").length, e.path];
-  const before = (a: Entry, b: Entry): boolean => {
-    const [aj, ad, ap] = rank(a);
-    const [bj, bd, bp] = rank(b);
-    return aj !== bj ? aj < bj : ad !== bd ? ad < bd : ap < bp;
+  // An alias (saved_chat_history.json) is read only when the usual name is not there at all.
+  const rank = (e: Entry, target: Target): [number, number, number, string] => [
+    baseName(e.path).toLowerCase() === TARGET_NAMES[target] ? 0 : 1,
+    underJsonFolder(e.path) ? 0 : 1,
+    e.path.split("/").length,
+    e.path,
+  ];
+  const before = (a: Entry, b: Entry, target: Target): boolean => {
+    const ra = rank(a, target);
+    const rb = rank(b, target);
+    for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return (ra[i] as number | string) < (rb[i] as number | string);
+    return false;
   };
   for (const e of entries) {
     const base = baseName(e.path).toLowerCase();
     for (const target of Object.keys(TARGET_NAMES) as Target[]) {
-      if (base !== TARGET_NAMES[target]) continue;
+      if (!namesOf(target).includes(base)) continue;
       const cur = chosen.get(target);
-      if (!cur || before(e, cur)) chosen.set(target, e);
+      if (!cur || before(e, cur, target)) chosen.set(target, e);
     }
   }
   return chosen;
@@ -245,7 +260,7 @@ export const zipEntryTooLargeIssue = (e: Entry): ExportIssue =>
 /** Which known data file an entry is, by its file name. @internal */
 export function targetOf(e: Entry): Target | undefined {
   const base = baseName(e.path).toLowerCase();
-  return (Object.keys(TARGET_NAMES) as Target[]).find((t) => TARGET_NAMES[t] === base);
+  return (Object.keys(TARGET_NAMES) as Target[]).find((t) => namesOf(t).includes(base));
 }
 
 /**

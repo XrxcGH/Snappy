@@ -22,7 +22,7 @@ export const MEDIA_EXTENSIONS: ReadonlySet<string> = new Set([
 /** File stems (without extension) of the known export layout, optionally followed by _N / -N. */
 export const KNOWN_STEMS: ReadonlySet<string> = new Set([
   "account", "account_history", "bitmoji", "chat_history", "community_lenses", "connected_apps",
-  "email_campaign_history", "friends", "in_app_surveys", "index", "location_history", "memories_history",
+  "email_campaign_history", "friends", "in_app_surveys", "index", "location_history", "memories_history", "saved_chat_history",
   "official_stories", "orders", "ranking", "search_history", "shopping_history", "snap_ai",
   "snap_history", "snap_map_places", "spotlight_history", "story_history", "subscriptions",
   "support_notes", "talk_history", "terms_history", "user_profile", "web_interactions",
