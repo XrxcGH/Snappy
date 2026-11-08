@@ -41,6 +41,21 @@ describe("Start page words", () => {
   });
 });
 
+describe("Save, not download", () => {
+  it("names the tool frame's file section and its confirmation with the same verb", () => {
+    expect(copy.tools.downloadHeading).toBe("Save a file");
+    expect(copy.tools.downloadSaved).toBe("File saved.");
+    expect(copy.terminal.saveFileButton).toBe("Save");
+    expect(copy.terminal.saveAllButton).toBe("Save all");
+    expect(copy.cleanup.saveList).toBe("Save list");
+  });
+
+  it("has no button or heading that says Download", () => {
+    const labels = all.filter(([p]) => /(Button|Heading|\.saveList|\.copyList)$/.test(p));
+    expect(labels.filter(([, t]) => /^Download\b/.test(t)).map(([p, t]) => `${p}: ${t}`)).toEqual([]);
+  });
+});
+
 describe("Settings licenses note", () => {
   it("counts the font families and the digits-only font, and points to the texts below, not to a folder", () => {
     expect(copy.settings.licensesBody).toBe("Three open font families, a digits-only font made from one of them, and one MIT library. Their license texts are below.");

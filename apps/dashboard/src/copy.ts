@@ -270,7 +270,8 @@ export const tools = {
   },
   notesHeading: "Notes",
   commandHeading: "Run it as a command",
-  downloadHeading: "Download",
+  // Save, not download: in the app there is no download, the file dialog says save, and the message after it says "File saved."
+  downloadHeading: "Save a file",
   markNote: "Snappy cannot check your marks. They are kept only if you save your history with a passphrase.",
   markAnnounce: (label: string, on: boolean) => `${label}: marked ${on ? "done" : "not done"}.`,
   downloadSaved: "File saved.",
