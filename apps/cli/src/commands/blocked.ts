@@ -6,7 +6,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, noun, plural } from "../format.ts";
+import { formatCount, formatDate, NO_VALUE, noun, plural } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -68,7 +68,7 @@ const KIND_LABEL: Record<Kind, string> = {
 
 const num = (v: number | string | undefined): number => (typeof v === "number" ? v : 0);
 const listName = (v: number | string | undefined): string => LIST_NAME[v as ListId] ?? "list";
-const dateCell = (ms: number | null | undefined): string => (ms === undefined || ms === null ? "-" : formatDate(ms));
+const dateCell = (ms: number | null | undefined): string => (ms === undefined || ms === null ? NO_VALUE : formatDate(ms));
 
 /** The sentence for one note. Counts and list names only, never a person. Hedged where Snappy infers. */
 function noteText(n: insights.blockedReview.ReviewNote): string {

@@ -23,7 +23,7 @@ Give it your export to add counts of blocked people and pending requests. This i
 nothing is saved between runs.
 
 Options
-  --done <names>  The names of the steps you have done, separated by commas. Repeat for more.
+  --done <names>  The names of steps you have done, separated by commas.
   --json          Print JSON instead of text.
   --verbose       Add a short code to each note, for bug reports.
   --no-color      Plain text.

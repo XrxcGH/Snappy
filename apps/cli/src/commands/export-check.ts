@@ -4,7 +4,7 @@
  * turns its codes into short sentences. Counts and dates only, never a name from the export.
  */
 import { insights } from "@snappy-export/core";
-import { formatCount, formatDate, noun, plural } from "../format.ts";
+import { formatCount, formatDate, NO_VALUE, noun, plural } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { friendCountOf, insightTerm, loadInsightInput, parseInsightArgs, FRIEND_COUNT_OPTIONS } from "../insights-input.ts";
 import type { CommonFlags, FriendCountFlags } from "../insights-input.ts";
@@ -137,7 +137,7 @@ function todoText(a: insights.exportCheck.CheckAction, parts: insights.exportChe
 }
 
 /** The span of dates in one kind of record, or a dash when there are none. */
-const dateCell = (ms: number | null): string => (ms === null ? "-" : formatDate(ms));
+const dateCell = (ms: number | null): string => (ms === null ? NO_VALUE : formatDate(ms));
 
 function ageLine(age: insights.exportCheck.ExportAge): string {
   if (age.at === null) return "Snappy could not tell when this export was made.";
@@ -176,7 +176,7 @@ export function renderExportCheck(check: Check, term: Term, verbose: boolean): s
     out.push(
       ...section(term, "Dates covered", term.table(
         [{ header: "Records" }, { header: "From" }, { header: "To" }, { header: "Span", align: "right" }],
-        rows.map(([label, c]) => [label, dateCell(c.oldest), dateCell(c.newest), c.spanDays === null ? "-" : plural(c.spanDays, "day")]),
+        rows.map(([label, c]) => [label, dateCell(c.oldest), dateCell(c.newest), c.spanDays === null ? NO_VALUE : plural(c.spanDays, "day")]),
       )),
     );
   }

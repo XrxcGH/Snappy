@@ -39,6 +39,9 @@ interface Flags {
   help?: boolean;
 }
 
+/** What the app calls the temporary folder of the demo files, instead of its real path. */
+const APP_FOLDER = "demo";
+
 /** `snappy-export`, or the npm script form when that is how Snappy was started. */
 function commandPrefix(io: Io): string {
   return io.env.npm_lifecycle_event === "snappy-export" ? "npm run snappy-export --" : "snappy-export";
@@ -78,8 +81,8 @@ export async function demoCommand(args: string[], io: Io): Promise<number> {
     io.out.write(
       [
         ...intro,
-        "  Earlier export: demo/snappy-demo-earlier.zip",
-        "  Later export:   demo/snappy-demo-later.zip",
+        `  Earlier export: ${APP_FOLDER}/snappy-demo-earlier.zip`,
+        `  Later export:   ${APP_FOLDER}/snappy-demo-later.zip`,
         "",
         "These files exist only inside the app, for this run.",
         "Commands to try on demo files are for the command line tool. Run snappy-export demo there.",

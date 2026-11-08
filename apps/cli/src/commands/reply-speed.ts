@@ -7,7 +7,7 @@
  */
 import { insights, neutralizeCell } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, hasHave, noun, plural, wasWere } from "../format.ts";
+import { formatCount, formatDate, formatDuration, formatHour, formatOffset, hasHave, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -61,29 +61,15 @@ export interface ReplySpeedRenderOptions {
   nothingToSave?: boolean;
 }
 
-/** "UTC", "UTC+2:00", "UTC-5:30". */
-function offsetLabel(minutes: number): string {
-  if (minutes === 0) return "UTC";
-  const abs = Math.abs(minutes);
-  return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-}
+const offsetLabel = formatOffset;
 
-/** "12 am", "9 pm". */
-const hourLabel = (hour: number): string => `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "am" : "pm"}`;
+/** "12 AM", "9 PM". */
+const hourLabel = formatHour;
 
-/** A reply time in words: "40 seconds", "12 minutes", "5 hours", "2 days". */
-export function durationText(ms: number): string {
-  if (ms < 1000) return "Under 1 second";
-  const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return plural(seconds, "second");
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 120) return plural(minutes, "minute");
-  const hours = Math.round(ms / HOUR_MS);
-  if (hours < 48) return plural(hours, "hour");
-  return plural(Math.round(ms / 86_400_000), "day");
-}
+/** A reply time in words: "40 seconds", "83 minutes", "5 hours", "2 days". */
+export const durationText = formatDuration;
 
-const timeCell = (spread: { medianMs: number } | null): string => (spread === null ? "-" : durationText(spread.medianMs));
+const timeCell = (spread: { medianMs: number } | null): string => (spread === null ? NO_VALUE : durationText(spread.medianMs));
 const num = (v: number | undefined): number => (typeof v === "number" ? v : 0);
 
 /** The sentence for one note. Counts only: a note never names a person. */
@@ -150,7 +136,7 @@ function headline(report: Report, term: Term): string {
 function overallLines(report: Report, term: Term): string[] {
   const { you, them } = report.overall;
   const row = (who: string, totals: typeof you): string[] =>
-    totals === null ? [who, "0", "-", "-"] : [who, formatCount(totals.replies), durationText(totals.medianMs), durationText(totals.p90Ms)];
+    totals === null ? [who, "0", NO_VALUE, NO_VALUE] : [who, formatCount(totals.replies), durationText(totals.medianMs), durationText(totals.p90Ms)];
   return term.table(
     [{ header: "Who" }, { header: "Replies", align: "right" }, { header: "Typical", align: "right" }, { header: "90% within", align: "right" }],
     [row("You reply", you), row("Friends reply", them)],
@@ -178,9 +164,9 @@ function hourLines(report: Report, term: Term): string[] {
     .map((b) => [
       hourLabel(b.hour),
       formatCount(b.youReplies),
-      b.youMedianMs === null ? "-" : durationText(b.youMedianMs),
+      b.youMedianMs === null ? NO_VALUE : durationText(b.youMedianMs),
       formatCount(b.themReplies),
-      b.themMedianMs === null ? "-" : durationText(b.themMedianMs),
+      b.themMedianMs === null ? NO_VALUE : durationText(b.themMedianMs),
     ]);
   return [
     ...term.table(hourColumns, rows),

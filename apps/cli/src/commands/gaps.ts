@@ -7,7 +7,7 @@
 import { insights } from "@snappy-export/core";
 import type { FriendRecord } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, noun, plural, isAre, wasWere } from "../format.ts";
+import { formatCount, formatOffset, isAre, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -116,13 +116,8 @@ function problemLine(p: ExportProblem): NoteLine {
   return { severity: "warning", code: p, text: PROBLEM_TEXT[p] };
 }
 
-/** "UTC", "UTC-5", "UTC+5:30". */
-export function offsetLabel(minutes: number): string {
-  if (minutes === 0) return "UTC";
-  const abs = Math.abs(minutes);
-  const mm = abs % 60;
-  return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}${mm === 0 ? "" : `:${String(mm).padStart(2, "0")}`}`;
-}
+/** "UTC", "UTC+2:00", "UTC-5:30": the shared time zone label. */
+export const offsetLabel = formatOffset;
 
 const KIND_TEXT: Record<Gap["kind"], string> = {
   start: "Before first Memory",
@@ -141,7 +136,7 @@ export function oldestFriendDate(friends: ReadonlyArray<Pick<FriendRecord, "crea
   return oldest;
 }
 
-const share = (count: number, total: number): string => (total > 0 ? `${Math.round((count / total) * 100)}%` : "-");
+const share = (count: number, total: number): string => (total > 0 ? `${Math.round((count / total) * 100)}%` : NO_VALUE);
 
 function timelineLines(term: Term, r: Result): string[] {
   const range = r.range;

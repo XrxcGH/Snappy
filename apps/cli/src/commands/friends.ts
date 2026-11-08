@@ -8,7 +8,7 @@
 import { insights } from "@snappy-export/core";
 import { CliError } from "../errors.ts";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
+import { formatCount, formatDate, hasHave, isAre, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -167,7 +167,7 @@ function severityOf(code: string): NoteLine["severity"] {
 
 /** "2026-02-28" as a date that reads like the rest of Snappy. Days are the viewer's own calendar days. */
 function dayCell(day: string | null): string {
-  if (day === null) return "-";
+  if (day === null) return NO_VALUE;
   const [y = 0, m = 1, d = 1] = day.split("-").map(Number);
   return formatDate(Date.UTC(y, m - 1, d));
 }
@@ -180,7 +180,7 @@ function hintsCell(r: Row): string {
   if (r.waitingOn === "you") parts.push("waiting on you");
   if (r.waitingOn === "them") parts.push("waiting on them");
   const text = parts.join(", ");
-  return text === "" ? "-" : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+  return text === "" ? NO_VALUE : `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
 }
 
 const sortedByLine = (view: FriendsView): string => {

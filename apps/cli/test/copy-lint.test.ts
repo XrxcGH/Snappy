@@ -134,7 +134,7 @@ const RULES: [name: string, fn: (e: Entry) => string[]][] = [
       if (/[a-z)]\s[,;](?!\w*\.)/.test(t) || /\w\s[.?!](\s|$)/.test(t)) out.push("has a space before punctuation");
       if (/[a-z]{2}[,;][A-Za-z]/.test(t)) out.push("has no space after a comma or semicolon");
       if (/[a-z]{2}[.?!][A-Z][a-z]/.test(t)) out.push("has no space after a full stop");
-      if (/[a-z]{3,}[.?!] (?!(?:analyze|memories|inspect|keep|unkeep|ledger|demo|help)\b)[a-z]/.test(t)) out.push("starts a sentence in lowercase");
+      if (/[a-z]{3,}[.?!] (?!(?:analyze|memories|inspect|keep|unkeep|history|ledger|demo|help)\b)[a-z]/.test(t)) out.push("starts a sentence in lowercase");
       if (/(?:[,;]{2,}|,\.|\.,|:\.|;\.)/.test(t)) out.push("has doubled punctuation");
       const rep = /\b(\w{2,}) \1\b/i.exec(t);
       if (rep && !/\b(that that|had had)\b/i.test(t)) out.push(`repeats a word ("${rep[0]}")`);
@@ -320,7 +320,7 @@ function extractLiterals(src: string): RawLiteral[] {
   return out;
 }
 
-const COMMAND_WORDS = new Set(["analyze", "memories", "inspect", "keep", "unkeep", "ledger", "demo", "help"]);
+const COMMAND_WORDS = new Set(["analyze", "memories", "inspect", "keep", "unkeep", "history", "ledger", "demo", "help"]);
 
 /** Split one literal into the entries a person reads: table rows (a name, a gap, a description), paragraphs, headings. */
 function entriesOfLiteral(file: string, raw: string, isNote: boolean): Entry[] {
@@ -417,13 +417,13 @@ async function collectOutputs(): Promise<Record<string, string>> {
     outputs[name] = stripPaths((r.out + r.err).split(dir).join("<folder>"));
   };
   await capture("help", ["help"]);
-  for (const c of ["analyze", "memories", "inspect", "keep", "ledger", "demo"]) await capture(`help ${c}`, ["help", c]);
+  for (const c of ["analyze", "memories", "inspect", "keep", "history", "demo"]) await capture(`help ${c}`, ["help", c]);
   await capture("analyze", ["analyze", later, "--earlier", earlier, "--no-save"]);
   await capture("analyze one export", ["analyze", later, "--no-save"]);
-  await capture("analyze saved", ["analyze", later, "--ledger", ledger]);
-  await capture("keep", ["keep", "ghost_1", "--ledger", ledger]);
-  await capture("ledger", ["ledger", "status", "--ledger", ledger]);
-  await capture("ledger none", ["ledger", "status", "--ledger", join(dir, "none.sealed")]);
+  await capture("analyze saved", ["analyze", later, "--history", ledger]);
+  await capture("keep", ["keep", "ghost_1", "--history", ledger]);
+  await capture("history", ["history", "status", "--history", ledger]);
+  await capture("history none", ["history", "status", "--history", join(dir, "none.sealed")]);
   await capture("memories dry run", ["memories", later, "--dry-run"]);
   await capture("memories", ["memories", later, "--out", join(dir, "out")]);
   const parts = join(dir, "parts");
@@ -559,7 +559,7 @@ describe("CLI output", () => {
 /* ------------------------------------------------------------------------------------------ */
 
 /** "snappy" used as the command, or an old package name. The command and package are snappy-export. */
-const STALE = [/\bnpm run (?!snappy-export\b)[\w:.-]*snappy[\w:.-]*/g, new RegExp(`\\bsnappy (?:inspect|analyze|memories|keep|unkeep|ledger|demo|help|${INSIGHT_COMMANDS.map((c) => c.name).join("|")})\\b`, "g"), /\bsnappy-cli\b/gi, /\bsnappy_export\b/g, /\bnpx snappy\b/g];
+const STALE = [/\bnpm run (?!snappy-export\b)[\w:.-]*snappy[\w:.-]*/g, new RegExp(`\\bsnappy (?:inspect|analyze|memories|keep|unkeep|history|ledger|demo|help|${INSIGHT_COMMANDS.map((c) => c.name).join("|")})\\b`, "g"), /\bsnappy-cli\b/gi, /\bsnappy_export\b/g, /\bnpx snappy\b/g];
 const stale = (text: string): string[] => STALE.flatMap((re) => [...text.matchAll(re)].map((m) => m[0]));
 
 describe("stale names", () => {

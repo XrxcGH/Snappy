@@ -112,14 +112,14 @@ describe("the command", () => {
       Array.from({ length: 40 }, (_, i) => ({ at: MONDAY_9PM - Math.floor(i / 2) * 7 * DAY + (i % 2) * 60_000, sent: i % 3 !== 0 })),
     );
     const utc = await runInsight(habitsCommand, [zip]);
-    expect(utc.out).toMatch(/Hour of day\s+9 pm\s+100%/);
+    expect(utc.out).toMatch(/Hour of day\s+9 PM\s+100%/);
     expect(utc.out).toMatch(/Day of week\s+Monday\s+100%/);
     const east = await runInsight(habitsCommand, [zip, "--utc-offset", "3"]);
-    expect(east.out).toMatch(/Hour of day\s+12 am\s+100%/);
+    expect(east.out).toMatch(/Hour of day\s+12 AM\s+100%/);
     expect(east.out).toMatch(/Day of week\s+Tuesday\s+100%/);
     expect(east.out).toContain("Time zone                 UTC+3:00");
     const west = await runInsight(habitsCommand, [zip, "--utc-offset=-5:30"]);
-    expect(west.out).toMatch(/Hour of day\s+3 pm\s+100%/);
+    expect(west.out).toMatch(/Hour of day\s+3 PM\s+100%/);
     expect(west.out).toContain("UTC-5:30");
     const json = JSON.parse((await runInsight(habitsCommand, [zip, "--utc-offset=-5:30", "--json"])).out) as Json;
     expect(json.utcOffsetMinutes).toBe(-330);
@@ -148,7 +148,7 @@ describe("the command", () => {
     const { out } = await runInsight(habitsCommand, [zip, "--detail"]);
     expect(out).toContain("By hour");
     expect(out).toContain("By weekday");
-    expect(out.split("\n").filter((l) => /^ {2}(?:1?\d) (?:am|pm)\s+\d/.test(l))).toHaveLength(24);
+    expect(out.split("\n").filter((l) => /^ {2}(?:1?\d) (?:AM|PM)\s+\d/.test(l))).toHaveLength(24);
     for (const day of ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]) expect(out).toMatch(new RegExp(`^ {2}${day}\\s+\\d`, "m"));
     expectBrandSafe(out, "detail");
   });
@@ -320,8 +320,8 @@ describe("wording", () => {
   it("marks a tied peak and hides a quietest bucket that only won a tie", () => {
     const result = insights.habits.computeHabits([{ direction: "sent", at: MONDAY_9PM }, { direction: "received", at: MONDAY_9PM + HOUR }], { now: NOW });
     const text = renderHabits(result, term, false);
-    expect(text).toMatch(/Hour of day\s+9 pm \(tied\)\s+50%\s+-/);
-    expect(text).toMatch(/Month\s+Mar 2026\s+100%\s+-/);
+    expect(text).toMatch(/Hour of day\s+9 PM \(tied\)\s+50%\s+–/);
+    expect(text).toMatch(/Month\s+Mar 2026\s+100%\s+–/);
   });
 
   it("words the typical gap in seconds, minutes, hours and days", () => {
@@ -332,7 +332,11 @@ describe("wording", () => {
     expect(gap(30_000)).toContain("30 seconds");
     expect(gap(60_000)).toContain("1 minute");
     expect(gap(12 * 60_000)).toContain("12 minutes");
-    expect(gap(HOUR)).toContain("1 hour");
+    // Hours start at 120 minutes, the same rule as reply speed, so "83 minutes" never sits beside "2 hours".
+    expect(gap(HOUR)).toContain("60 minutes");
+    expect(gap(83 * 60_000)).toContain("83 minutes");
+    expect(gap(119 * 60_000)).toContain("119 minutes");
+    expect(gap(2 * HOUR)).toContain("2 hours");
     expect(gap(5 * HOUR)).toContain("5 hours");
     expect(gap(2 * DAY)).toContain("2 days");
     expect(gap(59_700)).toContain("1 minute");

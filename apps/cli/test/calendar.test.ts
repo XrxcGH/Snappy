@@ -346,7 +346,7 @@ describe("wording", () => {
       expect(text).toContain("1 chat or Snap, on 1 day.");
       expect(text).toContain("Only 1 chat or Snap was counted, so this picture may be weak.");
       expect(text).toMatch(/Longest active run\s+1 day\s/);
-      expect(text).toMatch(/Longest quiet run\s+-\s+-\s+-/);
+      expect(text).toMatch(/Longest quiet run\s+–\s+–\s+–/);
     }
     if (n === 2) expect(text).toContain("Only 2 chats and Snaps were counted, so this picture may be weak.");
     if (n >= 12) expect(text).toContain("By month in");
@@ -381,7 +381,7 @@ describe("wording", () => {
     const text = renderCalendar(insights.activityCalendar.computeActivityCalendar(events, { now: NOW }), term, false);
     expect(text).toMatch(/Busiest full week\s+Week of Mar 9, 2026, 3 chats and Snaps \(tied\)/);
     const single = renderCalendar(insights.activityCalendar.computeActivityCalendar(events.slice(0, 5), { now: NOW }), term, false);
-    expect(single).toMatch(/Quietest full week\s+-/);
+    expect(single).toMatch(/Quietest full week\s+–/);
   });
 
   it("keeps every sentence short and in sentence case", () => {

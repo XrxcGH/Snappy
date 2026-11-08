@@ -156,13 +156,13 @@ describe("the command", () => {
     const zip = writeExport(tempDir("rs-hours"), { sam_01: { you: six(10), them: six(10), hour: 20 } });
     // The first message is at 20:00 UTC, so the reply is sent at 20:10 UTC.
     const utc = await runInsight(replySpeedCommand, [zip]);
-    expect(sectionOf(utc.out, "By hour of day")).toMatch(/\n {2}8 pm\s+6\s+10 minutes\s+6\s+10 minutes/);
+    expect(sectionOf(utc.out, "By hour of day")).toMatch(/\n {2}8 PM\s+6\s+10 minutes\s+6\s+10 minutes/);
     expect(utc.out).toContain("The hour is when the reply was sent, in UTC.");
     const east = await runInsight(replySpeedCommand, [zip, "--utc-offset", "4"]);
-    expect(sectionOf(east.out, "By hour of day")).toMatch(/\n {2}12 am\s+6/);
+    expect(sectionOf(east.out, "By hour of day")).toMatch(/\n {2}12 AM\s+6/);
     expect(east.out).toContain("in UTC+4:00.");
     const west = await runInsight(replySpeedCommand, [zip, "--utc-offset=-5:30"]);
-    expect(sectionOf(west.out, "By hour of day")).toMatch(/\n {2}2 pm\s+6/);
+    expect(sectionOf(west.out, "By hour of day")).toMatch(/\n {2}2 PM\s+6/);
     const json = JSON.parse((await runInsight(replySpeedCommand, [zip, "--utc-offset=-5:30", "--json"])).out) as Json;
     expect(json.utcOffsetMinutes).toBe(-330);
     expect(json.byHour[14]?.youReplies).toBe(6);
@@ -171,7 +171,7 @@ describe("the command", () => {
   it("shows a dash for an hour with too few replies to time", async () => {
     const zip = writeExport(tempDir("rs-dash"), { sam_01: { you: six(10), them: [10] } });
     const { out } = await runInsight(replySpeedCommand, [zip]);
-    expect(sectionOf(out, "By hour of day")).toMatch(/8 pm\s+6\s+10 minutes\s+1\s+-/);
+    expect(sectionOf(out, "By hour of day")).toMatch(/8 PM\s+6\s+10 minutes\s+1\s+–/);
     expect(out).toContain("A dash means fewer than 5 replies, too few to time.");
   });
 
@@ -258,7 +258,7 @@ describe("the command", () => {
     const zip = writeExport(tempDir("rs-oneside"), { sam_01: { you: six(10) } });
     const { out } = await runInsight(replySpeedCommand, [zip]);
     expect(out).toContain("You typically reply in 10 minutes. No replies from friends were found.");
-    expect(out).toMatch(/Friends reply\s+0\s+-\s+-/);
+    expect(out).toMatch(/Friends reply\s+0\s+–\s+–/);
   });
 });
 

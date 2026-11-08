@@ -25,7 +25,7 @@ const offenders = (list: typeof files, pattern: RegExp) => list.filter((f) => pa
 describe("source scan", () => {
   it("finds the modules the task calls for", () => {
     const paths = files.map((f) => f.path);
-    for (const must of ["main.ts", "fs-reader.ts", "prompt.ts", "term.ts", "memories-download.ts", "ledger-store.ts", "commands/analyze.ts", "commands/memories.ts", "commands/inspect.ts", "commands/demo.ts", "commands/keep.ts", "commands/ledger.ts"]) {
+    for (const must of ["main.ts", "fs-reader.ts", "prompt.ts", "term.ts", "memories-download.ts", "ledger-store.ts", "commands/analyze.ts", "commands/memories.ts", "commands/inspect.ts", "commands/demo.ts", "commands/keep.ts", "commands/history.ts"]) {
       expect(paths, must).toContain(must);
     }
   });

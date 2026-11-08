@@ -60,7 +60,8 @@ async function listKeepList(mode: "keep" | "unkeep", positionals: string[], flag
   if (positionals.length > 0) throw new CliError("usage", "--list shows your keep list and takes no names. To add names, leave out --list.");
   const ledgerPath = historyPathFlag(flags) ?? defaultLedgerPath(io);
   if (await isFreshStore(io, ledgerPath)) {
-    io.out.write(`Your keep list is empty. Use snappy-export keep to add friends.\n${PRIVACY_RESULTS}\n`);
+    io.out.write("Your keep list is empty. Use snappy-export keep to add friends.\n");
+    io.out.write(`${PRIVACY_RESULTS}\n`);
     return 0;
   }
   const passphrase = await resolvePassphrase(io, { file: flags["passphrase-file"], creating: false });
@@ -69,7 +70,8 @@ async function listKeepList(mode: "keep" | "unkeep", positionals: string[], flag
     allowlist.length === 0
       ? ["Your keep list is empty. Use snappy-export keep to add friends."]
       : [`${plural(allowlist.length, "name")} on your keep list.`, "", ...allowlist.map((n) => `  ${n}`)];
-  io.out.write(`${lines.join("\n")}\n\n${PRIVACY_RESULTS}\n`);
+  io.out.write(`${lines.join("\n")}\n\n`);
+  io.out.write(`${PRIVACY_RESULTS}\n`);
   return 0;
 }
 

@@ -6,7 +6,7 @@
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
 import { CliError } from "../errors.ts";
-import { formatCount, formatDate, noun, plural, isAre, wasWere } from "../format.ts";
+import { formatCount, formatDate, formatOffset, isAre, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -111,13 +111,8 @@ function problemLine(p: ExportProblem): NoteLine {
 /** Core's notes that apply to a view. The index notes come first, in core's order. */
 const notesOf = (view: OnThisDayView): Note[] => view.result.notes;
 
-/** "UTC", "UTC-5", "UTC+5:30". */
-export function offsetLabel(minutes: number): string {
-  if (minutes === 0) return "UTC";
-  const abs = Math.abs(minutes);
-  const mm = abs % 60;
-  return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}${mm === 0 ? "" : `:${String(mm).padStart(2, "0")}`}`;
-}
+/** "UTC", "UTC+2:00", "UTC-5:30": the shared time zone label. */
+export const offsetLabel = formatOffset;
 
 const dayText = (c: insights.memoriesOnThisDay.CivilDate): string => formatDate(Date.UTC(c.year, c.month - 1, c.day));
 
@@ -192,7 +187,7 @@ function yearsLines(term: Term, r: insights.memoriesOnThisDay.HeatmapResult): st
       if (n > (y.months[best] ?? 0)) best = i;
     });
     const top = y.months[best] ?? 0;
-    return [String(y.year), formatCount(y.total), top > 0 ? (MONTHS[best] ?? "-") : "-", top > 0 ? formatCount(top) : "-"];
+    return [String(y.year), formatCount(y.total), top > 0 ? (MONTHS[best] ?? NO_VALUE) : NO_VALUE, top > 0 ? formatCount(top) : NO_VALUE];
   });
   const { shown, more } = capped(rows, "year", "years");
   return [

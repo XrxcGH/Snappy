@@ -62,7 +62,7 @@ describe("the command", () => {
     expect(out).toMatch(/Waiting on a reply +1\n/);
     expect(out).toContain("Showing 25 of 30 friends. Sorted by username, A to Z.");
     expect(out).toMatch(/Friend +Added +Last +Total +Sent +Received +Hints/);
-    expect(out).toMatch(/active_1 +Nov 20, 2024 +Oct 31, 2026 +62 +29 +33 +-\n/);
+    expect(out).toMatch(/active_1 +Nov 20, 2024 +Oct 31, 2026 +62 +29 +33 +–\n/);
     expect(out).toContain("5 more not shown. Use --limit to show more.");
     expect(out).toContain("Quiet: no chat or Snap for 180 days.");
     expect(out).toContain("451 group chat events were left out.");
@@ -87,7 +87,7 @@ describe("the command", () => {
     const dir = parts("friends-hints");
     const quiet = await runInsight(friendsCommand, [dir, "--quiet", "--limit", "10"]);
     expect(quiet.out).toMatch(/dormant_1 +Oct 7, 2022 +Aug 6, 2023 +3 +1 +2 +Quiet\n/);
-    expect(quiet.out).toMatch(/dormant_3 +Jul 31, 2020 +- +0 +0 +0 +Quiet\n/);
+    expect(quiet.out).toMatch(/dormant_3 +Jul 31, 2020 +– +0 +0 +0 +Quiet\n/);
     const waiting = await runInsight(friendsCommand, [dir, "--waiting"]);
     expect(waiting.out).toMatch(/active_17 +Aug 15, 2025 +Oct 28, 2026 +31 +16 +15 +Waiting on you\n/);
     expect(waiting.out).toContain("Showing 1 of 1 friend that matches your filters.");
@@ -572,7 +572,7 @@ describe("wording", () => {
     expect(text).toMatch(/friend_2 .* One-sided\n/);
     expect(text).toMatch(/friend_3 .* Waiting on you\n/);
     expect(text).toMatch(/friend_4 .* One-sided, waiting on them\n/);
-    expect(text).toMatch(/friend_5 .* -\n/);
+    expect(text).toMatch(/friend_5 .* –\n/);
     expect(text).toMatch(/Quiet +1\n/);
     expect(text).toMatch(/Waiting on a reply +2\n/);
     expect(text).not.toMatch(/\b(?:ghosts?|unfriend\w*|dormant|inactive|dead|simply|just)\b/i);
@@ -581,8 +581,8 @@ describe("wording", () => {
   it("shows added and last dates in the day text it was given, and a dash for no date", () => {
     const rows = [row(1), row(2, { addedDay: null, lastDay: null, total: 0, sent: 0, received: 0 }), row(3, { addedDay: "2025-12-31", lastDay: "2026-01-01" })];
     const text = renderFriends(tableOf(rows), viewOf(rows), term, false);
-    expect(text).toMatch(/friend_1 +Feb 29, 2024 +Oct 20, 2026 +12 +7 +5 +-\n/);
-    expect(text).toMatch(/friend_2 +- +- +0 +0 +0 +-\n/);
+    expect(text).toMatch(/friend_1 +Feb 29, 2024 +Oct 20, 2026 +12 +7 +5 +–\n/);
+    expect(text).toMatch(/friend_2 +– +– +0 +0 +0 +–\n/);
     expect(text).toMatch(/friend_3 +Dec 31, 2025 +Jan 1, 2026 /);
   });
 

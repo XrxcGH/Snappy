@@ -99,19 +99,19 @@ describe("the command", () => {
 
   it("moves the day with --offset and says which offset it used", async () => {
     const west = await runInsight(onThisDayCommand, [parts, "--offset=-5", "--by-year"]);
-    expect(west.out).toContain("Dates use UTC-5.");
+    expect(west.out).toContain("Dates use UTC-5:00.");
     const india = await runInsight(onThisDayCommand, [parts, "--offset", "+5:30", "--json"]);
     expect((JSON.parse(india.out) as { utcOffsetMinutes: number }).utcOffsetMinutes).toBe(330);
     const west2 = await runInsight(onThisDayCommand, [parts, "--offset=-5", "--json"]);
     expect((JSON.parse(west2.out) as { utcOffsetMinutes: number }).utcOffsetMinutes).toBe(-300);
     expect(offsetLabel(0)).toBe("UTC");
     expect(offsetLabel(-210)).toBe("UTC-3:30");
-    expect(offsetLabel(840)).toBe("UTC+14");
+    expect(offsetLabel(840)).toBe("UTC+14:00");
   });
 
   it("takes --utc-offset like habits and remind, and says how to change the UTC default", async () => {
     const west = await runInsight(onThisDayCommand, [parts, "--utc-offset=-5", "--by-year"]);
-    expect(west.out).toContain("Dates use UTC-5.");
+    expect(west.out).toContain("Dates use UTC-5:00.");
     expect(west.out).not.toContain("to change this");
     const india = await runInsight(onThisDayCommand, [parts, "--utc-offset", "5:30", "--json"]);
     expect((JSON.parse(india.out) as { utcOffsetMinutes: number }).utcOffsetMinutes).toBe(330);

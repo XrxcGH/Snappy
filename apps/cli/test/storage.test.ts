@@ -94,7 +94,7 @@ describe("the command", () => {
     writeSyntheticParts(dir);
     const { code, out } = await runInsight(storageCommand, [dir, "--batch-gb", "0.0000001"]);
     expect(code).toBe(0);
-    expect(out).toMatch(/\d+ batches of up to \d+ B, for what fits under your goal\./);
+    expect(out).toMatch(/\d+ batches of up to \d+ (?:bytes|KB|MB|GB), for what fits under your goal\./);
     expect(out).toMatch(/\d+ more batches follow\. Add --json for all of them\./);
     expect(out).toMatch(/\d+ Memories are larger than a batch and get batches alone\./);
     // Ten batch rows, not hundreds.
@@ -344,7 +344,8 @@ describe("rendering branches", () => {
     const text = renderStorage(plan(items), term, false);
     expect(text).toContain("No date");
     expect(text).toContain("Other");
-    expect(text).toMatch(/\dB?\+|B\+/);
+    expect(text).toContain("At least");
+    expect(text).not.toMatch(/\d(?:bytes|B|KB|MB|GB)\+/);
     expect(text).toContain("2 Memories have no usable date and come last.");
     expectBrandSafe(text, "undated");
   });
@@ -365,7 +366,7 @@ describe("rendering branches", () => {
 
   it("caps the batches and says how many follow", () => {
     const text = renderStorage(plan(memories(40, { size: 100 }), 5 * GB, { batchBytes: 250 }), term, false);
-    expect(text).toMatch(/20 batches of up to 250 B/);
+    expect(text).toMatch(/20 batches of up to 250 bytes/);
     expect(text).toContain("10 more batches follow. Add --json for all of them.");
     const one = renderStorage(plan(memories(1)), term, false);
     expect(one).toContain("1 batch of up to 1 GB, for what fits under your goal.");

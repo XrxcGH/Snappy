@@ -7,7 +7,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
+import { formatCount, formatDate, formatOffset, formatPercent, hasHave, isAre, NO_VALUE, noun, plural, stretchDates, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -65,12 +65,7 @@ const KIND_NAMES: Record<insights.activityCalendar.ActivityKind, string> = {
 };
 const BAR_WIDTH = 20;
 
-/** "UTC", "UTC+2:00", "UTC-5:30". */
-function offsetLabel(minutes: number): string {
-  if (minutes === 0) return "UTC";
-  const abs = Math.abs(minutes);
-  return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-}
+const offsetLabel = formatOffset;
 
 /** Turns a year and month key such as 2026-03 into "Mar 2026". */
 function monthLabel(month: string): string {
@@ -81,7 +76,7 @@ function monthLabel(month: string): string {
 /** Turns a date key such as 2026-03-02 into "Mar 2, 2026". */
 function dayLabel(date: string): string {
   const [y, m, d] = date.split("-").map(Number);
-  if (y === undefined || m === undefined || d === undefined) return "-";
+  if (y === undefined || m === undefined || d === undefined) return NO_VALUE;
   return formatDate(Date.UTC(y, m - 1, d));
 }
 
@@ -122,20 +117,20 @@ function severityOf(code: insights.activityCalendar.ActivityCalendarNoteCode): N
 
 const runLength = (run: NonNullable<Run>): string => plural(run.days, "day");
 
-/** One cell for a run: "12 days, Mar 2, 2026 to Mar 13, 2026", or "1 day, Mar 2, 2026". */
+/** One cell for a run: "12 days, Mar 2, 2026 to Mar 13, 2026", or "1 day, on Mar 2, 2026". */
 function runCell(run: Run): string {
-  if (run === null) return "-";
-  return run.days === 1 ? `${runLength(run)}, ${dayLabel(run.start)}` : `${runLength(run)}, ${dayLabel(run.start)} to ${dayLabel(run.end)}`;
+  if (run === null) return NO_VALUE;
+  return `${runLength(run)}, ${stretchDates(dayLabel(run.start), dayLabel(run.end))}`;
 }
 
 function runRows(streaks: insights.activityCalendar.Streaks): string[][] {
-  const row = (name: string, run: Run): string[] => (run === null ? [name, "-", "-", "-"] : [name, runLength(run), dayLabel(run.start), dayLabel(run.end)]);
+  const row = (name: string, run: Run): string[] => (run === null ? [name, NO_VALUE, NO_VALUE, NO_VALUE] : [name, runLength(run), dayLabel(run.start), dayLabel(run.end)]);
   return [row("Longest active run", streaks.longestActive), row("Longest quiet run", streaks.longestQuiet)];
 }
 
 /** A busiest or quietest week as one cell: the week's first day and its count. A tie is marked. */
 function weekCell(peak: insights.activityCalendar.WeekPeak | null): string {
-  if (peak === null) return "-";
+  if (peak === null) return NO_VALUE;
   return `Week of ${dayLabel(peak.start)}, ${plural(peak.count, "chat or Snap", "chats and Snaps")}${peak.ties > 0 ? " (tied)" : ""}`;
 }
 

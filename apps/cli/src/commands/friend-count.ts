@@ -6,7 +6,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, hasHave, isAre, noun, plural } from "../format.ts";
+import { formatCount, formatDate, hasHave, isAre, MINUS, NO_VALUE, noun, plural } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, LEDGER_OPTIONS, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
 import { historyPathFlag } from "../ledger-store.ts";
@@ -60,7 +60,7 @@ export function monthText(label: string): string {
   return name === undefined ? label : `${name} ${Number(year)}`;
 }
 
-const signed = (n: number): string => (n > 0 ? `+${formatCount(n)}` : n < 0 ? `-${formatCount(-n)}` : "0");
+const signed = (n: number): string => (n > 0 ? `+${formatCount(n)}` : n < 0 ? `${MINUS}${formatCount(-n)}` : "0");
 const num = (n: Note, key: string): number => n.params[key] ?? 0;
 
 /** The sentence for one note. Hedged: Snappy infers the curve from the dates in the files. */
@@ -137,8 +137,8 @@ export function renderFriendCount(report: FriendCountReport, term: Term, verbose
       formatCount(m.joined),
       formatCount(m.left),
       signed(m.net),
-      m.count === null ? "-" : formatCount(m.count),
-      ...(withSaved ? [m.snapshotCount === null ? "-" : formatCount(m.snapshotCount)] : []),
+      m.count === null ? NO_VALUE : formatCount(m.count),
+      ...(withSaved ? [m.snapshotCount === null ? NO_VALUE : formatCount(m.snapshotCount)] : []),
     ]);
     const lines2 = [...term.table(columns, rows)];
     if (shown.length < months.length) {

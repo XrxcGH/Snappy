@@ -6,7 +6,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
+import { formatCount, formatDate, formatOffset, formatPercent, hasHave, isAre, NO_VALUE, noun, plural, stretchDates, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -47,12 +47,7 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const MONTH_LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"] as const;
 const BAR_WIDTH = 20;
 
-/** "UTC", "UTC+2:00", "UTC-5:30". */
-function offsetLabel(minutes: number): string {
-  if (minutes === 0) return "UTC";
-  const abs = Math.abs(minutes);
-  return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-}
+const offsetLabel = formatOffset;
 
 /** "2026-03-14" as "Mar 14, 2026". */
 function dayText(day: string): string {
@@ -123,7 +118,7 @@ function overviewRows(result: Review): string[][] {
     rows.push(["Chats and Snaps", formatCount(a.total.total)], ["Active days", formatCount(a.activeDays)]);
     if (a.firstDay !== null) rows.push(["First", dayText(a.firstDay)]);
     if (a.lastDay !== null) rows.push(["Last", dayText(a.lastDay)]);
-    if (a.longestQuietGap !== null) rows.push(["Longest quiet stretch", `${plural(a.longestQuietGap.days, "day")}, ${dayText(a.longestQuietGap.startDay)} to ${dayText(a.longestQuietGap.endDay)}`]);
+    if (a.longestQuietGap !== null) rows.push(["Longest quiet stretch", `${plural(a.longestQuietGap.days, "day")}, ${stretchDates(dayText(a.longestQuietGap.startDay), dayText(a.longestQuietGap.endDay))}`]);
   }
   if (result.friends.added !== null) rows.push(["New friends", formatCount(result.friends.added)]);
   if (result.friends.removed !== null) rows.push(["Friends removed", formatCount(result.friends.removed)]);
@@ -149,7 +144,7 @@ export function renderYear(result: Review, term: Term, verbose: boolean): string
     if (a !== null) {
       const tied = (p: { ties: number }): string => (p.ties > 0 ? " (tied)" : "");
       const peaks: string[][] = [];
-      if (a.busiestMonth) peaks.push(["Month", `${MONTH_LONG[a.busiestMonth.key - 1] ?? "-"}${tied(a.busiestMonth)}`, formatCount(a.busiestMonth.count), formatPercent(a.busiestMonth.share)]);
+      if (a.busiestMonth) peaks.push(["Month", `${MONTH_LONG[a.busiestMonth.key - 1] ?? NO_VALUE}${tied(a.busiestMonth)}`, formatCount(a.busiestMonth.count), formatPercent(a.busiestMonth.share)]);
       if (a.busiestDay) peaks.push(["Day", `${dayText(a.busiestDay.key)}${tied(a.busiestDay)}`, formatCount(a.busiestDay.count), formatPercent(a.busiestDay.share)]);
       out.push(
         ...section(term, "Busiest times", term.table([{ header: "Pattern" }, { header: "Busiest" }, { header: "Count", align: "right" }, { header: "Share", align: "right" }], peaks)),

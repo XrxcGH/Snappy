@@ -32,7 +32,7 @@ describe("a size limit set by the host", () => {
     const out = join(tempDir("limit-out"), "rescued");
     const result = await run(["memories", dir, "--out", out, "--no-color"], makeIo({ limits: { maxBundledBytes: 1 } }));
     expect(result.code).toBe(3);
-    expect(result.out.replace(/\s+/g, " ")).toContain("over the 1 B limit");
+    expect(result.out.replace(/\s+/g, " ")).toContain("over the 1 byte limit");
   });
 });
 

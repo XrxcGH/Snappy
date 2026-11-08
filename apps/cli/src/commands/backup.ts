@@ -7,7 +7,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { CliError, fsError } from "../errors.ts";
-import { formatCount, formatDate, isAre, noun, plural, wasWere } from "../format.ts";
+import { formatCount, formatDate, isAre, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { friendCountOf, insightTerm, loadInsightInput, parseInsightArgs, FRIEND_COUNT_OPTIONS } from "../insights-input.ts";
 import type { CommonFlags, FriendCountFlags } from "../insights-input.ts";
@@ -212,7 +212,7 @@ function renderCreate(r: CreateResult, term: Term, verbose: boolean): string[] {
       const shown = entries.slice(0, MAX_LISTED);
       const rows = term.table(
         [{ header: "Username" }, { header: "Added" }],
-        shown.map((e) => [e.username, e.createdAt === undefined ? "-" : formatDate(e.createdAt)]),
+        shown.map((e) => [e.username, e.createdAt === undefined ? NO_VALUE : formatDate(e.createdAt)]),
       );
       const more = entries.length > shown.length ? [`And ${plural(entries.length - shown.length, "more person", "more people")}.`] : [];
       out.push(...section(term, LIST_LABEL[name], [...rows, ...more]));
@@ -231,7 +231,7 @@ function renderCreate(r: CreateResult, term: Term, verbose: boolean): string[] {
   return out;
 }
 
-const diffCell = (value: number | undefined): string => (value === undefined ? "-" : formatCount(value));
+const diffCell = (value: number | undefined): string => (value === undefined ? NO_VALUE : formatCount(value));
 
 function renderCompare(r: CompareResult, term: Term, verbose: boolean): string[] {
   const verdict = r.identical ? "Your lists match the backup." : "Your lists differ from the backup.";

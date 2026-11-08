@@ -5,7 +5,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, formatPercent, hasHave, isAre, noun, plural, wasWere } from "../format.ts";
+import { formatCount, formatDate, formatDuration, formatHour, formatOffset, formatPercent, hasHave, isAre, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -48,15 +48,10 @@ const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 const BAR_WIDTH = 20;
 
-/** "UTC", "UTC+2:00", "UTC-5:30". */
-function offsetLabel(minutes: number): string {
-  if (minutes === 0) return "UTC";
-  const abs = Math.abs(minutes);
-  return `UTC${minutes < 0 ? "-" : "+"}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, "0")}`;
-}
+const offsetLabel = formatOffset;
 
-/** "12 am", "9 pm". */
-const hourLabel = (hour: number): string => `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 ? "am" : "pm"}`;
+/** "12 AM", "9 PM". */
+const hourLabel = formatHour;
 
 /** Turns a year and month key such as 2026-03 into "Mar 2026". */
 function monthLabel(month: string): string {
@@ -64,17 +59,8 @@ function monthLabel(month: string): string {
   return `${MONTH_NAMES[Number(number) - 1] ?? "?"} ${year ?? ""}`;
 }
 
-/** The typical gap in words: "40 seconds", "12 minutes", "3 hours", "2 days". */
-function gapText(ms: number): string {
-  if (ms < 1000) return "Under 1 second";
-  const seconds = Math.round(ms / 1000);
-  if (seconds < 60) return plural(seconds, "second");
-  const minutes = Math.round(ms / 60_000);
-  if (minutes < 60) return plural(minutes, "minute");
-  const hours = Math.round(ms / 3_600_000);
-  if (hours < 48) return plural(hours, "hour");
-  return plural(Math.round(ms / 86_400_000), "day");
-}
+/** The typical gap in words: "40 seconds", "83 minutes", "3 hours", "2 days". */
+const gapText = formatDuration;
 
 const things = (n: number): string => plural(n, "chat or Snap", "chats and Snaps");
 
@@ -137,14 +123,14 @@ export function renderHabits(result: Habits, term: Term, verbose: boolean, optio
 
     const monthKeys = result.byMonth.map((m) => m.month);
     const interiorMonth = (p: insights.habits.Peak<string> | null): string =>
-      p === null || p.ties > 0 || p.key === monthKeys[0] || p.key === monthKeys.at(-1) ? "-" : monthLabel(p.key);
+      p === null || p.ties > 0 || p.key === monthKeys[0] || p.key === monthKeys.at(-1) ? NO_VALUE : monthLabel(p.key);
     const tied = (p: { ties: number }): string => (p.ties > 0 ? " (tied)" : "");
     const quietHour = result.quietest.hour;
     const quietDay = result.quietest.weekday;
     const { hour, weekday, month } = result.busiest;
     const peaks: string[][] = [];
-    if (hour) peaks.push(["Hour of day", `${hourLabel(hour.key)}${tied(hour)}`, formatPercent(hour.share), quietHour && quietHour.ties === 0 ? hourLabel(quietHour.key) : "-"]);
-    if (weekday) peaks.push(["Day of week", `${WEEKDAYS[weekday.key] ?? "-"}${tied(weekday)}`, formatPercent(weekday.share), quietDay && quietDay.ties === 0 ? (WEEKDAYS[quietDay.key] ?? "-") : "-"]);
+    if (hour) peaks.push(["Hour of day", `${hourLabel(hour.key)}${tied(hour)}`, formatPercent(hour.share), quietHour && quietHour.ties === 0 ? hourLabel(quietHour.key) : NO_VALUE]);
+    if (weekday) peaks.push(["Day of week", `${WEEKDAYS[weekday.key] ?? NO_VALUE}${tied(weekday)}`, formatPercent(weekday.share), quietDay && quietDay.ties === 0 ? (WEEKDAYS[quietDay.key] ?? NO_VALUE) : NO_VALUE]);
     if (month) peaks.push(["Month", `${monthLabel(month.key)}${tied(month)}`, formatPercent(month.share), interiorMonth(result.quietest.month)]);
     out.push(
       ...section(term, "Busiest times", term.table([{ header: "Pattern" }, { header: "Busiest" }, { header: "Share", align: "right" }, { header: "Quietest" }], peaks)),
@@ -174,7 +160,7 @@ export function renderHabits(result: Habits, term: Term, verbose: boolean, optio
       out.push(
         ...section(term, "By weekday", term.table(
           [{ header: "Day" }, { header: "Count", align: "right" }, { header: "" }],
-          result.byWeekday.map((b) => [WEEKDAYS[b.weekday] ?? "-", formatCount(b.total), bar(term, b.total, maxDay)]),
+          result.byWeekday.map((b) => [WEEKDAYS[b.weekday] ?? NO_VALUE, formatCount(b.total), bar(term, b.total, maxDay)]),
         )),
       );
     }

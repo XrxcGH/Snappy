@@ -399,7 +399,7 @@ describe("privacy", () => {
     expect(noteLines.length).toBeGreaterThan(0);
     for (const l of noteLines) expect(l).not.toMatch(/sam_01|alex\.k/);
     expect(text).toMatch(/sam_01\s+Nov 6, 2026/);
-    expect(text).toMatch(/alex\.k\s+-/);
+    expect(text).toMatch(/alex\.k\s+–/);
   });
 });
 

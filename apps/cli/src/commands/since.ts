@@ -9,7 +9,7 @@ import { insights, snapshotFromExport } from "@snappy-export/core";
 import type { Snapshot } from "@snappy-export/core";
 import { CliError } from "../errors.ts";
 import { intOption } from "../args.ts";
-import { formatCount, formatDate, hasHave, isAre, noun, plural } from "../format.ts";
+import { formatCount, formatDate, hasHave, isAre, NO_VALUE, noun, plural } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { checkOutputPath, saveInsightFile } from "../insights-output.ts";
 import { insightTerm, LEDGER_OPTIONS, loadInsightInput, parseInsightArgs, parseUtcOffsetHours } from "../insights-input.ts";
@@ -151,7 +151,7 @@ export function personRows(r: Result): PersonRow[] {
   return GROUPS.flatMap((g) => by[g.change].map((p) => ({ change: g.change, username: p.username, at: p.at })));
 }
 
-const dateCell = (ms: number | null): string => (ms === null ? "-" : formatDate(ms));
+const dateCell = (ms: number | null): string => (ms === null ? NO_VALUE : formatDate(ms));
 
 /** The CSV: username, change, date as YYYY-MM-DD in UTC. Cells that could run as a formula are neutralized by csvCell. */
 export function sinceToCsv(r: Result): string {

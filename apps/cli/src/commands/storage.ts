@@ -6,7 +6,7 @@
  */
 import { insights } from "@snappy-export/core";
 import { CliError } from "../errors.ts";
-import { formatBytes, formatCount, formatPercent, noun, plural, wasWere } from "../format.ts";
+import { formatBytes, formatCount, formatPercent, NO_VALUE, noun, plural, wasWere } from "../format.ts";
 import type { InsightCommand } from "../insights-command.ts";
 import { insightTerm, loadInsightInput, parseInsightArgs } from "../insights-input.ts";
 import type { CommonFlags } from "../insights-input.ts";
@@ -66,10 +66,10 @@ function yearSpan(first: number | null, last: number | null): string {
   return `${first} to ${last}`;
 }
 
-/** A size, with a plus sign when some items have no known size and a dash when none do. */
+/** A size, with "At least" when some items have no known size and "Unknown" when none do. */
 function sizeCell(t: Tally): string {
   if (t.items > 0 && t.unsized === t.items) return "Unknown";
-  return `${formatBytes(t.knownBytes)}${t.unsized > 0 ? "+" : ""}`;
+  return `${t.unsized > 0 ? "At least " : ""}${formatBytes(t.knownBytes)}`;
 }
 
 /** The sentence for one note. Hedged: sizes come from the export's own lists. */
@@ -144,7 +144,7 @@ export function renderStorage(plan: Plan, term: Term, verbose: boolean): string 
         "By type",
         term.table(
           [{ header: "Type" }, { header: "Memories", align: "right" }, { header: "Size", align: "right" }, { header: "Share", align: "right" }],
-          plan.byType.map((r) => [TYPE_LABEL[r.type], formatCount(r.items), sizeCell(r), formatPercent(r.share)]),
+          plan.byType.filter((r) => r.items > 0).map((r) => [TYPE_LABEL[r.type], formatCount(r.items), sizeCell(r), formatPercent(r.share)]),
         ),
       ),
     );
@@ -181,7 +181,7 @@ export function renderStorage(plan: Plan, term: Term, verbose: boolean): string 
           `${plural(plan.batches.length, "batch", "batches")} of up to ${formatBytes(plan.batchBytes)}, for what fits under your goal.`,
           ...term.table(
             [{ header: "Batch", align: "right" }, { header: "Memories", align: "right" }, { header: "Size", align: "right" }, { header: "Years" }, { header: "ZIP parts" }],
-            rows.map((b) => [String(b.index), formatCount(b.items), formatBytes(b.bytes), yearSpan(b.firstYear, b.lastYear), b.parts.length > 0 ? b.parts.join(", ") : "-"]),
+            rows.map((b) => [String(b.index), formatCount(b.items), formatBytes(b.bytes), yearSpan(b.firstYear, b.lastYear), b.parts.length > 0 ? b.parts.join(", ") : NO_VALUE]),
           ),
           ...(plan.batches.length > rows.length ? [`${plural(plan.batches.length - rows.length, "more batch", "more batches")} follow. Add --json for all of them.`] : []),
         ]),

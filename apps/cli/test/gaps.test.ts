@@ -147,13 +147,13 @@ describe("the command", () => {
     expect(parsed.range.first.month).toBe(2);
     expect(parsed.utcOffsetMinutes).toBe(120);
     const text = await runInsight(gapsCommand, [edge, "--utc-offset=-5"]);
-    expect(text.out).toContain("Dates use UTC-5.");
+    expect(text.out).toContain("Dates use UTC-5:00.");
     expect(text.out).not.toContain("to change this");
     const india = JSON.parse((await runInsight(gapsCommand, [edge, "--utc-offset", "5:30", "--json"])).out) as { utcOffsetMinutes: number };
     expect(india.utcOffsetMinutes).toBe(330);
     expect(offsetLabel(0)).toBe("UTC");
     expect(offsetLabel(-210)).toBe("UTC-3:30");
-    expect(offsetLabel(840)).toBe("UTC+14");
+    expect(offsetLabel(840)).toBe("UTC+14:00");
   });
 
   it("starts early gaps only from a friend date, and not at all without one", async () => {
