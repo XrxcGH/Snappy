@@ -27,6 +27,12 @@ describe("the words of the nine pages", () => {
     expect(await matching(/\bin the app\b/i)).toEqual([]);
   });
 
+  it("say Save for a file: Save CSV, Save JSON, Save calendar file, and never Download for one", async () => {
+    expect(await matching(/\bDownload (the |a )?(CSV|JSON|calendar|manifest|file)/i)).toEqual([]);
+    const buttons = (await all()).filter((e) => /\.download(Label|Button)$/.test(e.id));
+    expect(buttons.map((b) => b.text).sort()).toEqual(["Save CSV", "Save CSV", "Save JSON", "Save calendar file"]);
+  });
+
   it("call the saved store the saved history: no snapshots, no switch to turn saving on", async () => {
     expect(await matching(/\bsnapshots?\b|turned saving on|saved data/i)).toEqual([]);
   });

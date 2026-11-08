@@ -37,7 +37,7 @@ export const copy = {
   friendsHeading: "Friends and requests",
   friendsLine: (before: number, now: number) => `${countOf(before, "friend", "friends")} before and ${formatCount(now)} now.`,
   noChangeLine: "No friend or request changed between the two exports.",
-  moreLine: (n: number) => `${countOf(n, "more person", "more people")} not shown. Download the CSV to see everyone.`,
+  moreLine: (n: number) => `${countOf(n, "more person", "more people")} not shown. Save the CSV to see everyone.`,
   nameHeader: "Username",
   dateHeader: "Date",
 
@@ -78,7 +78,7 @@ export const copy = {
   changeLine: (sent: number, received: number) => `Sent: ${upDown(sent)}. Received: ${upDown(received)}.`,
   earlierLine: "Before that is the same length of time before your last export.",
 
-  downloadLabel: "Download CSV",
+  downloadLabel: "Save CSV",
   downloadNote: "The file lists usernames. Keep it private.",
   unitCsvName: "username",
   unitCsvChange: "change",

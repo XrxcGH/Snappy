@@ -107,7 +107,7 @@ export const copy = {
   zoneNote: "The time zone was moved to the nearest allowed one.",
   otherNote: "Snappy noted something it cannot describe here.",
 
-  downloadLabel: "Download CSV",
+  downloadLabel: "Save CSV",
   downloadNote: "The file holds usernames and every friend row. Keep it private.",
   /** The column names of the CSV file. */
   csvHeaders: ["Username", "Your replies", "Your typical reply (seconds)", "Your 90% within (seconds)", "Their replies", "Their typical reply (seconds)", "Their 90% within (seconds)"],

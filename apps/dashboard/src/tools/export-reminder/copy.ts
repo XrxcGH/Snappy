@@ -51,7 +51,7 @@ export const copy = {
   passedNoDateNote: "The reminder date had already passed, so it is set for tomorrow.",
   otherNote: "Snappy noted something it cannot describe here.",
 
-  downloadLabel: "Download calendar file",
+  downloadLabel: "Save calendar file",
   downloadNote: "The calendar file holds no personal data.",
   doneAnnounce: (date: string) => `Your next export reminder is due on ${date}.`,
 } as const;

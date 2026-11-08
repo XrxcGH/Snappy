@@ -26,11 +26,11 @@ export const copy = {
   undatedHeader: "No date",
 
   checkHeading: "Check it later",
-  saveStep: "Download the manifest and keep it somewhere safe.",
+  saveStep: "Save the manifest and keep it somewhere safe.",
   rescueStep: "Run your Memories rescue to save the files to a folder.",
   verifyStep: "Later, check the folder against the manifest with the check command.",
 
-  downloadButton: "Download JSON",
+  downloadButton: "Save JSON",
   downloadNote: "The file lists file names, dates and types. It holds no usernames.",
   unitFileName: "snappy-rescue-manifest.json",
 
