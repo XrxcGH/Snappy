@@ -7,6 +7,7 @@ import { openShortcuts } from "../keys.ts";
 import type { Theme, State } from "../reducer.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
+import { dataFolder } from "../desktop-folder.ts";
 import { saveBlob } from "../download.ts";
 import { formatDate } from "../format.ts";
 import { HISTORY_FILE_NAME, buildHistoryFile, hasHistory, readHistoryFile } from "../history-file.ts";
@@ -74,6 +75,7 @@ function storageSection(ctx: ViewContext, s: State): Child[] {
       // The sealed-history status shows here and nowhere else.
       vault.phase === "unlocked" ? h("p", {}, h("span", { class: "pill" }, icon("seal", 16), h("span", {}, shell.sealedOn))) : null,
       h("p", {}, status),
+      folderBlock(),
       msg ? notice(msg.kind, msg.text) : null,
       vault.supported && vault.phase !== "locked"
         ? passphraseForm({
@@ -105,6 +107,19 @@ function storageSection(ctx: ViewContext, s: State): Child[] {
       : null,
     deleteSection(ctx),
   ];
+}
+
+/** Where the desktop app keeps its data, as text with a Copy button. Nothing in the web build, where the browser holds the data. */
+function folderBlock(): HTMLElement | null {
+  const folder = dataFolder();
+  if (folder === null) return null;
+  return h(
+    "div",
+    { class: "data-folder" },
+    h("p", {}, shellCopy.folderNote),
+    h("p", {}, h("code", { class: "data-folder-path" }, folder)),
+    h("div", { class: "actions" }, copyTextButton({ label: shellCopy.copyFolderButton, key: "copy-folder", done: shellCopy.folderCopiedAnnounce, text: () => folder })),
+  );
 }
 
 /** Two steps inside the page, never window.confirm: a button, then a confirmation with the consequences. */

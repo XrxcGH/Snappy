@@ -42,6 +42,11 @@ export const shellCopy = {
   historyCancelButton: "Cancel",
   historyDeletedAnnounce: "Export deleted from your history.",
 
+  // Settings, Saved data (desktop app only): where the data is, as text to copy. There is no link: the app cannot open folders.
+  folderNote: "Snappy keeps its saved data and the web engine’s files in this folder.",
+  copyFolderButton: "Copy folder path",
+  folderCopiedAnnounce: "Folder path copied.",
+
   // Settings: the history as a file, locked with a passphrase, to keep or to move to another computer.
   fileHeading: "History file",
   fileNote: "Save your history to a file locked with a passphrase, or open one. The file uses the same format as the command line tool.",

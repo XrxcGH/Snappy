@@ -941,4 +941,7 @@ dialog.shortcuts::backdrop { background: var(--scrim); }
 .history-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--pad-card); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
 .history-what { font-weight: 600; min-width: 0; }
 .history-actions { display: grid; gap: var(--space-2); min-width: 0; }
+/* Settings, Saved data (desktop app): the data folder's path wraps instead of widening the column. */
+.data-folder { display: grid; gap: var(--space-3); min-width: 0; }
+.data-folder-path { overflow-wrap: anywhere; }
 /* end track T4 */
