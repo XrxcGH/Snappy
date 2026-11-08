@@ -19,7 +19,7 @@ export const startFlow = {
   busy: "Wait for the current step to finish.",
 
   // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
-  unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
+  unzipped: "This looks unzipped, so choose the ZIP files. If your browser opened them, turn off “Open safe files after downloading” and download again.",
 
   // For someone who comes back to Start with exports already read.
   latestLine: (date: string, count: number) => `Latest export: ${date}. ${count === 1 ? "1 export read." : `${count} exports read.`}`,
