@@ -16,10 +16,10 @@
     "snappy-export": "node --experimental-strip-types --disable-warning=ExperimentalWarning apps/cli/src/main.ts"
   },
   "devDependencies": {
-    "@types/node": "^22.10.0",
-    "esbuild": "^0.25.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
   },
   "engines": {
     "node": ">=22.18"
