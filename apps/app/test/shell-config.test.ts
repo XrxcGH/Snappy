@@ -21,7 +21,7 @@ const conf = JSON.parse(read("src-tauri", "tauri.conf.json")) as {
   productName: string;
   identifier: string;
   app: {
-    windows: { label: string; title: string; create?: boolean; dragDropEnabled?: boolean; additionalBrowserArgs?: string; url?: string }[];
+    windows: { label: string; title: string; create?: boolean; dragDropEnabled?: boolean; zoomHotkeysEnabled?: boolean; additionalBrowserArgs?: string; url?: string }[];
     security: { csp: string; dangerousDisableAssetCspModification?: unknown; assetProtocol?: unknown; dangerousRemoteDomainIpcAccess?: unknown };
     withGlobalTauri?: boolean;
   };
@@ -124,6 +124,15 @@ describe("navigation lock", () => {
     expect(conf.app.windows[0]?.label).toBe("main");
     expect(conf.app.windows[0]?.create).toBe(false);
     expect(lib).toMatch(/WebviewWindowBuilder::from_config\(/);
+  });
+
+  it("lets the person zoom the page with the keyboard and the wheel, and widens no permission to do it", () => {
+    // Tauri's default is off: on Windows that switches WebView2's zoom control off, so Ctrl and plus did nothing.
+    // The window is built from this config (see above), so the setting reaches the engine.
+    expect(conf.app.windows[0]?.zoomHotkeysEnabled).toBe(true);
+    // macOS and Linux zoom through a script that needs the webview zoom permission. Adding it widens what the window may
+    // ask the shell to do, so it waits for the macOS build and the owner's review: the capability stays as it is.
+    expect(JSON.stringify(capability)).not.toMatch(/zoom/i);
   });
 
   it("refuses every address except the app's own, and every new window", () => {
