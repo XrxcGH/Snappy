@@ -20,10 +20,11 @@
 import Cocoa
 import WebKit
 
-guard CommandLine.arguments.count == 3, ["locked", "control"].contains(CommandLine.arguments[1]), let base = URL(string: CommandLine.arguments[2]), let port = base.port else {
+guard CommandLine.arguments.count == 3, ["locked", "control"].contains(CommandLine.arguments[1]), let base = URL(string: CommandLine.arguments[2]), base.port != nil else {
     print("usage: webkit-probe locked|control http://127.0.0.1:PORT")
     exit(2)
 }
+let port: Int = base.port ?? 0
 let locked = CommandLine.arguments[1] == "locked"
 let baseText = base.absoluteString.hasSuffix("/") ? String(base.absoluteString.dropLast()) : base.absoluteString
 
