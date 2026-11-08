@@ -3,6 +3,7 @@ import { announce } from "../announce.ts";
 import { brand, routes, settings, shell } from "../copy.ts";
 import { shellCopy, whatsNew } from "../copy-shell.ts";
 import { REPOSITORY_ADDRESS, buildDiagnostics } from "../diagnostics.ts";
+import { openShortcuts } from "../keys.ts";
 import type { Theme, State } from "../reducer.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
@@ -150,7 +151,12 @@ function helpSection(ctx: ViewContext): HTMLElement {
   return section(
     shellCopy.helpHeading,
     h("p", {}, shellCopy.diagnosticsNote),
-    h("div", { class: "actions" }, copyTextButton({ label: shellCopy.copyDiagnosticsButton, key: "copy-diagnostics", done: shellCopy.diagnosticsCopiedAnnounce, text: () => buildDiagnostics(ctx.store.get(), platform(), typeof navigator === "undefined" ? {} : navigator) })),
+    h(
+      "div",
+      { class: "actions" },
+      copyTextButton({ label: shellCopy.copyDiagnosticsButton, key: "copy-diagnostics", done: shellCopy.diagnosticsCopiedAnnounce, text: () => buildDiagnostics(ctx.store.get(), platform(), typeof navigator === "undefined" ? {} : navigator) }),
+      button({ label: shellCopy.showShortcutsButton, key: "show-shortcuts", onclick: () => openShortcuts() }),
+    ),
     h("p", {}, shellCopy.reportNote),
     h("p", {}, `${shellCopy.repositoryLabel}: `, h("code", { class: "repository" }, REPOSITORY_ADDRESS)),
     h("div", { class: "actions" }, copyTextButton({ label: shellCopy.copyAddressButton, key: "copy-address", done: shellCopy.addressCopiedAnnounce, text: () => REPOSITORY_ADDRESS })),

@@ -12,11 +12,14 @@ import { themeToggle } from "./components/themeToggle.ts";
 import { announce } from "./announce.ts";
 import { brand, routes, shell } from "./copy.ts";
 import type { RouteId } from "./copy.ts";
+import { shellCopy } from "./copy-shell.ts";
 import { h } from "./dom.ts";
+import { installKeys, openShortcuts } from "./keys.ts";
 import { platform } from "./platform.ts";
 import { region } from "./reactive.ts";
 import type { Theme } from "./reducer.ts";
 import type { Store } from "./store.ts";
+import { navigate } from "./views/context.ts";
 import type { ViewContext } from "./views/context.ts";
 
 interface NavItem {
@@ -66,6 +69,10 @@ const betaLine = (): HTMLElement | null => {
   const release = platform().release;
   return release?.beta ? h("p", { class: "caption" }, shell.betaLine(release.version)) : null;
 };
+
+/** A quiet footer button that opens the list of keyboard shortcuts. The stylesheet shows it only where a keyboard is likely (wide windows with a pointer). */
+const shortcutsHint = (): HTMLElement =>
+  h("div", { class: "footer-keys" }, h("kbd", { class: "key", "aria-hidden": "true" }, "?"), button({ label: shellCopy.showShortcutsButton, variant: "quiet", key: "footer-shortcuts", onclick: () => openShortcuts() }));
 
 /** Put the chosen theme on the page. "Match device" removes the attribute, so the device decides. */
 export function applyTheme(theme: Theme): void {
@@ -177,8 +184,11 @@ export function buildShell(root: HTMLElement, ctx: ViewContext): Shell {
     ),
     h("div", { class: "layout" }, nav, h("div", { class: "content" }, main)),
     // The legal line appears once on every page, here. No page repeats it. It starts at the content column.
-    h("footer", { class: "site-footer" }, h("div", { class: "site-footer-inner" }, h("p", { class: "caption" }, brand.nonAffiliation), betaLine())),
+    h("footer", { class: "site-footer" }, h("div", { class: "site-footer-inner" }, h("p", { class: "caption" }, brand.nonAffiliation), betaLine(), shortcutsHint())),
   );
+
+  // One listener for the whole app: ? lists the shortcuts, / jumps to the search box, g then a letter goes to a page.
+  if (typeof window !== "undefined") installKeys(window, { go: navigate });
 
   return {
     outlet,

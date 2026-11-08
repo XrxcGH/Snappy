@@ -16,6 +16,19 @@ export const shellCopy = {
   copyAddressButton: "Copy address",
   addressCopiedAnnounce: "Address copied.",
   whatsNewHeading: "What’s new",
+
+  // Keyboard shortcuts: the dialog, the buttons that open it, and the short status after "g".
+  shortcutsTitle: "Keyboard shortcuts",
+  showShortcutsButton: "Show shortcuts",
+  closeShortcutsButton: "Close",
+  shortcutsNote: "Shortcuts work when you are not typing in a field. Nothing is remembered.",
+  shortcutShowList: "Show this list",
+  shortcutSearch: "Jump to the search box",
+  shortcutGoTo: (place: string) => `Go to ${place}`,
+  /** Joins the two keys of a chord: g, then o. */
+  unitThen: "then",
+  goPendingStatus: "Go to…",
+  goPendingAnnounce: "Go to. Press o, c, t, m, s or h.",
 };
 
 /**
