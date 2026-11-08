@@ -21,7 +21,8 @@ import { attachBundledMedia, parseMemoriesJson, sortBundledMedia } from "./memor
 import { readZipDirectory } from "./zip.ts";
 
 export { parseFriendsJson, parseChatHistoryJson, parseSnapHistoryJson, parseMemoriesJson };
-export { validateExport } from "./validate.ts";
+export { validateExport, failureClass } from "./validate.ts";
+export type { FailureClass } from "./validate.ts";
 
 /** Entry-count cap: real exports hold tens of thousands of media files, not millions. */
 export const MAX_ENTRIES = 500_000;

@@ -18,6 +18,33 @@ const DATE_LIMIT_GAP_MS = 365 * DAY_MS;
 
 const baseName = (p: string): string => p.slice(p.lastIndexOf("/") + 1).toLowerCase();
 
+/**
+ * Issue codes that explain, by themselves, why nothing (or not everything) could be read: a part
+ * that is not a ZIP, a file inside it that cannot be opened, an export with no JSON files. When
+ * one is present the notes that only follow from it ("no friends list", "history not found") are
+ * left out, so the person gets one cause and one remedy, not five contradictory notices.
+ */
+const ROOT_CAUSE_CODES: ReadonlySet<string> = new Set(["zip-unreadable", "zip-entry-unreadable", "html-only-export"]);
+
+/** What went wrong at the root, in the words of what the person should do next. */
+export type FailureClass =
+  /** Part of the ZIP files could not be read: download them again. */
+  | "unreadable"
+  /** The export holds only HTML pages: request it again with JSON files. */
+  | "html-only";
+
+/**
+ * The root cause among `issues` (the parse issues plus the output of validateExport), or
+ * undefined when none applies. A damaged file wins over an HTML-only export because the first
+ * thing to do about it is to download that file again.
+ */
+export function failureClass(issues: readonly { code: string }[]): FailureClass | undefined {
+  const codes = new Set(issues.map((i) => i.code));
+  if (codes.has("zip-unreadable") || codes.has("zip-entry-unreadable")) return "unreadable";
+  if (codes.has("html-only-export")) return "html-only";
+  return undefined;
+}
+
 function duplicateCount(list: FriendRecord[]): number {
   const seen = new Set<string>();
   let dupes = 0;
@@ -78,8 +105,11 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
     out.push(issue("error", "html-only-export", "This export has only HTML files. Request a new export and choose JSON."));
   }
 
+  // One cause, one message: what only follows from it is not reported next to it.
+  const explained = (hasHtml && !hasJson) || (parsed.issues ?? []).some((i) => ROOT_CAUSE_CODES.has(i.code));
+
   if (totalFriendRecords === 0) {
-    out.push(issue("error", "no-friends-section", "This export has no friends list, so Snappy cannot analyze it. Request it again with User information selected."));
+    if (!explained) out.push(issue("error", "no-friends-section", "This export has no friends list, so Snappy cannot analyze it. Request it again with User information selected."));
   } else if (f.friends.length === 0 && f.deletedFriends.length > 0) {
     out.push(issue("error", "friends-empty-but-deleted", `The friends list is empty, but ${f.deletedFriends.length} removed ${f.deletedFriends.length === 1 ? "friend is" : "friends are"} listed. The export may be incomplete, so results may be wrong.`));
   }
@@ -114,6 +144,8 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
       out.push(issue("warning", "future-timestamps", `${future} ${future === 1 ? "date is" : "dates are"} later than the export date, so some dates may be wrong.`));
     }
   }
+
+  if (explained) return out;
 
   if (parsed.chats.length === 0 && !names.includes("chat_history.json")) {
     out.push(issue("info", "chat-history-missing", "No chat history was found, so quiet friends cannot be checked."));
