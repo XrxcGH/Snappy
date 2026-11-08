@@ -2,6 +2,8 @@ import { analyze } from "../analysis.ts";
 import type { Analysis } from "../analysis.ts";
 import { announce } from "../announce.ts";
 import { common, memories, routes } from "../copy.ts";
+import { lists } from "../copy-lists.ts";
+import { platform } from "../platform.ts";
 import { h, setVar } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatBytes, formatCount, formatMonth, formatPercent, gibToBytes } from "../format.ts";
@@ -144,5 +146,13 @@ function rescueSection(ctx: ViewContext): HTMLElement {
     h("p", { class: "label" }, memories.rescueCommandLabel),
     commandBlock(ctx, "memories-preview", { key: "memories-preview" }),
     commandBlock(ctx, "memories-rescue", { key: "memories-rescue" }),
+    // The installed app has no command line tool inside it, and Run holds only what fits the folder limit shown on the confirm card.
+    ...(platform().desktop === undefined
+      ? []
+      : [
+          h("p", {}, lists.rescueLimitNote(Math.round(ctx.terminal.outCap / (1024 * 1024)))),
+          h("p", {}, lists.rescueGuideLine),
+          h("div", { class: "actions" }, routeLink("guide", common.openGuide)),
+        ]),
   );
 }

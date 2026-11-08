@@ -10,4 +10,7 @@ export const lists = {
   copyUsernameButton: "Copy username",
   guidedNoteNoLinks: "Go one person at a time. Copy each username, find them in Snapchat, remove them if you want, then mark Done.",
 
+  // Memories rescue, in the desktop app, where Run holds only a small test.
+  rescueLimitNote: (mb: number) => `Run copies a small test here, up to ${mb} MB. A full rescue needs the command line tool.`,
+  rescueGuideLine: "The guide says how to get it.",
 };
