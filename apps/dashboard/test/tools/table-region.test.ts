@@ -2,8 +2,12 @@
  * The shared data table: a cell may mark its value so a wide page shows the value alone (the column header says the rest),
  * and a table that scrolls sideways becomes a named, focusable region while it scrolls and a plain block when it fits.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cellAround, cellText, dataTable } from "../../src/components/dataTable.ts";
+import type { TableCell } from "../../src/components/dataTable.ts";
 import { common } from "../../src/copy.ts";
 import { installFakeDom } from "../fake-dom.ts";
 import type { FakeElement } from "../fake-dom.ts";
@@ -35,6 +39,43 @@ describe("a table cell with a value", () => {
     expect(from?.textContent).toBe("From Jun 19, 2026");
     expect(from?.querySelector(".cell-extra")?.textContent).toBe("From ");
     expect(length?.querySelector(".cell-extra")?.textContent).toBe(" days");
+  });
+});
+
+describe("a table cell with a bare value and a full phrase", () => {
+  const table = (cell: TableCell, pills = false): FakeElement => {
+    installFakeDom();
+    return dataTable("Chats", ["Friend", "Sent"], [["Sam", cell]], pills ? { pills: { column: 1, kinds: ["yes"] } } : {}) as unknown as FakeElement;
+  };
+
+  it("draws the value alone, hidden from assistive technology, beside the phrase a screen reader hears", () => {
+    const [cell] = table({ text: "27", label: "Sent: 27" }).querySelectorAll("td");
+    const short = cell?.querySelector(".cell-short") as FakeElement;
+    const long = cell?.querySelector(".cell-long") as FakeElement;
+    expect(short.textContent).toBe("27");
+    expect(short.getAttribute("aria-hidden")).toBe("true");
+    expect(long.textContent).toBe("Sent: 27");
+    expect(long.classList.contains("sr-only")).toBe(true);
+    expect(long.hasAttribute("aria-hidden")).toBe(false);
+    // What assistive technology reads is the phrase once, never the phrase and the value.
+    const heard = cell?.descendants().filter((el) => el.getAttribute("aria-hidden") !== "true" && el.classList.contains("cell-long")).map((el) => el.textContent);
+    expect(heard).toEqual(["Sent: 27"]);
+  });
+
+  it("gives back the phrase as the full text of the cell", () => {
+    expect(cellText({ text: "27", label: "Sent: 27" })).toBe("Sent: 27");
+  });
+
+  it("keeps the phrase in a pill, whose words carry the meaning", () => {
+    const [cell] = table({ text: "Yes", label: "Included: yes" }, true).querySelectorAll("td");
+    expect(cell?.querySelector(".pill")?.textContent).toBe("Included: yes");
+  });
+
+  it("is swapped for the phrase on a phone by the stylesheet, where rows stack without column names", () => {
+    const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../src/styles.css"), "utf8");
+    const phone = /@media \(max-width: 40rem\) \{([^}]*\.cell-short \{ display: none; \}[^@]*)\}/.exec(css)?.[1] ?? "";
+    expect(phone).toMatch(/\.table \.cell-short \{ display: none; \}/);
+    expect(phone).toMatch(/\.table \.cell-long \{[^}]*clip-path: none;[^}]*\}/);
   });
 });
 

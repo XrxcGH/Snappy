@@ -19,8 +19,20 @@ export interface CellParts {
   readonly after?: string;
 }
 
-/** What a table cell may be: plain text, or a value with the words around it. */
-export type TableCell = string | CellParts;
+/**
+ * A cell that shows the bare value and keeps the full phrase for assistive technology: `text` is "27", `label` is "Sent: 27".
+ * A wide page, whose column header already says "Sent", draws the value alone and a screen reader hears the phrase. A phone,
+ * where rows stack into cards with no column names, draws the phrase instead.
+ */
+export interface CellLabeled {
+  readonly text: string;
+  readonly label: string;
+}
+
+/** What a table cell may be: plain text, a value with the words around it, or a bare value with a full phrase for assistive technology. */
+export type TableCell = string | CellParts | CellLabeled;
+
+const isLabeled = (cell: CellParts | CellLabeled): cell is CellLabeled => "label" in cell;
 
 /**
  * Marks which part of a cell's full text is its value, so the copy keeps one complete string ("Added Nov 25, 2024") and the
@@ -36,12 +48,18 @@ export function cellAround(full: string, value: string): TableCell {
 
 /** The full text of a cell, as a phone shows it. */
 export function cellText(cell: TableCell): string {
-  return typeof cell === "string" ? cell : `${cell.before ?? ""}${cell.value}${cell.after ?? ""}`;
+  if (typeof cell === "string") return cell;
+  return isLabeled(cell) ? cell.label : `${cell.before ?? ""}${cell.value}${cell.after ?? ""}`;
 }
 
-/** The nodes of a cell: the value, with its surrounding words in spans that the stylesheet hides once the table has column headers. */
+/**
+ * The nodes of a cell: the value, with its surrounding words in spans that the stylesheet hides once the table has column headers.
+ * A labeled cell is the bare value (hidden from assistive technology, which hears the phrase) and the phrase (out of sight on a
+ * wide page, shown on a phone in place of the value).
+ */
 export function cellNodes(cell: TableCell): Child[] {
   if (typeof cell === "string") return [cell];
+  if (isLabeled(cell)) return [h("span", { class: "cell-short", "aria-hidden": "true" }, cell.text), h("span", { class: "cell-long sr-only" }, cell.label)];
   return [cell.before ? h("span", { class: "cell-extra" }, cell.before) : null, cell.value, cell.after ? h("span", { class: "cell-extra" }, cell.after) : null];
 }
 

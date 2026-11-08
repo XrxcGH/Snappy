@@ -889,4 +889,9 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .command-cli-link, .command-note { margin: 0; }
 .command-note { color: var(--text-muted); font-size: var(--text-14); }
 .command-cli-link a { display: inline-flex; align-items: center; min-height: var(--target-min); }
+/* A table cell with a bare value and a full phrase: a wide page shows the value, a phone (no column names) shows the phrase. */
+@media (max-width: 40rem) {
+  .table .cell-short { display: none; }
+  .table .cell-long { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+}
 /* end track T5 */
