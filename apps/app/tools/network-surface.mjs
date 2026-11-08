@@ -8,10 +8,15 @@
  *     `std::net`, `getaddrinfo`, `curl`, `powershell`) anywhere in the repository's Rust.
  *   - `#[link(...)]` attributes and `extern` blocks nowhere (the Windows calls come through the windows-sys crate).
  *   - A process may be started, and the browser opened, only in src-tauri/src/updater/launch_windows.rs.
- *   - The WinHTTP feature of windows-sys is enabled only in apps/app/src-tauri/Cargo.toml; core, the command line and the
- *     dashboard know nothing of the shell, the updater or Tauri.
+ *   - The WinHTTP feature of windows-sys is enabled only in apps/app/src-tauri/Cargo.toml, and no other networking feature
+ *     (Win32_Networking_*, Win32_NetworkManagement_*: sockets, DNS, IP helper) is enabled anywhere; core, the command line and
+ *     the dashboard know nothing of the shell, the updater or Tauri.
+ *   - Every package in the shell's Cargo.lock is named in approved-crates.txt, so a NEW crate (an HTTP, socket or DNS crate that
+ *     no denylist knows yet) fails until a person reads the list and approves it.
+ *   - Code cannot be pulled in from a file the scan does not read (`include!`, `#[path = ...]`, OUT_DIR).
  *   - The loopback test feature is off by default and named nowhere in the configuration or the workflows.
- *   - The built program imports winhttp.dll and not WinINet, URLMon or BITS, and holds no test setting or test key.
+ *   - The built program imports winhttp.dll and none of the other network libraries (WinINet, URLMon, BITS, Winsock, DNS API,
+ *     IP helper, HTTP server API, RAS), and holds no test setting or test key.
  *
  * Comments and test code are not scanned (a rule that forbids a word is not tripped by prose, and the tests legitimately
  * run a loopback server). Everything here is a pure function over text or bytes, so the guard's own tests can feed it
@@ -118,10 +123,11 @@ const nowhere = () => false;
 /** [name, pattern, where it is allowed]. */
 export const SOURCE_RULES = [
   ["WinHTTP outside the one transport file", /winhttp/i, only(`${UPDATER}transport_windows.rs`)],
-  ["another way to reach the network", /\b(wininet|urlmon|ws2_32|WSAStartup|WinSock\w*|URLDownload\w*|IBackgroundCopy\w*|BackgroundCopyManager|getaddrinfo)\b|std::net\b|\b(TcpStream|UdpSocket|TcpListener)\b/i, nowhere],
+  ["another way to reach the network", /\b(wininet|urlmon|ws2_32|wsock32|mswsock|dnsapi|iphlpapi|httpapi|rasapi32|WSA\w+|WinSock\w*|URLDownload\w*|IBackgroundCopy\w*|BackgroundCopyManager|getaddrinfo|GetAddrInfo\w*|DnsQuery\w*|DnsQueryEx|Internet(?:Open|Connect|OpenUrl|ReadFile)\w*|HttpSendRequest\w*|ToSocketAddrs|to_socket_addrs|lookup_host)\b|\b(?:std|core)::\{[^;]*\bnet\b|\b(?:std|core)::net\b|\bnet::\w|\b(TcpStream|UdpSocket|TcpListener|SocketAddr|UnixStream)\b|Win32::Networking::(?!WinHttp\b)|Win32::NetworkManagement/i, nowhere],
+  ["a way to make this check read less than the program holds (std renamed, code included from another file)", /\b(?:use|extern\s+crate)\s+(?:std|core)\s+as\b|\binclude\s*!\s*\(|#\[\s*path\s*=|\bOUT_DIR\b/, nowhere],
   ["a link attribute or an extern block", /#\[\s*link\s*\(|\bextern\s*(?:"[A-Za-z0-9-]*"\s*)?\{/, nowhere],
   ["starting a process or opening the browser outside the one launch file", /std::process::(?:Command|Stdio|Child)\b|std::process::\{[^}]*\b(?:Command|Stdio|Child)\b|\bCommand::new\b|\bCreateProcess\w*|\bShellExecute\w*/, only(`${UPDATER}launch_windows.rs`)],
-  ["a download tool or shell command", /\b(curl|powershell|bitsadmin)\b|Invoke-WebRequest/i, nowhere],
+  ["a download tool or shell command", /\b(curl|powershell|bitsadmin|WinExec)\b|Invoke-WebRequest|\bcmd\.exe\b/i, nowhere],
 ];
 
 /** Problems in one Rust file (`file` is its path from the repository root with forward slashes). */
@@ -143,6 +149,10 @@ export function checkCargoToml(file, text) {
   const f = norm(file);
   const problems = [];
   if (/Win32_Networking_WinHttp/i.test(text) && f !== "apps/app/src-tauri/Cargo.toml") problems.push(`${f}: the WinHTTP feature of windows-sys is enabled outside apps/app/src-tauri/Cargo.toml`);
+  // No networking or network-management feature other than WinHTTP, in any manifest (sockets, DNS, IP helper, LDAP, RAS ...).
+  for (const m of text.matchAll(/["']?(Win32_(?:Networking|NetworkManagement)_\w+)["']?/g)) {
+    if (m[1] !== "Win32_Networking_WinHttp") problems.push(`${f}: enables the ${m[1]} feature, which can reach the network (only Win32_Networking_WinHttp, in the shell, is approved)`);
+  }
   if (f !== "apps/app/src-tauri/Cargo.toml" && /^\s*windows-sys\s*=|^\s*minisign-verify\s*=/m.test(text)) problems.push(`${f}: windows-sys or minisign-verify is used outside the shell`);
   if (f === "apps/app/src-tauri/Cargo.toml") {
     const features = text.split("[features]")[1]?.split(/\n\[/)[0] ?? "";
@@ -151,6 +161,19 @@ export function checkCargoToml(file, text) {
     if (!/^dev-update-endpoint\s*=\s*\[\]/m.test(features)) problems.push(`${f}: the dev-update-endpoint feature is missing or not an empty feature`);
   }
   return problems;
+}
+
+/** The names a `crates.txt` style list holds: one per line, `#` starts a comment. */
+export const listedNames = (text) => new Set(text.split(/\r?\n/).map((l) => l.replace(/#.*/, "").trim()).filter(Boolean));
+
+/** The package names in a Cargo.lock. */
+export const lockedNames = (lock) => [...new Set([...lock.matchAll(/^name = "([^"]+)"/gm)].map((m) => m[1]))].sort();
+
+/** Crates in the lock file that the approved list does not name: each one needs a person's decision. */
+export function checkLockfile(file, lock, approved) {
+  const known = listedNames(approved);
+  const added = lockedNames(lock).filter((n) => !known.has(n));
+  return added.map((n) => `${norm(file)}: the crate "${n}" is not in apps/app/tools/approved-crates.txt. A new dependency must be read and approved by a person, in case it can reach the network`);
 }
 
 /** The test feature and its settings must be named nowhere in configuration or a release path. */
@@ -184,6 +207,12 @@ export function checkRepository(root) {
     if (file.endsWith(".rs")) problems.push(...checkRustSource(r, readFileSync(file, "utf8")));
     else if (path.basename(file) === "Cargo.toml") problems.push(...checkCargoToml(r, readFileSync(file, "utf8")));
     else if (/^(packages\/[^/]+\/src|apps\/cli\/src|apps\/dashboard\/src)\/.*\.(ts|mjs|js)$/.test(r)) problems.push(...checkWebSideImports(r, readFileSync(file, "utf8")));
+  }
+  const lockFile = path.join(root, "apps", "app", "src-tauri", "Cargo.lock");
+  const approvedFile = path.join(root, "apps", "app", "tools", "approved-crates.txt");
+  if (existsSync(lockFile)) {
+    if (!existsSync(approvedFile)) problems.push("apps/app/tools/approved-crates.txt is missing: every crate in the shell's Cargo.lock must be named in it");
+    else problems.push(...checkLockfile("apps/app/src-tauri/Cargo.lock", readFileSync(lockFile, "utf8"), readFileSync(approvedFile, "utf8")));
   }
   for (const file of ["apps/app/src-tauri/tauri.conf.json", "apps/app/package.json", "package.json"]) {
     const full = path.join(root, file);
@@ -253,7 +282,16 @@ export function peImports(buf) {
   return [...names].sort();
 }
 
-const BANNED_DLLS = ["wininet.dll", "urlmon.dll", "qmgr.dll", "bitsproxy.dll", "bitsigd.dll"];
+/**
+ * Every Windows library that can open a connection other than WinHTTP, which is the one the update check uses (and which
+ * does its own sockets and DNS inside Windows). A release program imports none of these: the one that was built before the
+ * update check existed imported none either, so banning them costs nothing.
+ */
+export const BANNED_DLLS = [
+  "wininet.dll", "urlmon.dll", "qmgr.dll", "bitsproxy.dll", "bitsigd.dll",
+  "ws2_32.dll", "wsock32.dll", "mswsock.dll", "dnsapi.dll", "iphlpapi.dll", "httpapi.dll", "rasapi32.dll", "winhttpcom.dll",
+  "wldap32.dll", "netapi32.dll", "mpr.dll", "fwpuclnt.dll",
+];
 /** Names and texts that only a test build contains. */
 export const TEST_ONLY_TEXT = ["SNAPPY_UPDATE_ENDPOINT", "SNAPPY_E2E_PUBKEYS", "SNAPPY_E2E_VERSION", "com.snappy.e2e", "TEST_ONLY"];
 

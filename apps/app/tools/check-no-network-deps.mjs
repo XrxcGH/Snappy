@@ -8,6 +8,8 @@
  *   1. Crates. It asks Cargo for the dependency tree of every release target and fails when an HTTP client, a TLS
  *      library, a WebSocket library or the async runtime's socket support shows up. The update check uses none of
  *      them: it calls the operating system (WinHTTP, through the windows-sys crate) and verifies with minisign-verify.
+ *      The list is a denylist of the best-known ones; approved-crates.txt (checked with the sources) is the allowlist that
+ *      stops a crate nobody has heard of yet.
  *   2. Source. The program's own Rust may use WinHTTP only in updater/transport_windows.rs, start a process only in
  *      updater/launch_windows.rs, and use no other way to download (see network-surface.mjs for every rule).
  *   3. The built program (--exe). It must import winhttp.dll and not WinINet, URLMon or BITS, and a release build must hold no test
@@ -30,7 +32,7 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { checkBinary, checkRepository, peImports } from "./network-surface.mjs";
+import { checkBinary, checkRepository, lockedNames, peImports } from "./network-surface.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const manifest = path.join(here, "..", "src-tauri", "Cargo.toml");
@@ -56,13 +58,14 @@ const MOBILE = [
 
 /** Crates that can open a connection or speak a network protocol. */
 export const BANNED = new Set([
+  "minreq", "socket2", "mio", "async-io", "nyquest", "net2", "polling", "tokio-rustls", "tokio-native-tls",
   "reqwest", "hyper", "hyper-util", "hyper-tls", "hyper-rustls", "h2", "isahc", "ureq", "attohttpc", "surf", "curl", "curl-sys",
   "rustls", "rustls-native-certs", "webpki-roots", "native-tls", "openssl", "openssl-sys", "schannel",
   "tungstenite", "tokio-tungstenite", "async-tungstenite", "quinn", "trust-dns-resolver", "hickory-resolver",
 ]);
 
 /** What reqwest drags in on mobile (tauri, development proxy only). Nothing else may be banned and present there. */
-export const MOBILE_TAURI_DEV_PROXY = new Set(["reqwest", "hyper", "hyper-util"]);
+export const MOBILE_TAURI_DEV_PROXY = new Set(["reqwest", "hyper", "hyper-util", "socket2", "mio"]);
 
 function cargo(args) {
   const r = spawnSync("cargo", ["tree", "--locked", "--manifest-path", manifest, "--prefix", "none", ...args], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
@@ -129,6 +132,12 @@ function main() {
     if (argv[i] === "--target") picked.push(argv[++i]);
     else if (argv[i] === "--exe") exe = argv[++i];
     else if (argv[i] === "--sources-only") sourcesOnly = true;
+  }
+  if (argv.includes("--list-crates")) {
+    // The names in the lock file, for regenerating approved-crates.txt after a deliberate dependency change.
+    const lock = readFileSync(path.join(here, "..", "src-tauri", "Cargo.lock"), "utf8");
+    console.log(lockedNames(lock).join("\n"));
+    return;
   }
   let failed = false;
   const section = (title, problems) => {

@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 // @ts-expect-error plain JavaScript module without types
 import { bannedCrates, tokioFeatures } from "../tools/check-no-network-deps.mjs";
 // @ts-expect-error plain JavaScript module without types
-import { checkBinary, checkCargoToml, checkRepository, checkRustSource, checkTestFeatureNotInRelease, checkWebSideImports, pageNetworkApis, peImports, productionRust, stripRust } from "../tools/network-surface.mjs";
+import { BANNED_DLLS, checkBinary, checkCargoToml, checkLockfile, checkRepository, checkRustSource, checkTestFeatureNotInRelease, checkWebSideImports, pageNetworkApis, peImports, productionRust, stripRust } from "../tools/network-surface.mjs";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const UPDATER = "apps/app/src-tauri/src/updater";
@@ -64,6 +64,22 @@ describe("source rules fail on a fixture that breaks each one", () => {
     ["a listener in production code", `${UPDATER}/mod.rs`, "let l = TcpListener::bind(a);", /another way/],
     ["getaddrinfo", `${UPDATER}/transport.rs`, "getaddrinfo(a, b, c, d);", /another way/],
     ["BITS", `${UPDATER}/mod.rs`, "let m = BackgroundCopyManager;", /another way/],
+    ["a DNS lookup through ToSocketAddrs in a brace import", "apps/app/src-tauri/src/lib.rs", 'use std::{net::ToSocketAddrs};\nlet a = "example.test:80".to_socket_addrs();', /another way/],
+    ["a brace import that contains net", "apps/app/src-tauri/src/lib.rs", "use std::{io, net};", /another way/],
+    ["to_socket_addrs alone", "apps/app/src-tauri/src/lib.rs", 'let a = "example.test:80".to_socket_addrs();', /another way/],
+    ["tokio's lookup_host", "apps/app/src-tauri/src/lib.rs", 'let a = lookup_host("example.test:80");', /another way/],
+    ["a net module of anything", "apps/app/src-tauri/src/lib.rs", "let s = tokio::net::TcpStream::connect(a);", /another way/],
+    ["a socket address type", "apps/app/src-tauri/src/lib.rs", "fn f(a: SocketAddr) {}", /another way/],
+    ["core::net", "apps/app/src-tauri/src/lib.rs", "use core::net::SocketAddr;", /another way/],
+    ["WinExec", `${UPDATER}/launch_windows.rs`, 'WinExec(cmd, 0);', /download tool/],
+    ["cmd.exe", `${UPDATER}/launch_windows.rs`, 'let c = "cmd.exe";', /download tool/],
+    ["a DNS query through windows-sys", "apps/app/src-tauri/src/lib.rs", "use windows_sys::Win32::NetworkManagement::Dns::DnsQuery_W;", /another way/],
+    ["another Networking module of windows-sys", "apps/app/src-tauri/src/lib.rs", "use windows_sys::Win32::Networking::WinSock::WSAStartup;", /another way/],
+    ["a DNS function", "apps/app/src-tauri/src/lib.rs", "DnsQuery_A(name, 1, 0, null_mut(), &mut r, null_mut());", /another way/],
+    ["include! of a text file", "apps/app/src-tauri/src/lib.rs", 'include!("other.txt");', /read less/],
+    ["a path attribute to a text file", "apps/app/src-tauri/src/lib.rs", '#[path = "other.txt"]\nmod x;', /read less/],
+    ["code generated into OUT_DIR", "apps/app/src-tauri/src/lib.rs", 'include!(concat!(env!("OUT_DIR"), "/x.rs"));', /read less/],
+    ["std renamed", "apps/app/src-tauri/src/lib.rs", "use std as s;", /read less/],
   ];
   for (const [name, file, text, why] of cases) {
     it(`fails: ${name}`, () => {
@@ -84,6 +100,10 @@ describe("source rules fail on a fixture that breaks each one", () => {
     expect(checkRustSource("apps/app/src-tauri/src/lib.rs", '#[cfg(any(test, feature = "dev-update-endpoint"))]\nfn x() { let l = std::net::TcpListener::bind(a); }\n').length).toBeGreaterThan(0);
   });
 
+  it("still allows the path attribute of a test module and plain mentions of the word net", () => {
+    expect(checkRustSource("apps/app/src-tauri/src/lib.rs", '#[cfg(test)]\n#[path = "../build_guards.rs"]\nmod build_guards;\nfn real() { let planet = 1; let network_name = "net"; }\n')).toEqual([]);
+  });
+
   it("is not fooled by strings that look like comments, raw strings or lifetimes", () => {
     const code = 'let url = "https://github.com/x"; // curl\nlet r = r#"std::net"#;\nfn f<\'a>(x: &\'a str) { let c = \'"\'; }\nstd::net::TcpStream::connect(a);\n';
     expect(checkRustSource("apps/app/src-tauri/src/lib.rs", code).join("\n")).toMatch(/another way/);
@@ -98,6 +118,14 @@ describe("manifest rules fail on a fixture", () => {
     expect(checkCargoToml("packages/core/Cargo.toml", 'windows-sys = { version = "0.61", features = ["Win32_Networking_WinHttp"] }')).toHaveLength(2);
     expect(checkCargoToml("apps/cli/Cargo.toml", 'windows-sys = "0.61"')).toHaveLength(1);
     expect(checkCargoToml("apps/app/src-tauri/Cargo.toml", `${good}\n`)).toEqual([]);
+  });
+
+  it("refuses any networking feature of windows or windows-sys but WinHTTP, in the shell and elsewhere", () => {
+    const shell = readFileSync(path.join(root, "apps/app/src-tauri/Cargo.toml"), "utf8");
+    for (const feature of ["Win32_Networking_WinSock", "Win32_NetworkManagement_Dns", "Win32_NetworkManagement_IpHelper", "Win32_Networking_Ldap", "Win32_Networking_Clustering"]) {
+      expect(checkCargoToml("apps/app/src-tauri/Cargo.toml", shell.replace('"Win32_Foundation",', `"Win32_Foundation",\n  "${feature}",`)).join(), feature).toMatch(new RegExp(feature));
+      expect(checkCargoToml("packages/core/Cargo.toml", `windows = { version = "0.62", features = ["${feature}"] }`).join(), feature).toMatch(new RegExp(feature));
+    }
   });
 
   it("refuses the loopback test feature being on by default or missing", () => {
@@ -116,6 +144,49 @@ describe("manifest rules fail on a fixture", () => {
     expect(checkWebSideImports("packages/core/src/x.ts", 'import "../../../apps/app/src/update-ui.ts";')).toHaveLength(1);
     expect(checkWebSideImports("apps/dashboard/src/x.ts", 'import("@tauri-apps/api")')).toHaveLength(1);
     expect(checkWebSideImports("apps/dashboard/src/x.ts", 'import { h } from "./dom.ts";')).toEqual([]);
+  });
+});
+
+describe("a crate nobody approved fails, even one no denylist knows", () => {
+  const approved = readFileSync(path.join(root, "apps/app/tools/approved-crates.txt"), "utf8");
+  const lock = readFileSync(path.join(root, "apps/app/src-tauri/Cargo.lock"), "utf8");
+  const entry = (name: string) => `\n[[package]]\nname = "${name}"\nversion = "0.1.0"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n`;
+
+  it("accepts the lock file as it is", () => {
+    expect(checkLockfile("apps/app/src-tauri/Cargo.lock", lock, approved)).toEqual([]);
+  });
+
+  it("finds a new HTTP, socket, DNS or runtime crate by its name alone", () => {
+    for (const name of ["minreq", "async-io", "nyquest", "some-crate-nobody-has-heard-of", "hickory-proto"]) {
+      const problems = checkLockfile("apps/app/src-tauri/Cargo.lock", lock + entry(name), approved);
+      expect(problems.join(), name).toContain(`"${name}"`);
+      expect(problems).toHaveLength(1);
+    }
+  });
+
+  it("does not mind a version change, which Dependabot makes, or comments in the list", () => {
+    expect(checkLockfile("x", lock.replaceAll('version = "', 'version = "9'), approved)).toEqual([]);
+    expect(checkLockfile("x", entry("serde"), "# a comment\nserde  # trailing\n")).toEqual([]);
+  });
+
+  it("is part of the repository check and fails when the list is missing", () => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), "snappy-guard-"));
+    try {
+      mkdirSync(path.join(dir, "apps", "app", "src-tauri"), { recursive: true });
+      writeFileSync(path.join(dir, "apps", "app", "src-tauri", "Cargo.lock"), lock);
+      expect(checkRepository(dir).join()).toMatch(/approved-crates\.txt is missing/);
+      mkdirSync(path.join(dir, "apps", "app", "tools"), { recursive: true });
+      writeFileSync(path.join(dir, "apps", "app", "tools", "approved-crates.txt"), "serde\n");
+      expect(checkRepository(dir).join()).toMatch(/not in apps\/app\/tools\/approved-crates\.txt/);
+      writeFileSync(path.join(dir, "apps", "app", "tools", "approved-crates.txt"), approved);
+      expect(checkRepository(dir)).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("knows the best-known network crates as a second, separate check", () => {
+    expect(bannedCrates("snappy v0.1.0\nminreq v2.0.0\nsocket2 v0.5.0\nmio v1.0.0\nasync-io v2.0.0\nnyquest v0.1.0\n")).toEqual(["async-io", "minreq", "mio", "nyquest", "socket2"]);
   });
 });
 
@@ -140,7 +211,7 @@ describe("workflow lines that name the test feature fail", () => {
 });
 
 describe("the built program's rules fail on a fixture", () => {
-  const winhttp = ["kernel32.dll", "winhttp.dll", "ws2_32.dll"];
+  const winhttp = ["kernel32.dll", "winhttp.dll", "user32.dll"];
 
   it("accepts a program that imports WinHTTP and nothing else for downloads", () => {
     expect(checkBinary(winhttp, Buffer.from("MZ plain program"), ["RWSAMPLE"])).toEqual([]);
@@ -148,6 +219,13 @@ describe("the built program's rules fail on a fixture", () => {
 
   it("fails when it imports WinINet, URLMon or BITS, or does not import WinHTTP", () => {
     for (const dll of ["wininet.dll", "urlmon.dll", "qmgr.dll", "bitsproxy.dll"]) expect(checkBinary([...winhttp, dll], Buffer.from("x")).join(), dll).toMatch(new RegExp(dll));
+  });
+
+  it("fails when it imports Winsock, DNS, IP helper, the HTTP server API or RAS next to WinHTTP", () => {
+    for (const dll of ["ws2_32.dll", "wsock32.dll", "mswsock.dll", "dnsapi.dll", "iphlpapi.dll", "httpapi.dll", "rasapi32.dll"]) {
+      expect(BANNED_DLLS, dll).toContain(dll);
+      expect(checkBinary([...winhttp, dll], Buffer.alloc(10)).join(), dll).toMatch(new RegExp(dll.replace(".", "\\.")));
+    }
     expect(checkBinary(["kernel32.dll"], Buffer.from("x")).join()).toMatch(/does not import winhttp/);
   });
 
