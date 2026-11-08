@@ -4,8 +4,18 @@
  * allow-lists and the classification of strings by key name live here once, so a tool is held to exactly the rules
  * every other page is held to.
  */
+import { readdirSync } from "node:fs";
 import { FakeElement, FakeText } from "./fake-dom.ts";
 import type { FakeNode } from "./fake-dom.ts";
+
+/**
+ * The words of a feature track live in their own src/copy-<name>.ts file next to copy.ts. Every lint that reads copy.ts
+ * reads these too, through this one loader, so a new file is checked everywhere the moment it exists.
+ */
+export async function loadCopyModules(srcDir: string): Promise<Record<string, unknown>[]> {
+  const names = readdirSync(srcDir).flatMap((f) => /^(copy-[a-z-]+)\.ts$/.exec(f)?.[1] ?? []);
+  return Promise.all(names.map((name) => import(`../src/${name}.ts`) as Promise<Record<string, unknown>>));
+}
 
 /** The names of buttons and pages that sentences may quote with their capital letter. Set by the test that owns the copy. */
 let NAMED: readonly string[] = [];

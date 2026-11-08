@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import * as copy from "../src/copy.ts";
+import { loadCopyModules } from "./copy-rules.ts";
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src");
 
@@ -40,7 +41,8 @@ const BANNED: [string, RegExp][] = [
   ["delete a friend", /\bdelete (a |the )?friend/i],
 ];
 
-const strings = [...new Set(collect(copy))].filter((s) => s.trim() !== "");
+// copy.ts and every src/copy-<name>.ts beside it.
+const strings = [...new Set([...collect(copy), ...(await loadCopyModules(srcDir)).flatMap((m) => collect(m))])].filter((s) => s.trim() !== "");
 
 describe("copy module", () => {
   it("has strings to check", () => {

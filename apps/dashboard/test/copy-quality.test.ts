@@ -17,6 +17,7 @@ import { buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import type { View } from "../src/views/context.ts";
 import { TOOLS } from "../src/tools/registry.ts";
+import { loadCopyModules } from "./copy-rules.ts";
 import { testTerminal } from "./terminal-fixture.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
 import { renderToolPages } from "./tools/harness.ts";
@@ -52,7 +53,8 @@ function collect(value: unknown, at: string, computed: boolean, out: Entry[] = [
 
 /** The twenty-two tools keep their words in their own copy.ts, so those are read here too, under "toolcopy.<id>". */
 const toolCopy = await Promise.all(TOOLS.map(async (t) => [t.id, ((await import(`../src/tools/${t.id}/copy.ts`)) as { copy: unknown }).copy] as const));
-const entries = [...collect(copy, "", false), ...toolCopy.flatMap(([id, c]) => collect(c, `toolcopy.${id}`, false))].filter((e) => e.text.trim() !== "");
+const copyModules = await loadCopyModules(srcDir);
+const entries = [...collect(copy, "", false), ...copyModules.flatMap((m) => collect(m, "", false)), ...toolCopy.flatMap(([id, c]) => collect(c, `toolcopy.${id}`, false))].filter((e) => e.text.trim() !== "");
 
 /** Command lines and similar code: straight quotes and lowercase starts are right here. */
 const CODE_PATHS = new Set<string>();
@@ -63,7 +65,7 @@ const JOINERS = new Set(["common.stepPrefix()"]);
 /** Values that are never shown as written: a word joined to another, a file name, internal kind names. */
 // common.noFigure is a decorative dash that holds a tile's number row when there is nothing to count; it is not a sentence.
 // A tool's unit… keys are pieces its code joins into a sentence, noValue is a dash that holds an empty table cell, and a file name is a name.
-const NOT_SHOWN_AS_WRITTEN = /^(common\.confidenceSuffix|common\.noFigure|start\.dropAlt|cleanup\.csvFile|guide\.tickKinds\[\d+\]|toolcopy\.[a-z-]+\.(unit\w*|noValue))$/;
+const NOT_SHOWN_AS_WRITTEN = /^(common\.confidenceSuffix|common\.noFigure|start\.dropAlt|cleanup\.csvFile|lists\.areas\.[a-z-]+\.csvFile|guide\.tickKinds\[\d+\]|toolcopy\.[a-z-]+\.(unit\w*|noValue))$/;
 
 const prose = entries.filter((e) => !CODE_PATHS.has(e.path));
 
@@ -106,7 +108,7 @@ describe("whitespace and punctuation", () => {
 
 describe("capitalization", () => {
   /** Words that are capitalized wherever they appear, because they are names or Snapchat's own labels. */
-  const NAMES = ["Snappy", "Snapchat", "Snaps", "Snap", "Memories", "Memory", "JSON", "ZIP", "CSV", "GB", "HTML", "AES", "PBKDF2", "My Data", "My AI", "All Time", "Settings", "Profile", "Friends", "Done", "User information"];
+  const NAMES = ["Snappy", "Snapchat", "Snaps", "Snap", "Memories", "Memory", "JSON", "ZIP", "CSV", "GB", "HTML", "AES", "PBKDF2", "My Data", "My AI", "All Time", "Cleanup queue", "Settings", "Profile", "Friends", "Done", "User information"];
   const stripNames = (s: string): string => NAMES.reduce((t, n) => t.split(n).join(" "), s);
 
   it("keeps labels, buttons and headings in sentence case: only the first word and names are capitalized", () => {

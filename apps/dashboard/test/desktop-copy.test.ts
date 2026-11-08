@@ -4,6 +4,8 @@
  * here; every other string must be the same on both platforms; the desktop wording passes the same copy rules as
  * the rest; and no page the desktop app draws talks about a browser, a tab or an npm script.
  */
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import * as copy from "../src/copy.ts";
 import { platform, setPlatform } from "../src/platform.ts";
@@ -13,7 +15,7 @@ import type { State } from "../src/reducer.ts";
 import { COMMANDS, COMMAND_IDS, CLI_PREFIX, DESKTOP_CLI_PREFIX, displayText } from "../src/terminal/commands.ts";
 import { TOOLS } from "../src/tools/registry.ts";
 import type { View } from "../src/views/context.ts";
-import { RULES, SAMPLE_ARGS, collectCopy, lint, useNames } from "./copy-rules.ts";
+import { RULES, SAMPLE_ARGS, collectCopy, lint, loadCopyModules, useNames } from "./copy-rules.ts";
 import type { Entry } from "./copy-rules.ts";
 import type { FakeElement } from "./fake-dom.ts";
 import { render, renderSettled, sampleState } from "./tools/harness.ts";
@@ -46,12 +48,14 @@ function flatten(value: unknown, at: string, out: Map<string, string> = new Map(
   return out;
 }
 
+const copyModules = await loadCopyModules(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "src"));
 const toolCopies = await Promise.all(TOOLS.map(async (t) => [t.id, ((await import(`../src/tools/${t.id}/copy.ts`)) as { copy: unknown }).copy] as const));
 
 /** All the words of the interface (the copy module and every tool's own copy), read under one platform. */
 function allText(p: Platform): Map<string, string> {
   setPlatform(p);
   const out = flatten(copy, "");
+  for (const m of copyModules) flatten(m, "", out);
   for (const [id, c] of toolCopies) flatten(c, `toolcopy.${id}`, out);
   setPlatform({});
   return out;

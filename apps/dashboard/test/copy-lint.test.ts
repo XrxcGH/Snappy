@@ -56,14 +56,14 @@ const dashboardRoot = path.resolve(here, "..");
 const srcDir = path.join(dashboardRoot, "src");
 
 import {
-  ACRONYMS, LIMITS, RULES, TITLE_MAY_DIFFER, ancestors, clip, collectCopy, hasClass, lint, partsOf, renderedKind, sentences, strayCapitals, textBlocks, textOf, useNames, words,
+  ACRONYMS, LIMITS, RULES, loadCopyModules, TITLE_MAY_DIFFER, ancestors, clip, collectCopy, hasClass, lint, partsOf, renderedKind, sentences, strayCapitals, textBlocks, textOf, useNames, words,
   americanProblems, punctuationProblems, quoteProblems, whitespaceProblems, capitalizationProblems, lengthProblems, renderedEntries,
 } from "./copy-rules.ts";
 import type { Entry, Kind } from "./copy-rules.ts";
 
 
 // The words of a feature track live in their own src/copy-<name>.ts file; every one is read here like copy.ts.
-const copyModules = await Promise.all(readdirSync(srcDir).flatMap((f) => /^(copy-[a-z-]+)\.ts$/.exec(f)?.[1] ?? []).map((name) => import(`../src/${name}.ts`) as Promise<Record<string, unknown>>));
+const copyModules = await loadCopyModules(srcDir);
 const copyEntries = [...collectCopy(copy), ...copyModules.flatMap((m) => collectCopy({ ...m }))];
 /** Names of buttons and pages that sentences may quote with their capital letter ("Use Copy list", "on the Start page"). */
 const NAMED: string[] = copyEntries
