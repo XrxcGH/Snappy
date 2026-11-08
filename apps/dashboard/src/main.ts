@@ -8,6 +8,7 @@ import { initialState } from "./reducer.ts";
 import { startRouter } from "./router.ts";
 import { createStore } from "./store.ts";
 import { createTerminalSession } from "./terminal/session.ts";
+import { installUnloadGuard, noteReload, reloadedOntoResults } from "./unload-guard.ts";
 import { terminalWorkerSource } from "snappy:terminal-worker";
 import { browserVault, readThemePreference, writeThemePreference } from "./vault.ts";
 import { spawnBlobChannel } from "./worker-runner.ts";
@@ -59,6 +60,15 @@ function boot(): void {
     isBusy: () => store.get().import.phase === "reading" || ctx.terminal.controller.busy() !== null,
     toStart: () => navigate("start"),
   });
+
+  // Results live in memory. A reload (F5, Ctrl+R) or a close asks first when there is something to lose; and a page that was
+  // reloaded onto a results page, which is now empty, is replaced by Start with a line that says what happened.
+  installUnloadGuard(window, store);
+  const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  if (reloadedOntoResults(navigation?.type, location.hash)) {
+    noteReload();
+    history.replaceState(null, "", "#/start");
+  }
 
   const shell = buildShell(root, ctx);
   startRouter(shell.outlet, ctx, shell.onRoute);

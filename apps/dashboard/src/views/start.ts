@@ -4,6 +4,7 @@ import { announce } from "../announce.ts";
 import { failureClass, visibleIssues } from "@snappy-export/core";
 import { common, routes, settings, start } from "../copy.ts";
 import { startFlow } from "../copy-start.ts";
+import { clearReloadNote, reloadNotePending } from "../unload-guard.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button, routeLink } from "../components/button.ts";
@@ -32,6 +33,8 @@ export const startView: View = (ctx) => {
     region(store, (s) => [s.vault.phase, s.vault.busy, s.vault.message], (s) => unlockCard(ctx, s)),
     // Before the steps, so the advice to seal a history comes before the first import, not after it.
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
+    // A reload cleared the results of an export that was not saved: say so, until there is something to show again.
+    region(store, (s) => [s.real, s.sample, s.import.phase], (s) => reloadNote(s)),
     // The progress and any problem sit here, full width above the three steps: inside the third card they
     // were a narrow column below the fold, and a failed import looked like a click that did nothing.
     region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory, s.import.canOverride, s.vault.hasSaved, s.real.ledger.snapshots.length], (s) => importStatus(ctx, s)),
@@ -51,6 +54,18 @@ export const startView: View = (ctx) => {
   );
   return view;
 };
+
+const hasResults = (s: State): boolean => s.real.latest !== null || s.real.ledger.snapshots.length > 0 || s.sample !== null;
+
+function reloadNote(s: State): Child {
+  if (!reloadNotePending()) return null;
+  // Once an export or the sample is loaded the note has done its work, and does not come back.
+  if (hasResults(s) || s.import.phase !== "idle") {
+    if (hasResults(s)) clearReloadNote();
+    return null;
+  }
+  return notice("info", startFlow.reloaded);
+}
 
 function syncBusy(view: HTMLElement, s: State): void {
   const busy = s.import.phase === "reading";

@@ -5,6 +5,8 @@
  * contains export values: file names and counts are inserted by the code, as digits or numbers only.
  */
 
+import { platform } from "./platform.ts";
+
 export const startFlow = {
   /** Names the block that holds the progress or the problem of an import, for a screen reader. */
   statusLabel: "Import status",
@@ -18,6 +20,11 @@ export const startFlow = {
 
   // A folder or JSON files were chosen: a browser unzipped the download (Safari does, unless its "Open safe files" setting is off).
   unzipped: "This looks like an unzipped export, so choose the ZIP files instead. If your browser opened them for you, turn off “Open safe files after downloading” and download them again.",
+
+  // Said on Start after a reload cleared the results of an export that was not saved.
+  get reloaded(): string {
+    return platform().desktop === undefined ? "Your results were cleared when this page reloaded." : "Your results were cleared when the app reloaded.";
+  },
 
   // Files dragged over the page: what a drop will do.
   dropOverlayTitle: "Drop your ZIP files to add them",
