@@ -143,6 +143,13 @@ describe("computeExportCheck", () => {
 const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map(phrase);
 
 describe("the page", () => {
+  it("says the friend count is something the command takes, since the page cannot", async () => {
+    const { root } = await renderSettled(view, sample);
+    const lines = text(root, ".caption");
+    expect(lines).toContain("To catch a short friends list, run the command with --friend-count and the number Snapchat shows.");
+    expect(copy.friendCountLine).toContain("--friend-count");
+  });
+
   it("shows the verdict, what was found as a table with a pill for each section, the dates and the command", async () => {
     const { root } = await renderSettled(view, sample);
     const verdict = root.querySelector(".notice") as FakeElement;

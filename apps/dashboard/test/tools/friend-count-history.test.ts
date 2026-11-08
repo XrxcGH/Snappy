@@ -213,6 +213,8 @@ describe("the page", () => {
     const rows = (root.querySelectorAll("table")[0] as FakeElement).querySelectorAll("tbody tr");
     expect(rows).toHaveLength(24);
     expect(text(root, ".caption")).toContain(copy.monthsShownLine(24, 42));
+    // The 24 is fixed on the page; the command lists more, and the line names the option.
+    expect(copy.monthsShownLine(24, 42)).toBe("Showing the latest 24 months of 42. The command lists more with --months.");
   });
 
   it("writes each note as a short hedged sentence that shows no code", async () => {

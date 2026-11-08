@@ -50,7 +50,8 @@ export const copy = {
   unitAdded: (n: number) => `${formatCount(n)} added`,
   unitRemoved: (n: number) => `${formatCount(n)} removed`,
   unitFriends: (n: number) => countOf(n, "friend", "friends"),
-  monthsShownLine: (shown: number, total: number) => `Showing the latest ${countOf(shown, "month", "months")} of ${formatCount(total)}.`,
+  monthsShownLine: (shown: number, total: number) =>
+    `Showing the latest ${countOf(shown, "month", "months")} of ${formatCount(total)}. The command lists more with --months.`,
 
   compareHeading: "Against your saved history",
   compareCaption: "Saved snapshots compared with the curve",

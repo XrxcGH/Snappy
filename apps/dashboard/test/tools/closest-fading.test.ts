@@ -189,6 +189,15 @@ describe("computeClosestFading", () => {
 });
 
 describe("the page", () => {
+  it("says the half-life and the list length it fixes, from the settings it ran with, and the command options that change them", async () => {
+    const { root } = await renderSettled(view, sample);
+    const settings = computeClosestFading(toolData(sample)).settings;
+    const line = texts(root, ".caption").find((t) => t.includes("--half-life")) as string;
+    expect(line).toBe(copy.fixedLine(settings.halfLifeDays, settings.topCount));
+    expect(line).toBe("Activity counts half after 30 days, and each table lists up to 10. The command changes both with --half-life and --top.");
+    expect(line).not.toMatch(/undefined|NaN/);
+  });
+
   it("shows the sample as an overview, a closest table, a fading table, notes and the command", async () => {
     const { root } = await renderSettled(view, sample);
     expect(texts(root, ".section-title")).toEqual([copy.glanceHeading, copy.closestHeading, copy.fadingHeading, tools.notesHeading, tools.commandHeading]);

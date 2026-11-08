@@ -108,6 +108,7 @@ function foundSection({ check, partsKnown }: ExportCheckResult): HTMLElement {
   return section(
     copy.foundHeading,
     partsKnown && check.parts.count > 0 ? h("p", { class: "caption" }, copy.partsLine(check.parts.count)) : null,
+    h("p", { class: "caption" }, copy.friendCountLine),
     dataTable(copy.foundCaption, [copy.sectionHeader, copy.statusHeader, copy.itemsHeader], rows, { pills: { column: 1, kinds: check.sections.map(pillOf) } }),
   );
 }

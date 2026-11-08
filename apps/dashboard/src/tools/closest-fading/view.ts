@@ -63,6 +63,7 @@ function glanceSection(r: ClosestFadingResult): HTMLElement {
       { label: copy.factFadingHeader, value: formatCount(r.fading.length), icon: "quiet" },
     ]),
     h("p", {}, copy.methodLine(formatDate(r.asOf), r.settings.windowDays)),
+    h("p", { class: "caption" }, copy.fixedLine(r.settings.halfLifeDays, r.settings.topCount)),
   );
 }
 
