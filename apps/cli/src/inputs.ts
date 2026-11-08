@@ -7,7 +7,7 @@ import type { ParsedExport } from "@snappy-export/core";
 import { CliError, fsError } from "./errors.ts";
 import { checkParts, expandWildcards, isLaterPartsOnly, orderExportParts, scanNames } from "./export-parts.ts";
 import type { PartScan } from "./export-parts.ts";
-import { folderReader, looksLikeExportFolder } from "./folder-zip.ts";
+import { findDataFiles, folderReader } from "./folder-zip.ts";
 import { openFileReader } from "./fs-reader.ts";
 import type { FileReader } from "./fs-reader.ts";
 import type { Io } from "./io.ts";
@@ -79,7 +79,7 @@ export async function resolveZipPaths(io: FsIo, args: string[]): Promise<string[
       const names = entries.filter((d) => d.isFile && isPart(d.name)).map((d) => d.name);
       if (names.length === 0) {
         // A browser that unzips downloads (Safari does) leaves a folder with json/ inside, not the ZIP files: read that folder.
-        if (await looksLikeExportFolder(io, path)) {
+        if ((await findDataFiles(io, path)).length > 0) {
           found.push(path);
           continue;
         }

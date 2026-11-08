@@ -40,6 +40,14 @@ describe("pickDataFiles", () => {
     expect(pickDataFiles([file("saved_chat_history.json")]).map((f) => f.path)).toEqual(["saved_chat_history.json"]);
   });
 
+  it("compares how deep a file sits as a number: nine folders deep beats ten, and ties go by path", () => {
+    const deep = (n: number): string => `${"d/".repeat(n)}friends.json`;
+    expect(pickDataFiles([file(deep(10)), file(deep(9))]).map((f) => f.path)).toEqual([deep(9)]);
+    expect(pickDataFiles([file("b/friends.json"), file("a/friends.json")]).map((f) => f.path)).toEqual(["a/friends.json"]);
+    // Under json/ beats shallower, whatever the depth.
+    expect(pickDataFiles([file("friends.json"), file("x/y/json/friends.json")]).map((f) => f.path)).toEqual(["x/y/json/friends.json"]);
+  });
+
   it("finds data files wherever they sit, and none in a folder of photos", () => {
     expect(hasDataFiles([file("x/y/snap_history.json")])).toBe(true);
     expect(hasDataFiles([file("a.jpg"), file("account.json")])).toBe(false);

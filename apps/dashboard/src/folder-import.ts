@@ -34,18 +34,12 @@ export function hasDataFiles(files: readonly FolderFile[]): boolean {
  */
 export function pickDataFiles(files: readonly FolderFile[]): FolderFile[] {
   const best = new Map<string, FolderFile>();
-  const rank = (f: FolderFile): [number, number, string] => [underJson(f.path) ? 0 : 1, f.path.split("/").length, f.path];
-  const before = (a: FolderFile, b: FolderFile): boolean => {
-    const ra = rank(a);
-    const rb = rank(b);
-    for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return (ra[i] as number | string) < (rb[i] as number | string);
-    return false;
-  };
+  // Sorts as: under json/ first, then the fewer folders deep (depth is padded, so it compares as a number), then the path.
+  const rank = (f: FolderFile): string => `${underJson(f.path) ? 0 : 1}${String(f.path.split("/").length).padStart(4, "0")}${f.path}`;
   for (const file of files) {
     const base = baseOf(file.path);
-    if (!DATA_NAMES.includes(base)) continue;
     const current = best.get(base);
-    if (current === undefined || before(file, current)) best.set(base, file);
+    if (DATA_NAMES.includes(base) && (current === undefined || rank(file) < rank(current))) best.set(base, file);
   }
   return DATA_NAMES.flatMap((name) => best.get(name) ?? []);
 }
@@ -115,12 +109,6 @@ const CRC_TABLE = ((): Uint32Array => {
   return table;
 })();
 
-function crcUpdate(crc: number, bytes: Uint8Array): number {
-  let c = crc;
-  for (let i = 0; i < bytes.length; i++) c = (CRC_TABLE[(c ^ (bytes[i] as number)) & 0xff] as number) ^ (c >>> 8);
-  return c;
-}
-
 /** CRC-32 of a Blob, read in pieces so the file is never held whole. */
 async function crcOf(blob: Blob): Promise<number> {
   let crc = 0xffffffff;
@@ -128,32 +116,43 @@ async function crcOf(blob: Blob): Promise<number> {
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    crc = crcUpdate(crc, value);
+    for (let i = 0; i < value.length; i++) crc = (CRC_TABLE[(crc ^ (value[i] as number)) & 0xff] as number) ^ (crc >>> 8);
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-/** DOS date and time of a moment in UTC (the same reading core gives them), clamped to what the format can hold. */
-function dosOf(ms: number): { date: number; time: number } {
-  const d = new Date(Math.min(Math.max(ms, Date.UTC(1980, 0, 1)), Date.UTC(2107, 11, 31)));
-  return { date: ((d.getUTCFullYear() - 1980) << 9) | ((d.getUTCMonth() + 1) << 5) | d.getUTCDate(), time: (d.getUTCHours() << 11) | (d.getUTCMinutes() << 5) | (d.getUTCSeconds() >> 1) };
-}
+const LIMIT = 0xffffffff;
 
-/** A zeroed buffer of a plain ArrayBuffer, which is what a Blob part must be. */
-const bytes = (n: number): Uint8Array<ArrayBuffer> => new Uint8Array(new ArrayBuffer(n));
-
-/** The "extended timestamp" field: the real UTC modified time, which core prefers to the DOS time. */
-function timestampField(ms: number): Uint8Array<ArrayBuffer> {
-  const out = bytes(9);
-  const view = new DataView(out.buffer);
-  view.setUint16(0, 0x5455, true);
-  view.setUint16(2, 5, true);
-  out[4] = 1;
-  view.setUint32(5, Math.floor(ms / 1000) >>> 0, true);
+/**
+ * The local header (before a file) or the central directory record (after all of them) of one stored entry, as bytes of a
+ * plain ArrayBuffer (what a Blob part must be). The two share their fields, the central one's sitting two bytes further
+ * on. After the name comes the "extended timestamp" field: the real UTC modified time, which core prefers to the DOS
+ * time (2 s steps in UTC, the same reading core gives them, clamped to 1980 to 2107).
+ */
+function entryHead(central: boolean, name: Uint8Array, mtimeMs: number, crc: number, size: number, offset: number): Uint8Array<ArrayBuffer> {
+  const s = central ? 2 : 0;
+  const at = (central ? 46 : 30) + name.length;
+  const out = new Uint8Array(new ArrayBuffer(at + 9));
+  const v = new DataView(out.buffer);
+  const d = new Date(Math.min(Math.max(mtimeMs, Date.UTC(1980, 0, 1)), Date.UTC(2107, 11, 31)));
+  v.setUint32(0, central ? 0x02014b50 : 0x04034b50, true);
+  v.setUint16(4, 20, true);
+  v.setUint16(4 + s, 20, true);
+  v.setUint16(10 + s, (d.getUTCHours() << 11) | (d.getUTCMinutes() << 5) | (d.getUTCSeconds() >> 1), true);
+  v.setUint16(12 + s, ((d.getUTCFullYear() - 1980) << 9) | ((d.getUTCMonth() + 1) << 5) | d.getUTCDate(), true);
+  v.setUint32(14 + s, crc, true);
+  v.setUint32(18 + s, size, true);
+  v.setUint32(22 + s, size, true);
+  v.setUint16(26 + s, name.length, true);
+  v.setUint16(28 + s, 9, true);
+  if (central) v.setUint32(42, offset, true);
+  out.set(name, at - name.length);
+  v.setUint16(at, 0x5455, true);
+  v.setUint16(at + 2, 5, true);
+  out[at + 4] = 1;
+  v.setUint32(at + 5, Math.floor(mtimeMs / 1000) >>> 0, true);
   return out;
 }
-
-const LIMIT = 0xffffffff;
 
 /**
  * One ZIP file (stored, no compression) holding the data files under json/. The bytes of the files are not copied: the
@@ -165,55 +164,22 @@ export async function wrapAsZip(files: readonly FolderFile[], now: number): Prom
   const parts: BlobPart[] = [];
   const central: Uint8Array<ArrayBuffer>[] = [];
   let offset = 0;
-  for (const file of files) {
-    if (file.blob.size > LIMIT || offset > LIMIT) throw new Error("too large");
-    const name = encoder.encode(`json/${baseOf(file.path)}`);
-    const mtime = file.lastModified !== undefined && file.lastModified > 0 ? file.lastModified : now;
-    const { date, time } = dosOf(mtime);
-    const extra = timestampField(mtime);
-    const crc = await crcOf(file.blob);
-
-    const local = bytes(30 + name.length + extra.length);
-    const lv = new DataView(local.buffer);
-    lv.setUint32(0, 0x04034b50, true);
-    lv.setUint16(4, 20, true);
-    lv.setUint16(10, time, true);
-    lv.setUint16(12, date, true);
-    lv.setUint32(14, crc, true);
-    lv.setUint32(18, file.blob.size, true);
-    lv.setUint32(22, file.blob.size, true);
-    lv.setUint16(26, name.length, true);
-    lv.setUint16(28, extra.length, true);
-    local.set(name, 30);
-    local.set(extra, 30 + name.length);
-
-    const record = bytes(46 + name.length + extra.length);
-    const cv = new DataView(record.buffer);
-    cv.setUint32(0, 0x02014b50, true);
-    cv.setUint16(4, 20, true);
-    cv.setUint16(6, 20, true);
-    cv.setUint16(12, time, true);
-    cv.setUint16(14, date, true);
-    cv.setUint32(16, crc, true);
-    cv.setUint32(20, file.blob.size, true);
-    cv.setUint32(24, file.blob.size, true);
-    cv.setUint16(28, name.length, true);
-    cv.setUint16(30, extra.length, true);
-    cv.setUint32(42, offset, true);
-    record.set(name, 46);
-    record.set(extra, 46 + name.length);
-    central.push(record);
-
-    parts.push(local, file.blob);
-    offset += local.length + file.blob.size;
+  for (const { path, blob, lastModified } of files) {
+    if (blob.size > LIMIT || offset > LIMIT) throw new Error("too large");
+    const name = encoder.encode(`json/${baseOf(path)}`);
+    const mtime = lastModified !== undefined && lastModified > 0 ? lastModified : now;
+    const crc = await crcOf(blob);
+    const local = entryHead(false, name, mtime, crc, blob.size, 0);
+    central.push(entryHead(true, name, mtime, crc, blob.size, offset));
+    parts.push(local, blob);
+    offset += local.length + blob.size;
   }
-  const directorySize = central.reduce((n, r) => n + r.length, 0);
-  const end = bytes(22);
+  const end = new Uint8Array(new ArrayBuffer(22));
   const ev = new DataView(end.buffer);
   ev.setUint32(0, 0x06054b50, true);
   ev.setUint16(8, central.length, true);
   ev.setUint16(10, central.length, true);
-  ev.setUint32(12, directorySize, true);
+  ev.setUint32(12, central.reduce((n, r) => n + r.length, 0), true);
   ev.setUint32(16, offset, true);
   return new Blob([...parts, ...central, end], { type: "application/zip" });
 }

@@ -4,6 +4,7 @@
  * ZIP file that holds them uncompressed under json/, and that file is read like a downloaded part, so every command
  * works on a folder as it does on ZIP files. A folder holds no Memories photos or videos, so a rescue has nothing to copy.
  */
+import { crc32 } from "@snappy-export/core";
 import type { FileReader } from "./fs-reader.ts";
 import type { Io } from "./io.ts";
 
@@ -27,45 +28,37 @@ export async function findDataFiles(io: FsIo, dir: string): Promise<{ path: stri
   return [...first, ...pick(top, dir).filter((f) => !seen.has(f.base))];
 }
 
-/** True when the folder holds a json/ folder or any of the data files directly: it looks like an unzipped export. */
-export async function looksLikeExportFolder(io: FsIo, dir: string): Promise<boolean> {
-  const top = await io.fs.readDir(dir);
-  return top.some((e) => (e.isDirectory && e.name.toLowerCase() === "json") || (e.isFile && DATA_NAMES.includes(e.name.toLowerCase())));
-}
+const LIMIT = 0xffffffff;
 
-const CRC_TABLE = ((): Uint32Array => {
-  const table = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    table[n] = c >>> 0;
-  }
-  return table;
-})();
-
-function crc32(bytes: Uint8Array): number {
-  let c = 0xffffffff;
-  for (let i = 0; i < bytes.length; i++) c = (CRC_TABLE[(c ^ (bytes[i] as number)) & 0xff] as number) ^ (c >>> 8);
-  return (c ^ 0xffffffff) >>> 0;
-}
-
-function dosOf(ms: number): { date: number; time: number } {
-  const d = new Date(Math.min(Math.max(ms, Date.UTC(1980, 0, 1)), Date.UTC(2107, 11, 31)));
-  return { date: ((d.getUTCFullYear() - 1980) << 9) | ((d.getUTCMonth() + 1) << 5) | d.getUTCDate(), time: (d.getUTCHours() << 11) | (d.getUTCMinutes() << 5) | (d.getUTCSeconds() >> 1) };
-}
-
-/** The "extended timestamp" field: the real UTC modified time, which the reader prefers to the DOS time. */
-function timestampField(ms: number): Uint8Array {
-  const out = new Uint8Array(9);
-  const view = new DataView(out.buffer);
-  view.setUint16(0, 0x5455, true);
-  view.setUint16(2, 5, true);
-  out[4] = 1;
-  view.setUint32(5, Math.floor(ms / 1000) >>> 0, true);
+/**
+ * The local header (before a file) or the central directory record (after all of them) of one stored entry. The two
+ * share their fields, the central one's sitting two bytes further on. After the name comes the "extended timestamp"
+ * field: the real UTC modified time, which the reader prefers to the DOS time (2 s steps, clamped to 1980 to 2107).
+ */
+function entryHead(central: boolean, name: Uint8Array, mtimeMs: number, crc: number, size: number, offset: number): Uint8Array {
+  const s = central ? 2 : 0;
+  const at = (central ? 46 : 30) + name.length;
+  const out = new Uint8Array(at + 9);
+  const v = new DataView(out.buffer);
+  const d = new Date(Math.min(Math.max(mtimeMs, Date.UTC(1980, 0, 1)), Date.UTC(2107, 11, 31)));
+  v.setUint32(0, central ? 0x02014b50 : 0x04034b50, true);
+  v.setUint16(4, 20, true);
+  v.setUint16(4 + s, 20, true);
+  v.setUint16(10 + s, (d.getUTCHours() << 11) | (d.getUTCMinutes() << 5) | (d.getUTCSeconds() >> 1), true);
+  v.setUint16(12 + s, ((d.getUTCFullYear() - 1980) << 9) | ((d.getUTCMonth() + 1) << 5) | d.getUTCDate(), true);
+  v.setUint32(14 + s, crc, true);
+  v.setUint32(18 + s, size, true);
+  v.setUint32(22 + s, size, true);
+  v.setUint16(26 + s, name.length, true);
+  v.setUint16(28 + s, 9, true);
+  if (central) v.setUint32(42, offset, true);
+  out.set(name, at - name.length);
+  v.setUint16(at, 0x5455, true);
+  v.setUint16(at + 2, 5, true);
+  out[at + 4] = 1;
+  v.setUint32(at + 5, Math.floor(mtimeMs / 1000) >>> 0, true);
   return out;
 }
-
-const LIMIT = 0xffffffff;
 
 /** One ZIP file (stored, no compression) of the given files under json/. Throws for a file too large for a plain ZIP file. */
 export function storedZip(files: readonly { base: string; bytes: Uint8Array; mtimeMs: number }[]): Uint8Array {
@@ -73,46 +66,14 @@ export function storedZip(files: readonly { base: string; bytes: Uint8Array; mti
   const chunks: Uint8Array[] = [];
   const central: Uint8Array[] = [];
   let offset = 0;
-  for (const file of files) {
-    if (file.bytes.length > LIMIT || offset > LIMIT) throw new Error("too large");
-    const name = encoder.encode(`json/${file.base}`);
-    const extra = timestampField(file.mtimeMs);
-    const { date, time } = dosOf(file.mtimeMs);
-    const crc = crc32(file.bytes);
-
-    const local = new Uint8Array(30 + name.length + extra.length);
-    const lv = new DataView(local.buffer);
-    lv.setUint32(0, 0x04034b50, true);
-    lv.setUint16(4, 20, true);
-    lv.setUint16(10, time, true);
-    lv.setUint16(12, date, true);
-    lv.setUint32(14, crc, true);
-    lv.setUint32(18, file.bytes.length, true);
-    lv.setUint32(22, file.bytes.length, true);
-    lv.setUint16(26, name.length, true);
-    lv.setUint16(28, extra.length, true);
-    local.set(name, 30);
-    local.set(extra, 30 + name.length);
-
-    const record = new Uint8Array(46 + name.length + extra.length);
-    const cv = new DataView(record.buffer);
-    cv.setUint32(0, 0x02014b50, true);
-    cv.setUint16(4, 20, true);
-    cv.setUint16(6, 20, true);
-    cv.setUint16(12, time, true);
-    cv.setUint16(14, date, true);
-    cv.setUint32(16, crc, true);
-    cv.setUint32(20, file.bytes.length, true);
-    cv.setUint32(24, file.bytes.length, true);
-    cv.setUint16(28, name.length, true);
-    cv.setUint16(30, extra.length, true);
-    cv.setUint32(42, offset, true);
-    record.set(name, 46);
-    record.set(extra, 46 + name.length);
-    central.push(record);
-
-    chunks.push(local, file.bytes);
-    offset += local.length + file.bytes.length;
+  for (const { base, bytes, mtimeMs } of files) {
+    if (bytes.length > LIMIT || offset > LIMIT) throw new Error("too large");
+    const name = encoder.encode(`json/${base}`);
+    const crc = crc32(bytes);
+    const local = entryHead(false, name, mtimeMs, crc, bytes.length, 0);
+    central.push(entryHead(true, name, mtimeMs, crc, bytes.length, offset));
+    chunks.push(local, bytes);
+    offset += local.length + bytes.length;
   }
   const end = new Uint8Array(22);
   const ev = new DataView(end.buffer);

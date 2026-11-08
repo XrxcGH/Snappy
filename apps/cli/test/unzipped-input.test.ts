@@ -85,6 +85,11 @@ describe("an unzipped export given to the command line tool", () => {
 
     const empty = tempDir("empty");
     expect((await failure(resolveZipPaths(makeIo(), [empty]))).code).toBe("no-zips");
+    // A json folder with none of the files Snappy reads is not an export either: the same message, not an empty export.
+    const hollow = tempDir("hollow");
+    mkdirSync(join(hollow, "json"));
+    writeFileSync(join(hollow, "json", "account.json"), "{}");
+    expect((await failure(resolveZipPaths(makeIo(), [hollow]))).code).toBe("no-zips");
     writeFileSync(join(empty, "notes.txt"), "x");
     expect((await failure(resolveZipPaths(makeIo(), [join(empty, "notes.txt")]))).code).toBe("not-zip");
   });
