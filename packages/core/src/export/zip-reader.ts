@@ -28,6 +28,7 @@ import {
   STREAMED_TARGETS,
   TARGET_NAMES,
   capFileList,
+  combineMediaNotOpened,
   emptyParsed,
   finishExport,
   normPath,
@@ -803,6 +804,9 @@ const mergeDeleted = (a: DeletedFriendRecord, b: DeletedFriendRecord): DeletedFr
 const cloneRecord = <T extends object>(r: T): T => ({ ...r });
 
 const SEVERITY_RANK = { info: 0, warning: 1, error: 2 } as const;
+/** Same note, same wording and (for the per-part counts) the same parts: parts with equal counts stay separate until they are added up. */
+const issueKey = (i: ExportIssue): string => `${i.code}\u0000${i.message}${i.partCounts === undefined ? "" : `\u0000${JSON.stringify(i.partCounts)}`}`;
+
 const mergeIssue = (a: ExportIssue, b: ExportIssue): ExportIssue => (SEVERITY_RANK[b.severity] > SEVERITY_RANK[a.severity] ? { ...a, severity: b.severity } : a);
 
 const cloneMemory = (m: MemoryItem): MemoryItem => ({
@@ -912,7 +916,7 @@ export function mergeParsedExports(parts: ParsedExport[]): ParsedExport {
     chats: mergeChats(parts),
     memories,
     fileList,
-    issues: [...unionBy(issueLists, (i) => `${i.code}\u0000${i.message}`, mergeIssue, cloneRecord), ...pairingIssues],
+    issues: [...combineMediaNotOpened(unionBy(issueLists, issueKey, mergeIssue, cloneRecord)), ...pairingIssues],
   };
   if (bundledMedia.length > 0) merged.bundledMedia = bundledMedia;
   if (pairing !== undefined) merged.memoriesPairing = pairing;

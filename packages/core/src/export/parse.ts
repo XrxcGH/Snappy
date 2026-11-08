@@ -21,7 +21,7 @@ import { attachBundledMedia, parseMemoriesJson, sortBundledMedia } from "./memor
 import { readZipDirectory } from "./zip.ts";
 
 export { parseFriendsJson, parseChatHistoryJson, parseSnapHistoryJson, parseMemoriesJson };
-export { validateExport, failureClass } from "./validate.ts";
+export { validateExport, failureClass, visibleIssues } from "./validate.ts";
 export type { FailureClass } from "./validate.ts";
 
 /** Entry-count cap: real exports hold tens of thousands of media files, not millions. */
@@ -183,8 +183,38 @@ function truncateFileList(list: string[], max: number): string[] {
  */
 export function capFileList(list: string[], issues: ExportIssue[]): string[] {
   if (list.length <= MAX_FILE_LIST) return list;
-  issues.push(issue("info", "file-list-truncated", `The file list was cut to ${MAX_FILE_LIST} of ${list.length} entries.`));
+  // Only the inspect report can use this one; the person has nothing to do about it.
+  issues.push({ ...issue("info", "file-list-truncated", `The file list was cut to ${MAX_FILE_LIST} of ${list.length} entries.`), hidden: true });
   return truncateFileList(list, MAX_FILE_LIST);
+}
+
+/**
+ * The note that media files were listed but not opened, for the counts of one or more ZIP parts
+ * (by part number). One note holds the total, however many parts there are.
+ * @internal
+ */
+export function mediaNotOpenedIssue(partCounts: Record<number, number>): ExportIssue {
+  const total = Object.values(partCounts).reduce((n, c) => n + c, 0);
+  return {
+    ...issue("info", "media-not-opened", `Snappy listed ${total} media ${total === 1 ? "file" : "files"} by name and size only. It did not open ${total === 1 ? "it" : "them"}.`),
+    partCounts: { ...partCounts },
+  };
+}
+
+/**
+ * Replace every media-not-opened note in `issues` by one that adds the parts up (a part that is
+ * seen twice counts once). The note keeps the place of the first one. @internal
+ */
+export function combineMediaNotOpened(issues: ExportIssue[]): ExportIssue[] {
+  const counts: Record<number, number> = {};
+  let first = -1;
+  issues.forEach((i, at) => {
+    if (i.code !== "media-not-opened") return;
+    if (first < 0) first = at;
+    for (const [part, n] of Object.entries(i.partCounts ?? {})) counts[Number(part)] = Math.max(counts[Number(part)] ?? 0, n);
+  });
+  if (first < 0) return issues;
+  return issues.flatMap((i, at) => (i.code !== "media-not-opened" ? [i] : at === first ? [mediaNotOpenedIssue(counts)] : []));
 }
 
 /** @internal */
@@ -393,9 +423,7 @@ export function finishExport(
     pairingIssues.push(...r.issues);
   }
 
-  if (media.length > 0) {
-    issues.push(issue("info", "media-not-opened", `Snappy listed ${media.length} media ${media.length === 1 ? "file" : "files"} by name and size only. It did not open ${media.length === 1 ? "it" : "them"}.`));
-  }
+  if (media.length > 0) issues.push(mediaNotOpenedIssue({ [part]: media.length }));
   const fileList = capFileList(maskFileList(files.map((e) => e.path)), issues);
   // Last, so that mergeParsedExports can replace them by the notes for the whole export.
   issues.push(...pairingIssues);

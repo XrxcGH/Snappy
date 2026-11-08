@@ -65,6 +65,11 @@ export function failureClass(issues: readonly { code: string }[]): FailureClass 
   return undefined;
 }
 
+/** The issues a person should read: everything except the notes marked `hidden` (those are for the inspect report). */
+export function visibleIssues<T extends { hidden?: boolean }>(issues: readonly T[]): T[] {
+  return issues.filter((i) => i.hidden !== true);
+}
+
 function duplicateCount(list: FriendRecord[]): number {
   const seen = new Set<string>();
   let dupes = 0;

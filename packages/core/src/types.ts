@@ -144,6 +144,13 @@ export interface ExportIssue {
    * again with the matching option, which turns it into a warning). Absent on every other issue.
    */
   overridable?: boolean;
+  /** A note only the inspect report and the tests use: front ends leave it out of what the person reads. */
+  hidden?: boolean;
+  /**
+   * `media-not-opened` only: how many media files each ZIP part listed, by 1-based part number, so
+   * that merging parts adds them up once and merging a part again adds nothing.
+   */
+  partCounts?: Record<number, number>;
 }
 
 /**
