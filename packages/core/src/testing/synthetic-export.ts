@@ -86,6 +86,15 @@
  *    chat_media/ files; -2 and -3 with memories/; -2 also chat_media/ and shared_story/).
  *    syntheticExportZip and buildSyntheticExport give the same export as one archive/record.
  *  - every zip entry carries an extended UTC timestamp (0x5455), so exportedAt is exact.
+ *
+ * `storageShowcase: true` (with the realistic shape) makes the storage views worth looking at, for the
+ * built-in sample: every Memories file declares a plausible size (images 0.2 to 4 MB, videos 3 to 40 MB) in
+ * its zip directory entries, so the storage meter, the cap projection and the storage planner have real-looking
+ * numbers. The files hold only a few bytes: the declared size is written over the size fields of the local
+ * header and the directory entry, so such an archive lists and pairs like a big one but a file in it cannot be
+ * extracted. Archives only (syntheticExportZip and syntheticExportParts). Off by default: the plain realistic
+ * export keeps tiny files. No duplicates are added: with every link empty, as in the real list, two entries of
+ * the same second cannot be paired with files, so the planner has nothing to tell them apart by.
  */
 import { zipSync } from "fflate";
 import type { Zippable } from "fflate";
@@ -111,6 +120,12 @@ export interface SyntheticExportOptions {
    * UTC time, snap_history.json and Snap-only friends (see "realistic exports" above). Default false.
    */
   realisticMemories?: boolean;
+  /**
+   * With realisticMemories (or in the archives of syntheticExportParts): declared Memories file sizes of
+   * a few hundred KB to tens of MB, so the storage meter, the cap projection and the storage planner have
+   * something to show. Files cannot be extracted (see "realistic exports"). Default false.
+   */
+  storageShowcase?: boolean;
 }
 
 export interface SyntheticCanaries {
@@ -221,10 +236,40 @@ const EXTENDED_TIMESTAMP_ID = 0x5455;
 function zipOf(cfg: Config, files: [string, SynthFile][]): Uint8Array {
   const mtime = dosMtime(cfg);
   const zippable: Zippable = {};
+  const declared = new Map<string, number>();
   for (const [name, file] of files) {
     zippable[name] = [file.data, { mtime, level: 6, extra: { [EXTENDED_TIMESTAMP_ID]: extendedTimestamp(file.utc) } }];
+    if (file.declaredSize !== undefined) declared.set(name, file.declaredSize);
   }
-  return zipSync(zippable);
+  const zip = zipSync(zippable);
+  if (declared.size > 0) declareSizes(zip, declared);
+  return zip;
+}
+
+/**
+ * Overwrite the uncompressed size of the named entries, in the directory entry and in the local header, in place.
+ * Nothing else changes, so the archive lists, pairs and sizes the files as if they were that big. A size is never
+ * checked against the bytes until a file is extracted, which is why such a file cannot be.
+ */
+function declareSizes(zip: Uint8Array, sizes: ReadonlyMap<string, number>): void {
+  const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  const names = new TextDecoder();
+  // fflate writes no archive comment, so the end record is the last 22 bytes.
+  const end = zip.length - 22;
+  if (view.getUint32(end, true) !== 0x06054b50) throw new Error("synthetic export: unexpected zip end record");
+  const count = view.getUint16(end + 10, true);
+  let at = view.getUint32(end + 16, true);
+  for (let i = 0; i < count; i++) {
+    if (view.getUint32(at, true) !== 0x02014b50) throw new Error("synthetic export: unexpected zip directory entry");
+    const nameLength = view.getUint16(at + 28, true);
+    const name = names.decode(zip.subarray(at + 46, at + 46 + nameLength));
+    const size = sizes.get(name);
+    if (size !== undefined) {
+      view.setUint32(at + 24, size, true);
+      view.setUint32(view.getUint32(at + 42, true) + 22, size, true);
+    }
+    at += 46 + nameLength + view.getUint16(at + 30, true) + view.getUint16(at + 32, true);
+  }
 }
 
 /** The whole realistic export as one record (the parts' files side by side). */
@@ -245,6 +290,8 @@ interface Config {
   bundleMedia: boolean;
   /** The real 2026 export shape (see "realistic exports"). */
   realistic: boolean;
+  /** Declared file sizes (see "realistic exports"). */
+  storageShowcase: boolean;
   /** Phase 1 / phase 2 export times. All content is generated against these, never against the phase. */
   t1: number;
   t2: number;
@@ -270,6 +317,7 @@ function resolve(opts: SyntheticExportOptions | undefined): Config {
     memoryCount: count(opts.memoryCount, 400),
     bundleMedia: opts.bundleMedia === true,
     realistic: opts.realisticMemories === true,
+    storageShowcase: opts.storageShowcase === true,
     t1,
     t2,
     exportedAt: phase === 1 ? t1 : t2,
@@ -920,6 +968,8 @@ interface SynthFile {
   data: Uint8Array;
   /** UTC instant (epoch ms) written as the entry's extended timestamp. */
   utc: number;
+  /** Size written into the zip directory instead of the real one (see `storageShowcase`). */
+  declaredSize?: number;
 }
 
 interface SynthPart {
@@ -937,7 +987,12 @@ interface RealMemory {
   hasOverlay: boolean;
   /** Which memories zip holds the file: part 2 or 3. */
   part: 2 | 3;
+  /** Size the file declares in the zip directory; set only with `storageShowcase`. */
+  declaredSize?: number;
 }
+
+/** Declared size ranges in bytes (log-uniform), `storageShowcase` only. */
+const SHOWCASE_SIZE: Record<"Image" | "Video", [number, number]> = { Image: [200_000, 4_000_000], Video: [3_000_000, 40_000_000] };
 
 /** 1x1 transparent PNG: a stand-in for a caption overlay. */
 const PNG_1X1 = Uint8Array.from(
@@ -959,6 +1014,7 @@ function uuidFor(seed: number, i: number): string {
  */
 function buildRealisticMemories(cfg: Config): RealMemory[] {
   const rng = stream(cfg.seed, "memories-real");
+  const sizeRng = stream(cfg.seed, "memories-real-size");
   const FOUR_YEARS = 4 * 365 * DAY_MS;
   const used = new Set<number>();
   const items: RealMemory[] = [];
@@ -978,7 +1034,13 @@ function buildRealisticMemories(cfg: Config): RealMemory[] {
     json["Download Link"] = "";
     json["Media Download URL"] = "";
     const hasFile = file < 0.7;
-    items.push({ json, capture, uuid: uuidFor(cfg.seed, i), type, hasFile, hasOverlay: hasFile && over < 0.03, part: where < 0.85 ? 2 : 3 });
+    const memory: RealMemory = { json, capture, uuid: uuidFor(cfg.seed, i), type, hasFile, hasOverlay: hasFile && over < 0.03, part: where < 0.85 ? 2 : 3 };
+    if (cfg.storageShowcase) {
+      const [low, high] = SHOWCASE_SIZE[type];
+      const u = sizeRng();
+      if (hasFile) memory.declaredSize = Math.round(low * (high / low) ** u);
+    }
+    items.push(memory);
   }
   items.sort((a, b) => b.capture - a.capture);
   return items.filter((m) => m.capture <= cfg.exportedAt);
@@ -1032,7 +1094,9 @@ function buildParts(cfg: Config): SynthPart[] {
     for (const m of memories) {
       if (!m.hasFile || m.part !== part) continue;
       const stem = `memories/${fmt(m.capture).slice(0, 10)}_${m.uuid}`;
-      files[`${stem}-main.${m.type === "Video" ? "mp4" : "jpg"}`] = file(m.type === "Video" ? minimalMp4(m.uuid) : minimalJpeg(m.uuid), m.capture);
+      const entry = file(m.type === "Video" ? minimalMp4(m.uuid) : minimalJpeg(m.uuid), m.capture);
+      if (m.declaredSize !== undefined) entry.declaredSize = m.declaredSize;
+      files[`${stem}-main.${m.type === "Video" ? "mp4" : "jpg"}`] = entry;
       if (m.hasOverlay) files[`${stem}-overlay.png`] = file(PNG_1X1, m.capture);
     }
     return files;
