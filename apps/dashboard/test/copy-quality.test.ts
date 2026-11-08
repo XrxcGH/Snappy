@@ -65,7 +65,8 @@ const JOINERS = new Set(["common.stepPrefix()"]);
 /** Values that are never shown as written: a word joined to another, a file name, internal kind names. */
 // common.noFigure is a decorative dash that holds a tile's number row when there is nothing to count; it is not a sentence.
 // A tool's unit… keys are pieces its code joins into a sentence, noValue is a dash that holds an empty table cell, and a file name is a name.
-const NOT_SHOWN_AS_WRITTEN = /^(common\.confidenceSuffix|common\.noFigure|start\.dropAlt|cleanup\.csvFile|lists\.areas\.[a-z-]+\.csvFile|guide\.tickKinds\[\d+\]|toolcopy\.[a-z-]+\.(unit\w*|noValue))$/;
+// shellCopy.unitThen is the word between the two keys of a shortcut ("g then d"): the dialog draws it between two key caps, never alone.
+const NOT_SHOWN_AS_WRITTEN = /^(common\.confidenceSuffix|common\.noFigure|start\.dropAlt|cleanup\.csvFile|lists\.areas\.[a-z-]+\.csvFile|guide\.tickKinds\[\d+\]|shellCopy\.unitThen|toolcopy\.[a-z-]+\.(unit\w*|noValue))$/;
 
 const prose = entries.filter((e) => !CODE_PATHS.has(e.path));
 
