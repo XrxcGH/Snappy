@@ -70,5 +70,5 @@ export const copy = {
   starterTiedNote: (n: number): string => `${countOf(n, "exchange", "exchanges")} began with a sent and a received message at the same moment. Snappy cannot tell who wrote first.`,
   tooFewNote: (n: number): string => `${countOf(n, "chat", "chats")} ${has(n)} too few exchanges to judge. Snappy does not list ${them(n)}.`,
   unreliableNote: (n: number): string => `${countOf(n, "chat", "chats")} had too many exchanges with no known starter to judge.`,
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

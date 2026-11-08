@@ -47,5 +47,5 @@ export const copy = {
   idReplacedNote: (n: number) => `${countOf(n, "item", "items")} got a new id, since ${n === 1 ? "its id was" : "their ids were"} missing or repeated.`,
   futureNote: (n: number) => `${countOf(n, "date", "dates")} ${n === 1 ? "is" : "are"} in the future, so ${n === 1 ? "it counts" : "they count"} as missing.`,
   invalidNote: (n: number) => `${countOf(n, "date", "dates")} could not be used, so ${n === 1 ? "it counts" : "they count"} as missing.`,
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

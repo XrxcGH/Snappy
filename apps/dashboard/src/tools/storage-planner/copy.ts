@@ -93,5 +93,5 @@ export const copy = {
   futureNote: (n: number) => `${memoriesOf(n)} ${n === 1 ? "has" : "have"} a date in the future. Snappy treats ${n === 1 ? "it" : "them"} as undated.`,
   oversizeNote: (n: number) => `${memoriesOf(n)} ${n === 1 ? "is" : "are"} larger than a batch and ${n === 1 ? "gets" : "get"} ${n === 1 ? "a batch" : "batches"} alone.`,
   duplicatesNote: (n: number) => `Snappy left out ${countOf(n, "probable duplicate", "probable duplicates")} from these numbers.`,
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

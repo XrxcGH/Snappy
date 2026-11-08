@@ -101,5 +101,5 @@ export const copy = {
   zoneNote: "The time zone was moved to the nearest allowed one.",
   savedChatsNote: "Only saved chats are in the export, so chat counts may be lower than what you sent.",
   currentFriendsNote: "New friends counts people still on your list, so it may be lower than the real number.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

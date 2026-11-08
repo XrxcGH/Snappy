@@ -76,6 +76,13 @@ describe("the words of the nine pages", () => {
     expect(bare).toEqual([]);
   });
 
+  it("say one thing when Snappy cannot describe a note, and leave items out (skip is for files)", async () => {
+    const others = (await all()).filter((e) => /\.otherNote$/.test(e.id));
+    expect(others).toHaveLength(IDS.length);
+    for (const o of others) expect(o.text, o.id).toBe("Snappy found something it could not describe. The export check can say more.");
+    expect(await matching(/\bskipp?(ed|s|ing)?\b|\bignor|\bdropped\b/i)).toEqual([]);
+  });
+
   it("call the saved store the saved history: no snapshots, no switch to turn saving on", async () => {
     expect(await matching(/\bsnapshots?\b|turned saving on|saved data/i)).toEqual([]);
   });

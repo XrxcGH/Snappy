@@ -140,8 +140,8 @@ describe("the tool", () => {
   it("says a count of one in the singular in every note", () => {
     expect(copy.groupNote(1)).toBe("1 group chat event was left out.");
     expect(copy.groupNote(3)).toBe("3 group chat events were left out.");
-    expect(copy.unknownDirectionNote(1)).toBe("1 event does not say who wrote, so Snappy skipped it.");
-    expect(copy.unknownDirectionNote(4)).toBe("4 events do not say who wrote, so Snappy skipped them.");
+    expect(copy.unknownDirectionNote(1)).toBe("1 event does not say who wrote, so Snappy left it out.");
+    expect(copy.unknownDirectionNote(4)).toBe("4 events do not say who wrote, so Snappy left them out.");
     expect(copy.lateNote(1, 24)).toBe("1 change of sender took over 24 hours. Snappy treats it as a new chat, not a reply.");
     expect(copy.lateNote(2, 1)).toBe("2 changes of sender took over 1 hour. Snappy treats them as new chats, not replies.");
     expect(copy.sameTimeNote(1)).toBe("1 message pair shares one exact time, so Snappy cannot tell the order and left it out.");

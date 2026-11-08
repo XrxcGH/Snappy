@@ -62,5 +62,5 @@ export const copy = {
   tiedNote: (n: number): string => `${countOf(n, "chat", "chats")} ${has(n)} a sent and a received message at the same moment. Snappy cannot tell which came last.`,
   tooOldNote: (n: number, days: number): string => `${countOf(n, "chat", "chats")} ${has(n)} been quiet for over ${countOf(days, "day", "days")}. Snappy does not list ${them(n)}.`,
   unreliableNote: (n: number): string => `${countOf(n, "chat", "chats")} had too many messages with no known direction to judge.`,
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

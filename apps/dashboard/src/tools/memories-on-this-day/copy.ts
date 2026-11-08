@@ -69,5 +69,5 @@ export const copy = {
   windowNote: (days: number) => `The days either side were changed to ${formatCount(days)}.`,
   leapNote: (n: number) => `${countOf(n, "Memory", "Memories")} from Feb 29 ${n === 1 ? "is" : "are"} shown on Feb 28, since this year has no Feb 29.`,
   offsetInvalidNote: "That time zone is not valid, so Snappy used UTC.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

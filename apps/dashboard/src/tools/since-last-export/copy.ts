@@ -100,5 +100,5 @@ export const copy = {
   badMemoryDatesNote: (n: number) => `${countOf(n, "Memory", "Memories")} ${have(n)} no date or a date in the future. Snappy leaves ${they(n)} out of the new count.`,
   dateGuessedNote: "Your export has no date of its own, so Snappy used the time of this session. Counts may be off by a little.",
   exportErrorsNote: "Your export has errors, so friends may look as if they left. Run the export check for details.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 } as const;

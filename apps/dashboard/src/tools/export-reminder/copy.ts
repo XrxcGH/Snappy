@@ -49,7 +49,7 @@ export const copy = {
   clampedNote: "That day does not exist in the reminder month, so it falls on the last day of it.",
   passedNote: "Your next export may be due already, so the reminder is set for tomorrow.",
   passedNoDateNote: "The reminder date had already passed, so it is set for tomorrow.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 
   downloadLabel: "Save calendar file",
   downloadNote: "The calendar file holds no personal data.",

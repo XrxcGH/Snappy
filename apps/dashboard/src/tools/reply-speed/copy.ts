@@ -97,7 +97,7 @@ export const copy = {
   futureNote: (n: number): string => `${countOf(n, "event", "events")} ${n === 1 ? "is" : "are"} dated in the future. Snappy leaves ${them(n)} out.`,
   noPersonNote: (n: number): string => `${countOf(n, "event", "events")} had no person attached and ${was(n)} left out.`,
   groupNote: (n: number): string => `${countOf(n, "group chat event", "group chat events")} ${was(n)} left out.`,
-  unknownDirectionNote: (n: number): string => `${countOf(n, "event", "events")} ${n === 1 ? "does" : "do"} not say who wrote, so Snappy skipped ${them(n)}.`,
+  unknownDirectionNote: (n: number): string => `${countOf(n, "event", "events")} ${n === 1 ? "does" : "do"} not say who wrote, so Snappy left ${them(n)} out.`,
   notFriendsNote: (n: number): string => `${countOf(n, "person", "people")} outside your friends list ${was(n)} left out.`,
   lateNote: (n: number, hours: number): string =>
     `${countOf(n, "change of sender", "changes of sender")} took over ${hoursOf(hours)}. Snappy treats ${n === 1 ? "it as a new chat, not a reply" : "them as new chats, not replies"}.`,
@@ -105,7 +105,7 @@ export const copy = {
   belowMinNote: (n: number, min: number): string => `${countOf(n, "person", "people")} ${has(n)} replies, but fewer than ${formatCount(min)}. Snappy shows ${n === 1 ? "the count" : "the counts"} only.`,
   fewNote: (n: number): string => (n === 0 ? "One side has no replies, so the overall times may be off." : `One side has only ${countOf(n, "reply", "replies")}, so the overall times may be off.`),
   zoneNote: "The time zone was moved to the nearest allowed one.",
-  otherNote: "Snappy noted something it cannot describe here.",
+  otherNote: "Snappy found something it could not describe. The export check can say more.",
 
   downloadLabel: "Save CSV",
   downloadNote: "The file holds usernames and every friend row. Keep it private.",
