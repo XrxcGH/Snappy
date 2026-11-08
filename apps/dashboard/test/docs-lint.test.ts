@@ -56,6 +56,21 @@ describe.each(DOCS)("%s", (file) => {
 });
 
 /**
+ * American English and no pointers to a branch, in every written document. The dashboard's own copy has the same rule
+ * (copy.test.ts); the documents had none, and "tick box" and a branch name had both reached the beta text.
+ */
+describe.each([...DOCS, "CONTRIBUTING.md", "SECURITY.md", path.join("docs", "RELEASES.md"), path.join("docs", "BRAND.md")])("%s voice", (file) => {
+  const lines = prose(file);
+  const find = (re: RegExp): string[] => lines.filter((l) => re.test(l.text)).map((l) => `${file}:${l.n}: ${l.text.slice(0, 80)}`);
+
+  it("uses American words and names no branch", () => {
+    expect(find(/\b(un)?tick(s|ed|ing)?\b/i)).toEqual([]);
+    expect(find(/\b(colour|behaviour|organis|centre|favourite|licence)\w*/i)).toEqual([]);
+    expect(find(/\bbranch\s+(feat|fix|wip)\//i)).toEqual([]);
+  });
+});
+
+/**
  * The network claims. Beta 2 added the update check, so a sentence that says there is one network use, only one, or
  * none must name it, in every document and string a person reads. A claim that stays true for the command line
  * tool alone has to say so.
