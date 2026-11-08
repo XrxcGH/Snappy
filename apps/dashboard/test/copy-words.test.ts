@@ -41,6 +41,56 @@ describe("Start page words", () => {
   });
 });
 
+describe("numbers", () => {
+  /** Functions whose number is a label, not a count of things: a step, an exit code, a size limit in megabytes. */
+  const LABELS = new Set(["common.stepPrefix", "terminal.codeLabel", "terminal.doneAnnounce", "terminal.confirmFolderBody"]);
+  /** A function that writes back a name it was given (a username, a version) is not counting anything. */
+  const echoesNames = (fn: (...a: unknown[]) => unknown): boolean => {
+    try {
+      return String(fn("ZQXJ", "ZQXJ", "ZQXJ")).includes("ZQXJ");
+    } catch {
+      return false;
+    }
+  };
+
+  it("writes every count a copy function receives with thousands separators: 1,234, never 1234", () => {
+    const bad: string[] = [];
+    for (const [group, value] of Object.entries(copy)) {
+      if (!value || typeof value !== "object") continue;
+      for (const [key, fn] of Object.entries(value)) {
+        if (typeof fn !== "function" || LABELS.has(`${group}.${key}`) || echoesNames(fn as (...a: unknown[]) => unknown)) continue;
+        for (const args of [[1234], [1234, 5678], [1234, 5678, 4321]]) {
+          let out: unknown;
+          try {
+            out = (fn as (...a: unknown[]) => unknown)(...args);
+          } catch {
+            continue;
+          }
+          if (typeof out === "string" && /(?<![\d,.])\d{4,}(?!\d)/.test(out)) bad.push(`${group}.${key}(${args.join(", ")}): ${out}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("groups the counts that were written raw", () => {
+    expect(copy.common.showMore(1234)).toBe("Show 1,234 more");
+    expect(copy.cleanup.summary(1234, 5678)).toBe("1,234 of 5,678 people match");
+    expect(copy.cleanup.protectedHeading(1234)).toBe("Protected (1,234)");
+    expect(copy.cleanup.progressText(1234, 5678)).toBe("1,234 of 5,678 done");
+    expect(copy.terminal.filesChosen(1234)).toBe("1,234 files chosen");
+    expect(copy.terminal.outMore(1234)).toBe("Plus 1,234 more");
+    expect(copy.terminal.outCount(1234, "2 MB")).toBe("1,234 files, 2 MB");
+    expect(copy.start.skippedFiles(1234)).toMatch(/^1,234 files were skipped/);
+  });
+
+  it("keeps plain zeros and the singular", () => {
+    expect(copy.cleanup.progressText(0, 0)).toBe("0 of 0 done");
+    expect(copy.terminal.filesChosen(1)).toBe("1 file chosen");
+    expect(copy.terminal.outCount(1, "1 KB")).toBe("1 file, 1 KB");
+  });
+});
+
 describe("Save, not download", () => {
   it("names the tool frame's file section and its confirmation with the same verb", () => {
     expect(copy.tools.downloadHeading).toBe("Save a file");

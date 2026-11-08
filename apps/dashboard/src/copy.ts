@@ -14,7 +14,7 @@
  * used where a person reads: a developer word goes under "Technical details" (test/copy-words.test.ts).
  */
 import type { CandidateCategory, Confidence } from "@snappy-export/core";
-import { countOf } from "./format.ts";
+import { countOf, formatCount } from "./format.ts";
 import { platform } from "./platform.ts";
 
 /**
@@ -96,7 +96,7 @@ export const common = {
   openInSnapchat: "Open profile",
   // Starts with the visible label, so voice control ("click Open profile") still matches.
   openInSnapchatFor: (u: string) => `Open profile: ${u} (opens Snapchat in a new tab)`,
-  showMore: (n: number) => `Show ${n} more`,
+  showMore: (n: number) => `Show ${formatCount(n)} more`,
   /** The name of a table that scrolls sideways, read by a screen reader when the table takes focus. */
   scrollTableFor: (caption: string) => `${caption}, scrolls sideways`,
   showing: (shown: string, total: string) => `Showing ${shown} of ${total}`,
@@ -172,12 +172,12 @@ export const start = {
   reading: (step: number, steps: number, fraction?: number | null) => {
     const done = fraction === undefined || fraction === null ? "" : `, ${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}% done`;
     if (steps <= 1) return `Reading your export${done}`;
-    return step >= steps ? "Putting the parts together" : `Part ${step + 1} of ${steps}: reading${done}`;
+    return step >= steps ? "Putting the parts together" : `Part ${formatCount(step + 1)} of ${formatCount(steps)}: reading${done}`;
   },
-  readingSample: (step: number, steps: number) => `Building sample export ${Math.min(step + 1, steps)} of ${steps}`,
+  readingSample: (step: number, steps: number) => `Building sample export ${formatCount(Math.min(step + 1, steps))} of ${formatCount(steps)}`,
   progressLabel: "Reading progress",
   readingPercent: (fraction: number) => `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}% done`,
-  skippedFiles: (n: number) => `${n === 1 ? "1 file was skipped because it is not a ZIP file." : `${n} files were skipped because they are not ZIP files.`} Your results may be incomplete.`,
+  skippedFiles: (n: number) => `${n === 1 ? "1 file was skipped because it is not a ZIP file." : `${formatCount(n)} files were skipped because they are not ZIP files.`} Your results may be incomplete.`,
   laterPartsOnly: "These are the numbered parts, which hold photos and videos. Add the file that has no number at the end of its name.",
   // An unzipped export (a folder, or JSON files) instead of the ZIP files. The Mac tip is a second line because Safari does the unzipping.
   unzipped: "This looks like an unzipped export. Choose the ZIP files instead.",
@@ -357,7 +357,7 @@ export const cleanup = {
   modeLabel: "View",
   modeReview: "Review",
   modeGuided: "Guided removal",
-  summary: (shown: number, total: number) => (shown === total ? `${countOf(total, "person", "people")} to review` : `${shown} of ${countOf(total, "person", "people")} match`),
+  summary: (shown: number, total: number) => (shown === total ? `${countOf(total, "person", "people")} to review` : `${formatCount(shown)} of ${countOf(total, "person", "people")} match`),
   noMatch: "No one matches. Change a filter to see more.",
   saveList: "Save list",
   copyList: "Copy list",
@@ -365,7 +365,7 @@ export const cleanup = {
   listSaved: "List saved.",
   listCopied: "List copied.",
   saveFailed: "Snappy could not save a file here. Use Copy list instead.",
-  protectedHeading: (n: number) => `Protected (${n})`,
+  protectedHeading: (n: number) => `Protected (${formatCount(n)})`,
   protectedBody: "Snappy leaves these people out of the list above.",
   guidedLabel: "Guided removal",
   guidedNote: "Go one person at a time. Open each profile, remove them in Snapchat if you want, then mark Done.",
@@ -373,7 +373,7 @@ export const cleanup = {
   doneFor: (u: string) => `Done with ${u}`,
   doneAnnounce: (u: string, done: boolean, progress: string) => `${u} marked ${done ? "done" : "not done"}. ${progress}.`,
   progressLabel: "Progress",
-  progressText: (done: number, total: number) => `${done} of ${total} done`,
+  progressText: (done: number, total: number) => `${formatCount(done)} of ${formatCount(total)} done`,
   clearChecks: "Clear checkmarks",
   checksCleared: "Checkmarks cleared.",
   removalWarning: "Removing a friend cannot be undone. They must accept a new request, and any streak ends.",
@@ -678,7 +678,7 @@ export const terminal = {
   saveFileFor: (name: string) => `Save ${name}`,
   panelLabelFor: (title: string) => `Output of ${lowerFirst(title)}`,
   logLabel: "Command output",
-  filesChosen: (n: number) => (n === 1 ? "1 file chosen" : `${n} files chosen`),
+  filesChosen: (n: number) => (n === 1 ? "1 file chosen" : `${formatCount(n)} files chosen`),
   /** Why Run cannot start yet, or at all. */
   needsFileHint: "Choose your export first.",
   busyHint: "Another command is running.",
@@ -727,8 +727,8 @@ export const terminal = {
   trimmed: "Earlier output removed.",
   /** The virtual output folder. */
   outHeading: "Saved files",
-  outCount: (files: number, size: string) => `${files === 1 ? "1 file" : `${files} files`}, ${size}`,
-  outMore: (n: number) => `Plus ${n} more`,
+  outCount: (files: number, size: string) => `${files === 1 ? "1 file" : `${formatCount(files)} files`}, ${size}`,
+  outMore: (n: number) => `Plus ${formatCount(n)} more`,
   outLostNote: "Stopping keeps the files already written. If the helper has to be cut off, they are lost.",
   outTooBigNote: "That is too much for one .zip. Save the files one by one.",
   outSavedAnnounce: "File saved.",
