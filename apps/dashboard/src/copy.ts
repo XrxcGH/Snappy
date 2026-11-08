@@ -115,7 +115,7 @@ export const common = {
     low: "Weak signal. Check before acting.",
   } satisfies Record<Confidence, string>,
   /** Read aloud before a notice. Never shown, because the icon already says the kind. */
-  noticeLabels: { error: "Error", warning: "Warning", info: "Note", success: "Done" },
+  noticeLabels: { error: "Error", warning: "Warning", info: "Note", success: "OK" },
   details: "Details",
   code: "Code",
   protectedLabel: "Protected",
@@ -155,7 +155,7 @@ export const start = {
   exportHeading: "Get your export from Snapchat",
   exportBody: "In Snapchat, open Settings, then My Data, and request your data. Snapchat prepares it, which can take a while, and emails you a link.",
   exportPoints: [
-    "Select JSON files and User information.",
+    "Select “Export JSON files” and “User information”.",
     "Set the date range to “All Time”.",
     "Chat and Snap history is optional. It lets Snappy find quiet friends.",
   ],
@@ -260,7 +260,7 @@ export const tools = {
   groups: { "your-export": "Your export", friends: "Friends", chats: "Chats", memories: "Memories", checklists: "Checklists" },
   open: "Open",
   statusReady: "Ready",
-  statusNeeds: { export: "Needs an export", friends: "Needs a friends list", chats: "Needs chat history", memories: "Needs a Memories list" },
+  statusNeeds: { export: "Needs an export", friends: "Needs a friends list", chats: "Needs chat or Snap history", memories: "Needs a Memories list" },
   backLink: "Back to tools",
   readsHeading: "What this reads",
   readsNever: "It never reads message text, media, locations, display names, or login history.",
@@ -341,7 +341,7 @@ export const quiet = {
 
 export const cleanup = {
   title: routes.cleanup.title,
-  lead: "Everyone Snappy found, in one list. Keep anyone who should stay, and remove only people you choose.",
+  lead: "Everyone Snappy found, in one list. Keep anyone who should stay, and remove people yourself in Snapchat.",
   protectedByChats: "Anyone you chatted with or sent a Snap to in the last 30 days is protected.",
   noChatProtection: (fromLedger: boolean) =>
     `${fromLedger ? "Chat history is not saved" : "This export has no chat history"}, so Snappy cannot protect recent chats. Check Snapchat before you remove anyone.`,
@@ -376,7 +376,7 @@ export const cleanup = {
   progressText: (done: number, total: number) => `${formatCount(done)} of ${formatCount(total)} done`,
   clearChecks: "Clear checkmarks",
   checksCleared: "Checkmarks cleared.",
-  removalWarning: "Removing a friend cannot be undone. They must accept a new request, and any streak ends.",
+  removalWarning: "Removing a friend in Snapchat cannot be undone. They must accept a new request, and any streak ends.",
   csvHeader: ["Username", "Category", "Confidence", "Why", "Profile link"],
   csvFile: "snappy-cleanup-list.csv",
 };
@@ -426,7 +426,7 @@ export const memories = {
   pairingTodoHeading: "What you can do",
   pairingTodo: "Save the missing Memories from the Snapchat app, or request a new export and add every part.",
   pairingNone: "No Memories files were found in your ZIP files. Add every part of your export together.",
-  pairingLinksEmpty: "This export has no download links. Snapchat now puts the files inside the ZIP parts.",
+  pairingLinksEmpty: "This export has no download links. Newer exports hold the files inside the ZIP parts.",
   rescueHeading: "Rescue your files",
   rescueBody: "Memories rescue copies your Memories into year and month folders, with dates restored. It runs in the Snappy command line tool, a separate download.",
   get rescueCommandLabel(): string {

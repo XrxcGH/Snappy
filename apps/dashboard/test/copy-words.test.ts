@@ -42,6 +42,47 @@ describe("Start page words", () => {
   });
 });
 
+describe("the Cleanup queue lead", () => {
+  it("says the person removes people, in Snapchat, so it cannot read as Snappy removing anyone", () => {
+    expect(copy.cleanup.lead).toBe("Everyone Snappy found, in one list. Keep anyone who should stay, and remove people yourself in Snapchat.");
+    expect(copy.cleanup.lead).not.toMatch(/remove only people you choose/);
+    expect(copy.cleanup.removalWarning).toMatch(/^Removing a friend in Snapchat cannot be undone\./);
+  });
+});
+
+describe("Snapchat's option names", () => {
+  it("quotes the exact option names on Start, the way the guide table writes them", () => {
+    const [first, second] = copy.start.exportPoints;
+    const names = copy.guide.rows.map(([name]) => name);
+    expect(first).toBe("Select “Export JSON files” and “User information”.");
+    expect(second).toBe("Set the date range to “All Time”.");
+    for (const name of ["Export JSON files", "User information"]) {
+      expect(names).toContain(name);
+      expect(first).toContain(`“${name}”`);
+    }
+    expect(copy.guide.rangeHeading).toBe("Choose the “All Time” range");
+  });
+
+  it("asks for chat or Snap history in the same words on the Overview and the Tools hub", () => {
+    expect(copy.tools.statusNeeds.chats).toBe(copy.overview.needsChats);
+    expect(copy.tools.statusNeeds.chats).toBe("Needs chat or Snap history");
+  });
+});
+
+describe("claims about Snapchat's own behavior", () => {
+  it("says newer exports hold the files in the ZIP parts, not that Snapchat now does", () => {
+    expect(copy.memories.pairingLinksEmpty).toBe("This export has no download links. Newer exports hold the files inside the ZIP parts.");
+    expect(hits(/\bSnapchat now (puts|holds|keeps|includes|stores)\b|\bnow puts\b/i)).toEqual([]);
+  });
+});
+
+describe("the label read before a success notice", () => {
+  it("says OK, not Done, so a screen reader does not announce Done before a statement", () => {
+    expect(copy.common.noticeLabels.success).toBe("OK");
+    expect(copy.common.noticeLabels).toEqual({ error: "Error", warning: "Warning", info: "Note", success: "OK" });
+  });
+});
+
 describe("no developer words where a person reads", () => {
   it("says command, tool and background work, not helper, worker or virtual folder", () => {
     expect(hits(/\bhelpers?\b|virtual folder/i)).toEqual([]);

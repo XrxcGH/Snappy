@@ -146,6 +146,41 @@ describe("what the update check can and cannot say about itself", () => {
   });
 });
 
+describe("the README's counts and option names", () => {
+  const NUMBERS: Record<string, number> = { eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20 };
+  const word = (text: string): number => {
+    const [tens, ones] = text.toLowerCase().split("-");
+    return ones === undefined ? (NUMBERS[tens!] ?? NaN) : (NUMBERS[tens!] ?? { twenty: 20, thirty: 30 }[tens!] ?? NaN) + ({ one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 }[ones] ?? NaN);
+  };
+  const body = (file: string): string => prose(file).map((l) => l.raw).join("\n");
+
+  it("says as many more commands as the command line has outside the seven it lists first", async () => {
+    const { COMMAND_NAMES } = await import("../../cli/src/cli.ts");
+    const FIRST_SEVEN = ["analyze", "memories", "inspect", "keep", "unkeep", "history", "demo"];
+    for (const name of FIRST_SEVEN) expect(COMMAND_NAMES, name).toContain(name);
+    const more = COMMAND_NAMES.length - FIRST_SEVEN.length;
+    const readme = /\b(Twenty-two|Twenty-one|Twenty-three|Twenty|Twenty-four)\s+more commands/.exec(body("README.md"))?.[1] ?? "";
+    const cli = /These ((?:twenty|thirty)(?:-[a-z]+)?)\s+commands/i.exec(body(path.join("apps", "cli", "README.md")))?.[1] ?? "";
+    expect(word(readme), `README says ${readme}`).toBe(more);
+    expect(word(cli), `CLI README says ${cli}`).toBe(more);
+  });
+
+  it("says as many tools as the Tools page lists", async () => {
+    const { TOOLS } = await import("../src/tools/registry.ts");
+    const said = /\b(Twenty-two|Twenty-one|Twenty-three|Twenty)\s+small tools\b/.exec(body("README.md"))?.[1] ?? "";
+    expect(word(said), `README says ${said}`).toBe(TOOLS.length);
+  });
+
+  it("does not double a verb before a button name (choose Choose ZIP files)", () => {
+    expect(body("README.md")).not.toMatch(/(choose|select) (Choose|Select)/i);
+  });
+
+  it("quotes Snapchat’s option names the way the app does", () => {
+    expect(body("README.md")).toMatch(/Select “Export JSON files” and “User information”, and choose “All Time” as the date range/);
+    expect(body(path.join("docs", "EXPORT-GUIDE.md"))).toMatch(/\*\*Date range: “All Time”\*\*/);
+  });
+});
+
 describe("the command line tool, for people who installed the app", () => {
   const text = (file: string): string => prose(file).map((l) => l.raw).join("\n");
 

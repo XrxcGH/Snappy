@@ -14,7 +14,7 @@ Snappy only reads **your own** official “Download My Data” export, on your o
 | 4. Chat and Snap history | Optional | Snappy uses it only as metadata: who, direction, type, and time. It protects friends you chat or Snap with and helps spot quiet ones. Many friends only exchange Snaps, so Snap history matters as much as chats. Message text is never read or kept. If you leave it off, you lose that protection. |
 | 5 to 13 (Spotlight, Shopping, Support, Ranking and location, Other media, Other, My AI, shared stories, chat media) | No | Not used. Leaving them off keeps less sensitive data in the ZIP file. |
 
-**Date range: All Time** for everything. A shorter range might cut older friends out of the list, which would make them look like people who may have removed you. Use the same range every time you export so exports can be compared.
+**Date range: “All Time”** for everything. A shorter range might cut older friends out of the list, which would make them look like people who may have removed you. Use the same range every time you export so exports can be compared.
 
 ## After you request it
 

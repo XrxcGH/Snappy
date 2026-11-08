@@ -63,7 +63,7 @@ The current build is **Windows beta 2** (`0.1.0-beta.2`). It is unsigned, so Win
 
 ### 2. Get your export
 
-Request your data in Snapchat under Settings, then My Data. Select JSON files and User information, and choose All Time as the date range. The full steps are in [docs/EXPORT-GUIDE.md](docs/EXPORT-GUIDE.md).
+Request your data in Snapchat under Settings, then My Data. Select “Export JSON files” and “User information”, and choose “All Time” as the date range. The full steps are in [docs/EXPORT-GUIDE.md](docs/EXPORT-GUIDE.md).
 
 ### 3. Use the app
 
