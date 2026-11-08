@@ -52,7 +52,7 @@ describe("the checklist", () => {
     expect(root.querySelectorAll(".mark-item .caption").map((c) => c.textContent)).toEqual(["Found in Settings."]);
     expect(root.querySelectorAll(".mark-block .caption").map((c) => c.textContent)).toEqual(["Found in Settings."]);
     expect(root.querySelectorAll(".mark-block .mark-note").map((c) => c.textContent)).toEqual([tools.markNote]);
-    expect(tools.markNote).toMatch(/your own word/);
+    expect(tools.markNote).toMatch(/cannot check your marks/);
     expect(root.textContent).not.toMatch(/verified|confirmed|checked for you|secure/i);
     for (const b of boxes(root)) expect(b.getAttribute("type")).toBe("checkbox");
   });

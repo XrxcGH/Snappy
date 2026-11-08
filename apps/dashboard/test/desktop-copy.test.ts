@@ -73,7 +73,7 @@ const DIFFERENCES: readonly (readonly [path: string, web: string, desktop: strin
     "Three open fonts and one MIT library. License files are in the licenses folder that comes with Snappy.",
     "Three open fonts and one MIT library. Open a name below to read its license.",
   ],
-  ["start.sessionOnlyBody", "Closing this tab clears your results. To keep your history, seal it with a passphrase in Settings.", "Closing Snappy clears your results. To keep your history, seal it with a passphrase in Settings."],
+  ["start.sessionOnlyBody", "Closing this tab clears your results. To keep your history, save it with a passphrase in Settings.", "Closing Snappy clears your results. To keep your history, save it with a passphrase in Settings."],
   ["tools.failedNote", "Snappy could not finish this. Reload the page and try again.", "Snappy could not finish this. Restart Snappy and try again."],
   ["tools.downloadFailedNote", "Snappy could not save the file. Your browser may block downloads.", "Snappy could not save the file. Try again."],
   [
@@ -94,17 +94,17 @@ const DIFFERENCES: readonly (readonly [path: string, web: string, desktop: strin
     "With a passphrase, Snappy saves your friend history, keep list, and checklist marks on this device, encrypted.",
   ],
   ["privacy.sealBody[3]", "A passphrase typed into a command here is kept in memory only until the page closes.", "A passphrase typed into a command here is kept in memory only until you close Snappy."],
-  ["privacy.themeNote", "Your theme choice is remembered in this browser, apart from your history.", "Your theme choice is remembered on this device, apart from your history."],
-  ["settings.themeNote", "Your theme choice is remembered in this browser, apart from your history.", "Your theme choice is remembered on this device, apart from your history."],
+  ["privacy.themeNote", "Your theme choice is remembered in this browser, apart from your saved history.", "Your theme choice is remembered on this device, apart from your saved history."],
+  ["settings.themeNote", "Your theme choice is remembered in this browser, apart from your saved history.", "Your theme choice is remembered on this device, apart from your saved history."],
   ["settings.storageSession", "Your results are not saved. Closing this tab clears them.", "Your results are not saved. Closing Snappy clears them."],
   ["settings.storageUnsupported", "This browser does not allow saving. Your results last only while this tab is open.", "Saving is not available here. Your results last only while Snappy is open."],
-  ["settings.deleteFailed", "Snappy could not delete the saved data. Close other Snappy tabs and try again.", "Snappy could not delete the saved data. Close other Snappy windows and try again."],
+  ["settings.deleteFailed", "Snappy could not delete the saved history. Close other Snappy tabs and try again.", "Snappy could not delete the saved history. Close other Snappy windows and try again."],
   ["vaultMessages.storageUnavailable", "This browser does not allow saving, so Snappy is in session-only mode.", "Saving is not available here, so Snappy is in session-only mode."],
   ["vaultMessages.saveFailed", "Snappy could not save. Your results are on screen, but closing this tab clears them.", "Snappy could not save. Your results are on screen, but closing Snappy clears them."],
   [
     "vaultMessages.savedElsewhere",
-    "Saved data already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
-    "Saved data already exists here, maybe from another window. Unlock it first, or delete it in Settings.",
+    "Saved history already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
+    "Saved history already exists here, maybe from another window. Unlock it first, or delete it in Settings.",
   ],
   ["terminal.noWorkerNote", "This browser cannot run commands here.", "This window cannot run commands here."],
   [
@@ -141,7 +141,7 @@ describe("desktop wording versus web wording", () => {
     setPlatform({});
     expect(platform()).toEqual({});
     expect(copy.start.trustChips[2]).toBe("Works without internet");
-    expect(copy.themeNote).toBe("Your theme choice is remembered in this browser, apart from your history.");
+    expect(copy.themeNote).toBe("Your theme choice is remembered in this browser, apart from your saved history.");
   });
 
   it("passes the same writing rules as the rest of the interface", () => {

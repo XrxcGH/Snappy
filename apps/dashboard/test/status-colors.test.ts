@@ -58,7 +58,7 @@ describe("what the copy says about saving", () => {
     expect(copy.settings.themeNote).toBe(copy.themeNote);
     expect(copy.privacy.themeNote).toBe(copy.themeNote);
     expect(copy.themeNote).toMatch(/remembered in this browser/);
-    expect(copy.themeNote).toMatch(/apart from your history/);
+    expect(copy.themeNote).toMatch(/apart from your saved history/);
   });
 
   it("says that results are not saved, in the same words, on Start and in Settings", () => {

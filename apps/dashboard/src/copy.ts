@@ -9,7 +9,9 @@
  * samples.
  *
  * Words used for one thing each: "keep list" (people you chose to keep), "saved history" (what a
- * passphrase seals), "seal" (the action), "lock" (close the saved history for now), "this device".
+ * passphrase protects: the past exports, the keep list and the marks), "save" (the action), "lock" (close the
+ * saved history for now), "this device". "Seal", "sealed", "saved data", "snapshot" and "turned saving on" are not
+ * used where a person reads: a developer word goes under "Technical details" (test/copy-words.test.ts).
  */
 import type { CandidateCategory, Confidence } from "@snappy-export/core";
 import { countOf } from "./format.ts";
@@ -35,10 +37,10 @@ export const brand = {
 
 /**
  * The one sentence about the theme choice, shown on Settings and on Privacy. It says exactly where the choice
- * lives: one setting in this browser, kept apart from your history (which is sealed and encrypted).
+ * lives: one setting in this browser, kept apart from your saved history (which is encrypted).
  */
-export const themeNote = "Your theme choice is remembered in this browser, apart from your history.";
-const desktopThemeNote = "Your theme choice is remembered on this device, apart from your history.";
+export const themeNote = "Your theme choice is remembered in this browser, apart from your saved history.";
+const desktopThemeNote = "Your theme choice is remembered on this device, apart from your saved history.";
 
 export interface RouteCopy {
   /** Nav label. One line in the sidebar and the phone menu. */
@@ -73,7 +75,7 @@ export const shell = {
   clearSample: "Clear sample data",
   clearSampleShort: "Clear",
   sampleCleared: "Sample data cleared.",
-  sealedOn: "Sealed history on",
+  sealedOn: "History saved",
   lockNow: "Lock now",
   lockedShort: "Locked.",
   /** Shown in the footer of an installed beta only, so a bug report can name the build. */
@@ -182,7 +184,7 @@ export const start = {
   unzippedMacTip: "On a Mac, turn off “Open safe files after downloading” in Safari’s settings, then download again.",
   readDone: "Export read. Opening your overview.",
   readDoneShort: "Export read.",
-  notAdded: "This export has no friends list, so it was not added to your history.",
+  notAdded: "This export has no friends list, so it was not added to your saved history.",
   rejected: "Snappy did not use this export because it looks incomplete. Check the notes below, then download it again.",
   notZip: "Snappy can only read ZIP files. Choose the ZIP files from your Snapchat export.",
   readFailed: "Snappy could not read these files. Check that every part finished downloading, then try again.",
@@ -197,16 +199,16 @@ export const start = {
   sampleButton: "Use sample data",
   sampleLoaded: "Sample data loaded. Opening your overview.",
   unlockHeading: "Unlock your saved history",
-  unlockBody: "Your saved history is sealed with a passphrase. Enter it to compare new exports with old ones.",
+  unlockBody: "Your saved history is locked with a passphrase. Enter it to compare new exports with old ones.",
   unlockButton: "Unlock",
   unlocking: "Unlocking",
-  unlockedAnnounce: "Saved data unlocked.",
-  unlockSkip: "You can add an export without unlocking. Snappy merges it with your history when you unlock.",
+  unlockedAnnounce: "Saved history unlocked.",
+  unlockSkip: "You can add an export without unlocking. Snappy merges it with your saved history when you unlock.",
   sessionOnlyTitle: "Results not saved",
   get sessionOnlyBody(): string {
     return onDesktop(
-      "Closing this tab clears your results. To keep your history, seal it with a passphrase in Settings.",
-      "Closing Snappy clears your results. To keep your history, seal it with a passphrase in Settings.",
+      "Closing this tab clears your results. To keep your history, save it with a passphrase in Settings.",
+      "Closing Snappy clears your results. To keep your history, save it with a passphrase in Settings.",
     );
   },
   sessionOnlyAction: "Set passphrase",
@@ -269,7 +271,7 @@ export const tools = {
   notesHeading: "Notes",
   commandHeading: "Run it as a command",
   downloadHeading: "Download",
-  markNote: "Marks are your own word, and Snappy cannot check them. They are saved only if you turned saving on, and otherwise last this session.",
+  markNote: "Snappy cannot check your marks. They are kept only if you save your history with a passphrase.",
   markAnnounce: (label: string, on: boolean) => `${label}: marked ${on ? "done" : "not done"}.`,
   downloadSaved: "File saved.",
   get downloadFailedNote(): string {
@@ -295,7 +297,7 @@ export const disappeared = {
   lead: "Friends from an earlier export who are missing from your latest one. You did not remove them.",
   inference: "Snapchat gives no signal when someone removes you, so Snappy infers it. A deleted or renamed account looks the same.",
   noExportTitle: "No export yet",
-  noExportBody: "Add your export to start your history. Add another in a few weeks, and Snappy compares the two.",
+  noExportBody: "Add your export to start your saved history. Add another in a few weeks, and Snappy compares the two.",
   needTwoTitle: "Add another export later to compare",
   needTwoBody: "You need two exports to compare. In a few weeks, request another with the same date range.",
   needTwoKeep: "To keep this export, set a passphrase in Settings.",
@@ -328,7 +330,7 @@ export const quiet = {
   inference: "Snappy counts saved chats and Snap history. You may have kept in touch in ways it cannot see.",
   noChatsTitle: "Needs chat or Snap history",
   noChatsBody: "Your export has no chat or Snap history. Request it again with Chat and Snap history selected.",
-  noChatsLedger: "Chat and Snap history is not saved with your history. Add an export that includes it.",
+  noChatsLedger: "Chat and Snap history is not in your saved history. Add an export that includes it.",
   emptyTitle: "No quiet friends found",
   emptyBody: "Snappy found none. Everyone seems to have had a chat or Snap in the last six months.",
   noExportTitle: "No export yet",
@@ -386,7 +388,7 @@ export const memories = {
   emptyTitle: "No Memories in this export",
   emptyBody: "When you request your data, select “Export your Memories”. Then add the export here.",
   noExportBody: "Add your export to see your Memories and storage.",
-  ledgerOnly: "Memories are not saved with your history. Add an export to see them.",
+  ledgerOnly: "Memories are not part of your saved history. Add an export to see them.",
   countsHeading: "Counts",
   total: "Memories",
   images: "Photos",
@@ -464,7 +466,7 @@ export const guide = {
     return onDesktop("Press Run to try a command here, or copy it into a terminal with the command line tool.", "Press Run to try a command here. Copy is for the separate command line tool.");
   },
   storingHeading: "Saved history",
-  storingBody: "Snappy can keep past friend lists to spot who disappeared. They hold usernames, so seal them with a passphrase.",
+  storingBody: "Snappy can keep past friend lists to spot who disappeared. They hold usernames, so Snappy protects them with a passphrase you choose.",
   addLink: "Add export",
   tickKinds: ["yes", "yes", "yes", "optional", "no"] as const,
 };
@@ -516,7 +518,7 @@ export const privacy = {
   networkDetail: "To check, open your browser’s developer tools. The network tab stays empty.",
   policyLabel: "Security policy in this page",
   policyWorker: "Background helpers start under the worker-src blob: rule. If blocked, Snappy reads on the page instead, and Run is unavailable.",
-  sealHeading: "Saved data",
+  sealHeading: "Saved history",
   get sealBody(): readonly string[] {
     return [
       onDesktop("By default Snappy keeps your results in memory only. Closing the tab clears them.", "By default Snappy keeps your results in memory only. Closing Snappy clears them."),
@@ -524,12 +526,12 @@ export const privacy = {
         "With a passphrase, Snappy saves your friend history, keep list, and checklist marks in this browser, encrypted.",
         "With a passphrase, Snappy saves your friend history, keep list, and checklist marks on this device, encrypted.",
       ),
-      "Snappy never stores your passphrase. If you forget it, the saved data cannot be recovered.",
+      "Snappy never stores your passphrase. If you forget it, the saved history cannot be recovered.",
       onDesktop("A passphrase typed into a command here is kept in memory only until the page closes.", "A passphrase typed into a command here is kept in memory only until you close Snappy."),
     ];
   },
   sealTech: "The passphrase becomes a key with PBKDF2 (600,000 rounds). The data is sealed with AES-256-GCM.",
-  keepHeading: "What the saved data holds",
+  keepHeading: "What your saved history holds",
   keepBody: "Usernames, dates, your keep list, your guided-removal checkmarks, and your checklist marks. Nothing else from your export.",
   get themeNote(): string {
     return onDesktop(themeNote, desktopThemeNote);
@@ -543,38 +545,38 @@ export const settings = {
   get themeNote(): string {
     return onDesktop(themeNote, desktopThemeNote);
   },
-  storageHeading: "Saved data",
+  storageHeading: "Saved history",
   get storageSession(): string {
     return onDesktop("Your results are not saved. Closing this tab clears them.", "Your results are not saved. Closing Snappy clears them.");
   },
-  storageLocked: "Your saved history is sealed. Unlock it on the Start page.",
+  storageLocked: "Your saved history is locked. Unlock it on the Start page.",
   storageUnlocked: "Snappy does not store your passphrase.",
   get storageUnsupported(): string {
     return onDesktop("This browser does not allow saving. Your results last only while this tab is open.", "Saving is not available here. Your results last only while Snappy is open.");
   },
   passphraseLabel: "Passphrase",
   confirmLabel: "Repeat passphrase",
-  passphraseHelp: "Use 12 or more characters. If you forget it, your saved data cannot be recovered.",
+  passphraseHelp: "Use 12 or more characters. If you forget it, your saved history cannot be recovered.",
   showPassphrase: "Show passphrase",
-  setButton: "Seal history",
+  setButton: "Save history",
   changeButton: "Change passphrase",
   mismatch: "The passphrases do not match. Type them again.",
   tooShort: "Add more characters.",
-  sealed: "History sealed.",
+  sealed: "History saved with your passphrase.",
   changed: "Passphrase changed.",
   lockedAnnounce: "Locked. Your results are cleared from the screen.",
   lockHeading: "Lock",
-  lockBody: "Clears this page and keeps the sealed copy. You need your passphrase to open it again.",
-  deleteHeading: "Delete saved data",
-  deleteBody: "Removes the sealed history and clears the screen. This cannot be undone.",
+  lockBody: "Clears your results from the screen and keeps your saved history. You need your passphrase to open it again.",
+  deleteHeading: "Delete saved history",
+  deleteBody: "Removes your saved history and clears the screen. This cannot be undone.",
   deleteButton: "Delete data",
-  deleteConfirmTitle: "Delete saved data?",
-  deleteConfirmBody: "This deletes your history, keep list, checkmarks, and checklist marks, and cannot be undone. Your export files are not touched.",
+  deleteConfirmTitle: "Delete saved history?",
+  deleteConfirmBody: "This deletes your saved history, keep list, checkmarks, and checklist marks, and cannot be undone. Your export files are not touched.",
   deleteConfirm: "Delete data",
   deleteCancel: "Cancel",
-  deleted: "Saved data deleted.",
+  deleted: "Saved history deleted.",
   get deleteFailed(): string {
-    return onDesktop("Snappy could not delete the saved data. Close other Snappy tabs and try again.", "Snappy could not delete the saved data. Close other Snappy windows and try again.");
+    return onDesktop("Snappy could not delete the saved history. Close other Snappy tabs and try again.", "Snappy could not delete the saved history. Close other Snappy windows and try again.");
   },
   aboutHeading: "About",
   aboutBody: "Snappy reads your own Snapchat export on this device to tidy your friends list and rescue your Memories.",
@@ -599,20 +601,20 @@ export const passphraseHint = {
 };
 
 export const vaultMessages = {
-  wrongPassphrase: "That passphrase did not open your saved data. Check it and try again.",
-  unreadable: "Snappy could not read the saved data. A different version may have saved it.",
+  wrongPassphrase: "That passphrase did not open your saved history. Check it and try again.",
+  unreadable: "Snappy could not read the saved history. A different version may have saved it.",
   get storageUnavailable(): string {
     return onDesktop("This browser does not allow saving, so Snappy is in session-only mode.", "Saving is not available here, so Snappy is in session-only mode.");
   },
   get saveFailed(): string {
     return onDesktop("Snappy could not save. Your results are on screen, but closing this tab clears them.", "Snappy could not save. Your results are on screen, but closing Snappy clears them.");
   },
-  lockedFirst: "Unlock your saved data first, or delete it in Settings to start over.",
-  nothingSaved: "No saved data was found on this device.",
+  lockedFirst: "Unlock your saved history first, or delete it in Settings to start over.",
+  nothingSaved: "No saved history was found on this device.",
   get savedElsewhere(): string {
     return onDesktop(
-      "Saved data already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
-      "Saved data already exists here, maybe from another window. Unlock it first, or delete it in Settings.",
+      "Saved history already exists here, maybe from another tab. Unlock it first, or delete it in Settings.",
+      "Saved history already exists here, maybe from another window. Unlock it first, or delete it in Settings.",
     );
   },
   /** After a command changed the saved history while the dashboard was open. */

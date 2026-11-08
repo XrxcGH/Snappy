@@ -235,7 +235,7 @@ describe("sealed storage", () => {
     expect(second.store.get().vault.phase).toBe("locked");
     await second.actions.importZips([zipFile(2)]);
     expect(await second.actions.sealWith(PASS)).toBe(false); // must unlock first, never overwrite
-    expect(second.store.get().vault.message?.text).toMatch(/Unlock your saved data first/);
+    expect(second.store.get().vault.message?.text).toMatch(/Unlock your saved history first/);
 
     expect(await second.actions.unlock(PASS)).toBe(true);
     await second.actions.settled();
