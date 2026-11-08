@@ -283,7 +283,7 @@ function addSection(ctx: ViewContext): HTMLElement {
  */
 function readingStatus(ctx: ViewContext): HTMLElement {
   const { store } = ctx;
-  const spoken = h("p", { role: "status" });
+  const spoken = h("p", {});
   const percent = h("p", { class: "caption muted", "aria-hidden": "true" });
   const bar = progressBar({ label: start.progressLabel, value: null });
   // After a few seconds: large exports take minutes, and the time that has passed (never a guess of what is left).
@@ -294,7 +294,11 @@ function readingStatus(ctx: ViewContext): HTMLElement {
     if (imp.phase !== "reading") return;
     const text = imp.sample ? start.readingSample(imp.step, imp.steps) : start.reading(imp.step, imp.steps, imp.fraction);
     const line = imp.sample ? text : start.reading(imp.step, imp.steps);
-    if (spoken.textContent !== line) spoken.textContent = line;
+    // The one live source of this line: the page's polite announcer. The paragraph itself is not a live region, so the same words are not spoken twice.
+    if (spoken.textContent !== line) {
+      spoken.textContent = line;
+      announce(line);
+    }
     percent.textContent = !imp.sample && imp.fraction !== undefined && imp.fraction !== null ? start.readingPercent(imp.fraction) : "";
     // The bar shows the real share of the bytes read. Before the first measurement, or when there
     // is nothing to measure, parts count instead, and a single file stays "unknown" until it is done.
@@ -401,7 +405,6 @@ function sampleButton(ctx: ViewContext): HTMLElement {
     icon: "search",
     key: "try-sample",
     onclick: () => {
-      announce(start.readingSample(0, 3));
       void ctx.actions.loadSample().then((result) => {
         if (result === "done") {
           announce(start.sampleLoaded);

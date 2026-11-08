@@ -30,13 +30,13 @@ type EntryItem = DataTransferItem & { webkitGetAsEntry?: () => (DirEntry & { isD
 export function createImportFlow(ctx: { store: Store; actions: Actions }): ImportFlow {
   const { store, actions } = ctx;
 
-  const settle = async (begin: () => Promise<ImportResult>, parts: number): Promise<void> => {
+  const settle = async (begin: () => Promise<ImportResult>): Promise<void> => {
     // A read is already going: say so, and leave it alone.
     if (store.get().import.phase === "reading") {
       announce(startFlow.busy);
       return;
     }
-    announce(start.reading(0, parts));
+    // Nothing is said here as the read starts: the progress block says it, once, as it changes.
     const result = await begin();
     const s = store.get();
     if (result === "done") {
@@ -59,11 +59,11 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
         const loose = files.map((f) => ({ path: f.name ?? "", blob: f as Blob, lastModified: (f as { lastModified?: number }).lastModified }));
         if (hasDataFiles(loose)) return flow.folder(loose);
       }
-      return settle(() => actions.importZips(files, options), files.length);
+      return settle(() => actions.importZips(files, options));
     },
     folder: async (files) => {
       if (files.length === 0) return;
-      return settle(() => actions.importFolder(files), 1);
+      return settle(() => actions.importFolder(files));
     },
     drop: async (transfer) => {
       // Everything the event holds is taken out now, before the first wait.
@@ -72,7 +72,7 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
       if (entries.some((e) => e.isDirectory)) {
         // Even a folder with nothing of the export in it is answered: the actions say what they looked for.
         const found = await folderFilesFromEntries(entries);
-        return settle(() => actions.importFolder(found), 1);
+        return settle(() => actions.importFolder(found));
       }
       return flow.files(files);
     },
