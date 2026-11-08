@@ -79,6 +79,13 @@ const directionOf = (sent: boolean | undefined): ChatEvent["direction"] => (sent
 
 const groupId = (rawKey: string): string => `group:${hashString(rawKey)}`;
 
+/** More than this share of the conversations filed as groups is not what a real export looks like. */
+const GROUPS_WARN_SHARE = 0.5;
+/** More than this share of the messages that could not be matched to a conversation is too many to ignore. */
+const UNMATCHED_WARN_SHARE = 0.2;
+/** Below this many conversations or messages a share means little, so the quieter note stays. */
+const WARN_MIN_COUNT = 10;
+
 /**
  * Turns the entries of one history file into metadata-only events, one entry at a time, so the
  * same logic serves a parsed JSON value and the streaming reader (which never holds the whole file).
@@ -193,10 +200,17 @@ export class HistoryReader {
     if (this.directionUnknown > 0) {
       issues.push(issue("info", `${code}-direction-unknown`, `${this.directionUnknown} ${noun}${this.directionUnknown === 1 ? " does" : "s do"} not say if you sent or received ${this.directionUnknown === 1 ? "it" : "them"}. ${this.directionUnknown === 1 ? "It still counts" : "They still count"} as activity.`));
     }
-    if (this.noConversation > 0) {
+    // A small share is a note. When a large share fell out, the layout is probably not the one Snappy
+    // expects and the results may be wrong: that is a warning, so the person notices it.
+    const unmatchedShare = this.noConversation / Math.max(1, this.noConversation + this.events.length);
+    if (this.noConversation >= WARN_MIN_COUNT && unmatchedShare > UNMATCHED_WARN_SHARE) {
+      issues.push(issue("warning", "chats-unmatched-many", `${this.noConversation} of ${this.noConversation + this.events.length} ${noun}s in ${file} were skipped because no conversation matched them. Some results may be wrong.`));
+    } else if (this.noConversation > 0) {
       issues.push(issue("info", `${code}-conversation-unknown`, `${this.noConversation} ${noun}${this.noConversation === 1 ? " has" : "s have"} could not be matched to a conversation and ${verb(this.noConversation)} skipped.`));
     }
-    if (this.conversations > 0 && this.groups === this.conversations) {
+    if (this.conversations >= WARN_MIN_COUNT && this.groups / this.conversations > GROUPS_WARN_SHARE) {
+      issues.push(issue("warning", "chats-mostly-groups", `Snappy treated ${this.groups} of ${this.conversations} conversations in ${file} as group chats. The layout may differ, so results may be wrong.`));
+    } else if (this.conversations > 0 && this.groups === this.conversations) {
       issues.push(issue("info", `${code}-all-groups`, `Snappy treated all ${this.conversations} conversations as group chats. The export layout may differ from what it expects.`));
     }
     return { chats: this.events, issues };

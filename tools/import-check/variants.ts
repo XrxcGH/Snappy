@@ -167,7 +167,7 @@ export function buildVariants(): Variant[] {
   add("v28", "saved_chat_history.json", [part({ "json/friends.json": friendsJson(), "json/saved_chat_history.json": chatJson() })], ["chat-history-missing","memories-missing","snap-history-missing"], 30);
   add("v29", "a stray chat_history.json in chat_media", [part({ ...baseFiles(), "chat_media/chat_history.json": { stray: [{ From: "x", "Media Type": "TEXT", Created: "2024-01-01 10:00:00 UTC", Content: "x", IsSender: true }] } })], [], 30);
   add("v30", "unicode, short and spaced usernames", [part(withFriends({ Friends: ["zoë", "я_друг", "a", "two words", "名前"].map((n, i) => friendEntry(n, i)) }))], [], 5);
-  add("v31", "chat keyed by display name", [part({ ...baseFiles(), "json/chat_history.json": Object.fromEntries(range(30).map((i) => [`Person ${i}`, [{ From: `friend_${i}`, "Media Type": "TEXT", Created: "2024-02-01 10:00:00 UTC", Content: "x", "Conversation Title": `Person ${i}`, IsSender: false }]])) })], ["chat-all-groups"], 30);
+  add("v31", "chat keyed by display name", [part({ ...baseFiles(), "json/chat_history.json": Object.fromEntries(range(30).map((i) => [`Person ${i}`, [{ From: `friend_${i}`, "Media Type": "TEXT", Created: "2024-02-01 10:00:00 UTC", Content: "x", "Conversation Title": `Person ${i}`, IsSender: false }]])) })], ["chats-mostly-groups"], 30);
   return out;
 }
 
