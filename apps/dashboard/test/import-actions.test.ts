@@ -114,7 +114,10 @@ describe("importing the parts of an export", () => {
     const { store, actions } = setup();
     expect(await actions.importZips([base as File])).toBe("done");
     expect(store.get().real.latest?.memoriesPairing).toBeUndefined();
-    expect(store.get().real.issues.map((i) => i.code)).toContain("memories-no-media-source");
+    // Part 1 alone cannot show whether the files live in other parts, so it is a note, not a warning.
+    const codes = store.get().real.issues.map((i) => i.code);
+    expect(codes).toContain("memories-list-only");
+    expect(codes).not.toContain("memories-no-media-source");
   });
 });
 
