@@ -195,6 +195,11 @@ export function auditInPage(options) {
       const box = el.tagName === "INPUT" && (el.type === "checkbox" || el.type === "radio");
       const r0 = el.getBoundingClientRect();
       if (box && (r0.width <= 1.5 || r0.height <= 1.5 || cs(el).opacity === "0") && el.labels && el.labels.length > 0) target = el.labels[0];
+      // A check box inside (or named by) a label is pressed through the label: the larger of the two is the target.
+      else if (box && el.labels && el.labels.length > 0) {
+        const l = el.labels[0].getBoundingClientRect();
+        if (l.width * l.height > r0.width * r0.height) target = el.labels[0];
+      }
       if (!visible(target) || insideText(target) || target.closest(".skip-link")) continue;
       const r = target.getBoundingClientRect();
       if (r.width < minTarget - 0.5 || r.height < minTarget - 0.5) add("small-target", target, r.width.toFixed(0) + " by " + r.height.toFixed(0) + " px, under " + minTarget);

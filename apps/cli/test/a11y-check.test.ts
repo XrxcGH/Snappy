@@ -125,6 +125,14 @@ describe("measuring", async () => {
     expect(found.filter((f) => f.check === "unnamed-control")).toEqual([]);
   }, 60_000);
 
+  it.skipIf(playwright === null)("takes a small visible check box inside a large label as pressed through the label, and flags one with no label", async () => {
+    const style = `<style>body{background:#fff;color:#111;font:16px sans-serif} :focus-visible{outline:2px solid #111;outline-offset:2px} label.row{display:flex;align-items:center;gap:8px;min-height:44px}</style>`;
+    const ok = await audit(`<!doctype html><html lang="en"><head><title>T</title>${style}</head><body><h1>H</h1><label class="row"><input type="checkbox" style="width:24px;height:24px"> Show it</label></body></html>`);
+    expect(ok.filter((f) => f.check === "small-target")).toEqual([]);
+    const bad = await audit(`<!doctype html><html lang="en"><head><title>T</title>${style}</head><body><h1>H</h1><input type="checkbox" aria-label="Alone" style="width:24px;height:24px"></body></html>`);
+    expect(bad.filter((f) => f.check === "small-target").map((f) => f.detail)).toEqual(["24 by 24 px, under 44"]);
+  }, 60_000);
+
   it.skipIf(playwright === null)("does not measure targets on a wide screen, and reads contrast of large text at 3:1", async () => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 700 } });
     try {
