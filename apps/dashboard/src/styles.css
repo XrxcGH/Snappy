@@ -572,6 +572,16 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .strength .meter-fill { background: var(--primary); }
 /* The strength meter is as wide as the field it describes, so its value sits beside the field and not at the far edge. */
 .strength-block { max-width: var(--field-w); }
+/* Windows high contrast (forced colors) removes shadows and backgrounds, which are what draw a bar's track and fill, the chosen
+   segment and the activity squares. Here each gets a border in the text color and a fill in the system highlight, so the
+   progress, the choice and the busy days still show. (The update banner's bar is in the desktop app's own sheet.) */
+@media (forced-colors: active) {
+  .progress, .meter { border: 1px solid CanvasText; box-shadow: none; }
+  .progress-fill, .meter-fill, .progress-slide { background: Highlight; forced-color-adjust: none; }
+  .segmented .btn[aria-pressed="true"] { background: Highlight; color: HighlightText; }
+  .cal-cell { border: 1px solid CanvasText; }
+  .cal-wrap :is(.cal-board, .cal-legend) .cal-cell:is(.lvl-3, .lvl-4) { background: Highlight; forced-color-adjust: none; }
+}
 .status { display: grid; gap: var(--space-2); }
 
 /* ----------------------------------------------------------- drop zone ---- */

@@ -41,7 +41,7 @@ function parseRules(text: string): Rule[] {
       const inner = src.slice(open + 1, j - 1);
       if (prelude.startsWith("@media")) walk(inner, [...media, prelude.slice(6).trim()]);
       else if (!prelude.startsWith("@")) {
-        for (const selector of prelude.split(",")) rules.push({ selector: selector.trim().replace(/\s+/g, " "), body: inner, media });
+        for (const selector of prelude.split(/,(?![^(]*\))/)) rules.push({ selector: selector.trim().replace(/\s+/g, " "), body: inner, media });
       }
       i = j;
     }
@@ -151,5 +151,31 @@ describe("the Overview findings below the wide layout", () => {
     // Every tile of the row is two of the six columns, like the three above them.
     expect(rules.some((r) => r.selector === ".tiles-stats .tile" && /grid-column:\s*span 2/.test(r.body))).toBe(true);
     expect(rules.filter((r) => r.selector === ".tiles-findings .tile:nth-child(n+4)" && /span 3/.test(r.body))).toEqual([]);
+  });
+});
+
+describe("forced colors (Windows high contrast)", () => {
+  const forced = (selector: string): string => rules.filter((r) => r.selector === selector && r.media.length === 1 && /forced-colors:\s*active/.test(r.media[0] ?? "")).map((r) => r.body).join(" ");
+
+  it("draws the track of a progress bar or meter with a border and no shadow, and fills it with the system highlight", () => {
+    for (const selector of [".progress", ".meter"]) {
+      expect(forced(selector), selector).toMatch(/border:\s*1px solid CanvasText/);
+      expect(forced(selector), selector).toMatch(/box-shadow:\s*none/);
+    }
+    for (const selector of [".progress-fill", ".meter-fill", ".progress-slide"]) {
+      expect(forced(selector), selector).toMatch(/background:\s*Highlight/);
+      expect(forced(selector), selector).toMatch(/forced-color-adjust:\s*none/);
+    }
+  });
+
+  it("shows the pressed segment of a choice in the highlight colors", () => {
+    expect(forced('.segmented .btn[aria-pressed="true"]')).toMatch(/background:\s*Highlight[^}]*color:\s*HighlightText/);
+  });
+
+  it("gives every activity square a border, and the two busiest levels the highlight (beating the tool's own rules)", () => {
+    expect(forced(".cal-cell")).toMatch(/border:\s*1px solid CanvasText/);
+    const busy = forced(".cal-wrap :is(.cal-board, .cal-legend) .cal-cell:is(.lvl-3, .lvl-4)");
+    expect(busy).toMatch(/background:\s*Highlight/);
+    expect(busy).toMatch(/forced-color-adjust:\s*none/);
   });
 });
