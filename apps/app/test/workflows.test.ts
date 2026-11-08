@@ -606,6 +606,29 @@ describe("the macOS build and smoke job in desktop-smoke.yml", () => {
     // Loopback is the only address that is not counted.
     expect(netwatch).toContain('LOOPBACK = re.compile(r"^(127\\.|::1$|::ffff:127\\.|localhost$)"');
   });
+
+  it("also runs a WebKit stand-in that only talks to a loopback server, and fails only if it got a request through after a control run saw the server work", () => {
+    const dir = path.join(repo, "apps", "app", "tools", "macos");
+    const probe = readFileSync(path.join(dir, "probe.sh"), "utf8");
+    const swift = readFileSync(path.join(dir, "webkit-probe.swift"), "utf8");
+    const server = readFileSync(path.join(dir, "probe-server.py"), "utf8");
+    expect(smokeScript).toMatch(/bash "\$HERE\/probe\.sh"/);
+    expect(probe).toMatch(/for mode in locked control/);
+    expect(probe).toMatch(/\[ "\$CONTROL_HITS" = "0" \]/); // no verdict when the control saw nothing
+    expect(server).toContain('("127.0.0.1", 0)');
+    expect(swift).toContain("decidePolicyFor");
+    expect(swift).toContain("createWebViewWith");
+    expect(swift).toContain("tauri://localhost");
+    // No address in these files except the loopback test server (netwatch.py's control connection is the one deliberate exception).
+    for (const text of [probe, swift, server]) {
+      const hosts = [...text.matchAll(/(?:https?|wss?):\/\/([A-Za-z0-9.-]+)/g)].map((m) => m[1]);
+      expect(hosts.filter((h) => h !== "127.0.0.1")).toEqual([]);
+    }
+  });
+
+  it("leaves no temporary workflow behind", () => {
+    expect(workflowFiles().filter((f) => /tmp|temp/i.test(f))).toEqual([]);
+  });
 });
 
 describe("release.yml builds the macOS app the same way as CI: one universal app, unsigned, ad hoc", () => {

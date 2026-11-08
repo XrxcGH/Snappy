@@ -7,6 +7,7 @@
 # It reads no secret and signs nothing. It checks the finished files (Info.plist, architectures, ad-hoc signature, no
 # entitlements, the disk image), then installs the app into a temporary folder, starts it, and checks that it stays alive,
 # has a window, makes no connection outside this computer for OBSERVE_SECONDS (default 60), and exits when asked.
+# Then probe.sh runs a stand-in (a plain WKWebView, not the app) that tries to reach a loopback test server.
 # Every check writes its raw output into $OUT, which the job uploads. A failed check does not stop the script: it keeps
 # collecting evidence and exits 1 at the end if anything failed.
 #
