@@ -370,6 +370,9 @@ describe("when nothing can be compared", () => {
     const { root } = await renderSettled(view, real({ saving: false }));
     expect(text(root, ".empty-title")).toEqual([copy.empty.title]);
     expect(text(root, ".empty-body")).toEqual([copy.empty.body]);
+    expect(copy.empty.body).toBe("Snappy compares exports kept in your saved history. Save your history with a passphrase in Settings to keep them.");
+    // There is no saving switch to turn on, and a saved export is not a snapshot.
+    expect(copy.empty.body).not.toMatch(/turned|snapshot/i);
     expect(root.querySelectorAll("table")).toHaveLength(0);
     expect(root.querySelectorAll("button").filter((b) => b.textContent === copy.downloadLabel)).toHaveLength(0);
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.since));

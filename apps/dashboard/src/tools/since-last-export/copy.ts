@@ -19,7 +19,7 @@ export const copy = {
   reads: "Friends lists and dates, the dates and directions of chats and Snaps, Memories dates, and your saved history.",
   empty: {
     title: "Nothing to compare yet",
-    body: "No earlier export with a usable date is saved yet. Snappy compares exports kept in your saved history, which needs saving turned on.",
+    body: "Snappy compares exports kept in your saved history. Save your history with a passphrase in Settings to keep them.",
   },
 
   doneAnnounce: (added: number, left: number) => `Comparison finished. ${countOf(added, "friend", "friends")} added, ${formatCount(left)} no longer listed.`,
