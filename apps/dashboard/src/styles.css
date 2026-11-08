@@ -886,6 +886,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 /* end track T3 */
 
 /* track T5 */
-.command-cli-link { margin: 0; }
+.command-cli-link, .command-note { margin: 0; }
+.command-note { color: var(--text-muted); font-size: var(--text-14); }
 .command-cli-link a { display: inline-flex; align-items: center; min-height: var(--target-min); }
 /* end track T5 */

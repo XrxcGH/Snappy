@@ -16,6 +16,7 @@ import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { saveTextFile } from "../download.ts";
 import { common, tools } from "../copy.ts";
+import { commandNotes } from "../copy-tools.ts";
 import { append, h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { onDispose, region, runInScope, Scope } from "../reactive.ts";
@@ -202,7 +203,7 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
     h("div", { class: "tool-top" }, h("div", { class: "tool-back" }, h("a", { class: "back-link", href: "#/tools" }, tools.backLink)), header),
     reads,
     body,
-    o.command ? section(tools.commandHeading, commandBlock(ctx, o.command, { key: `${meta.id}-command`, cliLink: true })) : null,
+    o.command ? section(tools.commandHeading, commandBlock(ctx, o.command, { key: `${meta.id}-command`, cliLink: true, note: o.controls ? commandNotes.defaultView : undefined })) : null,
   );
 }
 

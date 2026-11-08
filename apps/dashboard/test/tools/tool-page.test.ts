@@ -7,6 +7,7 @@ import { resetAnalysisCache } from "../../src/analysis.ts";
 import { toolView } from "../../src/components/toolPage.ts";
 import type { ToolPageOptions } from "../../src/components/toolPage.ts";
 import { tools } from "../../src/copy.ts";
+import { commandNotes } from "../../src/copy-tools.ts";
 import { section } from "../../src/components/layout.ts";
 import { h } from "../../src/dom.ts";
 import type { State } from "../../src/reducer.ts";
@@ -339,5 +340,19 @@ describe("the command block", () => {
   it("shows no command block for a tool with no command", async () => {
     const { root } = await renderSettled(view(), sample);
     expect(root.querySelectorAll(".command")).toHaveLength(0);
+  });
+});
+
+describe("the note under a command block", () => {
+  const controls = (): HTMLElement => h("p", {}, "A control.") as HTMLElement;
+
+  it("says the command shows the default view on a page whose controls change the result, and only there", () => {
+    const withControls = render(view({ command: "check", controls }), sample).root;
+    expect(withControls.querySelectorAll(".command-note").map((n) => n.textContent)).toEqual([commandNotes.defaultView]);
+    // The line sits right under the code, before the file chip and the hint.
+    const block = withControls.querySelector(".command") as FakeElement;
+    const kids = block.childNodes.filter((c): c is FakeElement => "classList" in c).map((c) => (c.classList.contains("command-note") ? "note" : c.tagName));
+    expect(kids.indexOf("note")).toBe(kids.indexOf("pre") + 1);
+    expect(render(view({ command: "check" }), sample).root.querySelectorAll(".command-note")).toHaveLength(0);
   });
 });

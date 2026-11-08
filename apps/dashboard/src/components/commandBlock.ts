@@ -16,6 +16,8 @@ export interface CommandBlockOptions {
   key: string;
   /** Add the link to the Export guide's "Command line tool" section. A page does this on its first block only. */
   cliLink?: boolean;
+  /** One short line under the code, such as "The command shows the default view." */
+  note?: string;
 }
 
 /** The line that leads to the Export guide section on getting the command line tool. A page that explains commands outside a block can use it too. */
@@ -92,6 +94,7 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
     { class: "command code-block" },
     h("div", { class: "command-head" }, h("p", { class: "command-title" }, spec.title), h("div", { class: "command-actions" }, copy, run)),
     h("pre", { class: "code", tabindex: "0" }, h("code", {}, text)),
+    options.note === undefined ? null : h("p", { class: "command-note" }, options.note),
     spec.needsFile ? fileChip(ctx.terminal, { key: options.key }) : null,
     hint,
     options.cliLink === true ? cliToolLink() : null,
