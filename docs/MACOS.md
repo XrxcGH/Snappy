@@ -53,8 +53,9 @@ Snappy puts files in these places on a Mac. The list comes from starting the app
 | The program | Wherever you drag it, normally `/Applications/Snappy.app`. |
 | What the page stores, and the web view’s own state | `~/Library/WebKit/com.snappy.export`. This is where macOS’s web view keeps your theme choice, your sealed history if you set a passphrase (in IndexedDB), and its own bookkeeping files. It was about 600 KB after one short run. |
 | The web view’s cache | `~/Library/Caches/com.snappy.export`. It was about 8 KB after one short run. |
+| Files you save | `~/Downloads`, only when you choose a **Save** button. Snappy never deletes these, and they are not in the removal steps below. |
 
-`~` is your home folder. The Library folder is hidden: in Finder, choose **Go**, **Go to Folder**, and paste a path from the table. Snappy writes nothing next to your export and nothing in your Documents folder. It uses no `.snappy` folder: that belongs to the command line tool. macOS may also save the window’s position in `~/Library/Saved Application State/com.snappy.export.savedState` or in `~/Library/Preferences/com.snappy.export.plist`. Neither appeared in the test, so the paths are a guess from how macOS normally works.
+`~` is your home folder. The Library folder is hidden: in Finder, choose **Go**, **Go to Folder**, and paste a path from the table. Apart from files you save, Snappy writes nothing next to your export and nothing in your Documents folder. It uses no `.snappy` folder: that belongs to the command line tool. macOS may also save the window’s position in `~/Library/Saved Application State/com.snappy.export.savedState` or in `~/Library/Preferences/com.snappy.export.plist`. Neither appeared in the test, so the paths are a guess from how macOS normally works.
 
 ## Remove Snappy and everything it stored
 
@@ -69,7 +70,7 @@ Your export files are never touched by Snappy.
 
 Snappy reads your export and never changes it: it opens the ZIP files read-only. It reads friend usernames and dates, and skips message text, photos, videos, locations and display names. Snappy itself sends nothing over a network, and its page is not allowed to connect to anything.
 
-**One open question.** The window is drawn by the web view that comes with macOS (WebKit), a separate component that Snappy does not control. The Privacy page in the app says this. In one automated test on a GitHub computer, the app and its web view made no connection to an outside address in 60 seconds. That test cannot see everything, it was one computer and one macOS version, and a macOS update can change the web view. A second test with a stand-in page (not Snappy) found that the web view cancels a link, a new window or a redirect to another address before it sends any request. [RELEASES.md](RELEASES.md) has the details and the limits.
+**One open question.** The window is drawn by the web view that comes with macOS (WebKit), a separate component that Snappy does not control. The Privacy page in the app says this. In one automated test on a GitHub computer, the app and its web view made no connection to an outside address in 60 seconds. That test cannot see everything, it was one computer and one macOS version, and a macOS update can change the web view. A second test with a stand-in page (not Snappy), run with the same WebKit hooks, tried 13 ways to reach a test server on the same computer. Without the hooks all 13 got through. With them none did: the web view cancelled a link, a redirect and a new window before sending any request, and the page’s content policy stopped a form post and every request made by script. [RELEASES.md](RELEASES.md) has the details and the limits.
 
 ## What to try first
 
@@ -77,6 +78,7 @@ Snappy reads your export and never changes it: it opens the ZIP files read-only.
 2. Choose **Choose ZIP files**, and pick every ZIP part of your export at once. This opens the Mac’s file dialog, which no automated test has used yet: tell us if it does anything unexpected.
 3. On **Start**, choose **Set passphrase**, then lock and unlock the saved history. A test with a stand-in page showed that the web view’s encryption (Web Crypto) works under the app’s address, but nobody has typed a passphrase into Snappy itself on a Mac.
 4. Click into the passphrase and filter fields and try Cmd+C, Cmd+V and Cmd+A. The Edit menu is there, but typing into a field has not been tried on a Mac.
+5. Choose a **Save** button (for example on a Tools page), then look in your **Downloads** folder. The Mac app lets the web view write that one file there, under the name the page suggests, and shows no message. A test with a stand-in page showed the web view saves such a file; nobody has clicked Save in Snappy itself on a Mac. If nothing appears, say so, and use the **Copy** button beside it for text.
 
 ## Report a problem without sharing personal data
 
