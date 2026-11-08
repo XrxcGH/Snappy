@@ -24,10 +24,17 @@ const baseName = (p: string): string => p.slice(p.lastIndexOf("/") + 1).toLowerC
  * one is present the notes that only follow from it ("no friends list", "history not found") are
  * left out, so the person gets one cause and one remedy, not five contradictory notices.
  */
-const ROOT_CAUSE_CODES: ReadonlySet<string> = new Set(["zip-unreadable", "zip-entry-unreadable", "html-only-export"]);
+const ROOT_CAUSE_CODES: ReadonlySet<string> = new Set([
+  "zip-unreadable", "zip-entry-unreadable", "zip-encrypted", "zip-unsupported-method", "zip-entry-too-large", "html-only-export",
+]);
+
+/** A data file that was found but could not be read as JSON: it explains an empty friends list on its own. */
+const JSON_FAILURE_CODES: ReadonlySet<string> = new Set(["json-parse-failed", "json-too-complex", "json-too-large", "zip-json-too-large"]);
 
 /** What went wrong at the root, in the words of what the person should do next. */
 export type FailureClass =
+  /** The ZIP file is password protected: open it with the password and save it again without one, or request the export again. */
+  | "password"
   /** Part of the ZIP files could not be read: download them again. */
   | "unreadable"
   /** The export holds only HTML pages: request it again with JSON files. */
@@ -35,12 +42,15 @@ export type FailureClass =
 
 /**
  * The root cause among `issues` (the parse issues plus the output of validateExport), or
- * undefined when none applies. A damaged file wins over an HTML-only export because the first
- * thing to do about it is to download that file again.
+ * undefined when none applies. A password comes first (downloading again would not help), then a
+ * damaged file (the first thing to do is to download that file again), then an HTML-only export.
  */
 export function failureClass(issues: readonly { code: string }[]): FailureClass | undefined {
   const codes = new Set(issues.map((i) => i.code));
-  if (codes.has("zip-unreadable") || codes.has("zip-entry-unreadable")) return "unreadable";
+  if (codes.has("zip-encrypted")) return "password";
+  for (const code of ["zip-unreadable", "zip-entry-unreadable", "zip-unsupported-method", "zip-entry-too-large"]) {
+    if (codes.has(code)) return "unreadable";
+  }
   if (codes.has("html-only-export")) return "html-only";
   return undefined;
 }
@@ -108,8 +118,17 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
   // One cause, one message: what only follows from it is not reported next to it.
   const explained = (hasHtml && !hasJson) || (parsed.issues ?? []).some((i) => ROOT_CAUSE_CODES.has(i.code));
 
+  const found = parsed.issues ?? [];
   if (totalFriendRecords === 0) {
-    if (!explained) out.push(issue("error", "no-friends-section", "This export has no friends list, so Snappy cannot analyze it. Request it again with User information selected."));
+    const hasFriendsFile = names.includes("friends.json");
+    if (explained || (hasFriendsFile && found.some((i) => JSON_FAILURE_CODES.has(i.code)))) {
+      // The notice that explains it is already in the list.
+    } else if (hasFriendsFile && found.some((i) => i.code === "friends-no-sections" || i.code === "friends-unexpected-shape")) {
+      // friends.json is there: asking for the export again would not help, the layout is what Snappy does not know.
+      out.push(issue("error", "friends-layout-unknown", "friends.json is in your export, but Snappy does not know its layout. Run the inspect command and share the shape."));
+    } else {
+      out.push(issue("error", "no-friends-section", "This export has no friends list, so Snappy cannot analyze it. Request it again with User information selected."));
+    }
   } else if (f.friends.length === 0 && f.deletedFriends.length > 0) {
     out.push(issue("error", "friends-empty-but-deleted", `The friends list is empty, but ${f.deletedFriends.length} removed ${f.deletedFriends.length === 1 ? "friend is" : "friends are"} listed. The export may be incomplete, so results may be wrong.`));
   }

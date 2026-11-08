@@ -168,14 +168,69 @@ export function emptyParsed(issues: ExportIssue[]): ParsedExport {
 }
 
 // Fixed-text issues shared by every zip front end, so all of them report a bad archive identically.
+/**
+ * Which ZIP file a notice is about: the person's own file name for it (the caller knows it, core
+ * does not) and its 1-based position among the parts of the export. Both are optional; without a
+ * name the notices keep their generic wording.
+ */
+export interface PartLabel {
+  name?: string;
+  part?: number;
+}
+
+const MAX_SHOWN_NAME = 80;
+
+/** Control, escape, zero-width and direction-changing code points: never repeated in a notice. */
+const hiddenChar = (c: number): boolean =>
+  c <= 0x1f || (c >= 0x7f && c <= 0x9f) || c === 0x61c || (c >= 0x200b && c <= 0x200f) || (c >= 0x2028 && c <= 0x202e) || (c >= 0x2066 && c <= 0x2069) || c === 0xfeff;
+
+/**
+ * A file name that is safe to repeat in a notice: the last path segment, without control,
+ * escape or direction-changing characters, cut to a sensible length. Undefined when nothing
+ * readable is left. It is the person's own file name, never a value from inside the export.
+ */
+export function shownFileName(name: string | undefined): string | undefined {
+  if (name === undefined) return undefined;
+  const base = name.slice(Math.max(name.lastIndexOf("/"), name.lastIndexOf("\\")) + 1);
+  const clean = [...base].filter((ch) => !hiddenChar(ch.codePointAt(0) as number)).join("").trim();
+  if (clean === "") return undefined;
+  return clean.length > MAX_SHOWN_NAME ? `${clean.slice(0, MAX_SHOWN_NAME - 1)}…` : clean;
+}
+
 /** @internal */
-export const zipUnreadableIssue = (): ExportIssue => issue("error", "zip-unreadable", "Snappy could not read this file as a ZIP file.");
+export function zipUnreadableIssue(label: PartLabel = {}): ExportIssue {
+  const name = shownFileName(label.name);
+  if (name === undefined) return issue("error", "zip-unreadable", "Snappy could not read this file as a ZIP file.");
+  // Part 1 holds the lists; the later parts hold photos and videos, so say which one is at stake.
+  const effect =
+    label.part === undefined
+      ? "Download it again."
+      : label.part <= 1
+        ? "It holds your lists, so download it again."
+        : "It most likely holds only photos and videos, so your lists are not affected. Download it again to include them.";
+  return issue("error", "zip-unreadable", `Snappy could not read ${name} as a ZIP file. ${effect}`);
+}
 /** @internal */
 export const zipTooManyEntriesIssue = (count: number): ExportIssue =>
   issue("error", "zip-too-many-entries", `This ZIP file lists ${count} items, more than the ${MAX_ENTRIES} Snappy opens.`);
 /** @internal */
-export const zipEntryUnreadableIssue = (e: Entry): ExportIssue =>
-  issue("error", "zip-entry-unreadable", `Snappy could not open ${baseName(e.path)} inside the ZIP file.`);
+export function zipEntryUnreadableIssue(e: Entry, label: PartLabel = {}): ExportIssue {
+  const name = shownFileName(label.name);
+  return issue("error", "zip-entry-unreadable", `Snappy could not open ${baseName(e.path)} inside ${name === undefined ? "the ZIP file" : name}.`);
+}
+/** @internal A password protected (or AES encrypted) ZIP file. */
+export function zipEncryptedIssue(label: PartLabel = {}): ExportIssue {
+  const name = shownFileName(label.name);
+  return issue("error", "zip-encrypted", `${name === undefined ? "This ZIP file" : name} is password protected. Snappy cannot open it.`);
+}
+/** @internal */
+export function zipUnsupportedMethodIssue(label: PartLabel = {}): ExportIssue {
+  const name = shownFileName(label.name);
+  return issue("error", "zip-unsupported-method", `${name === undefined ? "This ZIP file" : name} uses a compression method Snappy does not support.`);
+}
+/** @internal */
+export const zipEntryTooLargeIssue = (e: Entry): ExportIssue =>
+  issue("error", "zip-entry-too-large", `${baseName(e.path)} is too large for Snappy to open.`);
 
 /** Which known data file an entry is, by its file name. @internal */
 export function targetOf(e: Entry): Target | undefined {

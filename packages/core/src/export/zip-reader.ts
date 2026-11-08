@@ -35,11 +35,14 @@ import {
   planJsonReads,
   splitListing,
   targetOf,
+  zipEncryptedIssue,
+  zipEntryTooLargeIssue,
   zipEntryUnreadableIssue,
+  zipUnsupportedMethodIssue,
   zipTooManyEntriesIssue,
   zipUnreadableIssue,
 } from "./parse.ts";
-import type { Entry, Outcome, Outcomes, Target, TargetValues } from "./parse.ts";
+import type { Entry, Outcome, Outcomes, PartLabel, Target, TargetValues } from "./parse.ts";
 import { centralEntryMtime, u64 } from "./zip.ts";
 
 // ------------------------------------------------------------------ readers ---
@@ -398,14 +401,14 @@ async function withMemoryLocalTimes(
  * unreadable archive comes back as an error issue and an empty entry list (all or nothing, like
  * parseExportZip), a reader failure the same way.
  */
-export async function listZipEntries(reader: RandomAccessReader): Promise<ZipListing> {
+export async function listZipEntries(reader: RandomAccessReader, label: PartLabel = {}): Promise<ZipListing> {
   const fail = (...issues: ExportIssue[]): ZipListing => ({ entries: [], issues });
   try {
     const dir = await locateDirectory(reader);
-    if (dir === undefined) return fail(zipUnreadableIssue());
+    if (dir === undefined) return fail(zipUnreadableIssue(label));
     if (dir.count !== undefined && dir.count > MAX_ENTRIES) return fail(zipTooManyEntriesIssue(dir.count));
     const end = dir.offset + dir.size;
-    if (!Number.isSafeInteger(end) || end > reader.size) return fail(zipUnreadableIssue());
+    if (!Number.isSafeInteger(end) || end > reader.size) return fail(zipUnreadableIssue(label));
 
     const entries: ZipEntryInfo[] = [];
     let newest: number | undefined;
@@ -423,12 +426,12 @@ export async function listZipEntries(reader: RandomAccessReader): Promise<ZipLis
     while (end - p >= CENTRAL_FIXED_SIZE) {
       if (p + CENTRAL_FIXED_SIZE > bufStart + buf.length) await refill(CENTRAL_FIXED_SIZE);
       let at = p - bufStart;
-      if (view.getUint32(at, true) !== CENTRAL_SIGNATURE) return fail(zipUnreadableIssue());
+      if (view.getUint32(at, true) !== CENTRAL_SIGNATURE) return fail(zipUnreadableIssue(label));
       const nameLen = view.getUint16(at + 28, true);
       const extraLen = view.getUint16(at + 30, true);
       const commentLen = view.getUint16(at + 32, true);
       const total = CENTRAL_FIXED_SIZE + nameLen + extraLen + commentLen;
-      if (total > end - p) return fail(zipUnreadableIssue());
+      if (total > end - p) return fail(zipUnreadableIssue(label));
       if (p + total > bufStart + buf.length) {
         await refill(total);
         at = 0;
@@ -478,7 +481,7 @@ export async function listZipEntries(reader: RandomAccessReader): Promise<ZipLis
     return newest === undefined ? { entries, issues } : { entries, issues, newestMtime: newest };
   } catch {
     // The reader failed or lied about its size; its own message is not ours to repeat.
-    return fail(zipUnreadableIssue());
+    return fail(zipUnreadableIssue(label));
   }
 }
 
@@ -666,6 +669,23 @@ async function streamList<K extends "friends" | "memories">(reader: RandomAccess
   return parseTargetJson(target, json);
 }
 
+/** WinZip AES: the entry says method 99 and is encrypted, whatever the general purpose flag says. */
+const AES_METHOD = 99;
+
+/**
+ * The notice for an entry that could not be read: the cause when the archive says it (password
+ * protected, a compression method Snappy does not have, too large), the generic one otherwise.
+ * Fixed text only: nothing from the reader or the entry's data.
+ */
+function entryFailureIssue(e: unknown, wanted: Entry, info: ZipEntryInfo, label: PartLabel): ExportIssue {
+  if (e instanceof ZipEntryError) {
+    if (e.code === "encrypted" || (e.code === "unsupported-method" && info.method === AES_METHOD)) return zipEncryptedIssue(label);
+    if (e.code === "unsupported-method") return zipUnsupportedMethodIssue(label);
+    if (e.code === "too-large") return zipEntryTooLargeIssue(wanted);
+  }
+  return zipEntryUnreadableIssue(wanted, label);
+}
+
 /**
  * parseExportZip for an archive behind a reader. Same rules and result shape: only the four
  * known data files are read; every other entry (all media, other JSON and HTML) is listed by
@@ -674,15 +694,19 @@ async function streamList<K extends "friends" | "memories">(reader: RandomAccess
  * Memories media files are listed with their stored times, never opened.
  * `opts.part` is this zip's 1-based position among the parts of the export (base name first,
  * then -2, -3): it travels with the files so a later extraction knows which zip to open.
+ * `opts.name` is the person's own file name for this zip: when the zip or a file in it cannot be
+ * read, the notice names it and (from `opts.part`) says whether the lists or only photos and
+ * videos are affected. A password protected, unsupported or oversized entry gets its own notice.
  * `opts.onProgress` is told how many Memories files have had their local header looked at, with
  * the phase text "Matching Memories to files", when the central directory holds no UTC times (it
  * is never called otherwise). Never throws on bad input.
  */
 export async function parseExportFromReader(
   reader: RandomAccessReader,
-  opts: { part?: number; onProgress?: (progress: LocalTimeProgress) => void } = {},
+  opts: { part?: number; name?: string; onProgress?: (progress: LocalTimeProgress) => void } = {},
 ): Promise<ParsedExport> {
-  const { entries: listed, issues: listIssues, newestMtime } = await listZipEntries(reader);
+  const label: PartLabel = { ...(opts.name !== undefined && { name: opts.name }), ...(opts.part !== undefined && { part: opts.part }) };
+  const { entries: listed, issues: listIssues, newestMtime } = await listZipEntries(reader, label);
   if (listIssues.some((i) => i.severity === "error")) return emptyParsed(listIssues);
   const entries = await withMemoryLocalTimes(reader, listed, opts.onProgress);
 
@@ -703,8 +727,8 @@ export async function parseExportFromReader(
       if (target === "chats" || target === "snaps") outcomes[target] = await streamHistory(reader, info, target);
       else if (target === "friends") outcomes.friends = await streamList(reader, info, "friends");
       else outcomes.memories = await streamList(reader, info, "memories");
-    } catch {
-      issues.push(zipEntryUnreadableIssue(wanted));
+    } catch (e) {
+      issues.push(entryFailureIssue(e, wanted, info, label));
     }
   }
   const { files, media } = splitListing(listing);

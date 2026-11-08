@@ -144,23 +144,23 @@ export function buildVariants(): Variant[] {
 
   add("v00", "baseline: per-conversation chat and Snaps, Saved Media", [part(baseFiles())], [], 30);
   add("v03", "UTF-8 byte order mark", [part({ ...baseFiles(), "json/friends.json": new Uint8Array([0xef, 0xbb, 0xbf, ...enc(friendsJson())]) })], [], 30);
-  add("v04", "friends.json in UTF-16", [part({ ...baseFiles(), "json/friends.json": utf16le(friendsJson()) })], ["json-parse-failed","no-friends-section"], 0);
+  add("v04", "friends.json in UTF-16", [part({ ...baseFiles(), "json/friends.json": utf16le(friendsJson()) })], ["json-parse-failed"], 0);
   add("v05", "everything under a mydata_ folder", [part(Object.fromEntries(Object.entries(baseFiles()).map(([k, v]) => [`mydata_1700000000000/${k}`, v])))], [], 30);
   add("v06", "HTML only (the default Snapchat format)", [part({ "html/index.html": "<html></html>", "html/friends.html": "<html></html>", "html/chat_history.html": "<html></html>" })], ["html-only-export"], 0);
   const upper = baseFiles();
   delete upper["json/friends.json"];
   add("v07", "upper-case folder and file name", [part({ ...upper, "JSON/Friends.JSON": friendsJson() })], [], 30);
-  add("v08", "localized section names", [part(withFriends({ Freunde: range(5).map((i) => friendEntry(`friend_${i}`, i)), "Gelöschte Freunde": [{ Username: "gone_0", Date: stamp(0) }] }))], ["friends-no-sections","no-friends-section"], 0);
+  add("v08", "localized section names", [part(withFriends({ Freunde: range(5).map((i) => friendEntry(`friend_${i}`, i)), "Gelöschte Freunde": [{ Username: "gone_0", Date: stamp(0) }] }))], ["friends-layout-unknown","friends-no-sections"], 0);
   add("v09", "snake_case keys", [part(withFriends({ friends: range(5).map((i) => ({ username: `friend_${i}`, creation_timestamp: stamp(i) })) }))], [], 5);
-  add("v10", "friends nested one level", [part(withFriends({ "User Data": friendsJson() }))], ["friends-no-sections","no-friends-section"], 0);
+  add("v10", "friends nested one level", [part(withFriends({ "User Data": friendsJson() }))], ["friends-layout-unknown","friends-no-sections"], 0);
   add("v15", "empty Friends with deleted friends listed", [part(withFriends({ Friends: [], "Deleted Friends": range(5).map((i) => ({ Username: `gone_${i}`, Date: stamp(i) })) }))], ["friends-empty-but-deleted"], 0);
   add("v20", "a ZIP inside a ZIP", [{ name: "mydata~1700000000000.zip", bytes: zipSync({ "mydata~1700000000000.zip": [zipOf(baseFiles()), { level: 0 }] }) }], ["chat-history-missing","memories-missing","no-friends-section","snap-history-missing"], 0);
   add("v21a", "empty file", [{ name: "mydata~1700000000000.zip", bytes: new Uint8Array(0) }], ["zip-unreadable"], 0);
   add("v21b", "ZIP with no entries", [{ name: "mydata~1700000000000.zip", bytes: zipSync({}) }], ["chat-history-missing","memories-missing","no-friends-section","snap-history-missing"], 0);
   const whole = zipOf(baseFiles());
   add("v21c", "truncated part", [{ name: "mydata~1700000000000.zip", bytes: whole.subarray(0, Math.floor(whole.length * 0.6)) }], ["zip-unreadable"], 0);
-  add("v21d", "password protected part", [{ name: "mydata~1700000000000.zip", bytes: patchHeaders(whole, { flagsOr: 1 }) }], ["zip-entry-unreadable"], 0);
-  add("v21e", "AES encrypted part (method 99)", [{ name: "mydata~1700000000000.zip", bytes: patchHeaders(whole, { method: 99 }) }], ["zip-entry-unreadable"], 0);
+  add("v21d", "password protected part", [{ name: "mydata~1700000000000.zip", bytes: patchHeaders(whole, { flagsOr: 1 }) }], ["zip-encrypted"], 0);
+  add("v21e", "AES encrypted part (method 99)", [{ name: "mydata~1700000000000.zip", bytes: patchHeaders(whole, { method: 99 }) }], ["zip-encrypted"], 0);
   add("v22", "unknown friends sections next to known ones", [part(withFriends({ ...friendsJson(), "Mystery List": [{ Username: "x" }], Notes: "text" }))], ["friends-unknown-sections"], 30);
   add("v23", "friends only", [part({ "json/friends.json": friendsJson() })], ["chat-history-missing","memories-missing","snap-history-missing"], 30);
   add("v24", "chat only", [part({ "json/chat_history.json": chatJson() })], ["memories-missing","no-friends-section","snap-history-missing"], 0);
