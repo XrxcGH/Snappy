@@ -101,7 +101,8 @@ beforeEach(() => {
   const g = globalThis as Record<string, unknown>;
   g.window = { addEventListener: (t: string, fn: () => void) => void (t === "hashchange" && hashListeners.push(fn)), removeEventListener: () => {}, scrollTo: () => {} };
   g.location = { hash: "#/start" };
-  g.history = { replaceState: (_s: unknown, _t: string, url: string) => void replaced.push(url) };
+  // Only calls that rewrite the address count: the router also marks the entry it shows (state only, no address).
+  g.history = { replaceState: (_s: unknown, _t: string, url?: string) => void (url !== undefined && replaced.push(url)) };
   g.matchMedia = () => ({ matches: false, addEventListener: () => {} });
 });
 
