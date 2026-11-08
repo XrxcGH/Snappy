@@ -33,7 +33,7 @@ export const startView: View = (ctx) => {
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
     // The progress and any problem sit here, full width above the three steps: inside the third card they
     // were a narrow column below the fold, and a failed import looked like a click that did nothing.
-    region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory], (s) => importStatus(ctx, s)),
+    region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory, s.import.canOverride, s.vault.hasSaved, s.real.ledger.snapshots.length], (s) => importStatus(ctx, s)),
     h("div", { class: "step-list" }, getExportSection(), countSection(ctx), addSection(ctx)),
   );
   // The chooser, the drop zone and the sample button wait while a read is going, so a second run cannot start on top of it.
@@ -316,7 +316,7 @@ function importStatus(ctx: ViewContext, s: State): Child {
   const imp = s.import;
   // Not repainted on every progress tick: the reading status updates itself in place.
   if (imp.phase === "reading") return statusBlock(readingStatus(ctx));
-  if (imp.phase === "failed") return statusBlock(...failureNotices(imp));
+  if (imp.phase === "failed") return statusBlock(...failureNotices(ctx, s));
   // Stopped by the person: the chooser is back, and nothing was added.
   if (imp.phase === "idle" && imp.message !== undefined) return statusBlock(notice("info", imp.message));
   if (imp.phase === "done" && !imp.sample) {
@@ -330,12 +330,29 @@ function importStatus(ctx: ViewContext, s: State): Child {
  * files, no JSON), that one cause is the whole message: the headline "looks incomplete" and the notes about lists
  * that were never read would be statements about files Snappy could not open.
  */
-function failureNotices(imp: ImportStatus): Child[] {
+function failureNotices(ctx: ViewContext, s: State): Child[] {
+  const imp = s.import;
   const problems = visibleIssues(imp.issues ?? []);
   const help = h("p", {}, routeLink("guide", common.openGuide));
   if (failureClass(problems) !== undefined) return [...problems.filter((i) => failureClass([i]) !== undefined).map(issueNotice), help];
   const lead = notice("error", imp.message ?? start.readFailed);
-  return [lead, ...problems.map(issueNotice), help];
+  // An empty friends list with removed friends may be a real list: with nothing saved to compare with, the person may go on.
+  // With a saved history, or an earlier export this session, the refusal stands: a list that looks empty would make everyone vanish.
+  const mayGoOn = imp.canOverride === true && !s.vault.hasSaved && s.real.ledger.snapshots.length === 0;
+  const useAnyway = mayGoOn
+    ? h("div", { class: "actions" }, button({ label: startFlow.useAnyway, key: "use-anyway", onclick: () => void goOn(ctx) }))
+    : null;
+  return [lead, ...problems.map(issueNotice), useAnyway, help];
+}
+
+async function goOn(ctx: ViewContext): Promise<void> {
+  const result = await ctx.actions.importAnyway();
+  if (result === "done") {
+    announce(ctx.store.get().import.addedToHistory === false ? start.notAdded : start.readDone);
+    navigate("overview");
+  } else {
+    announce(ctx.store.get().import.message ?? start.readFailed, true);
+  }
 }
 
 /** One short secondary button under the intro, so a first look at every screen needs no scrolling. The note says the sample is never saved. */

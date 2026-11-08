@@ -41,6 +41,11 @@ export type ImportResult = "done" | "failed" | "canceled" | "busy";
 export interface Actions {
   init(savedTheme: string | null): Promise<void>;
   importZips(files: readonly NamedBlob[]): Promise<ImportResult>;
+  /**
+   * Go on with the export that was just refused for a reason the person may override (an empty friends list with removed
+   * friends), when there is no saved history and no earlier export this session. Reads nothing again. Otherwise "failed".
+   */
+  importAnyway(): Promise<ImportResult>;
   /** Stop the import that is being read. Nothing is added to the history. Does nothing when none is running. */
   cancelImport(): void;
   loadSample(): Promise<ImportResult>;
@@ -124,10 +129,19 @@ export function createActions(store: Store, deps: Deps): Actions {
   let working = false;
   /** Aborted by Cancel. Lives only for the import in progress. */
   let stopping: AbortController | null = null;
+  /** What was read of an export that was refused for a reason the person may override. Memory only; see conclude. */
+  interface Read {
+    combined: ParsedExport;
+    /** Files chosen that were not ZIP files. */
+    skipped: number;
+    parts: number;
+  }
+  let held: Read | null = null;
 
   async function importZips(files: readonly NamedBlob[]): Promise<ImportResult> {
     if (working || store.get().import.phase === "reading") return "busy";
     working = true;
+    held = null;
     try {
       return await readZips(files);
     } finally {
@@ -183,27 +197,7 @@ export function createActions(store: Store, deps: Deps): Actions {
       if (stop.signal.aborted) throw new ImportCanceled();
       // Whichever reader ran (the worker or this page), file locations and links are forgotten before
       // anything is kept: nothing here opens a file, so nothing needs them.
-      const combined = forgetMediaHandles(read);
-
-      const now = deps.clock();
-      // The export date comes from the newest file time inside the zip, which anyone can set. A
-      // far-future date would sort this export after every later one for good, so it is not trusted.
-      const futureDated = combined.exportedAt !== undefined && combined.exportedAt > now + FUTURE_SLACK_MS;
-      const merged: ParsedExport = futureDated ? { ...combined, exportedAt: undefined } : combined;
-      const issues: ExportIssue[] = exportHealth(merged, { expectedFriendCount: store.get().expectedFriendCount ?? undefined, now });
-
-      // An export with errors is refused outright, as the command-line tool does: its lists may be
-      // cut off, and a cut-off list makes everyone look like they vanished. Nothing is added to the
-      // history and nobody is suggested for removal.
-      if (issues.some((i) => i.severity === "error")) {
-        store.dispatch({ type: "import-failed", message: start.rejected, issues });
-        return "failed";
-      }
-      // A file that is not a .zip was left out. If it was a part of the export, what was read is incomplete.
-      if (zips.length < files.length) issues.push({ severity: "warning", code: "files-skipped-not-zip", message: start.skippedFiles(files.length - zips.length) });
-      const snapshot = snapshotOf(merged, now, issues, futureDated);
-      store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now, parts: ordered.length });
-      return "done";
+      return conclude({ combined: forgetMediaHandles(read), skipped: files.length - zips.length, parts: ordered.length }, false);
     } catch (e) {
       if (stop.signal.aborted || e instanceof ImportCanceled) {
         store.dispatch({ type: "import-canceled", message: startFlow.stopped });
@@ -211,6 +205,52 @@ export function createActions(store: Store, deps: Deps): Actions {
       }
       store.dispatch({ type: "import-failed", message: start.readFailed });
       return "failed";
+    }
+  }
+
+  /**
+   * Check what was read and, when it is fit to use, add it to the history. `allowEmptyFriends` is set only by "Use anyway".
+   * An export that was refused for a reason the person may override is kept in memory until the next import, so
+   * that button does not read the files again; it is never written anywhere and is dropped when the history is closed.
+   */
+  function conclude(read: Read, allowEmptyFriends: boolean): ImportResult {
+    const { combined } = read;
+    const now = deps.clock();
+    // The export date comes from the newest file time inside the zip, which anyone can set. A
+    // far-future date would sort this export after every later one for good, so it is not trusted.
+    const futureDated = combined.exportedAt !== undefined && combined.exportedAt > now + FUTURE_SLACK_MS;
+    const merged: ParsedExport = futureDated ? { ...combined, exportedAt: undefined } : combined;
+    const issues: ExportIssue[] = exportHealth(merged, { expectedFriendCount: store.get().expectedFriendCount ?? undefined, now, allowEmptyFriends });
+
+    // An export with errors is refused outright, as the command-line tool does: its lists may be
+    // cut off, and a cut-off list makes everyone look like they vanished. Nothing is added to the
+    // history and nobody is suggested for removal.
+    if (issues.some((i) => i.severity === "error")) {
+      // The one exception is a refusal the person may override, and only when there is nothing to compare with:
+      // with no saved history and no earlier export this session, a first export cannot make anyone look like they vanished.
+      const canOverride = issues.filter((i) => i.severity === "error").every((i) => i.overridable === true) && mayOverride();
+      held = canOverride ? read : null;
+      store.dispatch({ type: "import-failed", message: start.rejected, issues, canOverride });
+      return "failed";
+    }
+    held = null;
+    // A file that is not a .zip was left out. If it was a part of the export, what was read is incomplete.
+    if (read.skipped > 0) issues.push({ severity: "warning", code: "files-skipped-not-zip", message: start.skippedFiles(read.skipped) });
+    const snapshot = snapshotOf(merged, now, issues, futureDated);
+    store.dispatch({ type: "import-finished", latest: merged, issues, snapshot, now, parts: read.parts });
+    return "done";
+  }
+
+  const mayOverride = (): boolean => !store.get().vault.hasSaved && store.get().real.ledger.snapshots.length === 0;
+
+  /** "Use anyway": go on with the export that was refused for a reason that can be overridden. Reads nothing again. */
+  async function importAnyway(): Promise<ImportResult> {
+    if (working || held === null || !mayOverride()) return "failed";
+    working = true;
+    try {
+      return conclude(held, true);
+    } finally {
+      working = false;
     }
   }
 
@@ -351,6 +391,7 @@ export function createActions(store: Store, deps: Deps): Actions {
   async function closeHistory(): Promise<void> {
     await chain;
     passphrase = null;
+    held = null;
     store.dispatch({ type: "locked" });
     resetAnalysisCache();
   }
@@ -406,6 +447,7 @@ export function createActions(store: Store, deps: Deps): Actions {
       setVault({ message: { kind: "error", text: settings.deleteFailed } });
       return false;
     }
+    held = null;
     store.dispatch({ type: "wiped" });
     resetAnalysisCache();
     deps.onWipe?.();
@@ -416,6 +458,7 @@ export function createActions(store: Store, deps: Deps): Actions {
   return {
     init,
     importZips,
+    importAnyway,
     cancelImport,
     loadSample,
     clearSample() {

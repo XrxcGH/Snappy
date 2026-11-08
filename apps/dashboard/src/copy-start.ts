@@ -16,6 +16,9 @@ export const startFlow = {
   elapsed: (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")} elapsed`,
   busy: "Wait for the current step to finish.",
 
+  // An export refused only because its friends list is empty although removed friends are listed: the person may go on.
+  useAnyway: "Use anyway",
+
   // Parts of two exports. The numbers are the digits after "mydata~" in the file names, nothing else of a name.
   mixedExports: (first: string, second: string) => `These ZIP files come from two different exports, ${first} and ${second}. Choose the parts of one export.`,
 };

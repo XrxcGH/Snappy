@@ -12,7 +12,7 @@ export function sortIssues(issues: readonly ExportIssue[]): ExportIssue[] {
 }
 
 /** Parse issues plus whole-export checks (friend count, date range), without duplicates. */
-export function exportHealth(parsed: ParsedExport, hints: { expectedFriendCount?: number; now: number }): ExportIssue[] {
+export function exportHealth(parsed: ParsedExport, hints: { expectedFriendCount?: number; now: number; allowEmptyFriends?: boolean }): ExportIssue[] {
   const seen = new Set<string>();
   const out: ExportIssue[] = [];
   for (const issue of [...parsed.issues, ...validateExport(parsed, hints)]) {
