@@ -23,6 +23,7 @@ not verified, and [docs/MACOS.md](../../docs/MACOS.md) for the macOS build.
 | `tools/make-installer-images.mjs`, `src-tauri/installer/` | Draws the installer's two pictures (`header.bmp`, `sidebar.bmp`) from the brand logo and tokens with no tools installed (`--check` fails when the committed files differ). The folder also holds `hooks.nsh` (leaves the Finish page's desktop shortcut box unticked) and `English.nsh` (the installer's wording; it changes one line, the uninstaller's saved-data box). |
 | `src/update-*.ts`, `src/update.css` | The update banner, Settings card, Privacy block and first-run notice. Desktop entry only: the web build does not contain them. |
 | `tools/check-no-network-deps.mjs`, `tools/network-surface.mjs` | Fails if the Rust dependency tree of any release target holds a way to connect to a network, or if a crate appears that `tools/approved-crates.txt` does not name (a person must approve it), if WinHTTP or a process start leaves its one file, or (with `--exe`) if the built program imports any network library other than WinHTTP or holds a test setting. Runs in CI. |
+| `tools/make-notices.mjs`, `src-tauri/notices/` | Writes `THIRD-PARTY-DESKTOP.txt`: every Rust crate in the program (the six desktop targets, normal dependencies only) and `@tauri-apps/api`, each with the license text its authors published, and the source address of the five MPL-2.0 crates. It reads `cargo metadata --locked --offline` and the npm lock, needs no network, and records a hash of `Cargo.lock`: a test fails when the lock changes and the file does not. Regenerate with `node apps/app/tools/make-notices.mjs` (`--check` compares). The installer ships it with `NOTICE` and `THIRD-PARTY-NOTICES.md` in a `licenses` folder (`bundle.resources`). |
 | `tools/sign-release.mjs`, `tools/make-updater-fixtures.mjs`, `tools/check-web-build-unchanged.mjs` | The maintainer's offline signing tool, the generator of the TEST signature fixtures, and the proof that the web build is byte for byte unchanged. |
 | `test/e2e-update/`, `test/e2e-ui/` | The hand-run update drill (installs, opens windows) and the headless-browser check of the update interface. |
 | `test/` | Guards on the shell config and source, the fallback reader against a fake shell, the platform note, and the workflow files. Rust unit tests are in `src-tauri` (`cargo test --lib`). |
@@ -82,6 +83,9 @@ a change to `src-tauri/` or the frontend build, run these by hand on a test buil
    must stay readable with no sideways scrolling, and Ctrl and scroll must zoom too. macOS and Linux need one more
    capability permission before this works there (it widens the window's permissions, so the owner reviews it); check
    it once the macOS build runs.
+
+9. Notices. After installing, the install folder holds `licenses\NOTICE.txt`, `licenses\THIRD-PARTY-NOTICES.md` and
+   `licenses\THIRD-PARTY-DESKTOP.txt`, and the uninstaller removes them. On macOS they are in the app's `Resources/licenses`.
 
 The finished release program removes the `WEBVIEW2_*` variables, so it cannot be driven this way. The test build
 and the release build are the same code apart from that.

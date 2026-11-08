@@ -43,6 +43,11 @@
     "copyright": "Copyright 2026 Snappy contributors. Licensed under the Apache License 2.0.",
     "license": "Apache-2.0",
     "licenseFile": "../../../LICENSE",
+    "resources": {
+      "../../../NOTICE": "licenses/NOTICE.txt",
+      "../../../THIRD-PARTY-NOTICES.md": "licenses/THIRD-PARTY-NOTICES.md",
+      "notices/THIRD-PARTY-DESKTOP.txt": "licenses/THIRD-PARTY-DESKTOP.txt"
+    },
     "category": "Utility",
     "shortDescription": "Organize your own Snapchat data export, on your device.",
     "longDescription": "Snappy reads the Snapchat Download My Data export that you already have, on your own device. It builds a tidy friend list, a Cleanup queue and a Memories rescue. It uses friend usernames and dates only and needs no account access. Its only network request is an update check that you can turn off.",
