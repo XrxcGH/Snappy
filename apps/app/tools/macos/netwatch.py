@@ -21,9 +21,21 @@ that the sampler sees connections at all.
 Limits, said plainly: it samples, so a connection that opens and closes between two samples is missed; it sees only this
 user's processes and only internet sockets (a Unix socket or a raw socket is not listed); it cannot read the contents.
 
-Exit codes: 0 nothing seen (or, with --control, the control connection was seen); 3 the app's processes had a
-connection to a non-loopback address; 4 the control connection was NOT seen (the sampler cannot be trusted);
-5 the app never appeared while watching.
+Two checks guard the sampler itself, because silence from it proves nothing unless it could have seen something:
+
+  * --control: a plain child process holds a connection to a real outside address and the sampler must see it. This shows
+    only that `lsof -i` lists a held TCP socket of an ordinary process.
+  * The WebKit networking helper. The web view's connections come from com.apple.WebKit.Networking, a sandboxed helper. A
+    watch fails (exit 6) if no Networking helper that started after the watch began was counted as the app's: a helper that
+    was already running (for example one a newer macOS shares between apps) would otherwise be left out silently. With
+    --require-webkit-socket (used by probe.sh around a stand-in that really talks to a loopback server) the watch must also
+    list at least one socket of such a helper, or it fails with exit 7: that is the proof that `lsof -i` can see the
+    helper's sockets at all.
+
+Exit codes: 0 nothing seen (or, with --control, the control connection was seen; or, with --require-webkit-socket, a
+socket of a Networking helper was seen); 3 the app's processes had a connection to a non-loopback address; 4 the control
+connection was NOT seen (the sampler cannot be trusted); 5 the app never appeared while watching; 6 no new WebKit
+Networking helper was counted as the app's; 7 a Networking helper was counted but none of its sockets was ever listed.
 """
 
 import argparse
@@ -35,6 +47,7 @@ import time
 
 LOOPBACK = re.compile(r"^(127\.|::1$|::ffff:127\.|localhost$)", re.IGNORECASE)
 WEBKIT_HELPER = "com.apple.WebKit."
+WEBKIT_NETWORKING = "com.apple.WebKit.Networking"
 
 
 def process_table():
@@ -176,6 +189,16 @@ def watch(find_roots, seconds, interval, stop_file, log, baseline_webkit, includ
     }
 
 
+def networking_pids(r):
+    """The pids counted as the app's whose command line is the WebKit networking helper."""
+    return {pid for pid, (_, cmd) in r["attributed"].items() if WEBKIT_NETWORKING in cmd}
+
+
+def socket_pids(r):
+    """The pids for which any internet socket was listed while watching (connected, loopback or only bound)."""
+    return {key[0] for table in (r["out"], r["loop"], r["bound"]) for key in table}
+
+
 def summarise(log, r, title):
     log.write(f"\n== {title} ==\n")
     log.write(f"samples: {r['ticks']} over {r['seconds']:.1f} s; mean gap {r['mean_gap'] * 1000:.0f} ms, longest gap {r['max_gap'] * 1000:.0f} ms\n")
@@ -184,6 +207,10 @@ def summarise(log, r, title):
     log.write(f"processes counted as the app's ({len(r['attributed'])}):\n")
     for pid, (ppid, cmd) in sorted(r["attributed"].items()):
         log.write(f"  pid {pid} (parent {ppid}) {cmd[:200]}\n")
+    networking = networking_pids(r)
+    log.write(f"WebKit networking helper processes among them: {sorted(networking) if networking else 'none'}\n")
+    listed = socket_pids(r) & networking
+    log.write(f"sockets of any kind listed for those helpers: {('yes, for ' + str(len(listed)) + ' of them') if listed else 'none'}\n")
     log.write(f"connections to a non-loopback address by those processes: {len(r['out'])}\n")
     for (pid, cmd, proto, name), (t0, n) in sorted(r["out"].items(), key=lambda kv: kv[1][0]):
         log.write(f"  first at {t0:.1f} s, seen in {n} samples: pid {pid} {cmd} {proto} {name}\n")
@@ -231,6 +258,7 @@ def main():
     ap.add_argument("--max-seconds", type=float, default=300.0)
     ap.add_argument("--stop-file")
     ap.add_argument("--control", action="store_true")
+    ap.add_argument("--require-webkit-socket", action="store_true")
     args = ap.parse_args()
     with open(args.log, "a", encoding="utf-8") as log:
         if args.control:
@@ -248,9 +276,22 @@ def main():
         if not r["app_seen"]:
             log.write("RESULT: the app never appeared while watching.\n")
             return 5
+        if args.require_webkit_socket:
+            # The stand-in's control run. Loopback connections to the test server are expected, so only the helper matters.
+            if not networking_pids(r):
+                log.write("RESULT: FAIL, no WebKit networking helper was counted as the stand-in's.\n")
+                return 6
+            if not (socket_pids(r) & networking_pids(r)):
+                log.write("RESULT: FAIL, a WebKit networking helper was counted but lsof listed none of its sockets: the sampler cannot see the web view's connections.\n")
+                return 7
+            log.write("RESULT: lsof listed sockets of the WebKit networking helper, so the sampler can see the web view's connections.\n")
+            return 0
         if r["out"]:
             log.write("RESULT: FAIL, the app's processes had a connection to a non-loopback address (listed above).\n")
             return 3
+        if not networking_pids(r):
+            log.write("RESULT: FAIL, no WebKit networking helper that started after the watch began was counted as the app's, so its connections could not have been seen.\n")
+            return 6
         log.write("RESULT: no connection to a non-loopback address was seen from the app's processes.\n")
         return 0
 
