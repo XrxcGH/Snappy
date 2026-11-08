@@ -21,7 +21,7 @@ the lists and dates only, never message text, photos or videos.
 Give it every part of your export, or a folder or wildcard such as "mydata*.zip".
 
 Options
-  --friend-count <n>  The friend count in the app, to catch a short export.
+  --friend-count <n>  The friend count shown in Snapchat, to catch a short export.
   --json              Print JSON instead of text.
   --verbose           Add a short code to each note, for bug reports.
   --no-color          Plain text.

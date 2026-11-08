@@ -29,7 +29,7 @@ Options
   --no-save                 Skip your saved history. Nothing is written, no passphrase asked.
   --history <path>          Saved history file. Default: ~/.snappy/ledger.sealed
   --passphrase-file <path>  Use the first line of this file as the passphrase.
-  --friend-count <n>        The friend count in the app, to catch a short export.
+  --friend-count <n>        The friend count shown in Snapchat, to catch a short export.
   --min-confidence <level>  Hide results below low, medium, or high. Default: low.
   --allow <name,...>        Leave these friends out this run. Use keep to save them.
   --limit <n>               Rows to print. Default: 50. Use 0 for all.

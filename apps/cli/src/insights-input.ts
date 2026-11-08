@@ -33,7 +33,7 @@ export const COMMON_OPTIONS: OptionSpec = {
   help: { type: "boolean", short: "h" },
 };
 
-/** For commands that compare the export with the friend count shown in the app. */
+/** For commands that compare the export with the friend count shown in Snapchat. */
 export interface FriendCountFlags {
   "friend-count"?: string;
 }
@@ -110,7 +110,7 @@ export interface InsightInput {
 }
 
 export interface LoadOptions {
-  /** The friend count shown in the app, to catch a short export. */
+  /** The friend count shown in Snapchat, to catch a short export. */
   friendCount?: number;
   /** Also list each part's directory: unreadable parts and folder totals. Reads no file contents. */
   layout?: boolean;

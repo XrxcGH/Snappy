@@ -198,7 +198,7 @@ export function renderFriends(table: Table, view: FriendsView, term: Term, verbo
     out.push(
       `  ${term.violet(plural(s.friends, "friend"))} in your export. ${formatCount(s.withEvents)} ${hasHave(s.withEvents)} saved chats or Snaps.`,
       ...(table.asOf === null ? [] : [`  Counted up to ${formatDate(table.asOf)}.`]),
-      "  Hints come from saved chats and Snaps, so check in the app.",
+      "  Hints come from saved chats and Snaps, so check in Snapchat.",
       "",
     );
 

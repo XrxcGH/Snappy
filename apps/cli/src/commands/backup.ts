@@ -29,7 +29,7 @@ Options
   --force                Replace the file named by --out if it exists.
   --compare <file.json>  Check a saved backup against this export.
   --list                 Print the usernames too.
-  --friend-count <n>     The friend count in the app, to catch a short export.
+  --friend-count <n>     The friend count shown in Snapchat, to catch a short export.
   --json                 Print JSON instead of text.
   --verbose              Add a short code to each note, for bug reports.
   --no-color             Plain text.

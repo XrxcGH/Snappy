@@ -70,7 +70,7 @@ function noteText(n: Note, ledger: LedgerState): string {
     case "no-dated-friendships":
       return "No friendship in your export has a usable date, so Snappy cannot draw a curve.";
     case "curve-may-run-high":
-      return "People who removed you are not on the curve, so earlier months may run high.";
+      return "Friends who left your list on their own are not on the curve, so earlier months may run high.";
     case "undated-joins":
       return `${plural(count, "friend")} ${hasHave(count)} no start date. Snappy counts ${noun(count, "that friend", "them")} from the first month.`;
     case "undated-leaves":

@@ -73,7 +73,7 @@ export async function keepCommand(mode: "keep" | "unkeep", args: string[], io: I
   const skipped = names.length - changed.length;
   if (mode === "keep") {
     io.out.write(`${plural(changed.length, "friend")} added to your keep list${skipped > 0 ? ` (${skipped} already there)` : ""}. ${plural(total, "friend")} in total.\n`);
-    io.out.write("They will not appear in the cleanup queue. Keep list sealed with your passphrase.\n");
+    io.out.write("They will not appear in the cleanup queue. Keep list saved with your passphrase.\n");
   } else {
     io.out.write(`${plural(changed.length, "friend")} taken off your keep list${skipped > 0 ? ` (${skipped} not on it)` : ""}. ${plural(total, "friend")} left.\n`);
   }

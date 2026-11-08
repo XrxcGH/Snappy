@@ -123,7 +123,7 @@ export function renderReachOut(report: Report, term: Term, verbose: boolean, vie
       `  ${leaning}`,
       `  Checked ${plural(summary.people, "one-to-one chat")}, using saved chats and Snaps.`,
       `  A new exchange starts after ${plural(settings.gapHours, "hour")} of silence.`,
-      "  These are hints. Messages can be missing from an export, so check in the app.",
+      "  These are hints. Messages can be missing from an export, so check in Snapchat.",
       "",
     );
 

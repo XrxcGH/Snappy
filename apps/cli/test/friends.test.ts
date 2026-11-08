@@ -56,7 +56,7 @@ describe("the command", () => {
     expect(out).toContain("Friends");
     expect(out).toContain("30 friends in your export. 28 have saved chats or Snaps.");
     expect(out).toContain("Counted up to Nov 1, 2026.");
-    expect(out).toContain("Hints come from saved chats and Snaps, so check in the app.");
+    expect(out).toContain("Hints come from saved chats and Snaps, so check in Snapchat.");
     expect(out).toMatch(/Quiet +6\n/);
     expect(out).toMatch(/One-sided +0\n/);
     expect(out).toMatch(/Waiting on a reply +1\n/);

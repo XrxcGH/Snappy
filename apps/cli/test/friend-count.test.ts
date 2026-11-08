@@ -342,6 +342,12 @@ describe("wording", () => {
     expect(renderFriendCount(r, term, true)).toContain("code: curve-may-run-high");
   });
 
+  it("hedges the note about friends who are missing from the curve", () => {
+    const text = renderFriendCount(report(3, { notes: [{ code: "curve-may-run-high", params: {} }] }), term, false).replace(/\s+/g, " ");
+    expect(text).toContain("Friends who left your list on their own are not on the curve, so earlier months may run high.");
+    expect(text).not.toContain("People who removed you");
+  });
+
   it("names months in sentence case, with a plain sign on the net change", () => {
     expect(monthText("2026-03")).toBe("Mar 2026");
     expect(monthText("0999-12")).toBe("Dec 999");

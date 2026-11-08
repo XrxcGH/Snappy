@@ -96,6 +96,21 @@ describe("terminal copy follows the brand guide", () => {
     }
   });
 
+  it("sends people to Snapchat, not to the app, and never says a person removed you as a fact", async () => {
+    for (const [name, text] of Object.entries(await everything())) {
+      expect(text, name).not.toMatch(/\bin the app\b/i);
+      expect(text, name).not.toMatch(/people who removed you|been removed, or closed/i);
+    }
+    const all = await everything();
+    expect(all["help analyze"]).toContain("The friend count shown in Snapchat, to catch a short export.");
+  });
+
+  it("describes saving with the passphrase in plain words", async () => {
+    const all = await everything();
+    expect(all.keep).toContain("Keep list saved with your passphrase.");
+    for (const [name, text] of Object.entries(all)) expect(text, name).not.toMatch(/sealed with your passphrase/i);
+  });
+
   it("uses the feature names from the guide", async () => {
     const out = (await everything()).analyze as string;
     expect(out).toContain("Disappeared friends");
@@ -155,6 +170,6 @@ describe("terminal copy follows the brand guide", () => {
     expect(all.analyze).toContain("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
     expect(all.analyze).toContain("Nothing here has left this device.");
     expect(all.analyze).toContain("Confidence is an estimate from your exports, not something Snapchat told Snappy.");
-    expect(all["analyze saved"]).toContain("Saved history sealed with your passphrase.");
+    expect(all["analyze saved"]).toContain("History saved with your passphrase.");
   });
 });

@@ -16,7 +16,7 @@ import type { Term } from "../term.ts";
 
 export const SAFETY_USAGE = `Usage: snappy-export safety [ZIP files or folder...] [options]
 
-Shows a short account safety checklist. It is self-reported: Snappy cannot see your settings, so you say what you have done in the app.
+Shows a short account safety checklist. It is self-reported: Snappy cannot see your settings, so you say what you have done in Snapchat.
 
 Give it your export to add counts of blocked people and pending requests. This is optional, and nothing is saved between runs.
 

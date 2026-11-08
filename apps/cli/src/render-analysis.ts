@@ -95,7 +95,7 @@ export function renderAnalysisText(result: AnalysisResult, opts: TextOptions): s
   out.push("");
 
   if (opts.csvPath !== undefined) out.push(`CSV saved: ${opts.csvPath}`);
-  out.push(opts.ledger === "saved" ? "Saved history sealed with your passphrase." : "Your saved history was not read or written, as you asked.");
+  out.push(opts.ledger === "saved" ? "History saved with your passphrase." : "Your saved history was not read or written, as you asked.");
   out.push("Confidence is an estimate from your exports, not something Snapchat told Snappy. Removing is always your call.");
   out.push(PRIVACY_IMPORT);
   out.push(PRIVACY_RESULTS);

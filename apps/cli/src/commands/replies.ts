@@ -108,7 +108,7 @@ export function renderReplies(report: Report, term: Term, verbose: boolean, view
         s.oneSided === 0 ? "No chats look one-sided." : `${plural(s.oneSided, "chat")} ${isAre(s.oneSided)} mostly one-sided.`
       }`,
       `  Checked ${plural(s.people, "one-to-one chat")}, using saved chats and Snaps.`,
-      "  These are hints. Messages can be missing from an export, so check in the app.",
+      "  These are hints. Messages can be missing from an export, so check in Snapchat.",
       "",
     );
 

@@ -184,7 +184,7 @@ function noteText(n: Note, source: PreviousSource): string {
     case "snapshot-time-in-future":
       return `${plural(count, "export")} ${hasHave(count)} a date in the future. A device clock may have been wrong.`;
     case "friends-may-have-left":
-      return `${plural(count, "friend")} ${isAre(count)} no longer listed. ${noun(count, "That friend", "They")} may have removed you, been removed, or closed the account.`;
+      return `${plural(count, "friend")} ${isAre(count)} no longer listed. ${noun(count, "That friend", "They")} may have removed you or closed their account.`;
     case "possible-partial-export":
       return `${formatCount(count)} of ${plural(num(n, "previous"), "friend")} ${isAre(count)} gone. This may be a partial export, so check it before you trust the list.`;
     case "blocked-excluded":

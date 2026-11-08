@@ -94,7 +94,7 @@ describe("analyze with a sealed ledger", () => {
 
     const first = await run(["analyze", earlier, "--ledger", ledger], makeIo({ env }));
     expect(first.code).toBe(0);
-    expect(first.out).toContain("Saved history sealed with your passphrase.");
+    expect(first.out).toContain("History saved with your passphrase.");
     expect(first.out).toContain("1 export in your history");
     expect(first.out).toContain("Snappy needs two exports to see who disappeared.");
 

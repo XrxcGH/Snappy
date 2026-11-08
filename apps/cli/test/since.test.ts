@@ -110,7 +110,7 @@ describe("the command", () => {
     expect(text).toMatch(/New friends +2\n/);
     expect(text).toMatch(/No longer listed +3\n/);
     expect(text).toMatch(/Removed by you +2\n/);
-    expect(text).toContain("3 friends are no longer listed. They may have removed you, been removed, or closed the account.");
+    expect(text).toContain("3 friends are no longer listed. They may have removed you or closed their account.");
     expect(text).toContain("Chats and Snaps");
     expect(text).toContain("Sent: up 61. Received: up 101.");
     expect(text).toContain("20 Memories in this export, 3 captured since your last export.");
@@ -420,7 +420,7 @@ describe("wording", () => {
 
   it("says one, not 1 friends, and names no one in a note", () => {
     const text = flat(renderSince(report(1, { notes: allNotes(1) }), term, false));
-    expect(text).toContain("1 friend is no longer listed. That friend may have removed you, been removed, or closed the account.");
+    expect(text).toContain("1 friend is no longer listed. That friend may have removed you or closed their account.");
     expect(text).toContain("1 request you sent is no longer listed. It may have been declined.");
     expect(text).toContain("1 export has a date in the future. A device clock may have been wrong.");
     expect(text).toContain("1 Memory has no date or a date in the future. Snappy leaves it out of the new count.");
@@ -428,7 +428,7 @@ describe("wording", () => {
     expect(text).toContain("The exports are 1 day apart.");
     expect(notesOf(text)).not.toMatch(/\b(?:gone|nf|rm|bl|acc|pend|van)_\d/);
     const many = flat(renderSince(report(2, { notes: allNotes(2) }), term, false));
-    expect(many).toContain("2 friends are no longer listed. They may have removed you, been removed, or closed the account.");
+    expect(many).toContain("2 friends are no longer listed. They may have removed you or closed their account.");
     expect(many).toContain("2 requests you sent are no longer listed. They may have been declined.");
     expect(many).toContain("2 exports have a date in the future.");
     expect(many).toContain("2 of 7 friends are gone. This may be a partial export, so check it before you trust the list.");
