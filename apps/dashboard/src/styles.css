@@ -416,8 +416,8 @@ img, svg { max-width: 100%; }
 @media (min-width: 40rem) {
   .tiles-stats .tile, .tiles-findings .tile { grid-column: span 2; }
 }
-/* The five findings below the wide layout: three, then two of the same width centered under them. */
-@media (min-width: 40rem) and (max-width: 71.99rem) {
+/* The five findings below 80rem: three, then two of the same width centered under them. At 72rem to 79.99rem (the desktop window) five across would be 157 px tiles with titles on one or two lines. */
+@media (min-width: 40rem) and (max-width: 79.99rem) {
   .tiles-findings .tile:nth-child(4):nth-last-child(2) { grid-column: 2 / span 2; }
   .tiles-findings .tile:nth-child(5):last-child { grid-column: 4 / span 2; }
 }
@@ -765,10 +765,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .empty { grid-template-columns: minmax(0, var(--col)); justify-content: center; }
   .empty-spot { grid-template-columns: auto minmax(0, calc(var(--col) - 11rem)); column-gap: var(--space-8); }
 
-  /* Overview and counts. The five findings are one row of five equal tiles. A row of six counts is three and three, and
+  /* Overview and counts. The five findings are three and two (see the tiles section) until 80rem, then one row of five equal tiles. A row of six counts is three and three, and
      six across from the next step up. The notes in Export health are cards in two equal columns, so no note runs past the measure. */
-  .tiles-findings { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .tiles-findings .tile, .tiles-findings .tile:nth-child(n+4) { grid-column: span 1; }
   /* The notes of one part of Export health are one grid of cards (the stack and the group dissolve into it), and the
      columns follow the count so no note is left alone in a row: one note at the measure, two or four in pairs, three or
      five and more in threes. Where the card holds two parts, the notes and the Memories notes, the parts are the two columns
@@ -784,6 +782,11 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .details-body:has(> .health-notes):has(> .subsection) > * { grid-column: 1 / -1; }
   .details-body:has(> .health-notes):has(> .subsection) > .health-notes, .details-body:has(> .health-notes):has(> .subsection) > .subsection { grid-column: span 1; grid-row: 1; margin-top: 0; }
   .details-body:has(> .health-notes):has(> .subsection) .health-notes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 80rem) {
+  /* The five findings are one row of five equal tiles from 80rem; below it they stay three and two, so a title never wraps in a 157 px tile. */
+  .tiles-findings { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .tiles-findings .tile, .tiles-findings .tile:nth-child(n+4) { grid-column: span 1; }
 }
 @media (min-width: 72rem) {
   /* Start: the three steps side by side, in order, as equal cards. The sample-data card and the notes about saving are

@@ -140,17 +140,26 @@ describe("the Tools hub rows", () => {
   });
 });
 
-describe("the Overview findings below the wide layout", () => {
+describe("the Overview findings below 80rem", () => {
   it("are three tiles and then two of the same width, centered under them", () => {
     const fourth = rulesFor(".tiles-findings .tile:nth-child(4):nth-last-child(2)");
     const fifth = rulesFor(".tiles-findings .tile:nth-child(5):last-child");
     expect(fourth.map((r) => r.body.trim())).toEqual(["grid-column: 2 / span 2;"]);
     expect(fifth.map((r) => r.body.trim())).toEqual(["grid-column: 4 / span 2;"]);
-    // Both sit inside the range that ends where the wide layout (five across) begins.
-    for (const rule of [...fourth, ...fifth]) expect(rule.media).toEqual(["(min-width: 40rem) and (max-width: 71.99rem)"]);
+    // Both sit inside the range that ends where the row of five begins (80rem), so the desktop window (1152 to 1279 px) keeps three and two.
+    for (const rule of [...fourth, ...fifth]) expect(rule.media).toEqual(["(min-width: 40rem) and (max-width: 79.99rem)"]);
     // Every tile of the row is two of the six columns, like the three above them.
     expect(rules.some((r) => r.selector === ".tiles-stats .tile" && /grid-column:\s*span 2/.test(r.body))).toBe(true);
     expect(rules.filter((r) => r.selector === ".tiles-findings .tile:nth-child(n+4)" && /span 3/.test(r.body))).toEqual([]);
+  });
+
+  it("puts the five across only from 80rem, where a tile is wide enough for its title on one line", () => {
+    const across = rules.filter((r) => r.selector === ".tiles-findings" && /repeat\(5,/.test(r.body));
+    expect(across).toHaveLength(1);
+    expect(across[0]?.media).toEqual(["(min-width: 80rem)"]);
+    const spans = rules.filter((r) => r.selector.startsWith(".tiles-findings .tile") && /grid-column:\s*span 1/.test(r.body));
+    expect(spans.length).toBeGreaterThan(0);
+    for (const rule of spans) expect(rule.media).toEqual(["(min-width: 80rem)"]);
   });
 });
 
