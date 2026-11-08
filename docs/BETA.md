@@ -9,7 +9,7 @@ Snappy is the dashboard from this repository in its own window: the cleanup queu
 This is an early test build, version `0.1.0-beta.1`. Expect rough edges, and please report them.
 
 - It is **unsigned**. Windows warns you before it runs the installer (see below).
-- It **does not update itself**. To get a newer beta, download the newer installer and run it. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
+- It **does not update itself**. To get a newer beta, download the newer installer and run it. A later release will check GitHub for updates when it opens, which you can turn off: [UPDATES.md](UPDATES.md) says what that sends. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
 - It has **no telemetry** and no account. Snappy itself sends nothing over a network.
 - It installs **for your user only**. It does not need administrator rights.
 - It is the 64-bit Windows build only. It needs Windows 10 or 11 and Microsoft’s WebView2 runtime, which Windows 11 includes. If the runtime is missing, the installer downloads it from Microsoft.

@@ -1,0 +1,14 @@
+# Who must review changes to the parts that decide what gets installed on people's computers.
+# Turn on "Require review from Code Owners" in the ruleset for main (see docs/RELEASES.md). Review these by hand: the tests
+# are a tripwire, not a proof.
+/.github/workflows/                        @XrxcGH
+/.github/CODEOWNERS                        @XrxcGH
+/apps/app/src-tauri/src/updater/           @XrxcGH
+/apps/app/src-tauri/update-public-keys.txt @XrxcGH
+/apps/app/src-tauri/build.rs               @XrxcGH
+/apps/app/src-tauri/build_guards.rs        @XrxcGH
+/apps/app/src-tauri/tauri.conf.json        @XrxcGH
+/apps/app/src-tauri/capabilities/          @XrxcGH
+/apps/app/src-tauri/Cargo.toml             @XrxcGH
+/apps/app/src-tauri/Cargo.lock             @XrxcGH
+/apps/app/tools/                           @XrxcGH

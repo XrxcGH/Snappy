@@ -1,6 +1,6 @@
 # Releases and installers
 
-Snappy is an app you install on your own computer or phone. It reads your Snapchat data export on that device and keeps what it learns on that device. Snappy itself sends nothing over a network, and its pages are not allowed to connect to anything. The window is drawn by your system's web engine, which is a separate program (see [Network use](#network-use) for what that means). This page explains where the installers come from, how to check that a download is the file the maintainers built, what the first-run warning means, how a release is made, and how to build Snappy yourself.
+Snappy is an app you install on your own computer or phone. It reads your Snapchat data export on that device and keeps what it learns on that device. Snappy itself makes one network request, the update check of the Windows desktop app, which you can turn off, and its pages are not allowed to connect to anything. The window is drawn by your system's web engine, which is a separate program (see [Network use](#network-use) for what that means). This page explains where the installers come from, how to check that a download is the file the maintainers built, what the first-run warning means, how a release is made, and how to build Snappy yourself.
 
 **Status.** No release has been published yet. This page describes how releases are meant to work. Only the Windows build has been built and run (by hand, by the maintainers). The release workflow has not yet run on GitHub, so every other row below is a plan, not something you can download today.
 
@@ -8,7 +8,7 @@ Snappy is an app you install on your own computer or phone. It reads your Snapch
 
 Installers are published on the **Releases** page of the Snappy repository on GitHub, and nowhere else. Each release is built by a public GitHub Actions workflow from a version tag (for example `v0.2.0`) that points at a commit already on the `main` branch. The workflow builds every platform, signs what it can, writes a checksum for every file, and attaches them to a draft release. A maintainer tests the files, edits the notes, and publishes the release by hand.
 
-Snappy does not update itself and never checks for updates. To update, download the newer installer from the Releases page and run it. The app's storage stays on one device and an uninstall can remove it, and Snappy cannot export saved history, so keep your original Snapchat export: you can add it again.
+The Windows desktop app checks these releases for a newer version when it opens, and installs a signed update by itself when that is safe (see [Updates](#updates)). The first beta, `0.1.0-beta.1`, has no updater: to leave it, download a newer installer once and run it. Other systems do not update themselves: download the newer installer and run it. The app's storage stays on one device and an uninstall can remove it, and Snappy cannot export saved history, so keep your original Snapchat export: you can add it again.
 
 Each release's notes list the files that are attached (and say in bold when one is missing), say whether each one is signed, and say which platforms the maintainers tested by hand.
 
@@ -18,7 +18,7 @@ The status column says what has been done for each row. "Not yet built" means th
 
 | Platform | Files | What it needs | Status |
 | --- | --- | --- | --- |
-| Windows, 64-bit | `Snappy_<version>_x64-setup.exe` (installs for your user, no administrator needed) and `Snappy_<version>_x64_en-US.msi` (installs for all users, needs administrator rights) | Windows 10 or 11. The window is drawn by Microsoft's WebView2 runtime, which Windows 11 includes. If it is missing, the installer downloads it from Microsoft. | Built, installed, run and uninstalled by hand on Windows 11. Not yet built by the release workflow. |
+| Windows, 64-bit | `Snappy_<version>_x64-setup.exe` (installs for your user, no administrator needed). There is no MSI: an MSI install could not be updated in place by the per-user installer | Windows 10 or 11. The window is drawn by Microsoft's WebView2 runtime, which Windows 11 includes. If it is missing, the installer downloads it from Microsoft. | Built, installed, run and uninstalled by hand on Windows 11. Not yet built by the release workflow. |
 | macOS, Apple silicon | `Snappy_<version>_aarch64.dmg` | A current macOS release. | Not yet built. |
 | macOS, Intel | `Snappy_<version>_x64.dmg` | A current macOS release. | Not yet built. It is cross-compiled on an Apple silicon runner and has not been started on an Intel Mac. |
 | Linux, 64-bit | `Snappy_<version>_amd64.AppImage`, `Snappy_<version>_amd64.deb`, `Snappy-<version>-1.x86_64.rpm` | WebKitGTK 4.1, which Ubuntu 22.04, Debian 12, Fedora 38 and newer include. The files are built on Ubuntu 22.04, so the AppImage needs glibc 2.35 or newer. | Not yet built. |
@@ -80,9 +80,21 @@ On Windows 11 with **Smart App Control** turned on, Windows blocks an unsigned i
 
 **Android.** Android asks you to allow your browser or file manager to **install unknown apps**, and Google Play Protect may say it has not scanned the app or ask you to confirm. Allow the install for that one app, and turn the setting off again afterward.
 
+## Updates
+
+**Wording awaiting the owner's approval:** the Privacy block, the Settings line and the first-run notice of the update check are drafts (the text is in [UPDATES.md](UPDATES.md)). Do not publish a release until they are approved.
+
+The Windows desktop app asks one fixed address on github.com for a small file (`latest.json`) that names the newest version, a few seconds after the window opens, at most once an hour, and only while the setting "Check for updates on launch" is on and the first-run notice has been shown. If a newer version exists it downloads that installer from GitHub, checks its signature against two public keys built into the app, and keeps it ready. It installs it at the next launch, before the window opens, or when you choose Update now and nothing is in progress. The request has no ID, no version and none of your data. GitHub, the network and any proxy can see your IP address, the time, and that a Snappy app asked.
+
+Only the maintainer's signature makes an installer acceptable, and the signing keys are never on GitHub: the maintainer signs the exact installer they tested, on their own computer (`apps/app/tools/sign-release.mjs`). [UPDATES.md](UPDATES.md) explains the design and its threats, and [UPDATE-RUNBOOKS.md](UPDATE-RUNBOOKS.md) has the release, key rotation and bad-release steps. A draft release is not offered to any app until the maintainer adds the signature and sets it as the Latest release. A pre-release is never offered.
+
+The first install of an unsigned installer shows the SmartScreen warning described above. An update that Snappy downloads itself has no Mark-of-the-Web, so SmartScreen does not trigger for it. Smart App Control, when it is in enforcement mode, blocks an unsigned installer whether it came from you or from an update: an update then fails, and after two failures the app shows the plain link to the Releases page. Trust for updates comes from the update signature, not from Authenticode.
+
+The update check needs Windows' own network stack to work through your proxy. A proxy that asks for a login means no automatic updates (the app never answers the challenge), and the plain link remains. Not run yet: the check against the real GitHub, which has no release to serve.
+
 ## Network use
 
-Snappy sends nothing over a network. It has no telemetry, no crash reporting, no update check, no account and no remote fonts or scripts. Its pages are bound by a content security policy that forbids every connection, and on Windows, macOS and Linux the program's dependency list contains no network library (a check in the build fails if one appears). On Android the Tauri framework compiles in an HTTP client that it uses only for its development server and never calls in a release build. The release workflow removes the INTERNET permission from the Android manifest and fails if the finished APK still asks for it, which is meant to make Android block any connection. That has not been run: no Android build exists yet, and nothing has been checked on a device.
+The page makes no connection and is not allowed to. The only network request of Snappy's own code is the Windows desktop app's update check described above, made by the program (never by the page), which you can turn off. It has no telemetry, no crash reporting, no account and no remote fonts or scripts. Its pages are bound by a content security policy that forbids every connection, and on Windows, macOS and Linux the program's dependency list contains no HTTP client, TLS library or other network library (a check in the build fails if one appears; the update check uses Windows' own WinHTTP, and a second check keeps WinHTTP in one source file). On Android the Tauri framework compiles in an HTTP client that it uses only for its development server and never calls in a release build. The release workflow removes the INTERNET permission from the Android manifest and fails if the finished APK still asks for it, which is meant to make Android block any connection. That has not been run: no Android build exists yet, and nothing has been checked on a device.
 
 That is a statement about Snappy's own code and pages. It is not a promise that no process on the computer connects, because these things are outside Snappy's code and are a fact of the platform:
 
@@ -92,7 +104,7 @@ That is a statement about Snappy's own code and pages. It is not a promise that 
 
 ## Building the Windows beta locally
 
-The first installer is a Windows beta, version `0.1.0-beta.1`, built by hand on a maintainer's computer. It is unsigned, installs for one user and has no updater. [BETA.md](BETA.md) is the page for the people who test it. These are the commands that make it, from the repository folder, in PowerShell:
+The first installer is a Windows beta, version `0.1.0-beta.1`, built by hand on a maintainer's computer. It is unsigned, installs for one user and has no updater (the updater arrives with the first release that contains it). [BETA.md](BETA.md) is the page for the people who test it. These are the commands that make it, from the repository folder, in PowerShell:
 
 ```powershell
 npm ci --ignore-scripts
@@ -127,11 +139,13 @@ What was run on 7 November 2026, on one Windows 11 computer with WebView2 runtim
 
 The workflow is `.github/workflows/release.yml`. It is split so that code from the build never meets a signing key.
 
-1. **verify** checks the tag and runs the tests. For a tag push it requires the tag to look like `vX.Y.Z`, to match the version in `tauri.conf.json`, `apps/app/package.json` and `Cargo.toml`, and to point at a commit that is an ancestor of `origin/main` (`git merge-base --is-ancestor`). It uses no secret.
+1. **verify** checks the tag and runs the tests. For a tag push it requires the tag to look like `vX.Y.Z` (a tag with a suffix, and a tag lower than an existing one, are refused), to match the version in `tauri.conf.json`, `apps/app/package.json` and `Cargo.toml`, and to point at a commit that is an ancestor of `origin/main` (`git merge-base --is-ancestor`). It uses no secret.
 2. **desktop** and **android** build the apps, with no secret and no environment, read-only repository access, `npm ci --ignore-scripts` and `cargo ... --locked`. They run the dependencies' build scripts, which is why nothing secret is there. They upload unsigned files.
 3. **sign-windows**, **sign-macos** and **sign-android** receive only the finished files and the signing secrets. They do not check out the repository and run no `npm`, `cargo` or build script, only `signtool`, `codesign`, `notarytool`, `apksigner` and `jarsigner`. The GitHub token in them has no permissions. Before a secret is read, each one checks that the build job's files are exactly the expected ones, with plain names. Nothing taken from those files (a name, a path) is written to `GITHUB_ENV`, because a crafted name could then reach the steps that hold the secrets. With no secret they pass the files through unsigned (macOS stays ad-hoc signed, Android gets a throwaway key).
 4. **attest** records build provenance for the final files.
 5. **release** writes `SHA256SUMS`, signs it when a GPG key secret exists, writes notes that list which files are and are not attached, and creates a **draft** release. It is the only job with `contents: write`. It stops if a release for the tag already exists.
+
+The Windows build is NSIS only. Official builds set `SNAPPY_RELEASE=1`, which makes the build refuse placeholder or test update keys, and the built program is checked (it must import `winhttp.dll` and no other download library, and hold no test setting or test key). The release job creates the draft with `--latest=false`; adding the update signature and publishing are the maintainer's steps. A second workflow, `verify-published.yml`, checks every day and after each publish that `latest.json` names the highest published version, points at the pinned installer address and verifies over the installer; a failure emails the owner.
 
 A run started by hand (Actions, Release, Run workflow) is never official: it builds unsigned files, reads no secret and creates no release, whatever branch it is started from. Only a push of a tag counts. To rehearse the signing path without real keys, push a throwaway tag in a fork: it follows the same steps and signs with no keys.
 
@@ -140,13 +154,17 @@ A run started by hand (Actions, Release, Run workflow) is never official: it bui
 1. Create the environment `release` (Settings, Environments) with a **required reviewer**, and under "Deployment branches and tags" allow only the tag pattern `v*`. Put every signing secret in that environment and none at repository level, because a repository secret can be read by a workflow run on any branch. Expect two approval prompts per release: one for the signing jobs together, one for the release job.
 2. Add a tag ruleset that limits who can create tags matching `v*`.
 3. In Settings, Actions, General: set workflow permissions to read-only, and require approval for workflows from fork pull requests.
-4. Optional: turn on immutable releases, so a published release's files cannot be swapped later.
+4. Optional: turn on immutable releases (check that the setting exists), so a published release's files cannot be swapped later. The signature files must then be uploaded to the draft before publishing.
+5. Turn on two-factor sign-in with a passkey or hardware key for the owner account, and store the recovery codes offline.
+6. Add a ruleset on `main` (pull request required, status checks required, no bypass, linear history). `.github/CODEOWNERS` makes the owner the required reviewer of the workflows, the updater, the shell config, the lock file and the tools. Restrict creating, updating and deleting `v*` tags to the owner.
+7. Keep dependency updates reviewed by hand, with no auto-merge. `minisign-verify` and `windows-sys` are pinned by `Cargo.lock` and built with `--locked`.
+8. Never rename or transfer the repository or the account before shipping a release that carries the new address ([UPDATE-RUNBOOKS.md](UPDATE-RUNBOOKS.md)).
 
 Check the setup with `gh api repos/OWNER/REPO/environments/release --jq '.protection_rules'` (it should list a required reviewer) and `gh api repos/OWNER/REPO/environments/release/deployment-branch-policies` (it should list only `v*`).
 
 The other workflows reference no secret, never use `pull_request_target`, and give each job read-only access, so pull requests from forks and from Dependabot cannot reach anything. `apps/app/test/workflows.test.ts` reads every file in `.github/workflows` and fails the test run on the common forms of a secret, a write permission, an unpinned action, a trigger that runs on someone else's content, an expression inside a script, a checkout that keeps the token, or an `npm ci` without `--ignore-scripts` appearing where it should not. It is a tripwire, not a proof, so review changes to the workflow files by hand as well. A `workflow-lint` job in `ci.yml` runs actionlint for syntax.
 
-Known limits of this design: the Windows signature is on the installers, not on the program inside them; the macOS and Android signing steps and every other step beyond the Windows build have never run on GitHub; and a person who can push to `main` and approve the `release` environment can still ship what they like, because the review step is the person.
+Known limits of this design: a compromised build dependency could still produce a malicious installer that the maintainer then signs (the maintainer installs and runs the exact file first, builds are locked, and the daily check compares what is published with the keys, but none of that removes the risk); the Windows signature is on the installer, not on the program inside it; the macOS and Android signing steps and every other step beyond the Windows build have never run on GitHub; and a person who can push to `main` and approve the `release` environment can still ship what they like, because the review step is the person.
 
 ## Build it yourself
 

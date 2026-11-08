@@ -73,7 +73,7 @@ const refresh = async (page, patch) => {
 };
 const calls = (page) => page.evaluate(() => window.__shell.calls.map((c) => c.command + (Object.keys(c.args).length ? JSON.stringify(c.args) : "")));
 const banner = (page) => page.locator(".update-slot").innerText();
-const shot = async (page, name) => shots && (await page.screenshot({ path: path.join(shots, `${name}.png`), fullPage: false }));
+const shot = async (page, name, full = false) => shots && (await page.screenshot({ path: path.join(shots, `${name}.png`), fullPage: full }));
 
 // ---------------------------------------------------------------------------------------------- first-run notice
 {
@@ -210,7 +210,8 @@ const shot = async (page, name) => shots && (await page.screenshot({ path: path.
   await page.getByRole("button", { name: "Check now" }).click();
   await page.waitForTimeout(1500);
   ok((await card.innerText()).includes("You’re up to date."), "and says You’re up to date. otherwise");
-  await shot(page, "settings-wide-light");
+  await page.locator("#update-auto").check();
+  await shot(page, "settings-wide-light", true);
   ok((await page.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth)), "no horizontal scroll at the wide size");
   await page.context().close();
 
@@ -219,7 +220,7 @@ const shot = async (page, name) => shots && (await page.screenshot({ path: path.
   ok((await block.count()) === 1, "the Privacy page has the Update check block");
   ok((await block.innerText()).includes("GitHub can see your IP address, the time, and that a Snappy app asked."), "with what GitHub can see");
   ok((await privacy.locator("body").innerText()).includes("This page cannot connect to the internet."), "next to the existing notice that the page cannot connect");
-  await shot(privacy, "privacy-wide-light");
+  await shot(privacy, "privacy-wide-light", true);
   await privacy.context().close();
 
   const other = await open({}, { hash: "#/overview" });

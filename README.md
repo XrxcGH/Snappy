@@ -59,7 +59,7 @@ The Windows beta shows this same dashboard in its own window. [docs/BETA.md](doc
 
 ### 1. Get the app
 
-The first build is a **Windows beta**. It is unsigned, so Windows shows a warning, and it does not update itself. [docs/BETA.md](docs/BETA.md) says how to install it, where it keeps its data, how to remove it and how to report a problem without sharing anything personal. [docs/RELEASES.md](docs/RELEASES.md) says where installers come from and how to check one.
+The first build is a **Windows beta**. It is unsigned, so Windows shows a warning, and this first beta does not update itself (later releases of the Windows app can: [docs/UPDATES.md](docs/UPDATES.md)). [docs/BETA.md](docs/BETA.md) says how to install it, where it keeps its data, how to remove it and how to report a problem without sharing anything personal. [docs/RELEASES.md](docs/RELEASES.md) says where installers come from and how to check one.
 
 ### 2. Get your export
 

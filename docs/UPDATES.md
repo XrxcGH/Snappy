@@ -1,6 +1,6 @@
 # Updates: decision record
 
-Status: designed and built on a branch, not released. The wording in the last section is awaiting the owner’s approval.
+Status: built and tested without a window, not released. The wording in “Wording awaiting the owner’s approval” is a draft that the owner has not approved. The real-install checks are listed in “What has not been run”.
 
 ## What changed, and why
 
@@ -56,6 +56,29 @@ The text below is a draft. It is built into the desktop app only, and the web bu
 | First-run notice | Snappy checks GitHub for updates when it opens. Change this in Settings. (Buttons: OK, Turn off.) |
 
 The earlier draft of the Settings line said “Sends nothing about you.” It was changed because an IP address, and the fact that a Snappy app asked, are things about the person.
+
+## What it looks like
+
+Headless captures of the built desktop page with a scripted stand-in for the shell, using made-up data. They are not captures of the app window.
+
+![The update banner at a phone width, dark theme](images/updates-ready-phone-width.png)
+
+![The countdown banner before an idle update](images/updates-countdown.png)
+
+![The Updates card in Settings](images/updates-settings.png)
+
+![The Update check block on the Privacy page](images/updates-privacy.png)
+
+## Where things are
+
+- The program side: `apps/app/src-tauri/src/updater` (the README next to it lists the files). The page side: `apps/app/src/update-*.ts`, in the desktop entry only, so the web build is byte for byte unchanged (`apps/app/tools/check-web-build-unchanged.mjs` proves it against a git ref).
+- The two public keys: `apps/app/src-tauri/update-public-keys.txt`. They are placeholders until the maintainer fills them, and a release build refuses to compile with placeholders or test keys.
+- Signing and checking: `apps/app/tools/sign-release.mjs`, `apps/app/src-tauri/examples/verify_manifest.rs`, `.github/workflows/verify-published.yml`. Steps: [UPDATE-RUNBOOKS.md](UPDATE-RUNBOOKS.md).
+- The Windows transport is the system’s WinHTTP, called from one file. If it misbehaves behind a proxy on a real machine, the fallback is the Tauri updater plugin, wrapped with its own address pinning and limits and with no updater permission granted to the page. That switch has not been built.
+
+## What has not been run
+
+The update drill (`apps/app/test/e2e-update`) installs and starts the app, so it needs a window: the real `/UPDATE` install over an installed copy, data surviving it, Smart App Control, the elevated and second-process cases, an installer killed mid-run, WinHTTP behind a proxy or PAC file, and the live GitHub redirect chain. Everything else above was tested against a loopback server and test keys.
 
 ## Installer facts
 

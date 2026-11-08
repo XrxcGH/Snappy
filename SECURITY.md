@@ -2,7 +2,7 @@
 
 ## What Snappy handles
 
-Snappy reads your own Snapchat data export on your own device. It never sends data anywhere. The only network feature is an optional Memories download in the command-line tool, which contacts only the links inside your own export and is off unless you ask for it. The dashboard is a single file with a policy that blocks all network connections.
+Snappy reads your own Snapchat data export on your own device. It never sends your data anywhere. The network features are an optional Memories download in the command-line tool, which contacts only the links inside your own export and is off unless you ask for it, and the update check of the Windows desktop app, which asks one fixed address on github.com for the newest version, sends no ID and none of your data, and can be turned off ([docs/UPDATES.md](docs/UPDATES.md)). The dashboard is a single file with a policy that blocks all network connections.
 
 ## Reporting a vulnerability
 
@@ -21,6 +21,8 @@ Examples of reports we want:
 - Weaknesses in how the history and allowlist are sealed with a passphrase, or in how passphrases are handled.
 - Unsafe file handling in the Memories rescue (paths that escape the output folder, overwriting existing files).
 - Problems in how the optional download follows links or redirects.
+- Anything that lets an update be installed without the maintainer's signature, that makes the update check follow an address it should refuse, or that lets the page choose what is installed.
+- A way to read the update signing keys: there are none in the repository or in GitHub, and one found there is a report we want.
 
 ## Supported versions
 
