@@ -14,7 +14,7 @@ import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/rescue-manifest/copy.ts";
 import { descriptor } from "../../src/tools/rescue-manifest/index.ts";
 import { computeRescueManifest, manifestText } from "../../src/tools/rescue-manifest/model.ts";
-import { view } from "../../src/tools/rescue-manifest/view.ts";
+import { verifyText, view } from "../../src/tools/rescue-manifest/view.ts";
 import { collectCopy, RULES, lint } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { render, renderSettled, sampleState, sampleWorkspace, stateWith } from "./harness.ts";
@@ -151,6 +151,30 @@ describe("the page", () => {
     expect(text(root, ".step-list li").map((s) => s.replace(/^\d/, ""))).toEqual([copy.saveStep, copy.rescueStep, copy.verifyStep]);
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS["rescue-manifest"]));
     expect(root.querySelectorAll("table")).toHaveLength(0);
+  });
+
+  it("names the full check command in a copy-only block, with the manifest and the folder, and says it needs a terminal", async () => {
+    const written: string[] = [];
+    vi.stubGlobal("navigator", { clipboard: { writeText: async (t: string) => void written.push(t) } });
+    try {
+      const { root } = await renderSettled(view, real(mixed()));
+      const block = root.querySelectorAll(".check-command")[0] as FakeElement;
+      expect(block.querySelector(".command-title")?.textContent).toBe(copy.verifyTitle);
+      const shown = block.querySelector("code")?.textContent ?? "";
+      expect(shown).toBe(verifyText());
+      // The command line tool refuses an export next to --verify, so none is named.
+      expect(shown).toMatch(/ rescue --verify "<manifest file>" --folder "<rescue folder>"$/);
+      expect(shown).not.toContain("<your export folder>");
+      expect(block.querySelector(".command-note")?.textContent).toBe("This needs a terminal.");
+      expect(block.querySelectorAll("button").map((b) => b.textContent)).toEqual(["Copy"]);
+      expect(block.querySelector(".command-panel")).toBeNull();
+      expect(root.querySelector(".step-list")?.textContent).not.toContain("--verify");
+      (block.querySelector("button") as FakeElement).click();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(written).toEqual([shown]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("writes short hedged notes: repeats, a date in the future, sizes and where to check", async () => {

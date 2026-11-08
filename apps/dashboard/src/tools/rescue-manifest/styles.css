@@ -1,0 +1,3 @@
+/* The copy-only check command: the same frame as a command block (title, Copy, code, a line why), drawn with the shared parts. */
+.tool-rescue-manifest .check-command { display: grid; gap: var(--space-3); margin-block-start: var(--space-4); }
+.tool-rescue-manifest .check-command > * { min-width: 0; }

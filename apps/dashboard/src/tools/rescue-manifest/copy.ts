@@ -28,13 +28,17 @@ export const copy = {
   checkHeading: "Check it later",
   saveStep: "Download the manifest and keep it somewhere safe.",
   rescueStep: "Run your Memories rescue to save the files to a folder.",
-  verifyStep: "Later, add --verify and --folder to the command below to check a folder.",
+  verifyStep: "Later, check the folder against the manifest with the check command.",
 
   downloadButton: "Download JSON",
   downloadNote: "The file lists file names, dates and types. It holds no usernames.",
   unitFileName: "snappy-rescue-manifest.json",
 
-  checkNote: "This page cannot read your folders. Use the command below to check one.",
+  checkNote: "This page cannot read your folders, so the check runs in a terminal.",
+  /** The copy-only command that checks a rescue folder. Its words are the command line tool's own flags. */
+  verifyTitle: "Check a rescue folder later",
+  verifyManifestExample: "<manifest file>",
+  verifyFolderExample: "<rescue folder>",
   sizesNote: "Sizes are not recorded here, so a later check compares names and dates only.",
   repeatsNote: (n: number) => `${countOf(n, "Memory", "Memories")} may repeat another, so the list leaves ${n === 1 ? "it" : "them"} out.`,
   pathSkippedNote: (n: number) => `${countOf(n, "item", "items")} had no usable file name, so the list leaves ${n === 1 ? "it" : "them"} out.`,
