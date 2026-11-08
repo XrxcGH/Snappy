@@ -101,14 +101,14 @@ export function candidateRow(options: CandidateRowOptions): HTMLElement {
       headline ? headline.detail : "",
     ),
     reasons.length > 0 ? h("p", { class: "candidate-protected" }, h("strong", {}, `${common.protectedLabel}: `), reasons.join("; ")) : null,
-    candidate.evidence.length > 1
-      ? h(
-          "details",
-          { class: "why" },
-          disclosureSummary(common.why, `why:${candidate.key}`),
-          h("ul", { class: "plain-list" }, ...candidate.evidence.map((e) => h("li", {}, e.detail))),
-        )
-      : null,
+    // Always there, so the hint for this level of confidence can be reached without a pointer. The list follows only when more than one signal agrees.
+    h(
+      "details",
+      { class: "why" },
+      disclosureSummary(common.why, `why:${candidate.key}`),
+      h("p", {}, common.confidenceHint[candidate.confidence]),
+      candidate.evidence.length > 1 ? h("ul", { class: "plain-list" }, ...candidate.evidence.map((e) => h("li", {}, e.detail))) : null,
+    ),
     h("div", { class: "candidate-actions" }, decision, options.profileLinks === false ? null : profileLink(candidate.key, "quiet")),
   );
   return slideIn(row, options.index ?? 0);

@@ -7,7 +7,7 @@ import { copyText } from "../clipboard.ts";
 import { categories, cleanup, common, routes, tools } from "../copy.ts";
 import { lists } from "../copy-lists.ts";
 import { platform } from "../platform.ts";
-import { h } from "../dom.ts";
+import { append, h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button, profileLink, routeLink } from "../components/button.ts";
 import { candidateRow } from "../components/candidateRow.ts";
@@ -70,7 +70,8 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
   const paintSlot = (): string => {
     const shown = sortCandidates(filterCandidates(all, { ...view, query: searchQuery(QUEUE) }), queueSort);
     const summary = summaryLine(shown.length, total, kept);
-    slot.replaceChildren(...listParts(ctx, a, view, shown, summary));
+    slot.replaceChildren();
+    append(slot, listParts(ctx, a, view, shown, summary));
     return shown.length === 0 ? noMatchText(view) : summary;
   };
   paintSlot();
@@ -118,10 +119,11 @@ function clearFilters(actions: Actions): void {
 }
 
 /** What sits under the controls: the count line, the warning, Save and Copy, and the rows. */
-function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: readonly Candidate[], summary: string): HTMLElement[] {
+function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: readonly Candidate[], summary: string): Child[] {
   const { actions } = ctx;
   return [
     h("p", { class: "summary", role: "status" }, summary),
+    shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
     // The consequence is stated before any action, in both modes.
     notice("warning", cleanup.removalWarning),
     listActions(shown, { fileName: cleanup.csvFile }),

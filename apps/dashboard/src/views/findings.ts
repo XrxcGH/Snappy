@@ -6,7 +6,7 @@ import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { common, disappeared, quiet, requests, routes } from "../copy.ts";
 import { lists } from "../copy-lists.ts";
-import { h } from "../dom.ts";
+import { append, h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatCount } from "../format.ts";
 import { routeLink } from "../components/button.ts";
@@ -50,12 +50,14 @@ function searchableList(a: Analysis, items: readonly Candidate[], actions: Actio
     const query = searchQuery(key);
     const shown = items.filter((c) => matchesQuery(c.key, query));
     const summary = summaryOf(shown.length);
-    slot.replaceChildren(
+    slot.replaceChildren();
+    append(slot, [
       h("p", { class: "summary" }, summary),
+      shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
       // Save and Copy hold the rows that are showing, so a search narrows the file too.
       listActions(shown, { fileName: lists.areas[key].csvFile, help: false }),
       shown.length === 0 ? h("p", { class: "empty-inline" }, lists.noMatchSearch) : candidateList(a, shown, actions, key),
-    );
+    ]);
     return shown.length === 0 ? lists.noMatchSearch : summary;
   };
   paint();

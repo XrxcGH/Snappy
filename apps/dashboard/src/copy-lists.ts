@@ -43,6 +43,9 @@ export const lists = {
   keepRemoved: (u: string) => `${u} is off your keep list.`,
   keepEmpty: "No one is on your keep list yet.",
 
+  // What confidence means, said once on each list page. The longer hint for each level is inside "Why this appears".
+  confidenceKey: "Confidence is how many signals agree. It is a guess.",
+
   // Related tools at the end of a page, and the Tools card on the Overview.
   relatedLabel: "Related tools",
   relatedBackupNote: "Back up your friends before you remove anyone.",
