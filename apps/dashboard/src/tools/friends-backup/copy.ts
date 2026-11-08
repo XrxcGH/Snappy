@@ -31,7 +31,9 @@ export const copy = {
   nextHeading: "What to do next",
   saveStep: "Save the file and keep it somewhere private.",
   keepStep: "The file lists usernames, so treat it like a contact list.",
-  compareStep: "To check it against a later export, use the command below with the compare option.",
+  compareStep: "To check it against a later export, copy the compare command below. It uses --compare with the file you saved.",
+  compareHeading: "Check it later",
+  compareTitle: "Check later against a saved backup",
 
   downloadLabel: "Save JSON",
   downloadNote: "The file holds usernames. Keep it private.",

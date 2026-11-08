@@ -10,7 +10,7 @@ import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
 import { initialState } from "../../src/reducer.ts";
 import type { State, Workspace } from "../../src/reducer.ts";
-import { COMMANDS, displayText } from "../../src/terminal/commands.ts";
+import { COMMANDS, displayText, displayTextWith } from "../../src/terminal/commands.ts";
 import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/friends-backup/copy.ts";
 import { descriptor } from "../../src/tools/friends-backup/index.ts";
@@ -134,7 +134,7 @@ describe("computeFriendsBackup", () => {
 describe("the page", () => {
   it("shows what the backup holds as a table of counts, the next steps, the download and the command", async () => {
     const { root } = await renderSettled(view, sample);
-    expect(root.querySelectorAll(".section-title").map((t) => t.textContent)).toEqual([copy.contentsHeading, copy.nextHeading, tools.downloadHeading, tools.commandHeading]);
+    expect(root.querySelectorAll(".section-title").map((t) => t.textContent)).toEqual([copy.contentsHeading, copy.nextHeading, copy.compareHeading, tools.downloadHeading, tools.commandHeading]);
     const table = root.querySelector("table") as FakeElement;
     expect(table.querySelector("caption")?.textContent).toBe(copy.contentsCaption);
     expect(text(table, "thead th")).toEqual([copy.listHeader, copy.peopleHeader, copy.datedHeader]);
@@ -148,8 +148,29 @@ describe("the page", () => {
     expect(root.textContent).toMatch(/Made [A-Z][a-z]{2} \d{1,2}, \d{4}\./);
     expect(text(root, ".step-list li p")).toEqual([copy.saveStep, copy.keepStep, copy.compareStep]);
     expect(root.textContent).toContain(copy.downloadNote);
-    expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.backup));
-    expect(root.querySelector(".command-head")?.querySelectorAll("button").map((b) => b.textContent)).toEqual(["Copy", "Run"]);
+    const run = root.querySelectorAll(".command").find((c) => !c.classList.contains("command-copy-only")) as FakeElement;
+    expect(run.querySelector("code")?.textContent).toBe(displayText(COMMANDS.backup));
+    expect(run.querySelector(".command-head")?.querySelectorAll("button").map((b) => b.textContent)).toEqual(["Copy", "Run"]);
+  });
+
+  it("names the compare option in the step and gives a Copy-only command for it, which says it needs a terminal", async () => {
+    const { root } = await renderSettled(view, sample);
+    expect(copy.compareStep).toContain("--compare");
+    const block = root.querySelector(".command-copy-only") as FakeElement;
+    expect(block).not.toBeNull();
+    // The command is the catalog's backup command with the flag and a file to name, and the title says what it does.
+    expect(block.querySelector("code")?.textContent).toBe(displayTextWith(COMMANDS.backup, ["--compare", "<file.json>"]));
+    expect(block.querySelector("code")?.textContent).toMatch(/ backup .*--compare "<file\.json>"$/);
+    expect(block.querySelector(".command-title")?.textContent).toBe(copy.compareTitle);
+    // Copy only: no Run, no file chip, no output, and a line that says why.
+    expect(block.querySelectorAll("button").map((b) => b.textContent)).toEqual(["Copy"]);
+    expect(block.textContent).toContain("This needs a terminal.");
+    expect(text(root, ".section-title")).toContain(copy.compareHeading);
+  });
+
+  it("offers no compare command when there is nothing to back up", async () => {
+    const { root } = await renderSettled(view, real({ friends: [person("  ")], blocked: [], ignored: [] }));
+    expect(root.querySelector(".command-copy-only")).toBeNull();
   });
 
   it("announces the counts politely once, and without a name", async () => {
