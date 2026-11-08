@@ -836,7 +836,7 @@ function measurePage(opts) {
         if (!/^\d[\d,]{1,}$/.test(v)) continue;
         for (const p of view.querySelectorAll("p, li")) {
           if (!vis(p) || c.contains(p) || p.closest(".stat, .stat-card, .candidate, .guided-row, .findings") || norm(p.textContent).split(" ").length < 4) continue;
-          if (new RegExp("(^|[^\\d,.])" + v.replace(/,/g, ",") + "([^\\d]|$)").test(norm(p.textContent))) { add("stat-repeat", p, 'a sentence repeats the number "' + v + '" that a card already shows'); break; }
+          if (new RegExp("(^|[^\\d,.])" + v + "([^\\d]|$)").test(norm(p.textContent))) { add("stat-repeat", p, 'a sentence repeats the number "' + v + '" that a card already shows'); break; }
         }
       }
     }
