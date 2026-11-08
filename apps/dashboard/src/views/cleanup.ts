@@ -6,6 +6,8 @@ import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { saveTextFile } from "../download.ts";
 import { categories, cleanup, common, routes } from "../copy.ts";
+import { lists } from "../copy-lists.ts";
+import { platform } from "../platform.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { queueToCsv, queueToText } from "../queue-export.ts";
@@ -148,7 +150,8 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
   return h(
     "section",
     { class: "guided", "aria-label": cleanup.guidedLabel },
-    h("p", {}, cleanup.guidedNote),
+    // With no profile link to open (the desktop app, the sample data) the note says to copy the username instead.
+    h("p", {}, profileLinksShown(a) ? cleanup.guidedNote : lists.guidedNoteNoLinks),
     h("div", { class: "guided-progress" }, h("p", { class: "summary", role: "status" }, text), slideIn(progressBar({ label: cleanup.progressLabel, value: done / items.length, valueText: text }), 0)),
     done > 0
       ? h(
@@ -166,14 +169,30 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
       : null,
     pagedList(
       items,
-      (candidate, index) => guidedRow(actions, candidate, checked.has(candidate.key), items, a, index, !a.sample),
+      (candidate, index) => guidedRow(actions, candidate, checked.has(candidate.key), items, a, index, profileLinksShown(a)),
       { key: "queue-guided", className: "rows guided-list" },
     ),
   );
 }
 
+/** Whether the rows show an "Open profile" link: never for sample names, and not where the shell turned links off. */
+const profileLinksShown = (a: Analysis): boolean => !a.sample && platform().profileLinks !== false;
+
+/** A labeled Copy button, for a guided row that has no profile link: copying the name is then the way to find the person. */
+function copyUsernameLabeled(username: string): HTMLButtonElement {
+  const user = displayUsername(username);
+  return button({
+    label: lists.copyUsernameButton,
+    ariaLabel: common.copyUsername(user),
+    icon: "copy",
+    key: `copy:${username}`,
+    onclick: () => void copyText(username).then((ok) => announce(ok ? common.copiedUsername(user) : common.copyFailed)),
+  });
+}
+
 function guidedRow(actions: Actions, candidate: Candidate, isDone: boolean, items: readonly Candidate[], a: Analysis, index: number, profileLinks: boolean): HTMLElement {
   const user = displayUsername(candidate.key);
+  const link = profileLinks ? profileLink(candidate.key, "secondary") : null;
   const box = h("input", { type: "checkbox", class: "check-input", checked: isDone, "aria-label": cleanup.doneFor(user), "data-key": `done:${candidate.key}` });
   box.addEventListener("change", () => {
     actions.toggleChecked(candidate.key);
@@ -189,8 +208,9 @@ function guidedRow(actions: Actions, candidate: Candidate, isDone: boolean, item
       "li",
       { class: `${isDone ? "guided-row is-done" : "guided-row"} bar-left cat-${cat}` },
       h("label", { class: "check" }, box, h("span", {}, cleanup.done)),
-      h("div", { class: "guided-who" }, usernameChip(candidate.key, { key: `copy:${candidate.key}` }), confidenceBadge(candidate.confidence), categoryTag(cat, categories[candidate.category].label)),
-      h("div", { class: "candidate-actions" }, profileLinks ? profileLink(candidate.key, "secondary") : null),
+      // The icon-only copy chip stays where a link is shown; without a link the labeled button replaces it.
+      h("div", { class: "guided-who" }, usernameChip(candidate.key, { copy: link !== null, key: `copy:${candidate.key}` }), confidenceBadge(candidate.confidence), categoryTag(cat, categories[candidate.category].label)),
+      h("div", { class: "candidate-actions" }, link ?? copyUsernameLabeled(candidate.key)),
     ),
     index,
   );
