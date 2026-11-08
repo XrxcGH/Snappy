@@ -152,6 +152,21 @@ pub fn allow_navigation(url: &Url) -> bool {
     }
 }
 
+/// macOS only: lets the page's own "Save" buttons save a file. A Save button makes a `blob:` link with a
+/// `download` name and clicks it. WebView2 handles that itself. On macOS wry answers such a click with a
+/// cancel when no download handler is registered, so every Save would do nothing at all. With this handler
+/// wry has WebKit put the file in the person's Downloads folder, under the suggested name (a number is added
+/// when the name is taken), the way a browser does. Only a `blob:` link made by the app's own page is let
+/// through (`allow_navigation`); any other address stays refused. The page gets no path, no dialog and no
+/// access to the file system from this: WebKit writes the one file it was asked to save.
+#[cfg(target_os = "macos")]
+fn allow_download(_webview: tauri::Webview, event: tauri::webview::DownloadEvent<'_>) -> bool {
+    match event {
+        tauri::webview::DownloadEvent::Requested { url, .. } => url.scheme() == "blob" && allow_navigation(&url),
+        _ => true,
+    }
+}
+
 /// Removes the variables that make WebView2 behave differently from what this build configured:
 /// `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` (can open an unauthenticated debugging port),
 /// `WEBVIEW2_USER_DATA_FOLDER`, `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER` (loads another runtime),
@@ -295,6 +310,10 @@ pub fn run() {
             let mut builder = WebviewWindowBuilder::from_config(app.handle(), config)?
                 .on_navigation(allow_navigation)
                 .on_new_window(|_url, _features| NewWindowResponse::Deny);
+            #[cfg(target_os = "macos")]
+            {
+                builder = builder.on_download(allow_download);
+            }
             // Test builds only: lets the network experiments try other browser switches without a rebuild.
             #[cfg(all(windows, feature = "dev-hooks"))]
             if let Ok(args) = std::env::var("SNAPPY_WEBVIEW_ARGS") {

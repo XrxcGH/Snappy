@@ -148,7 +148,20 @@ describe("the shell on macOS", () => {
 
   it("adds no macOS-only dependency, no menu code of its own and no Objective-C: it uses Tauri's default menu and web view", () => {
     expect(cargo).not.toMatch(/target_os = "macos"|cocoa|objc|core-foundation|tauri-plugin-macos/);
-    expect(lib).not.toMatch(/target_os = "macos"|\.menu\(|NSApp|objc/);
+    expect(lib).not.toMatch(/\.menu\(|NSApp|objc/);
+    // The one macOS-only line of Rust is the download handler (next test); nothing else is gated on macOS.
+    expect(lib.match(/target_os = "macos"/g)?.length).toBe(2);
+  });
+
+  it("lets the Save buttons work on macOS: a download handler, macOS only, for the page's own blob links only", () => {
+    // wry on macOS cancels every download click (the page's Save buttons click a blob: link with a download name) when no
+    // handler is registered (wry 0.57 wkwebview/navigation.rs). WebView2 saves by itself, so the handler must not exist on Windows.
+    expect(lib).toMatch(/#\[cfg\(target_os = "macos"\)\]\s*fn allow_download\(/);
+    expect(lib).toMatch(/#\[cfg\(target_os = "macos"\)\]\s*\{\s*builder = builder\.on_download\(allow_download\);\s*\}/);
+    const body = lib.slice(lib.indexOf("fn allow_download("), lib.indexOf("/// Removes the variables"));
+    expect(body).toMatch(/url\.scheme\(\) == "blob" && allow_navigation\(&url\)/);
+    expect(body).not.toMatch(/destination|set_|File|fs::/);
+    expect(lib.match(/on_download/g)?.length).toBe(1); // the one call
   });
 
   it("applies the navigation lock and the new-window refusal on every system, not only on Windows", () => {
