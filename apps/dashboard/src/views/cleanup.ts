@@ -1,6 +1,6 @@
 import type { Candidate } from "@snappy-export/core";
-import { analyze, filterCandidates } from "../analysis.ts";
-import type { Analysis } from "../analysis.ts";
+import { analyze, filterCandidates, sortCandidates } from "../analysis.ts";
+import type { Analysis, QueueSort } from "../analysis.ts";
 import type { Actions } from "../actions.ts";
 import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
@@ -13,12 +13,13 @@ import type { Child } from "../dom.ts";
 import { queueToCsv, queueToText } from "../queue-export.ts";
 import { button, profileLink, routeLink } from "../components/button.ts";
 import { candidateRow } from "../components/candidateRow.ts";
+import { clearSearches, listSearch, searchQuery, setSearchQuery } from "../components/listSearch.ts";
 import { categoryOfCandidate, categoryTag } from "../components/category.ts";
 import { confidenceBadge } from "../components/confidenceBadge.ts";
 import { icon } from "../components/icon.ts";
 import { disclosureSummary, emptyState, pageHeader, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
-import { pagedList } from "../components/pagedList.ts";
+import { pagedList, resetPaging } from "../components/pagedList.ts";
 import { toastHost } from "../components/toast.ts";
 import { progressBar } from "../components/progressBar.ts";
 import { usernameChip } from "../components/usernameChip.ts";
@@ -30,6 +31,10 @@ import type { View, ViewContext } from "./context.ts";
 
 /** Whether the "Protected" disclosure is open. Kept here so a Keep click does not close it again. */
 let protectedOpen = false;
+
+/** The list's key for the username search, and the chosen order. In memory only, like the filters beside them; "Clear filters" resets both. */
+const QUEUE = "queue";
+let queueSort: QueueSort = "likely";
 
 export const cleanupView: View = (ctx) =>
   h(
@@ -51,27 +56,76 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
   }
 
   const all = a.queue.items;
-  const shown = filterCandidates(all, view);
   const total = all.length;
+  const kept = a.workspace.allowlist.length;
   const protectedItems = a.queue.protectedItems;
+
+  // Typing in the search box or choosing an order repaints only this block, so the box keeps focus and the selects stay put.
+  const slot = h("div", { class: "queue-slot" });
+  const paintSlot = (): string => {
+    const shown = sortCandidates(filterCandidates(all, { ...view, query: searchQuery(QUEUE) }), queueSort);
+    const summary = summaryLine(shown.length, total, kept);
+    slot.replaceChildren(...listParts(ctx, a, view, shown, summary));
+    return shown.length === 0 ? noMatchText(view) : summary;
+  };
+  paintSlot();
 
   return [
     // The 30-day protection only works when chat and Snap events were read. When they were not, that is a
     // warning and comes first. When they were, the quiet note about it follows the list, so the top of the
     // page holds the one warning that matters before any action (two notices at most above the fold).
     a.hasChats ? null : notice("warning", cleanup.noChatProtection(a.source === "ledger")),
-    controls(actions, view),
-    h("p", { class: "summary", role: "status" }, summaryLine(shown.length, total, a.workspace.allowlist.length)),
+    controls(actions, view, {
+      onSearch: (query) => {
+        setSearchQuery(QUEUE, query);
+        resetPaging();
+        announce(paintSlot());
+      },
+      onSort: (order) => {
+        queueSort = order;
+        resetPaging();
+        paintSlot();
+      },
+    }),
+    slot,
+    a.hasChats ? notice("info", cleanup.protectedByChats) : null,
+    protectedItems.length > 0 ? protectedSection(actions, protectedItems, !a.sample) : null,
+  ];
+}
+
+/** Whether anything narrows or reorders the list. */
+const filtersActive = (view: CleanupView): boolean => view.category !== "all" || view.confidence !== "all" || searchQuery(QUEUE).trim() !== "" || queueSort !== "likely";
+
+/** Why nobody is shown: the search alone has its own words; otherwise a filter is the reason. */
+const noMatchText = (view: CleanupView): string => (view.category === "all" && view.confidence === "all" ? lists.noMatchSearch : cleanup.noMatch);
+
+/** Back to the whole queue: every filter, the search and the order. */
+function clearFilters(actions: Actions): void {
+  clearSearches();
+  queueSort = "likely";
+  resetPaging();
+  // The store change repaints the whole page, which reads the cleared search and order.
+  actions.setCleanupView({ category: "all", confidence: "all" });
+}
+
+/** What sits under the controls: the count line, the warning, Save and Copy, and the rows. */
+function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: readonly Candidate[], summary: string): HTMLElement[] {
+  const { actions } = ctx;
+  return [
+    h("p", { class: "summary", role: "status" }, summary),
     // The consequence is stated before any action, in both modes.
     notice("warning", cleanup.removalWarning),
     listActions(shown),
     shown.length === 0
-      ? h("p", { class: "empty-inline" }, cleanup.noMatch)
+      ? h(
+          "div",
+          { class: "empty-inline" },
+          h("p", {}, noMatchText(view)),
+          filtersActive(view) ? h("div", { class: "actions" }, button({ label: lists.clearFiltersButton, key: "clear-filters", onclick: () => clearFilters(actions) })) : null,
+        )
       : view.guided
         ? guidedPanel(ctx, a, shown)
         : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: !a.sample, showCategory: true }), { key: "queue-review", className: "rows candidate-list" }),
-    a.hasChats ? notice("info", cleanup.protectedByChats) : null,
-    protectedItems.length > 0 ? protectedSection(actions, protectedItems, !a.sample) : null,
   ];
 }
 
@@ -91,7 +145,12 @@ function selectField(id: string, label: string, key: string, value: string, opti
   return h("div", { class: "field" }, h("label", { class: "label", for: id }, label), h("div", { class: "select-wrap" }, select, chevron));
 }
 
-function controls(actions: Actions, view: CleanupView): HTMLElement {
+interface ControlHandlers {
+  onSearch: (query: string) => void;
+  onSort: (order: QueueSort) => void;
+}
+
+function controls(actions: Actions, view: CleanupView, handlers: ControlHandlers): HTMLElement {
   const categoryOptions: [string, string][] = [
     ["all", cleanup.allCategories],
     ...(["ghost", "one-way", "dormant"] as const).map((c): [string, string] => [c, categories[c].label]),
@@ -102,6 +161,7 @@ function controls(actions: Actions, view: CleanupView): HTMLElement {
     ["medium", common.confidenceWord.medium],
     ["low", common.confidenceWord.low],
   ];
+  const sortOptions = (Object.keys(lists.sortOptions) as QueueSort[]).map((order): [string, string] => [order, lists.sortOptions[order]]);
   return h(
     "div",
     { class: "controls" },
@@ -110,7 +170,9 @@ function controls(actions: Actions, view: CleanupView): HTMLElement {
       { class: "filters", role: "group", "aria-label": cleanup.filtersLabel },
       selectField("filter-category", cleanup.categoryLabel, "filter-category", view.category, categoryOptions, (v) => actions.setCleanupView({ category: v as CleanupView["category"] })),
       selectField("filter-confidence", cleanup.confidenceLabel, "filter-confidence", view.confidence, confidenceOptions, (v) => actions.setCleanupView({ confidence: v as CleanupView["confidence"] })),
+      selectField("filter-sort", lists.sortLabel, "filter-sort", queueSort, sortOptions, (v) => handlers.onSort(v as QueueSort)),
     ),
+    listSearch({ listKey: QUEUE, onChange: handlers.onSearch }),
     h(
       "div",
       { class: "segmented", role: "group", "aria-label": cleanup.modeLabel },

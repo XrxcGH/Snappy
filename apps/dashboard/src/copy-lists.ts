@@ -17,6 +17,17 @@ export const lists = {
   /** The queue's summary line, with how many people are on the keep list: "43 people to review, 1 kept". */
   summaryKept: (summary: string, kept: number) => `${summary}, ${kept} kept`,
 
+  // Search and sort. The typed text is a piece of a username: it is never put in the address, the title or storage.
+  searchLabel: "Search usernames",
+  searchPlaceholder: "Type part of a name",
+  searchClearButton: "Clear",
+  searchClearAria: "Clear search",
+  matchCount: (shown: number, total: number) => `${shown} of ${total} match`,
+  noMatchSearch: "No one matches. Clear the search to see more.",
+  sortLabel: "Sort",
+  sortOptions: { likely: "Most likely first", newest: "Newest first", oldest: "Oldest first", confidence: "Highest confidence" },
+  clearFiltersButton: "Clear filters",
+
   // Memories rescue, in the desktop app, where Run holds only a small test.
   rescueLimitNote: (mb: number) => `Run copies a small test here, up to ${mb} MB. A full rescue needs the command line tool.`,
   rescueGuideLine: "The guide says how to get it.",

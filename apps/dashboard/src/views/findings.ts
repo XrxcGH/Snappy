@@ -1,9 +1,11 @@
 /** The three single-category finding views: disappeared friends, unaccepted requests, quiet friends. */
-import { analyze, protectionByUser } from "../analysis.ts";
+import { analyze, matchesQuery, protectionByUser } from "../analysis.ts";
 import type { Analysis } from "../analysis.ts";
 import type { Candidate } from "@snappy-export/core";
 import type { Actions } from "../actions.ts";
+import { announce } from "../announce.ts";
 import { common, disappeared, quiet, requests, routes } from "../copy.ts";
+import { lists } from "../copy-lists.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatCount } from "../format.ts";
@@ -11,9 +13,10 @@ import { routeLink } from "../components/button.ts";
 import { CATEGORY_ICON } from "../components/category.ts";
 import type { CategoryId } from "../components/category.ts";
 import { candidateRow } from "../components/candidateRow.ts";
+import { listSearch, searchQuery, setSearchQuery } from "../components/listSearch.ts";
 import { emptyState, factList, pageHeader, section } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
-import { pagedList } from "../components/pagedList.ts";
+import { pagedList, resetPaging } from "../components/pagedList.ts";
 import { toastHost } from "../components/toast.ts";
 import { region } from "../reactive.ts";
 import { dataDeps } from "./context.ts";
@@ -32,6 +35,35 @@ function candidateList(a: Analysis, items: readonly Candidate[], actions: Action
     },
     { key, className: "rows candidate-list" },
   );
+}
+
+/**
+ * One finding list with its search box and its count line. Typing narrows the rows in place (only the part under the
+ * box repaints, so the box keeps focus), and the count line says "3 of 10 match" instead of the order.
+ */
+function searchableList(a: Analysis, items: readonly Candidate[], actions: Actions, key: string, countLine: (n: number) => string): HTMLElement {
+  const slot = h("div", { class: "list-slot" });
+  const summaryOf = (shown: number): string => (searchQuery(key).trim() === "" ? countLine(items.length) : lists.matchCount(shown, items.length));
+  const paint = (): string => {
+    const query = searchQuery(key);
+    const shown = items.filter((c) => matchesQuery(c.key, query));
+    const summary = summaryOf(shown.length);
+    slot.replaceChildren(
+      h("p", { class: "summary" }, summary),
+      shown.length === 0 ? h("p", { class: "empty-inline" }, lists.noMatchSearch) : candidateList(a, shown, actions, key),
+    );
+    return shown.length === 0 ? lists.noMatchSearch : summary;
+  };
+  paint();
+  const search = listSearch({
+    listKey: key,
+    onChange: (query) => {
+      setSearchQuery(key, query);
+      resetPaging();
+      announce(paint());
+    },
+  });
+  return h("div", { class: "list-block" }, search, slot);
 }
 
 function view(id: CategoryId, title: string, lead: string, inference: string, body: (ctx: ViewContext) => (a: Analysis) => Child[]): View {
@@ -80,14 +112,14 @@ export const disappearedView: View = view("disappeared", routes.disappeared.titl
   if (a.ghosts.length === 0) return [changes, emptyState({ icon: "check", spot: "overview", category: "disappeared", title: disappeared.noneTitle, body: disappeared.noneBody })];
   return [
     changes,
-    section(disappeared.listHeading, h("p", { class: "summary" }, disappeared.listCount(a.ghosts.length)), candidateList(a, a.ghosts, ctx.actions, "ghost")),
+    section(disappeared.listHeading, searchableList(a, a.ghosts, ctx.actions, "ghost", disappeared.listCount)),
   ];
 });
 
 export const requestsView: View = view("requests", routes.requests.title, requests.lead, requests.inference, (ctx) => (a) => {
   if (a.source === "none") return [emptyState({ icon: "one-way", spot: "import", category: "requests", title: requests.noExportTitle, body: requests.noExportBody, actions: [addExport()] })];
   if (a.oneWay.length === 0) return [emptyState({ icon: "one-way", spot: "overview", category: "requests", title: requests.emptyTitle, body: requests.emptyBody })];
-  return [h("p", { class: "summary" }, requests.listCount(a.oneWay.length)), candidateList(a, a.oneWay, ctx.actions, "one-way")];
+  return [searchableList(a, a.oneWay, ctx.actions, "one-way", requests.listCount)];
 });
 
 export const quietView: View = view("quiet", routes.quiet.title, quiet.lead, quiet.inference, (ctx) => (a) => {
@@ -105,5 +137,5 @@ export const quietView: View = view("quiet", routes.quiet.title, quiet.lead, qui
     ];
   }
   if (a.dormant.length === 0) return [emptyState({ icon: "check", spot: "overview", category: "quiet", title: quiet.emptyTitle, body: quiet.emptyBody })];
-  return [h("p", { class: "summary" }, quiet.listCount(a.dormant.length)), candidateList(a, a.dormant, ctx.actions, "dormant")];
+  return [searchableList(a, a.dormant, ctx.actions, "dormant", quiet.listCount)];
 });

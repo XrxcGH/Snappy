@@ -8,6 +8,7 @@ import type { Candidate, CleanupQueue, LedgerDiff, MemoriesPlan, ParsedExport, S
 import { gibToBytes } from "./format.ts";
 import type { State, Workspace } from "./reducer.ts";
 import { activeWorkspace } from "./reducer.ts";
+import { displayUsername } from "./safe.ts";
 
 export type FindingsSource = "export" | "ledger" | "none";
 
@@ -161,9 +162,43 @@ export function protectionByUser(queue: CleanupQueue): Map<string, string[]> {
 export interface QueueFilter {
   category: "all" | Candidate["category"];
   confidence: "all" | Candidate["confidence"];
+  /** Part of a username to look for. Empty or absent: no search. */
+  query?: string;
 }
 
-/** Queue items that match the chosen category and confidence. */
+/** True when `query` is empty, or appears in the username as it is shown (case does not matter). */
+export function matchesQuery(username: string, query: string | undefined): boolean {
+  const wanted = (query ?? "").trim().toLowerCase();
+  return wanted === "" || displayUsername(username).toLowerCase().includes(wanted);
+}
+
+/** Queue items that match the chosen category, confidence and username search. */
 export function filterCandidates(items: readonly Candidate[], filter: QueueFilter): Candidate[] {
-  return items.filter((c) => (filter.category === "all" || c.category === filter.category) && (filter.confidence === "all" || c.confidence === filter.confidence));
+  return items.filter((c) => (filter.category === "all" || c.category === filter.category) && (filter.confidence === "all" || c.confidence === filter.confidence) && matchesQuery(c.key, filter.query));
+}
+
+/** "likely" is the order the queue arrives in (highest score first). The others re-sort; ties keep that order. */
+export type QueueSort = "likely" | "newest" | "oldest" | "confidence";
+
+const CONFIDENCE_RANK: Record<Candidate["confidence"], number> = { high: 3, medium: 2, low: 1 };
+
+/** The newest date among a person's evidence, or undefined when none of it is dated. */
+function newestEvidence(c: Candidate): number | undefined {
+  let latest: number | undefined;
+  for (const e of c.evidence) if (typeof e.at === "number" && Number.isFinite(e.at) && (latest === undefined || e.at > latest)) latest = e.at;
+  return latest;
+}
+
+/** A sorted copy. People with no dated evidence go last for newest and oldest. */
+export function sortCandidates(items: readonly Candidate[], order: QueueSort): Candidate[] {
+  const copy = [...items];
+  if (order === "likely") return copy;
+  if (order === "confidence") return copy.sort((a, b) => CONFIDENCE_RANK[b.confidence] - CONFIDENCE_RANK[a.confidence] || b.score - a.score);
+  const sign = order === "newest" ? -1 : 1;
+  return copy.sort((a, b) => {
+    const x = newestEvidence(a);
+    const y = newestEvidence(b);
+    if (x === undefined || y === undefined) return x === y ? 0 : x === undefined ? 1 : -1;
+    return sign * (x - y);
+  });
 }
