@@ -1,0 +1,79 @@
+# Supply-chain rules for the desktop and phone shell's Rust crates (apps/app/src-tauri), read by `cargo deny`.
+#
+#   cargo deny --manifest-path apps/app/src-tauri/Cargo.toml check licenses bans sources
+#   cargo deny --manifest-path apps/app/src-tauri/Cargo.toml check advisories
+#
+# CI runs both in .github/workflows/audit.yml with a read-only token. The list of licenses below is the
+# list the third-party notices cover; a new crate under any other license fails the check until a person has
+# read that license and decided. The network-crate guard in apps/app/tools/check-no-network-deps.mjs is a
+# separate check and stays: this file adds licenses, known vulnerabilities, unmaintained crates and sources.
+
+[graph]
+# Every desktop target the app ships on. The phone targets are left out on purpose: the `tauri` crate links an
+# HTTP client there that a release build never calls (see check-no-network-deps.mjs), and this file bans it.
+targets = [
+  "x86_64-pc-windows-msvc",
+  "aarch64-pc-windows-msvc",
+  "x86_64-unknown-linux-gnu",
+  "aarch64-unknown-linux-gnu",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+]
+
+[advisories]
+version = 2
+# A yanked crate version is a version its author withdrew, usually for a defect.
+yanked = "deny"
+# Add an id here only with a reason that says why it does not apply, and look again when Tauri or its Linux stack moves.
+ignore = [
+  # proc-macro-error is only unmaintained (no known vulnerability). It is a compile-time macro used by gtk3-macros,
+  # part of the Linux web view stack; no Windows or macOS program contains it.
+  { id = "RUSTSEC-2024-0370", reason = "unmaintained compile-time macro in the Linux gtk3 stack, not in Windows or macOS programs" },
+]
+
+[licenses]
+version = 2
+confidence-threshold = 0.9
+# Permissive licenses only, plus MPL-2.0 (file-level copyleft: the five MPL crates are used unmodified and their
+# source is on crates.io at the version in Cargo.lock).
+allow = [
+  "Apache-2.0",
+  # target-lexicon, a build-time helper of the Linux system libraries (system-deps); not in any program we ship.
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-3-Clause",
+  "MIT",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+]
+
+[bans]
+# The tree holds many crates twice (the windows-* family, for one); that is Tauri's choice, not ours.
+multiple-versions = "allow"
+wildcards = "deny"
+# A second line behind the crate allowlist and the dependency check: nothing that speaks a network protocol
+# or links a TLS stack may enter the desktop tree.
+deny = [
+  { crate = "reqwest" },
+  { crate = "hyper" },
+  { crate = "h2" },
+  { crate = "ureq" },
+  { crate = "isahc" },
+  { crate = "curl" },
+  { crate = "curl-sys" },
+  { crate = "surf" },
+  { crate = "attohttpc" },
+  { crate = "openssl" },
+  { crate = "openssl-sys" },
+  { crate = "native-tls" },
+  { crate = "rustls" },
+  { crate = "tungstenite" },
+  { crate = "tokio-tungstenite" },
+]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

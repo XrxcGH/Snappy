@@ -1,0 +1,83 @@
+name: Dependency audit
+
+# Licenses, known vulnerabilities and unmaintained crates, for the Rust crates in the desktop shell and for the
+# npm packages that end up in a shipped page. Read-only: no secret, no environment, a read-only token, nothing
+# is written or published. The rules live in deny.toml at the repository root.
+#
+# Three separate jobs, so the deterministic one can be a required check and the other two can fail without
+# blocking an unrelated pull request when a new advisory appears:
+#   * cargo-licenses  : licenses, banned crates and sources. Changes only when Cargo.lock or deny.toml changes.
+#   * cargo-advisories: RustSec advisories (known vulnerabilities, unmaintained or yanked crates). Changes when
+#                       the advisory database does, so a failure on main is the alarm that a crate needs a look.
+#   * npm-audit       : npm advisories of high severity or worse, for the packages that ship (not the dev tools).
+#
+# Dependabot opens a pull request for npm, Actions and Cargo every week, so these run against the new lock files
+# then. A run every day would need the `schedule` trigger, which apps/app/test/workflows.test.ts allows only in
+# verify-published.yml; add it there and here together if the owner wants it.
+#
+# cargo-deny is built from crates.io at a fixed version with --locked (Cargo checks every crate against the
+# index's checksum), so no third-party action or pre-built download is trusted.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_DENY_VERSION: "0.20.2"
+
+jobs:
+  cargo-licenses:
+    name: Rust licenses, banned crates and sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"
+      - name: Check licenses, bans and sources
+        run: cargo deny --manifest-path apps/app/src-tauri/Cargo.toml check licenses bans sources
+
+  cargo-advisories:
+    name: Rust advisories
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install cargo-deny
+        run: cargo install cargo-deny --locked --version "$CARGO_DENY_VERSION"
+      - name: Check advisories
+        run: cargo deny --manifest-path apps/app/src-tauri/Cargo.toml check advisories
+
+  npm-audit:
+    name: npm advisories (shipped packages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      # Reads package-lock.json only: nothing is installed and no package script runs.
+      - name: Audit the packages that ship
+        run: npm audit --omit=dev --audit-level=high

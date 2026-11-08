@@ -103,8 +103,8 @@ jobs:
       - name: Check the Rust dependency tree
         run: node apps/app/tools/check-no-network-deps.mjs
 
-  # Syntax and expression errors in the workflow files. Go is already on the runner. The version is pinned (Go
-  # checks the download against its public checksum database). The shell and Python checkers are off: they
+  # Syntax and expression errors in the workflow files. The version is pinned and the download is checked against
+  # a SHA-256 written below. The shell and Python checkers are off: they
   # would lint the signing scripts for style, and this job is only for the workflow syntax.
   workflow-lint:
     name: Workflow files pass actionlint
@@ -116,8 +116,18 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # Pinned to actionlint@v1.7.7 by checksum: the download must match the SHA-256 of that release's Linux tarball,
+      # which was read from the release's own checksums file. Dependabot does not track this one. To move to a newer
+      # release, change both values together and compare the new checksum with the release's checksums file.
       - name: Run actionlint
+        env:
+          ACTIONLINT_VERSION: "1.7.7"
+          ACTIONLINT_SHA256: 023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757
         run: |
           set -euo pipefail
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          "$(go env GOPATH)/bin/actionlint" -shellcheck= -pyflakes=
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            --output actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  actionlint.tar.gz" | sha256sum --check --strict
+          tar -xzf actionlint.tar.gz actionlint
+          ./actionlint -shellcheck= -pyflakes=
