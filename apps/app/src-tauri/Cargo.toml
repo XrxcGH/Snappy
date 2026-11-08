@@ -31,7 +31,7 @@ sha2 = "0.10"
 # Both are already dependencies of the system-webview layer; neither has any network code.
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.39"
-windows-core = "0.62"
+windows-core = "0.100"
 # The updater's network calls (WinHTTP) and its checks of the install, in two files only (see src/updater).
 windows-sys = { version = "0.61", features = [
   "Win32_Foundation",
