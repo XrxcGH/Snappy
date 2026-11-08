@@ -3,9 +3,11 @@
  * the Windows-only parts of the shell stay behind `cfg(windows)` so the macOS build compiles and behaves. The macOS
  * program itself is built and started only on GitHub's runners (desktop-smoke.yml); these tests read the files.
  */
-import { existsSync, readFileSync } from "node:fs";
+import { transform } from "esbuild";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
 
@@ -73,13 +75,42 @@ describe("macOS bundle config", () => {
     for (const source of Object.values(mac.files ?? {})) expect(existsSync(path.join(tauri, source))).toBe(true);
   });
 
-  it("asks for macOS 12.3 or newer: the first release that ships WebKit 15.4, which the bundled script needs", () => {
-    // The page is built for es2022 and uses Object.hasOwn and navigator.locks, both added in Safari 15.4, which macOS 12.3 includes.
-    // Nothing below the runner's own macOS is tested, so this is the lowest value that can be argued, not one that was run.
-    expect(mac.minimumSystemVersion).toBe("12.3");
+  it("asks for macOS 13.3 or newer: the first release that ships WebKit 16.4, which the bundled script needs", () => {
+    // The script has regular expressions with a look-behind (core/src/export/layout-report.ts), which WebKit parses only from
+    // Safari 16.4. macOS 13.3 is the first release whose own WebKit is that version. Nothing below the runner's macOS is run.
+    expect(mac.minimumSystemVersion).toBe("13.3");
     const build = readFileSync(path.join(root, "..", "dashboard", "build.mjs"), "utf8");
     expect(build).toMatch(/target: \["es2022"\]/);
   });
+
+  it("has a page script and two workers that need nothing newer than Safari 16.4 (the syntax, not the web APIs)", async () => {
+    // esbuild lowers whatever its target cannot parse (a look-behind regex literal becomes `new RegExp(...)`, a static block
+    // becomes an assignment). So a build for the floor that differs from the es2022 build means some syntax is newer than the floor.
+    const out = mkdtempSync(path.join(tmpdir(), "snappy-floor-"));
+    try {
+      const dashboard = path.join(root, "..", "dashboard");
+      const builder = (await import(pathToFileURL(path.join(dashboard, "build.mjs")).href)) as {
+        buildDashboard: (o: { outDir: string; entry: string; extraCss: string }) => Promise<{ file: string; workerSource: string; terminalWorkerSource: string }>;
+      };
+      const built = await builder.buildDashboard({ outDir: out, entry: path.join(root, "src", "entry.ts"), extraCss: path.join(root, "src", "update.css") });
+      const html = readFileSync(built.file, "utf8");
+      const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1] ?? "");
+      expect(scripts.length).toBeGreaterThan(0);
+      const sources = [...scripts, built.workerSource, built.terminalWorkerSource];
+      // esbuild's table wrongly lists \p{...} escapes as missing in every Safari (they came in Safari 11.1), so that one feature is declared present.
+      const lowered = async (code: string, target: string): Promise<string> => (await transform(code, { loader: "js", target, supported: { "regexp-unicode-property-escapes": true } })).code;
+      let differsBelowTheFloor = 0;
+      for (const code of sources) {
+        expect(await lowered(code, "safari16.4")).toBe(await lowered(code, "es2022"));
+        if ((await lowered(code, "safari16.3")) !== (await lowered(code, "es2022"))) differsBelowTheFloor += 1;
+      }
+      // The same comparison, one Safari lower, must see a difference: otherwise it proves nothing (the look-behind is why).
+      expect(differsBelowTheFloor).toBeGreaterThan(0);
+      expect(sources.some((code) => /\(\?<[=!]/.test(code))).toBe(true);
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  }, 120_000);
 
   it("uses dotted numbers for the macOS version strings, and keeps the beta tag in its own key", () => {
     const plist = readFileSync(path.join(tauri, "Info.plist"), "utf8");
