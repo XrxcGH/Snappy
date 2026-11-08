@@ -114,8 +114,10 @@ const install = (installer) => {
 /** Everything the drill put on this computer: the test app, its data, and the installer's registry key. */
 const removeEverything = () => {
   uninstall();
-  rmSync(DATA_DIR, { recursive: true, force: true });
-  rmSync(path.join(process.env.APPDATA, "com.snappy.e2e"), { recursive: true, force: true });
+  // The web engine's processes take a moment to let go of the profile after the app is stopped: retry for up to 30 seconds.
+  const retry = { recursive: true, force: true, maxRetries: 60, retryDelay: 500 };
+  rmSync(DATA_DIR, retry);
+  rmSync(path.join(process.env.APPDATA, "com.snappy.e2e"), retry);
   ps(`Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors\\Snappy E2E' -Recurse -Force -ErrorAction SilentlyContinue; if (-not (Get-ChildItem 'HKCU:\\Software\\Snappy contributors' -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors' -Force -ErrorAction SilentlyContinue }`);
 };
 function launch(endpoint) {
@@ -283,16 +285,18 @@ try {
   stop();
   // Leave nothing behind: not the test app, not its data, not its registry key. --keep leaves the test folder (keys and
   // installers) for --reuse, and the app too, so a scenario can be looked at by hand.
+  let cleaned = true;
   if (!keep) {
     try {
       removeEverything();
     } catch (e) {
+      cleaned = false;
       log(`could not remove everything: ${e.message}`);
     }
   }
   if (!keep && !reuse) rmSync(work, { recursive: true, force: true });
   const failed = results.filter((r) => !r.ok);
   log(`\n${results.length - failed.length} passed, ${failed.length} failed. The checks that stay manual are listed in README.md.`);
-  log(keep ? "--keep: the test app (Snappy E2E) and its data stay. Remove it from Apps and features and delete %LOCALAPPDATA%\\com.snappy.e2e." : "The test app, its data and its registry key were removed.");
+  log(keep ? "--keep: the test app (Snappy E2E) and its data stay. Remove it from Apps and features and delete %LOCALAPPDATA%\\com.snappy.e2e." : cleaned ? "The test app, its data and its registry key were removed." : "NOT everything was removed (see above): remove Snappy E2E from Apps and features, delete %LOCALAPPDATA%\\com.snappy.e2e and HKCU\\Software\\Snappy contributors\\Snappy E2E by hand.");
   process.exitCode = failed.length ? 1 : 0;
 }
