@@ -199,7 +199,7 @@ function* walk(dir, skip) {
 
 /** Runs every source rule over the repository at `root`. Returns the problems found. */
 export function checkRepository(root) {
-  const skip = new Set(["node_modules", "target", "dist", ".git", "gen", "frontend"]);
+  const skip = new Set(["node_modules", "target", "dist", ".git", ".claude", "gen", "frontend"]);
   const rel = (p) => norm(path.relative(root, p));
   const problems = [];
   for (const file of walk(root, skip)) {

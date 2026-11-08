@@ -79,6 +79,15 @@ The installed Windows beta, captured as its own window (title bar included) at i
 ![The Windows app showing the Friends table tool in the dark theme](windows-app-friends-table-dark.webp)
 ![The Windows app showing the in-app terminal after a finished command](windows-app-terminal-dark.webp)
 
+## Updates
+
+The desktop page with a scripted stand-in for the app shell and made-up data, so the update banner, countdown and cards can be shown without a release. They are headless captures, not the installed app.
+
+![The update banner at a phone width, dark theme](updates-ready-phone-width.png)
+![The countdown banner before an idle update](updates-countdown.png)
+![The Updates card in Settings](updates-settings.png)
+![The Update check block on the Privacy page](updates-privacy.png)
+
 ## Not captured yet
 
 These need a screen or a device, so a headless run cannot make them. When they exist they take these names and the same rules (sample data only, no window chrome).
