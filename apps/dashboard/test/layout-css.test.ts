@@ -221,6 +221,42 @@ describe("states drawn with tokens", () => {
   });
 });
 
+describe("running text and titles", () => {
+  it("keeps a caption to 70 characters, so the sample caption on Start is not 91", () => {
+    expect(declared(".caption")).toMatch(/max-width:\s*70ch/);
+  });
+
+  it("balances a step title, breaks list items at natural places, and sets step titles smaller in the three-card row", () => {
+    expect(declared(".step-card > .section-title")).toMatch(/text-wrap:\s*balance/);
+    expect(declared(".point-list li > span")).toMatch(/text-wrap:\s*pretty/);
+    expect(declared(".point-list li > span")).not.toMatch(/balance/);
+    const title = rules.filter((r) => r.selector === "div.step-list > .step-card > h2" && /font-size/.test(r.body));
+    expect(title).toHaveLength(1);
+    expect(title[0]?.body).toMatch(/font-size:\s*var\(--text-20\)/);
+    expect(title[0]?.media).toEqual(["(min-width: 72rem)"]);
+  });
+
+  it("lists the licenses in one column, so no tile has a label on two lines beside tiles with one", () => {
+    expect(declared(".licenses")).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
+    expect(rules.filter((r) => r.selector === ".licenses" && /repeat\(2/.test(r.body))).toEqual([]);
+  });
+});
+
+describe("the command block header", () => {
+  it("keeps Copy and Run beside the title from 360 px, and turns Copy into its icon alone below that", () => {
+    expect(declared(".command-title")).toMatch(/flex:\s*1 1 6rem/);
+    // Two lines of a long title are balanced, so the last line is never one word.
+    expect(declared(".command-title")).toMatch(/text-wrap:\s*balance/);
+    expect(declared(".command-actions")).toMatch(/flex:\s*none/);
+    const narrow = rules.filter((r) => r.selector === ".command-actions .btn:first-child" && r.media.length === 1);
+    expect(narrow).toHaveLength(1);
+    // 22.49rem is just under 360 px.
+    expect(narrow[0]?.media).toEqual(["(max-width: 22.49rem)"]);
+    expect(narrow[0]?.body).toMatch(/width:\s*var\(--target-min\)/);
+    expect(rules.some((r) => r.selector === ".command-actions .btn:first-child > span" && /clip-path:\s*inset\(50%\)/.test(r.body))).toBe(true);
+  });
+});
+
 describe("forced colors (Windows high contrast)", () => {
   const forced = (selector: string): string => rules.filter((r) => r.selector === selector && r.media.length === 1 && /forced-colors:\s*active/.test(r.media[0] ?? "")).map((r) => r.body).join(" ");
 

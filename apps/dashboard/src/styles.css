@@ -75,7 +75,7 @@ img, svg { max-width: 100%; }
 .muted { color: var(--text-muted); }
 /* The type scale. Page title: h1. Section title: h2. Sub-heading: h3 (.subheading). Lead: one paragraph under the
    title. Body: everything else. Caption: small muted notes that nobody needs in order to act. */
-.caption { font-size: var(--text-14); line-height: var(--leading-body); color: var(--text-muted); }
+.caption { max-width: 70ch; font-size: var(--text-14); line-height: var(--leading-body); color: var(--text-muted); }
 .lead { font-size: clamp(1rem, 0.9rem + 0.5vw, var(--text-18)); line-height: 1.5; }
 .label { font-size: var(--text-16); font-weight: 600; letter-spacing: var(--tracking-label); }
 .subheading { font-size: var(--text-20); }
@@ -291,7 +291,11 @@ img, svg { max-width: 100%; }
 /* Bulleted list with small check icons. */
 .point-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .point-list li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2); }
-.point-list li > span, .dropzone-title, .finding-unit { text-wrap: balance; }
+.dropzone-title, .finding-unit { text-wrap: balance; }
+/* A list item breaks at a natural place and never leaves one word alone; balancing it made "Select JSON files and User information" split mid phrase. */
+.point-list li > span { text-wrap: pretty; }
+/* A step title takes balanced lines, so the three cards do not mix one line with two lopsided ones. */
+.step-card > .section-title { text-wrap: balance; }
 .point-list .icon { color: var(--accent-fg); margin-top: 0.125rem; }
 
 /* Step cards: the violet number marks where you are in the sequence. Every card puts its content under the number, in
@@ -637,8 +641,13 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .command { display: grid; gap: var(--space-3); }
 .code-block { padding: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
 .command-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); }
-.command-title { margin: 0; flex: 1 1 12rem; min-width: 0; color: var(--text-muted); font-size: var(--text-14); font-weight: 600; }
-.command-actions { display: flex; gap: var(--space-2); margin-inline-start: auto; }
+.command-title { margin: 0; flex: 1 1 6rem; min-width: 0; text-wrap: balance; color: var(--text-muted); font-size: var(--text-14); font-weight: 600; }
+.command-actions { display: flex; flex: none; gap: var(--space-2); margin-inline-start: auto; }
+/* Copy and Run stay on the title's row from 360 px (the title wraps instead). Below that, Copy is the icon alone and keeps its name and its 44 px target. */
+@media (max-width: 22.49rem) {
+  .command-actions .btn:first-child { width: var(--target-min); padding-inline: 0; }
+  .command-actions .btn:first-child > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
 .command > * { min-width: 0; }
 /* A button that cannot run yet is drawn in the muted pair (4.5:1 or more), not faded: it stays focusable and explains itself, so people read it. */
 .btn[aria-disabled="true"], .btn[aria-disabled="true"]:hover { background: var(--surface-sunken); color: var(--text-muted); border-color: var(--border); cursor: not-allowed; }
@@ -691,7 +700,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .out-list { display: grid; gap: var(--space-1); max-height: 16rem; overflow-y: auto; }
 .out-file { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid var(--border); padding-block: var(--space-1); }
 .out-file-name { min-width: 0; overflow-wrap: anywhere; }
-.licenses { display: grid; gap: var(--space-2); }
+.licenses { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
 .delete, .confirm { display: grid; gap: var(--gap-card); }
 .confirm { padding: var(--pad-card); border: 1px solid var(--danger-border); border-radius: var(--radius-lg); background: var(--surface); }
 .notice-details { margin-top: 0; }
@@ -785,7 +794,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   div.step-list > .step-card { grid-row: span 2; grid-template-rows: subgrid; align-items: start; }
   /* Every title starts at the card's top (a one-line title centers on the number), and every body starts right under the
      shared title row, so the three bodies share one top and no field floats in the middle of a card. */
-  div.step-list > .step-card > h2 { min-height: 2.25rem; }
+  div.step-list > .step-card > h2 { min-height: 2.25rem; font-size: var(--text-20); }
   div.step-list > .step-card > .step-content { align-self: start; }
   .card-band { grid-template-columns: minmax(0, calc(var(--col) - 2 * var(--pad-card))) auto; column-gap: var(--space-8); align-items: center; justify-content: space-between; }
   .card-band > :is(h2, p:first-of-type) { grid-column: 1; }
@@ -839,9 +848,6 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .view.tool > * { grid-column: 1 / -1; }
   .view.tool > .tool-top { grid-column: 1; }
   .view.tool > .tool-reads { grid-column: 2; align-self: end; }
-  /* The licenses are two columns of frames. */
-  .licenses { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--gap-card); }
-  .licenses > :last-child:nth-child(odd) { grid-column: 1 / -1; }
   .step-content .label { text-wrap: balance; }
 }
 @media (min-width: 100rem) {
