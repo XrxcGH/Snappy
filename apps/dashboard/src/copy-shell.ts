@@ -42,6 +42,23 @@ export const shellCopy = {
   historyCancelButton: "Cancel",
   historyDeletedAnnounce: "Export deleted from your history.",
 
+  // Settings: the history as a file, locked with a passphrase, to keep or to move to another computer.
+  fileHeading: "History file",
+  fileNote: "Save your history to a file locked with a passphrase, or open one. The file uses the same format as the command line tool.",
+  fileSaveHeading: "Save a file",
+  fileSaveButton: "Save history file",
+  fileSavedAnnounce: "History file saved.",
+  fileSaveFailedNote: "Snappy could not save the file. Try again.",
+  fileNothingNote: "Add an export first. There is nothing to save yet.",
+  fileOpenHeading: "Open a file",
+  fileChooseButton: "Choose history file",
+  fileChosenNote: "A file is chosen. Enter its passphrase to open it.",
+  fileOpenButton: "Open history file",
+  fileCancelButton: "Cancel",
+  fileOpenedAnnounce: "History file opened.",
+  fileWrongNote: "That passphrase did not open the file, or it is not a Snappy history file.",
+  fileUnreadableNote: "Snappy could not read that file. A different version may have made it.",
+
   // Keyboard shortcuts: the dialog, the buttons that open it, and the short status after "g".
   shortcutsTitle: "Keyboard shortcuts",
   showShortcutsButton: "Show shortcuts",

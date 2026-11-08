@@ -7,7 +7,9 @@ import { openShortcuts } from "../keys.ts";
 import type { Theme, State } from "../reducer.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
+import { saveBlob } from "../download.ts";
 import { formatDate } from "../format.ts";
+import { HISTORY_FILE_NAME, buildHistoryFile, hasHistory, readHistoryFile } from "../history-file.ts";
 import type { Snapshot } from "@snappy-export/core";
 import { button } from "../components/button.ts";
 import { icon } from "../components/icon.ts";
@@ -24,7 +26,7 @@ export const settingsView: View = (ctx) =>
     "div",
     { class: "view" },
     pageHeader(routes.settings.title, undefined, { icon: "settings" }),
-    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), historySection(ctx), helpSection(ctx), aboutSection()),
+    columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), historySection(ctx), historyFileSection(ctx), helpSection(ctx), aboutSection()),
   );
 
 /**
@@ -216,6 +218,104 @@ function historyRow(ctx: ViewContext, snap: Snapshot): HTMLElement {
   });
   showDelete(false);
   return h("li", { class: "history-row" }, h("span", { class: "history-what" }, shellCopy.historyRow(date, snap.friends.length)), slot);
+}
+
+/**
+ * The history as a file: Save history file seals it with a passphrase typed here, and Open history file adds a chosen
+ * file's exports, keep list and checkmarks to what is on screen (an unlocked history then saves them like any edit).
+ * Nothing is shown while the history is locked: there is nothing on screen to save or to add to.
+ */
+function historyFileSection(ctx: ViewContext): HTMLElement {
+  return region(
+    ctx.store,
+    (s) => [s.real.ledger, s.real.allowlist, s.real.checkedOff, s.real.ticks, s.vault.phase],
+    (s) => {
+      if (s.vault.phase === "locked") return null;
+      return section(
+        shellCopy.fileHeading,
+        h("p", {}, shellCopy.fileNote),
+        subsection(
+          shellCopy.fileSaveHeading,
+          hasHistory(s.real)
+            ? passphraseForm({
+                mode: "set",
+                key: "history-file-save",
+                submitLabel: shellCopy.fileSaveButton,
+                busy: false,
+                onSubmit: async (pass) => {
+                  try {
+                    const bytes = await buildHistoryFile(ctx.store.get().real, pass);
+                    const saved = saveBlob(HISTORY_FILE_NAME, new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" }));
+                    announce(saved ? shellCopy.fileSavedAnnounce : shellCopy.fileSaveFailedNote, !saved);
+                    return saved;
+                  } catch {
+                    announce(shellCopy.fileSaveFailedNote, true);
+                    return false;
+                  }
+                },
+              })
+            : h("p", {}, shellCopy.fileNothingNote),
+        ),
+        subsection(shellCopy.fileOpenHeading, openFileBox(ctx)),
+      );
+    },
+    { className: "region region-section" },
+  );
+}
+
+/** Choose a history file, then its passphrase. The file is read in memory and forgotten; its name is never shown. */
+function openFileBox(ctx: ViewContext): HTMLElement {
+  const box = h("div", { class: "history-open" });
+  const picker = h("input", { type: "file", accept: ".sealed,application/octet-stream", hidden: true, "aria-hidden": "true", tabindex: "-1" });
+  picker.addEventListener("change", () => {
+    const file = picker.files?.[0];
+    picker.value = ""; // lets the same file be chosen again
+    if (file) showAsk(file);
+  });
+
+  const showChoose = (focus: boolean): void => {
+    const choose = button({ label: shellCopy.fileChooseButton, icon: "import", key: "history-file-choose", onclick: () => picker.click() });
+    box.replaceChildren(choose, picker);
+    if (focus) choose.focus();
+  };
+
+  const showAsk = (file: Blob): void => {
+    const status = h("div", { class: "history-open-status" });
+    const form = passphraseForm({
+      mode: "unlock",
+      key: "history-file-open",
+      submitLabel: shellCopy.fileOpenButton,
+      busy: false,
+      onSubmit: async (pass) => {
+        status.replaceChildren();
+        const result = await readHistoryFile(file, pass);
+        if (!result.ok) {
+          const text = result.problem === "passphrase" ? shellCopy.fileWrongNote : shellCopy.fileUnreadableNote;
+          status.replaceChildren(notice("error", text));
+          announce(text, true);
+          return false;
+        }
+        // The browser's clock is only used when no export was read yet; see the reducer.
+        ctx.store.dispatch({ type: "history-merged", saved: result.saved, now: Date.now() });
+        announce(shellCopy.fileOpenedAnnounce);
+        showChoose(false);
+        return true;
+      },
+    });
+    const cancel = button({ label: shellCopy.fileCancelButton, variant: "quiet", key: "history-file-cancel", onclick: () => showChoose(true) });
+    box.replaceChildren(h("p", {}, shellCopy.fileChosenNote), status, form, h("div", { class: "actions" }, cancel));
+    form.querySelector<HTMLElement>("input")?.focus();
+  };
+  // Escape backs out of the passphrase question, as it does everywhere a question is asked.
+  box.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Escape" && box.querySelector("form")) {
+      e.preventDefault();
+      showChoose(true);
+    }
+  });
+
+  showChoose(false);
+  return box;
 }
 
 /**

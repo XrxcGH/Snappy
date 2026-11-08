@@ -120,6 +120,7 @@ export type Action =
   | { type: "sample-loaded"; workspace: Workspace }
   | { type: "sample-cleared" }
   | { type: "snapshot-removed"; id: string }
+  | { type: "history-merged"; saved: Saved; now: number }
   | { type: "keep"; username: string }
   | { type: "unkeep"; username: string }
   | { type: "toggle-checked"; username: string }
@@ -201,6 +202,17 @@ export function reduce(state: State, action: Action): State {
       const snapshots = state.real.ledger.snapshots.filter((snap) => snap.id !== action.id);
       if (snapshots.length === state.real.ledger.snapshots.length) return state;
       return { ...state, real: { ...state.real, ledger: { ...state.real.ledger, snapshots } } };
+    }
+
+    // A history file was opened (Settings, History file): its exports, keep list, checkmarks and ticks join what is already here.
+    // The vault phase does not change, and an unlocked history saves the result like any other edit. `now` is only used when
+    // nothing set the workspace's clock yet (no export was read), so ages are never counted from 1970.
+    case "history-merged": {
+      const merged = mergeSaved(action.saved, { ledger: state.real.ledger, allowlist: state.real.allowlist, checkedOff: state.real.checkedOff, ticks: state.real.ticks });
+      return {
+        ...state,
+        real: { ...state.real, ledger: merged.ledger, allowlist: merged.allowlist, checkedOff: merged.checkedOff, ticks: merged.ticks ?? [], now: state.real.now === 0 ? action.now : state.real.now },
+      };
     }
 
     case "keep":
