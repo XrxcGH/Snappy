@@ -31,7 +31,6 @@ export const brand = {
     "Snappy is an independent tool. It is not affiliated with, endorsed by, or sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.",
   privacyLine: "Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.",
   nothingLeft: "Nothing here has left this device.",
-  basedOn: "Based on your exports, not on anything Snapchat told Snappy.",
   version: "0.1.0",
 };
 
@@ -77,7 +76,6 @@ export const shell = {
   sampleCleared: "Sample data cleared.",
   sealedOn: "History saved",
   lockNow: "Lock now",
-  lockedShort: "Locked.",
   /** Shown in the footer of an installed beta only, so a bug report can name the build. */
   betaLine: (version: string) => `Beta version ${version}`,
   navFindings: "Findings",
@@ -705,7 +703,6 @@ export const terminal = {
   stopFor: (title: string) => `Stop command: ${lowerFirst(title)}`,
   saveFileFor: (name: string) => `Save ${name}`,
   panelLabelFor: (title: string) => `Output of ${lowerFirst(title)}`,
-  logLabel: "Command output",
   filesChosen: (n: number) => (n === 1 ? "1 file chosen" : `${formatCount(n)} files chosen`),
   /** Why Run cannot start yet, or at all. */
   needsFileHint: "Choose your export first.",
@@ -738,7 +735,6 @@ export const terminal = {
   stoppingStatus: "Stopping",
   copiedCommandAnnounce: "Command copied.",
   copiedOutputAnnounce: "Output copied.",
-  failedAnnounce: "The command could not start.",
   doneAnnounce: (title: string, label: string, code: number) => `${title}: ${label}. Exit code ${code}.`,
   /** The chip under the output: what the exit meant. */
   exit: {

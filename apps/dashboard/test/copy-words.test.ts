@@ -42,6 +42,19 @@ describe("Start page words", () => {
   });
 });
 
+describe("strings nothing used", () => {
+  it("are gone: brand.basedOn, shell.lockedShort, terminal.logLabel and terminal.failedAnnounce", () => {
+    expect(Object.keys(copy.brand)).not.toContain("basedOn");
+    expect(Object.keys(copy.shell)).not.toContain("lockedShort");
+    expect(Object.keys(copy.terminal)).not.toContain("logLabel");
+    expect(Object.keys(copy.terminal)).not.toContain("failedAnnounce");
+  });
+
+  it("leaves no string in copy.ts that says Based on your exports or The command could not start", () => {
+    expect(hits(/Based on your exports|The command could not start|^Command output$/)).toEqual([]);
+  });
+});
+
 describe("the Export guide's request steps and glossary", () => {
   it("has a Request it list that says the wait once and gives no number of hours", () => {
     expect(copy.guide.requestHeading).toBe("Request it");

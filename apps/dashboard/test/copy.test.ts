@@ -73,7 +73,6 @@ describe("copy module", () => {
       "Snappy is an independent tool. It is not affiliated with, endorsed by, or sponsored by Snap Inc. Snapchat is a trademark of Snap Inc.",
     );
     expect(copy.brand.privacyLine).toBe("Your export stays on this device. Snappy reads friend names and dates, and skips messages, photos, and locations.");
-    expect(copy.brand.basedOn).toBe("Based on your exports, not on anything Snapchat told Snappy.");
     expect(copy.memories.capLabel).toBe("Free storage cap (GB)");
     expect(copy.memories.capHelp).toMatch(/may change/);
     expect(copy.disappeared.needTwoTitle).toBe("Add another export later to compare");
