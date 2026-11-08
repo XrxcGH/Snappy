@@ -213,7 +213,7 @@ describe("a finished Run", () => {
       [{ end: "done", code: 2, ms: 1 }, "command-chip-danger", "Export has errors"],
       [{ end: "done", code: 130, ms: 1 }, "command-chip-neutral", "Stopped"],
       [{ end: "terminated", code: 130, ms: 3000 }, "command-chip-neutral", "Stopped"],
-      [{ end: "failed", code: null, ms: 1 }, "command-chip-danger", "The helper stopped"],
+      [{ end: "failed", code: null, ms: 1 }, "command-chip-danger", "The command stopped"],
     ];
     for (const [result, tone, words] of tones) {
       const { el } = await finished(result);

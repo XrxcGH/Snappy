@@ -401,7 +401,7 @@ describe("when a command cannot run here", () => {
     await tick();
     started[0]?.finish({ end: "failed", code: null, ms: 40 });
     await tick();
-    expect(controller.exitLabel("inspect")).toBe("The helper stopped");
+    expect(controller.exitLabel("inspect")).toBe("The command stopped");
     expect(announced.at(-1)?.[1]).toBe(true);
   });
 
@@ -435,6 +435,6 @@ describe("exitLabel", () => {
     expect(label("inspect", { end: "canceled", code: 130, ms: 1 })).toBe("Stopped");
     expect(label("inspect", { end: "terminated", code: 130, ms: 1 })).toBe("Stopped");
     expect(label("inspect", { end: "blocked", code: null, ms: 0 })).toBe("Needs a terminal on your computer");
-    expect(label("inspect", { end: "failed", code: null, ms: 0 })).toBe("The helper stopped");
+    expect(label("inspect", { end: "failed", code: null, ms: 0 })).toBe("The command stopped");
   });
 });

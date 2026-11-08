@@ -6,7 +6,7 @@ Snappy helps you tidy your Snapchat friends list and rescue your Memories, using
 
 - **Cleanup queue.** Finds disappeared friends (people who may have removed you), unaccepted requests, and quiet friends, each with a confidence level and the evidence behind it. Saved chats and Snaps both count as activity, so a friend you only Snap with is not called quiet.
 - **Memories rescue.** Plans a local backup of your Memories, shows a storage meter against a 5 GB cap that you can change, and restores each file’s exact capture time. In a newer export the files are inside the ZIP files, and Snappy pairs each one with its list entry by that exact time.
-- **Tools.** Twenty-two small helpers on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup, a year in review and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
+- **Tools.** Twenty-two small tools on the dashboard’s Tools page, such as an export check, a Memories storage planner, a friends backup, a year in review and a list of people waiting on a reply. Each reads metadata only and shows the matching command with Copy and Run.
 - **Native apps and a command line tool.** Snappy is an app you install: a Windows beta is the first one, a macOS beta is built and tested by automation (see [docs/MACOS.md](docs/MACOS.md)), and Linux and phone apps are planned. There is also a command line tool named `snappy-export`.
 
 Snappy only infers. A result means “may have removed you”, never “did”. Removing a friend is always your call, and you do it in Snapchat yourself.
@@ -19,7 +19,7 @@ Every picture here is a real capture of Snappy’s built-in sample data: invente
 |---|---|
 | ![Overview page in the light theme, with counts for disappeared friends, unaccepted requests, quiet friends, the cleanup queue and Memories](docs/images/desktop-overview-light.webp) | ![Overview page in the dark theme, with counts for disappeared friends, unaccepted requests, quiet friends, the cleanup queue and Memories](docs/images/desktop-overview-dark.webp) |
 | ![Cleanup queue in the light theme, with the filters, a warning that removing a friend cannot be undone, and the first four people to review](docs/images/desktop-cleanup-queue-light.webp) | ![Cleanup queue in the dark theme, with the filters, a warning that removing a friend cannot be undone, and the first four people to review](docs/images/desktop-cleanup-queue-dark.webp) |
-| ![Tools page in the light theme, with the first helpers, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with the first helpers, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-dark.webp) |
+| ![Tools page in the light theme, with the first tools, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-light.webp) | ![Tools page in the dark theme, with the first tools, grouped by what they read: Your export, then Friends](docs/images/desktop-tools-hub-dark.webp) |
 | ![Memories rescue in the light theme, with the counts, the files found in the export, and the storage cap with its meter](docs/images/desktop-memories-rescue-light.webp) | ![Memories rescue in the dark theme, with the counts, the files found in the export, and the storage cap with its meter](docs/images/desktop-memories-rescue-dark.webp) |
 
 A command shown in the app has Copy and Run. Run works inside the app, on invented data here:
@@ -32,8 +32,8 @@ The same pages fit a phone-size screen. These are captures at 390 by 844 pixels:
 
 | Overview | Tools | Cleanup queue | Year in review |
 |---|---|---|---|
-| ![Overview on a phone, light theme](docs/images/phone-overview-light.webp) | ![Tools page on a phone, light theme, with the first two helpers](docs/images/phone-tools-hub-light.webp) | ![Cleanup queue on a phone, light theme](docs/images/phone-cleanup-queue-light.webp) | ![Year in review tool on a phone, light theme, with its At a glance counts](docs/images/phone-tool-year-in-review-light.webp) |
-| ![Overview on a phone, dark theme](docs/images/phone-overview-dark.webp) | ![Tools page on a phone, dark theme, with the first two helpers](docs/images/phone-tools-hub-dark.webp) | ![Cleanup queue on a phone, dark theme](docs/images/phone-cleanup-queue-dark.webp) | ![Year in review tool on a phone, dark theme, with its At a glance counts](docs/images/phone-tool-year-in-review-dark.webp) |
+| ![Overview on a phone, light theme](docs/images/phone-overview-light.webp) | ![Tools page on a phone, light theme, with the first two tools](docs/images/phone-tools-hub-light.webp) | ![Cleanup queue on a phone, light theme](docs/images/phone-cleanup-queue-light.webp) | ![Year in review tool on a phone, light theme, with its At a glance counts](docs/images/phone-tool-year-in-review-light.webp) |
+| ![Overview on a phone, dark theme](docs/images/phone-overview-dark.webp) | ![Tools page on a phone, dark theme, with the first two tools](docs/images/phone-tools-hub-dark.webp) | ![Cleanup queue on a phone, dark theme](docs/images/phone-cleanup-queue-dark.webp) | ![Year in review tool on a phone, dark theme, with its At a glance counts](docs/images/phone-tool-year-in-review-dark.webp) |
 
 These were made in a headless browser, and the iPhone sizes in Safari’s engine (WebKit), not on a phone. The phone apps are planned, and their own screenshots come with them.
 
@@ -67,7 +67,7 @@ Request your data in Snapchat under Settings, then My Data. Select JSON files an
 
 ### 3. Use the app
 
-Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the helpers: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
+Open Snappy and select Choose ZIP files on the Start page (or drop your ZIP files there), or choose “Use sample data” to look around with made-up friends first. The Tools page lists the tools: each opens its own page, says what it reads, and runs on the export already in the app. The safety and privacy checklists hold your own marks: they are kept only if you save your history with a passphrase in Settings, and until you close Snappy otherwise. Every command shown in the app has Copy and Run, and Run works inside the app.
 
 ### 4. Use the command line
 

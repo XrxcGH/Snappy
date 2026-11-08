@@ -42,6 +42,26 @@ describe("Start page words", () => {
   });
 });
 
+describe("no developer words where a person reads", () => {
+  it("says command, tool and background work, not helper, worker or virtual folder", () => {
+    expect(hits(/\bhelpers?\b|virtual folder/i)).toEqual([]);
+    expect(copy.terminal.confirmFolderTitle).toBe("Save these files in Snappy?");
+    expect(copy.terminal.exit.helperStopped).toBe("The command stopped");
+    expect(copy.terminal.outLostNote).toBe("Stopping keeps the files already written. If the command has to be forced to stop, they are lost.");
+    expect(copy.privacy.workerBody).toBe("Snappy reads exports and runs commands in the background. This work cannot connect anywhere either.");
+    expect(copy.tools.lead).toBe("Small tools that read your export on this device.");
+  });
+
+  it("starts the one developer sentence, the policy rule for background work, with Technical", () => {
+    expect(copy.privacy.policyWorker).toMatch(/^Technical: background work starts under the worker-src blob: rule\./);
+  });
+
+  it("tells the reader to replace the parts in angle brackets, not placeholders", () => {
+    expect(hits(/\bplaceholders?\b/i, /^start\.countPlaceholder$/)).toEqual([]);
+    expect(copy.memories.rescueCommandLabel).toMatch(/angle brackets/);
+  });
+});
+
 describe("what the Privacy page says about group titles and the profile link", () => {
   it("does not say group chat titles are skipped: it says they become a short code", () => {
     expect(copy.privacy.neverBody).toBe("Snappy never keeps these. It skips them while it reads, except group chat titles, which it turns into a short code.");

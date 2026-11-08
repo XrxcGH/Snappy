@@ -87,10 +87,10 @@ describe("the write confirmation", () => {
     return { el, calls };
   };
 
-  it("asks about the virtual folder, with the real size limit of this device", () => {
+  it("asks whether to save the files in Snappy, with the real size limit of this device", () => {
     const { el } = card("folder");
     expect(el.getAttribute("role")).toBe("group");
-    expect(el.querySelector("h3")?.textContent).toBe("Save to a virtual folder?");
+    expect(el.querySelector("h3")?.textContent).toBe("Save these files in Snappy?");
     expect(el.textContent).toContain("Files stay in this page until you save them. Up to 256 MB.");
     expect(card("folder", 96 * 1024 * 1024).el.textContent).toContain("Up to 96 MB.");
     expect(el.querySelectorAll("button").map((b) => b.textContent)).toEqual(["Save files", "Cancel"]);

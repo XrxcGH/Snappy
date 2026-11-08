@@ -255,7 +255,7 @@ export const overview = {
 
 /** The Tools hub and the frame every tool page shares. A tool's own words are in src/tools/<id>/copy.ts. */
 export const tools = {
-  lead: "Small helpers that read your export on this device.",
+  lead: "Small tools that read your export on this device.",
   noExportNote: "Most tools need an export. Add one on the Start page.",
   groups: { "your-export": "Your export", friends: "Friends", chats: "Chats", memories: "Memories", checklists: "Checklists" },
   open: "Open",
@@ -512,7 +512,7 @@ export const privacy = {
       "Snappy could not confirm this page’s security policy. Install Snappy again from a copy you trust.",
     );
   },
-  workerBody: "Background helpers read exports and run commands. They cannot connect anywhere either.",
+  workerBody: "Snappy reads exports and runs commands in the background. This work cannot connect anywhere either.",
   // Shown only inside the desktop app. Each line says what was checked and no more.
   desktopHeading: "In the desktop app",
   desktopOwnPage: "This app shows only its own page. Links and new windows are refused.",
@@ -527,7 +527,7 @@ export const privacy = {
   policyHeading: "Technical details",
   networkDetail: "To check, open your browser’s developer tools. The network tab stays empty.",
   policyLabel: "Security policy in this page",
-  policyWorker: "Background helpers start under the worker-src blob: rule. If blocked, Snappy reads on the page instead, and Run is unavailable.",
+  policyWorker: "Technical: background work starts under the worker-src blob: rule. If blocked, Snappy reads on the page instead, and Run is unavailable.",
   sealHeading: "Saved history",
   get sealBody(): readonly string[] {
     return [
@@ -699,7 +699,7 @@ export const terminal = {
   downloadNote: "Downloads need a terminal on your computer.",
   notZipNote: "Choose .zip files from your export.",
   /** The confirmation before a command that writes. */
-  confirmFolderTitle: "Save to a virtual folder?",
+  confirmFolderTitle: "Save these files in Snappy?",
   confirmFolderBody: (megabytes: number) => onDesktop(`Files stay in this page until you save them. Up to ${megabytes} MB.`, `Files stay in Snappy until you save them. Up to ${megabytes} MB.`),
   confirmStoreTitle: "Update saved history?",
   get confirmStoreBody(): string {
@@ -729,7 +729,7 @@ export const terminal = {
     someFailed: "Finished, some items failed",
     stopped: "Stopped",
     blocked: "Needs a terminal on your computer",
-    helperStopped: "The helper stopped",
+    helperStopped: "The command stopped",
   },
   codeLabel: (code: number) => `Exit code ${code}`,
   secondsLabel: (seconds: string) => `${seconds} s`,
@@ -738,7 +738,7 @@ export const terminal = {
   outHeading: "Saved files",
   outCount: (files: number, size: string) => `${files === 1 ? "1 file" : `${formatCount(files)} files`}, ${size}`,
   outMore: (n: number) => `Plus ${formatCount(n)} more`,
-  outLostNote: "Stopping keeps the files already written. If the helper has to be cut off, they are lost.",
+  outLostNote: "Stopping keeps the files already written. If the command has to be forced to stop, they are lost.",
   outTooBigNote: "That is too much for one .zip. Save the files one by one.",
   outSavedAnnounce: "File saved.",
   outSaveFailedNote: "Snappy could not save that file. Try again.",

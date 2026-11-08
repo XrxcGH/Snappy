@@ -88,7 +88,7 @@ describe("the frame", () => {
     const reads = root.querySelector(".tool-reads") as FakeElement;
     expect(reads.querySelector(".label")?.textContent).toBe(tools.readsHeading);
     expect(reads.textContent).toContain(copy.reads);
-    expect(reads.textContent).toContain("message text, media, locations, display names or login history");
+    expect(reads.textContent).toContain("message text, media, locations, display names, or login history");
   });
 
   it("draws no inline style, handler attribute or markup string", async () => {
