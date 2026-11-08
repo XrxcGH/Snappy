@@ -75,6 +75,8 @@ export const lists = {
   relatedBackupNote: "Back up your friends before you remove anyone.",
   toolsHeading: "Tools",
   toolsCardText: (n: number) => `${n} small helpers that read your export.`,
+  // The warning above the Cleanup rows: short enough for one line in a notice at the page's text width.
+  removalNote: "Removing a friend cannot be undone. Any streak ends.",
   // The command that finds the same people without saving anything, shown under the queue.
   previewNote: "The same search, without saving anything to your history.",
 

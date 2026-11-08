@@ -140,7 +140,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
     // The count line and Save and Copy share one line.
     h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: cleanup.csvFile })),
     // The consequence is stated before any action, in both modes.
-    notice("warning", cleanup.removalWarning),
+    notice("warning", lists.removalNote),
     shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
     shown.length === 0
       ? h(

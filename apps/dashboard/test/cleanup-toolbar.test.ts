@@ -1,11 +1,11 @@
 /**
  * The Cleanup toolbar is compact: the lists, the search and the mode toggle sit in one control block, the count line and
  * Save and Copy share one line, the help for Save and Copy is a description for screen readers and not a visible
- * paragraph, and the removal warning is one notice above the rows. (The first row being inside 800 px at 1280 is
- * checked in a real browser: see the track's notes.)
+ * paragraph, and the removal warning is one notice above the rows.
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup } from "../src/copy.ts";
+import { lists } from "../src/copy-lists.ts";
 import type { State } from "../src/reducer.ts";
 import type { View } from "../src/views/context.ts";
 import { all, byLabel, mount, sampleStateOf, textOf } from "./lists-harness.ts";
@@ -58,7 +58,7 @@ describe("the Cleanup toolbar", () => {
     const { root } = mount(cleanupView, sample);
     const warnings = all(root, ".notice-warning");
     expect(warnings).toHaveLength(1);
-    expect(textOf(warnings[0]!)).toContain(cleanup.removalWarning);
+    expect(textOf(warnings[0]!)).toContain(lists.removalNote);
     const order = root.descendants();
     expect(order.indexOf(warnings[0]!)).toBeGreaterThan(order.indexOf(all(root, ".list-bar")[0]!));
     expect(order.indexOf(warnings[0]!)).toBeLessThan(order.indexOf(all(root, "li.candidate")[0]!));
