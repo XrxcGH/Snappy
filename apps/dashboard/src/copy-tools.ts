@@ -40,6 +40,8 @@ export const hubSearch = {
   /** The summary beside the field and the spoken count while someone types. */
   count: (shown: number, total: number): string => `${shown} of ${total} tools`,
   none: "No tool matches. Clear the field to see them all.",
+  clear: "Clear",
+  clearAria: "Clear tool search",
 };
 
 export const zone = {
