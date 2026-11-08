@@ -10,6 +10,8 @@ export {
   parseSnapHistoryJson,
   parseMemoriesJson,
   validateExport,
+  failureClass,
+  visibleIssues,
   normPath,
 } from "./export/parse.ts";
 
@@ -23,10 +25,12 @@ export {
   readZipEntry,
   addLocalHeaderTimes,
   parseExportFromReader,
+  LOCAL_TIME_PHASE,
   mergeParsedExports,
   ZipEntryError,
 } from "./export/zip-reader.ts";
-export type { RandomAccessReader, ZipEntryInfo, ZipListing, ZipEntryErrorCode } from "./export/zip-reader.ts";
+export type { RandomAccessReader, ZipEntryInfo, ZipListing, ZipEntryErrorCode, LocalTimeProgress } from "./export/zip-reader.ts";
+export type { FailureClass } from "./export/parse.ts";
 export { crc32 } from "./export/crc32.ts";
 
 // streaming, content-blind JSON projection (bounded memory; message text is never decoded)
