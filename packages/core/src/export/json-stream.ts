@@ -73,6 +73,12 @@ export interface ProjectOptions {
    * the value. It lets a caller see sections that hold no records, which the records alone cannot show.
    */
   onKind?: (key: string | null, kind: string) => void;
+  /**
+   * Told the key of the list (conversation or section) each time an element of a list of records is
+   * not a record (a string, a number, null, a nested list), without reading it. Such elements are
+   * otherwise invisible, because only records are handed on.
+   */
+  onNonRecord?: (key: string) => void;
   /** Refuse more than this many bytes of JSON in total. Default 16 GiB. */
   maxBytes?: number;
 }
@@ -314,6 +320,7 @@ class Projector<T> {
   private readonly sections: Map<string, string> | undefined;
   private readonly emit: (key: string, record: ProjectedRecord, seq: number) => T;
   private readonly onKind: ProjectOptions["onKind"];
+  private readonly onNonRecord: ProjectOptions["onNonRecord"];
 
   constructor(
     opts: ProjectOptions,
@@ -325,6 +332,7 @@ class Projector<T> {
     this.emit = emit;
     this.shapes = shapes;
     this.onKind = opts.onKind;
+    this.onNonRecord = opts.onNonRecord;
     const maxBytes = opts.maxBytes ?? DEFAULT_MAX_BYTES;
     if (!(maxBytes > 0)) throw new RangeError("maxBytes must be positive");
     this.maxBytes = maxBytes;
@@ -551,6 +559,10 @@ class Projector<T> {
   private startValue(c: number): number {
     const parent = this.depth === 0 ? R_TOP : (this.roles[this.depth] as number);
     if (parent === R_GROUP) this.groupIdx++;
+    if (this.onNonRecord !== undefined) {
+      if (parent === R_ROWS && c !== 0x7b) this.onNonRecord(this.rowsKey);
+      else if (parent === R_GROUP && c !== 0x7b && c !== 0x5b) this.onNonRecord(""); // a bare list: its entries have no key
+    }
     if (this.onKind !== undefined) {
       if (this.depth === 0) this.onKind(null, kindOfStart(c));
       else if (this.depth === 1 && parent === R_WRAP) this.onKind(this.curKey, kindOfStart(c));

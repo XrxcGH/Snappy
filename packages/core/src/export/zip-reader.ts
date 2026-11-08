@@ -647,7 +647,7 @@ const PLACEHOLDER: Record<string, unknown> = { string: "x", number: 0, boolean: 
  */
 async function streamList<K extends "friends" | "memories">(reader: RandomAccessReader, info: ZipEntryInfo, target: K): Promise<Outcome<TargetValues[K]>> {
   const sections = new Map<string, unknown>();
-  const bare: ProjectedRecord[] = [];
+  const bare: unknown[] = [];
   const seen: { top: string | null } = { top: null };
   let records = 0;
   try {
@@ -655,7 +655,15 @@ async function streamList<K extends "friends" | "memories">(reader: RandomAccess
       if (key === null) seen.top = kind;
       else if (kind !== "array" || !Array.isArray(sections.get(key))) sections.set(key, kind === "array" ? [] : PLACEHOLDER[kind]);
     };
-    for await (const { conversationKey, record } of projectConversations(inflateSource(reader, info), { keepFields: LIST_KEEP_FIELDS[target], onKind })) {
+    // An entry that is not a record (a name on its own, null) is skipped unread, but the parser counts
+    // it as unusable when it holds the whole file, so the same count is kept here: a null stands in for it.
+    const onNonRecord = (key: string): void => {
+      if (++records > MAX_STREAMED_RECORDS) throw new JsonStreamError("limit");
+      const list = sections.get(key);
+      if (Array.isArray(list)) list.push(null);
+      else if (seen.top === "array") bare.push(null);
+    };
+    for await (const { conversationKey, record } of projectConversations(inflateSource(reader, info), { keepFields: LIST_KEEP_FIELDS[target], onKind, onNonRecord })) {
       if (++records > MAX_STREAMED_RECORDS) throw new JsonStreamError("limit");
       const list = sections.get(conversationKey);
       if (Array.isArray(list)) list.push(record);
