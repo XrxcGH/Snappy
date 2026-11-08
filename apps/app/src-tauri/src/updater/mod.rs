@@ -2,7 +2,10 @@
 //! commands; everything that decides what is downloaded, trusted and installed lives here, in Rust.
 //! Nothing in this module takes an address, a host, a header, a version or a path from the page.
 
+pub mod install_kind;
 pub mod keys;
+#[cfg(windows)]
+pub mod launch_windows;
 pub mod manifest;
 pub mod store;
 pub mod transport;
