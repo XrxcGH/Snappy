@@ -1,6 +1,8 @@
 import type { NamedBlob } from "../actions.ts";
 import { announce } from "../announce.ts";
+import { failureClass, visibleIssues } from "@snappy-export/core";
 import { common, routes, settings, start } from "../copy.ts";
+import { startFlow } from "../copy-start.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { button, routeLink } from "../components/button.ts";
@@ -13,7 +15,7 @@ import { passphraseForm } from "../components/passphraseForm.ts";
 import { progressBar, updateProgress } from "../components/progressBar.ts";
 import { platform } from "../platform.ts";
 import { onDispose, region } from "../reactive.ts";
-import type { State } from "../reducer.ts";
+import type { ImportStatus, State } from "../reducer.ts";
 import type { Store } from "../store.ts";
 import { parseFriendCount } from "../parse-input.ts";
 import { navigate } from "./context.ts";
@@ -22,16 +24,38 @@ import type { View, ViewContext } from "./context.ts";
 export const startView: View = (ctx) => {
   const { store } = ctx;
 
-  return h(
+  const view = h(
     "div",
     { class: "view view-start" },
     hero(ctx),
     region(store, (s) => [s.vault.phase, s.vault.busy, s.vault.message], (s) => unlockCard(ctx, s)),
     // Before the steps, so the advice to seal a history comes before the first import, not after it.
     region(store, (s) => [s.vault.phase, s.vault.supported], (s) => storageNote(s)),
+    // The progress and any problem sit here, full width above the three steps: inside the third card they
+    // were a narrow column below the fold, and a failed import looked like a click that did nothing.
+    region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory], (s) => importStatus(store, s)),
     h("div", { class: "step-list" }, getExportSection(), countSection(ctx), addSection(ctx)),
   );
+  // Registered after the status region above, so its repaint has happened when this runs.
+  onDispose(
+    store.subscribe((s, previous) => {
+      if (s.import.phase === previous.import.phase) return;
+      if (s.import.phase === "reading" || s.import.phase === "failed") bringIntoView(view);
+    }),
+  );
+  return view;
 };
+
+/**
+ * Move the person to the import status: scrolled into view and focused. The chooser and the drop zone are
+ * out of reach while a part is being read, so focus would otherwise be left on a control that no longer answers.
+ */
+function bringIntoView(view: HTMLElement): void {
+  const status = view.querySelector<HTMLElement>("#import-status");
+  if (status === null) return;
+  if (typeof status.scrollIntoView === "function") status.scrollIntoView({ block: "nearest" });
+  status.focus({ preventScroll: false });
+}
 
 function hero(ctx: ViewContext): HTMLElement {
   const [onDevice, neverOpens, noNetwork] = start.trustChips;
@@ -193,8 +217,6 @@ function addSection(ctx: ViewContext): HTMLElement {
     h("p", {}, start.addBody),
     dropzone,
     picker,
-    // Not repainted on every progress tick: the reading status below updates itself in place.
-    region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory], (s) => importStatus(store, s)),
   );
 }
 
@@ -225,19 +247,33 @@ function readingStatus(store: Store): HTMLElement {
   return h("div", { class: "status" }, spoken, percent, bar);
 }
 
+/** One block for every state of an import. It takes focus, so a failure cannot go unseen. */
+function statusBlock(...children: Child[]): HTMLElement {
+  return h("div", { class: "import-status", id: "import-status", tabindex: "-1", role: "group", "aria-label": startFlow.statusLabel }, ...children);
+}
+
 function importStatus(store: Store, s: State): Child {
   const imp = s.import;
-  if (imp.phase === "reading") return readingStatus(store);
-  if (imp.phase === "failed") {
-    const problems = imp.issues ?? [];
-    return problems.length === 0
-      ? notice("error", imp.message ?? start.readFailed)
-      : h("div", { class: "stack" }, notice("error", imp.message ?? start.readFailed), ...problems.map(issueNotice));
-  }
+  // Not repainted on every progress tick: the reading status updates itself in place.
+  if (imp.phase === "reading") return statusBlock(readingStatus(store));
+  if (imp.phase === "failed") return statusBlock(...failureNotices(imp));
   if (imp.phase === "done" && !imp.sample) {
-    return notice("success", imp.addedToHistory === false ? start.notAdded : start.readDoneShort);
+    return statusBlock(notice("success", imp.addedToHistory === false ? start.notAdded : start.readDoneShort));
   }
   return null;
+}
+
+/**
+ * What a failed import says. When the files could not be read at all (damaged, password protected, a ZIP of ZIP
+ * files, no JSON), that one cause is the whole message: the headline "looks incomplete" and the notes about lists
+ * that were never read would be statements about files Snappy could not open.
+ */
+function failureNotices(imp: ImportStatus): Child[] {
+  const problems = visibleIssues(imp.issues ?? []);
+  const help = h("p", {}, routeLink("guide", common.openGuide));
+  if (failureClass(problems) !== undefined) return [...problems.filter((i) => failureClass([i]) !== undefined).map(issueNotice), help];
+  const lead = notice("error", imp.message ?? start.readFailed);
+  return [lead, ...problems.map(issueNotice), help];
 }
 
 /** One short secondary button under the intro, so a first look at every screen needs no scrolling. The note says the sample is never saved. */

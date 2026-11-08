@@ -899,3 +899,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   .table .cell-long { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
 }
 /* end track T5 */
+
+/* track T2 */
+/* The import status sits full width above the three steps, so a failure or the progress is the first thing seen. */
+.import-status { display: grid; gap: var(--gap-card); min-width: 0; scroll-margin-block: var(--space-4); }
+/* end track T2 */
