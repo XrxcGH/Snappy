@@ -1120,8 +1120,11 @@ function measurePage(opts) {
         const atRight = width < 768 ? vw - rightmost < 48 : Math.abs(rightmost - colRight) <= 2;
         if (!(tr.left > vw * 0.4 && atRight && tr.top < 80)) add("header-toggle", toggle, "theme toggle is not at the top right / not on the content column's right edge (box " + px(tr.left) + " to " + px(tr.right) + " of " + vw + ", rightmost header control ends at " + px(rightmost) + ", content column ends at " + px(colRight) + ")");
         const name = toggle.getAttribute("aria-label") || toggle.textContent;
-        if (!/^switch to (light|dark) theme$/i.test(norm(name))) add("header-toggle", toggle, 'accessible name "' + norm(name) + '" should say what pressing it does ("Switch to light theme" or "Switch to dark theme")');
+        // Two accepted patterns: a name that says what pressing does ("Switch to light theme"), or one fixed name ("Dark theme") whose pressed state says whether it is on.
+        const fixedName = /^dark theme$/i.test(norm(name));
+        if (!fixedName && !/^switch to (light|dark) theme$/i.test(norm(name))) add("header-toggle", toggle, 'accessible name "' + norm(name) + '" should be the fixed name "Dark theme" with aria-pressed, or say what pressing it does ("Switch to light theme" or "Switch to dark theme")');
         if (!toggle.hasAttribute("aria-pressed") && !toggle.hasAttribute("aria-checked") && !toggle.hasAttribute("aria-current")) add("header-toggle", toggle, "no aria-pressed (or equivalent) stating the current theme");
+        else if (fixedName && !toggle.hasAttribute("aria-pressed")) add("header-toggle", toggle, 'a fixed name "Dark theme" needs aria-pressed to say whether it is on');
         const ths = toggle.querySelectorAll("svg use");
         if (ths.length === 0) add("header-toggle", toggle, "theme toggle has no sun or moon icon");
       }
@@ -1507,8 +1510,16 @@ async function themeProbes(browser, url, results) {
     await page.waitForTimeout(150);
     const after = await read();
     if (before.theme === after.theme) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: `pressing it left data-theme at "${before.theme}"` });
-    if (before.name === after.name) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: `the accessible name did not change after pressing (still "${after.name}")` });
-    if (before.pressed !== null && before.pressed === after.pressed && before.theme !== after.theme) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: "aria-pressed did not change after pressing" });
+    // With one fixed name the state lives in aria-pressed, so the name must stay put and aria-pressed must flip. With a name that says what pressing does, the name must change.
+    const fixedName = /^dark theme$/i.test(before.name);
+    if (fixedName) {
+      if (before.pressed === null) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: 'a fixed name "Dark theme" needs aria-pressed to say whether it is on' });
+      else if (before.pressed === after.pressed) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: "aria-pressed did not change after pressing" });
+      else if (before.name !== after.name) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: `the name changed from "${before.name}" to "${after.name}": with aria-pressed the name must stay fixed` });
+    } else {
+      if (before.name === after.name) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: `the accessible name did not change after pressing (still "${after.name}")` });
+      if (before.pressed !== null && before.pressed === after.pressed && before.theme !== after.theme) results.push({ ...base, check: "header-toggle", sel: "header button", text: before.name, detail: "aria-pressed did not change after pressing" });
+    }
     // the choice is shared with Settings: its control must show the same theme
     await page.evaluate(() => { location.hash = "#/settings"; });
     await page.waitForTimeout(200);
