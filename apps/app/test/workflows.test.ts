@@ -20,6 +20,8 @@ const workflowFiles = (): string[] => readdirSync(workflowsDir).filter((f) => /\
 
 /** The only triggers a workflow here may use. Anything that runs on someone else's content is left out. */
 const ALLOWED_TRIGGERS = ["push", "pull_request", "workflow_dispatch"];
+/** verify-published.yml also runs when a release is published and once a day. It has no secret and a read-only token. */
+const triggersFor = (file: string): string[] => (file === "verify-published.yml" ? [...ALLOWED_TRIGGERS, "release", "schedule"] : ALLOWED_TRIGGERS);
 /** What a signing job may use: it only moves finished files and signs them. */
 const SIGN_ALLOWED_ACTIONS = /^actions\/(download-artifact|upload-artifact|setup-java)@/;
 /** First words a signing job's shell lines may start with (the commands, not the shell's own keywords). */
@@ -152,6 +154,13 @@ function problems(file: string, text: string): string[] {
 
   if (allCode.some((l) => /pull_request_target/.test(l))) out.push(`${file}: uses pull_request_target`);
 
+  // The update signing keys are not in GitHub at all: nothing here may name one, sign an update, or reach for the test feature.
+  if (allCode.some((l) => /TAURI_SIGNING|signer sign|minisign|SNAPPY_UPDATE_KEY/i.test(l))) out.push(`${file}: names an update signing key or signs an update (signing is offline, on the maintainer's computer)`);
+  if (allCode.some((l) => /dev-update-endpoint|SNAPPY_UPDATE_ENDPOINT|SNAPPY_E2E_/.test(l) && !/grep|refus|must not|never|absent/i.test(l))) out.push(`${file}: names the end-to-end update test feature`);
+  // A workflow drafts at most. It never publishes, edits or marks a release, and never makes a pre-release.
+  if (allCode.some((l) => /\bgh release (edit|upload|delete)\b|--prerelease|--draft=false|--latest(?!=false)|\bpublish\b.*gh release/.test(l))) out.push(`${file}: publishes, edits or marks a release (only a draft with --latest=false may be created here)`);
+  for (const l of allCode) if (/\bgh release create\b/.test(l) && !/--draft\b/.test(l)) out.push(`${file}: creates a release that is not a draft`);
+
   for (const l of allCode) {
     const m = /^\s*(?:-\s*)?uses:\s*(\S+)/.exec(l);
     if (m && !m[1]!.startsWith("./") && !/@[0-9a-f]{40}$/.test(m[1]!)) out.push(`${file}: action not pinned to a full commit SHA: ${m[1]}`);
@@ -177,7 +186,7 @@ function problems(file: string, text: string): string[] {
       const m = /^ {2}["']?([A-Za-z_]+)["']?:/.exec(l);
       if (m) found.push(m[1]!);
     }
-    for (const t of found) if (!ALLOWED_TRIGGERS.includes(t)) out.push(`${file}: trigger ${t} is not allowed (allowed: ${ALLOWED_TRIGGERS.join(", ")})`);
+    for (const t of found) if (!triggersFor(file).includes(t)) out.push(`${file}: trigger ${t} is not allowed (allowed: ${triggersFor(file).join(", ")})`);
   }
 
   // Every checkout drops the token from the checked-out repository, so later steps cannot push with it.
@@ -284,6 +293,60 @@ describe("workflow trust boundaries (the real files)", () => {
     for (const file of ["release.yml", "desktop-smoke.yml", "ci.yml"]) expect(workflow(file)).not.toMatch(/dev-hooks/);
   });
 
+  it("builds the Windows installer as NSIS only, with no MSI anywhere in the pipeline", () => {
+    const text = workflow("release.yml");
+    const win = /- name: windows-x64\n((?: {12}.*\n)+)/.exec(text)![1]!;
+    expect(win).toMatch(/bundles: nsis\n/);
+    expect(win).toMatch(/expect: "exe"/);
+    expect(code(text.split(/\r?\n/)).join("\n")).not.toMatch(/\.msi|nsis,msi|"exe msi"/);
+  });
+
+  it("drafts a release with --latest=false and nothing else about publishing", () => {
+    const text = code(workflow("release.yml").split(/\r?\n/)).join("\n");
+    expect(text.match(/gh release create/g)).toHaveLength(1);
+    expect(text).toMatch(/gh release create "\$TAG" dist\/\* --draft --latest=false --verify-tag/);
+    expect(text).not.toMatch(/gh release (edit|upload|delete)|--prerelease|--latest(?!=false)/);
+    expect(text).not.toMatch(/--draft=false/);
+  });
+
+  it("builds official runs with SNAPPY_RELEASE=1 and checks the built Windows program", () => {
+    const desktop = code(split(workflow("release.yml")).jobs.find((j) => j.name === "desktop")!.lines).join("\n");
+    expect(desktop).toMatch(/SNAPPY_RELEASE: \$\{\{ needs\.verify\.outputs\.official == 'true' && '1' \|\| '' \}\}/);
+    expect(desktop).toMatch(/node apps\/app\/tools\/check-no-network-deps\.mjs --exe apps\/app\/src-tauri\/target\/release\/snappy\.exe/);
+    expect(desktop).not.toMatch(/dev-update-endpoint|SNAPPY_UPDATE_ENDPOINT|SNAPPY_E2E/);
+  });
+
+  it("refuses a pre-release tag and a tag lower than the highest existing one", () => {
+    const verify = code(split(workflow("release.yml")).jobs.find((j) => j.name === "verify")!.lines).join("\n");
+    expect(verify).toMatch(/\[\[ "\$REF_NAME" == \*-\* \]\]/);
+    expect(verify).toMatch(/\^v\[0-9\]\+\\\.\[0-9\]\+\\\.\[0-9\]\+\$/);
+    expect(verify).toMatch(/sort -V/);
+    expect(verify).toMatch(/is lower than the existing tag/);
+  });
+
+  it("has no update signing key, no signing job for updates, and only the existing jobs behind the release environment", () => {
+    for (const file of workflowFiles()) {
+      const text = code(workflow(file).split(/\r?\n/)).join("\n");
+      expect(text, file).not.toMatch(/TAURI_SIGNING|signer sign|minisign/i);
+    }
+    const withEnvironment = split(workflow("release.yml")).jobs.filter((j) => /^ {4}environment:/m.test(code(j.lines).join("\n"))).map((j) => j.name);
+    expect(withEnvironment).toEqual(["sign-windows", "sign-macos", "sign-android", "release"]);
+    for (const file of workflowFiles().filter((f) => f !== "release.yml")) expect(workflow(file), file).not.toMatch(/^ {4}environment:/m);
+  });
+
+  it("checks the published release every day and when one is published, with no secret and a read-only token", () => {
+    const text = workflow("verify-published.yml");
+    expect(text).toMatch(/release:\n\s+types: \[published\]/);
+    expect(text).toMatch(/schedule:\n\s+- cron:/);
+    expect(text).toMatch(/workflow_dispatch:/);
+    const body = code(text.split(/\r?\n/)).join("\n");
+    expect(body).not.toMatch(/secrets\.(?!GITHUB_TOKEN)|environment:|contents: write|permissions:\s*\n\s+\w+: write/);
+    expect(body).toMatch(/cargo run --locked --release --example verify_manifest/);
+    expect(body).toMatch(/highest published/);
+    expect(body).toMatch(/LATEST_URL: https:\/\/github\.com\/XrxcGH\/Snappy\/releases\/latest\/download\/latest\.json/);
+    expect(body).toMatch(/ProductVersion/);
+  });
+
   it("builds with locked dependencies", () => {
     expect(workflow("release.yml")).toMatch(/args\+=\(-- --locked\)/);
     expect(workflow("desktop-smoke.yml")).toMatch(/build --debug --no-bundle -- --locked/);
@@ -299,6 +362,17 @@ describe("workflow trust boundaries (the real files)", () => {
 
 describe("the checker itself catches the mistakes it is for", () => {
   const good = workflow("release.yml");
+
+  it("catches an update signing key, a published release and the test feature in a workflow", () => {
+    expect(problems("release.yml", good.replace("  desktop:\n", "  desktop:\n    env:\n      K: x\n      TAURI_SIGNING_PRIVATE_KEY_PATH: key\n")).join("\n")).toMatch(/update signing key/);
+    expect(problems("release.yml", good.replace("--draft --latest=false", "--latest")).join("\n")).toMatch(/not a draft|marks a release/);
+    expect(problems("release.yml", good.replace("--draft --latest=false", "--draft --prerelease")).join("\n")).toMatch(/marks a release/);
+    expect(problems("release.yml", good.replace("gh release create", "gh release edit --draft=false\n          gh release create")).join("\n")).toMatch(/marks a release/);
+    expect(problems("release.yml", good.replace("npm ci --ignore-scripts\n", "npm ci --ignore-scripts\n      - run: cargo build --features dev-update-endpoint\n")).join("\n")).toMatch(/test feature/);
+    expect(problems("verify-published.yml", workflow("verify-published.yml"))).toEqual([]);
+    const withRelease = workflow("ci.yml").replace(/^on:/m, "on:\n  release:\n    types: [published]\n  _x_:");
+    expect(problems("ci.yml", withRelease).join("\n")).toMatch(/trigger release is not allowed/);
+  });
 
   it("catches a secret added to a build job", () => {
     const bad = good.replace("  desktop:\n", "  desktop:\n    env:\n      LEAK: ${{ secrets.APPLE_CERTIFICATE }}\n");

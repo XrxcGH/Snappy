@@ -51,12 +51,24 @@ name: Release
 #   Checksums SNAPPY_GPG_PRIVATE_KEY (ASCII-armored), SNAPPY_GPG_PASSPHRASE (may be empty)
 #
 # What it builds
-#   Windows   NSIS installer (.exe) and MSI                          windows-latest
+#   Windows   NSIS installer (.exe), per user. No MSI (see UPDATES below)  windows-latest
 #   macOS     .dmg for Apple silicon and for Intel                   macos-latest (Intel is cross-compiled)
 #   Linux     AppImage, .deb and .rpm                                ubuntu-22.04 (oldest glibc we support)
 #   Android   universal APK and AAB                                  ubuntu-latest
 #   iOS       DISABLED, see the comment on the ios job
 #   plus a SHA256SUMS file over every file (and SHA256SUMS.asc when a GPG key secret exists).
+#
+# UPDATES (the desktop app updates itself from the releases of this repository; docs/UPDATES.md)
+#   * The update signing keys are NOT here. No secret, no job and no step of any workflow can sign an update: the
+#     maintainer signs the exact installer they tested, on their own computer, with apps/app/tools/sign-release.mjs,
+#     and uploads the .sig and latest.json to the DRAFT. This pipeline builds an unsigned installer and a checksum.
+#   * The draft is created with --latest=false. Publishing it, and marking it Latest, are the maintainer's switch.
+#     GitHub picks "Latest" by creation date, not by version, so verify-published.yml checks it after the fact.
+#   * Only plain vX.Y.Z tags build (no pre-release suffix: a pre-release is never offered to an updater), and a tag
+#     lower than the highest existing tag is refused.
+#   * Official builds set SNAPPY_RELEASE=1, which makes build.rs refuse placeholder or test update keys and the test
+#     features. The built Windows program is then checked: it imports winhttp.dll and no other download library, and
+#     holds no test setting or test key.
 #
 # Ground rules
 #   * Third-party actions are pinned to a full commit SHA; the comment names the release.
@@ -68,13 +80,13 @@ name: Release
 #   * apps/app/test/workflows.test.ts reads every workflow file and fails on the common ways the above can stop
 #     being true. It is a tripwire, not a proof: review changes to these files by hand as well.
 #
-# KNOWN GAP: the Windows signature is put on the finished installers (.exe and .msi), not on the program file
+# KNOWN GAP: the Windows signature is put on the finished installer (.exe), not on the program file
 # inside them, because signing that file would need the build to run with the certificate. The release notes
 # say so. If Smart App Control turns out to block the installed program, move to SignPath or Azure Artifact
 # Signing (keyless, OIDC) rather than putting the certificate back into the build job.
 #
 # STATUS: written but not yet run on GitHub. The Windows build steps mirror what was run by hand (tauri build,
-# NSIS and MSI). The macOS, Linux and Android jobs and every signing job have never been executed anywhere:
+# NSIS). The macOS, Linux and Android jobs and every signing job have never been executed anywhere:
 # expect to fix things on the first run, and run it on a throwaway tag in a fork first.
 
 on:
@@ -133,9 +145,19 @@ jobs:
           crate=$(sed -n '/^version = "/{s/^version = "\(.*\)"$/\1/p;q}' apps/app/src-tauri/Cargo.toml)
           official=false
           if [ "$EVENT_NAME" = "push" ] && [ "$REF_TYPE" = "tag" ]; then
-            # Plain X.Y.Z only: the Windows MSI format rejects most pre-release suffixes.
+            # Plain X.Y.Z only.
+            if [[ "$REF_NAME" == *-* ]]; then
+              echo "::error::The tag '$REF_NAME' has a pre-release suffix. A pre-release is never offered to an updater, so none is built."
+              exit 1
+            fi
             if ! [[ "$REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "::error::The tag '$REF_NAME' is not of the form vX.Y.Z."
+              exit 1
+            fi
+            # GitHub marks "Latest" by creation date, so a lower version tagged later would be offered as the newest.
+            highest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vx "$REF_NAME" | sort -V | tail -n 1 || true)
+            if [ -n "$highest" ] && [ "$(printf '%s\n%s\n' "$highest" "$REF_NAME" | sort -V | tail -n 1)" != "$REF_NAME" ]; then
+              echo "::error::The tag '$REF_NAME' is lower than the existing tag '$highest'. A release must have the highest version."
               exit 1
             fi
             # The tagged commit must already be on the release branch, which means it went through review.
@@ -195,10 +217,11 @@ jobs:
         include:
           - name: windows-x64
             os: windows-latest
-            bundles: nsis,msi
+            # NSIS only: an MSI install cannot be updated in place by the per-user NSIS installer without leaving a second copy.
+            bundles: nsis
             target: ""
             stage: unsigned
-            expect: "exe msi"
+            expect: "exe"
           - name: macos-arm64
             os: macos-latest
             bundles: dmg
@@ -255,6 +278,8 @@ jobs:
         env:
           # Needed by the AppImage tool on runners without FUSE.
           APPIMAGE_EXTRACT_AND_RUN: "1"
+          # An official run makes build.rs refuse placeholder or test update keys and the test features.
+          SNAPPY_RELEASE: ${{ needs.verify.outputs.official == 'true' && '1' || '' }}
         run: |
           set -euo pipefail
           if [ "$RUNNER_OS" = "macOS" ]; then
@@ -272,6 +297,13 @@ jobs:
         shell: bash
         run: git diff --exit-code -- package-lock.json apps/app/src-tauri/Cargo.lock
 
+      # No secret here: reads the built program only. It must import winhttp.dll (the update check) and no other
+      # download library, and hold no test setting, test identity or test key.
+      - name: Check the built Windows program
+        if: runner.os == 'Windows'
+        shell: bash
+        run: node apps/app/tools/check-no-network-deps.mjs --exe apps/app/src-tauri/target/release/snappy.exe
+
       - name: Collect the installers
         shell: bash
         run: |
@@ -279,7 +311,7 @@ jobs:
           root=apps/app/src-tauri/target
           if [ -n "$TARGET" ]; then root="$root/$TARGET"; fi
           mkdir -p out status app-out
-          find "$root/release/bundle" -type f \( -name '*.exe' -o -name '*.msi' -o -name '*.dmg' \
+          find "$root/release/bundle" -type f \( -name '*.exe' -o -name '*.dmg' \
             -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) -exec cp {} out/ \;
           for ext in $EXPECT; do
             if ! ls out/*."$ext" > /dev/null 2>&1; then
@@ -470,18 +502,16 @@ jobs:
           name: unsigned-windows-x64
           path: in
       # The build job is untrusted, so what it uploaded is checked before any secret is read: exactly one
-      # .exe and one .msi, plain names, nothing else (no folder, no extra file).
+      # .exe, plain name, nothing else (no folder, no extra file).
       - name: Check the files from the build (no secrets in this step)
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $items = @(Get-ChildItem -Path in -Force -Recurse)
-          $odd = @($items | Where-Object { $_.PSIsContainer -or $_.Name -notmatch '^[A-Za-z0-9._-]+\z' -or $_.Extension -notin '.exe', '.msi' })
-          if ($odd.Count -gt 0) { throw "The build artifact holds something other than plain .exe and .msi files: $($odd.Name -join ', ')" }
-          foreach ($ext in '.exe', '.msi') {
-            $n = @($items | Where-Object { $_.Extension -eq $ext }).Count
-            if ($n -ne 1) { throw "Expected exactly one $ext file in the build artifact, found $n." }
-          }
+          $odd = @($items | Where-Object { $_.PSIsContainer -or $_.Name -notmatch '^[A-Za-z0-9._-]+\z' -or $_.Extension -ne '.exe' })
+          if ($odd.Count -gt 0) { throw "The build artifact holds something other than one plain .exe file: $($odd.Name -join ', ')" }
+          $n = @($items).Count
+          if ($n -ne 1) { throw "Expected exactly one .exe file in the build artifact, found $n." }
       - name: Import the certificate (only when the secret exists)
         id: cert
         shell: pwsh
@@ -491,7 +521,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ([string]::IsNullOrEmpty($env:WINDOWS_CERTIFICATE)) {
-            Write-Host 'No Windows signing certificate secret: the installers will stay unsigned.'
+            Write-Host 'No Windows signing certificate secret: the installer will stay unsigned.'
             'thumbprint=' | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
             exit 0
           }
@@ -526,7 +556,7 @@ jobs:
             & $signtool.FullName verify /pa $f.FullName
             if ($LASTEXITCODE -ne 0) { throw "The signature on $($f.Name) does not verify." }
           }
-          $line = 'windows-x64: the installers (.exe and .msi) are Authenticode signed. The program file inside them is not signed separately.'
+          $line = 'windows-x64: the installer (.exe) is Authenticode signed. The program file inside it is not signed separately.'
           Set-Content -Path status/windows-x64.txt -Value $line -Encoding utf8
           Write-Host $line
       - name: Remove the certificate from the runner
@@ -981,7 +1011,6 @@ jobs:
             echo "## Files attached"
             echo
             list_files "Windows installer (.exe)" "*.exe" yes
-            list_files "Windows installer (.msi)" "*.msi" yes
             list_files "macOS, Apple silicon" "*aarch64*.dmg" yes
             list_files "macOS, Intel" "*x64.dmg" yes
             list_files "Linux AppImage" "*.AppImage" yes
@@ -991,6 +1020,10 @@ jobs:
             list_files "Android AAB" "*android*.aab" no
             echo "- Checksums: \`SHA256SUMS\`"
             if [ "$CHECKSUMS_SIGNED" = "yes" ]; then echo "- Checksums signature: \`SHA256SUMS.asc\`"; fi
+            echo
+            echo "## Updates"
+            echo
+            echo "- The desktop app updates itself from this repository's Latest release. This draft is NOT offered to any app yet: the update signature (\`.sig\`) and \`latest.json\` are added by the maintainer after testing this exact installer, and the release is set as Latest by hand."
             echo
             echo "## Signing"
             echo
@@ -1026,6 +1059,7 @@ jobs:
             echo "::error::A release for $TAG already exists ($existing). Not changing it. If it is a stale draft, delete it on GitHub and re-run this job."
             exit 1
           fi
-          gh release create "$TAG" dist/* --draft --verify-tag \
+          # --latest=false: the maintainer marks it Latest when publishing, after adding the update signature.
+          gh release create "$TAG" dist/* --draft --latest=false --verify-tag \
             --title "Snappy $VERSION" --notes-file notes.md
           echo "Draft release is ready. It is NOT published; open it on GitHub, test the files and publish by hand."

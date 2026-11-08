@@ -1,0 +1,94 @@
+name: Verify published release
+
+# Detection, not prevention: after a release is published, and every day, check what the world can download.
+# It uses no secret, no environment and a read-only token. A failure sends GitHub's "workflow failed" email to the
+# repository owner, which is the alarm for:
+#   * a swapped asset (the installer no longer matches the signature),
+#   * a published release that was never signed (latest.json missing or without a valid signature),
+#   * a wrong "Latest" (GitHub picks it by creation date: latest.json must name the HIGHEST published version),
+#   * a manifest that does not point at the one pinned installer address.
+# It runs the same verifier the maintainer's signing tool runs (apps/app/src-tauri/examples/verify_manifest.rs), with
+# the public keys compiled into this checkout. docs/UPDATES.md explains what to do when it fails.
+
+on:
+  release:
+    types: [published]
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RUST_VERSION: "1.98.1"
+  # The one address installed copies ask, and the repository it belongs to.
+  LATEST_URL: https://github.com/XrxcGH/Snappy/releases/latest/download/latest.json
+
+jobs:
+  verify:
+    name: Check the published update files
+    runs-on: windows-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install "$RUST_VERSION" --profile minimal --no-self-update
+          rustup default "$RUST_VERSION"
+      - name: Download latest.json from the public address
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p published
+          curl --fail --silent --show-error --location --max-time 60 --output published/latest.json "$LATEST_URL"
+          cat published/latest.json
+      - name: Check that latest.json names the highest published version
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Published, not draft, not pre-release. "Latest" is picked by creation date, so compare by version.
+          highest=$(gh api "repos/$GH_REPO/releases" --paginate --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          manifest=$(node -p "'v' + require('./published/latest.json').version")
+          echo "highest published tag: $highest, latest.json names: $manifest"
+          if [ -z "$highest" ] || [ "$highest" != "$manifest" ]; then
+            echo "::error::latest.json names $manifest but the highest published release is $highest. Latest is wrong, or the new release has no latest.json."
+            exit 1
+          fi
+          echo "version=${manifest#v}" > published/version.env
+      - name: Download the installer from the address the manifest names
+        shell: bash
+        run: |
+          set -euo pipefail
+          source published/version.env
+          # The verifier requires this exact address; the download uses the same one.
+          curl --fail --silent --show-error --location --max-time 600 --output "published/Snappy_${version}_x64-setup.exe" \
+            "https://github.com/${GH_REPO}/releases/download/v${version}/Snappy_${version}_x64-setup.exe"
+          ls -l published
+      - name: Verify the manifest and the installer with the compiled-in public keys
+        shell: bash
+        run: |
+          set -euo pipefail
+          source published/version.env
+          # Checks: address equals the pinned one, strict version, the signature over the installer's bytes by one
+          # of the two keys, the signed file name and version, and that the version is the one named.
+          cargo run --locked --release --example verify_manifest --manifest-path apps/app/src-tauri/Cargo.toml -- \
+            published/latest.json "published/Snappy_${version}_x64-setup.exe"
+      - name: Check the installer's own version equals the manifest version
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $v = (Get-Content published/version.env).Split('=')[1].Trim()
+          $f = Get-Item "published/Snappy_${v}_x64-setup.exe"
+          $product = $f.VersionInfo.ProductVersion
+          Write-Host "installer ProductVersion: $product, manifest: $v"
+          if ($product -ne $v) { throw "The installer says version $product but the manifest says $v." }
