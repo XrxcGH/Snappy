@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 import { describe, expect, it } from "vitest";
 import { formatBytes, formatDate, formatPercent, plural } from "../src/format.ts";
-import { ORANGE_RGB, VIOLET_RGB, createTerm, useColor } from "../src/term.ts";
+import { ORANGE_RGB, TAGLINE, VIOLET_RGB, createTerm, useColor } from "../src/term.ts";
 import type { TermOptions } from "../src/term.ts";
 
 const base: TermOptions = { env: {}, isTTY: true, columns: 80 };
@@ -120,7 +120,7 @@ describe("table", () => {
 
 describe("banner", () => {
   it("draws five bars and puts the only color on the spine", () => {
-    const lines = color({ env: { COLORTERM: "truecolor" } }).banner();
+    const lines = color({ env: { COLORTERM: "truecolor" }, columns: 120 }).banner();
     expect(lines).toHaveLength(5);
     const colored = lines.filter((l) => l.includes("\x1b[38;"));
     expect(colored).toHaveLength(1);
@@ -138,16 +138,24 @@ describe("banner on a narrow screen", () => {
       // The five bars stay the first five lines, and the wordmark stays beside the spine.
       expect(lines[2]).toContain("Snappy");
       expect(lines.slice(0, 5).join(" ")).not.toContain("Tidy");
-      expect(lines.slice(5).join(" ")).toBe("Tidy your friend list and rescue your Memories.");
+      expect(lines.slice(5).join(" ")).toBe(TAGLINE);
     }
   });
 
-  it("keeps the tagline beside the mark when there is room for it", () => {
-    for (const columns of [65, 80, 120]) {
+  it("keeps the tagline beside the mark when there is room for it, and under it at the usual 80 columns", () => {
+    for (const columns of [102, 120, 160]) {
       const lines = color({ columns }).banner().map((l) => stripVTControlCharacters(l));
       expect(lines).toHaveLength(5);
-      expect(lines[3]).toContain("Tidy your friend list and rescue your Memories.");
+      expect(lines[3]).toContain(TAGLINE);
     }
+    const usual = color({ columns: 80 }).banner().map((l) => stripVTControlCharacters(l));
+    expect(widest(usual)).toBeLessThanOrEqual(80);
+    expect(usual.slice(5).join(" ")).toBe(TAGLINE);
+  });
+
+  it("says the one sentence the rest of Snappy says", () => {
+    expect(TAGLINE).toBe("Tidy your Snapchat friends list and rescue your Memories, from your own data export.");
+    expect(TAGLINE).not.toMatch(/friend list/);
   });
 });
 

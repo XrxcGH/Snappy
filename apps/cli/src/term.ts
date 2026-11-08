@@ -22,6 +22,9 @@ export const ORANGE_RGB = [255, 154, 99] as const;
 /** ANSI 256-color index of an orange, for every other color terminal (the 208 step of the color cube). */
 const ORANGE_256 = 208;
 
+/** The one sentence that says what Snappy is, under the mark in the banner. */
+export const TAGLINE = "Tidy your Snapchat friends list and rescue your Memories, from your own data export.";
+
 export interface TermOptions {
   env: Readonly<Record<string, string | undefined>>;
   isTTY: boolean;
@@ -193,7 +196,7 @@ export function createTerm(opts: TermOptions): Term {
         " ".repeat(offset) + (ascii ? "#".repeat(len) : `▐${"█".repeat(len - 2)}▌`);
       const gutter = 18;
       const side = (row: string, text: string) => `${row}${" ".repeat(Math.max(2, gutter - textWidth(row)))}${text}`;
-      const tagline = "Tidy your friend list and rescue your Memories.";
+      const tagline = TAGLINE;
       // On a narrow screen (a phone) the tagline would wrap next to the bars and break the mark, so it goes below them.
       const beside = opts.columns >= gutter + tagline.length;
       return [

@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { NOT_AFFILIATED } from "../src/render.ts";
+import { TAGLINE } from "../src/term.ts";
 import { CLI_ENTRY_HELP } from "./constants.ts";
 import { makeIo, run, tempDir } from "./helpers.ts";
 
@@ -41,6 +42,23 @@ describe("help and version", () => {
     for (const flag of ["--version", "-v", "version"]) {
       expect(await run([flag])).toEqual({ code: 0, out: `snappy-export ${VERSION}\n`, err: "" });
     }
+  });
+
+  it("shows the release the app passes, in the banner and in --version, and ignores anything odd", async () => {
+    const withRelease = (release: string) => makeIo({ env: { SNAPPY_RELEASE: release } });
+    const help = await run(["help"], withRelease("0.1.0-beta.1"));
+    expect(help.out).toContain("Version 0.1.0-beta.1\n");
+    expect(help.out).not.toContain(`Version ${VERSION}\n`);
+    expect((await run(["--version"], withRelease("0.1.0-beta.1"))).out).toBe("snappy-export 0.1.0-beta.1\n");
+    for (const odd of ["", "  ", "beta 1", "1.0\u001b[31m", "x".repeat(41), "../../etc", "<b>1</b>"]) {
+      expect((await run(["help"], withRelease(odd))).out, JSON.stringify(odd)).toContain(`Version ${VERSION}\n`);
+    }
+    expect((await run(["help"])).out).toContain(`Version ${VERSION}\n`);
+  });
+
+  it("prints the tagline in the banner", async () => {
+    expect((await run(["help"], makeIo({ columns: 160 }))).out).toContain(TAGLINE);
+    expect((await run(["help"])).out.replace(/\s+/g, " ")).toContain(TAGLINE);
   });
 
   it("shows per-command help three ways", async () => {

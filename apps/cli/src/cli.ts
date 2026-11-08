@@ -63,6 +63,16 @@ export interface CliMeta {
 }
 
 /**
+ * The version a person sees. The desktop app passes the release it shows in its own footer (for
+ * example 0.1.0-beta.1) as SNAPPY_RELEASE, so a bug report quotes one version. Anything that does
+ * not look like a version is ignored, so odd text can never reach the output.
+ */
+export function shownVersion(env: Io["env"], version: string): string {
+  const release = env.SNAPPY_RELEASE?.trim();
+  return release !== undefined && /^[0-9A-Za-z][0-9A-Za-z.+-]{0,39}$/.test(release) ? release : version;
+}
+
+/**
  * Print an error for people: what happened, then what to do. The short code is for bug reports, so it
  * is added only with --verbose or SNAPPY_DEBUG=1. Returns the exit code.
  */
@@ -85,10 +95,10 @@ export async function runCli(argv: string[], io: Io, meta: CliMeta): Promise<num
   try {
     const [command, ...rest] = argv;
     if (command === undefined || command === "help" || command === "--help" || command === "-h") {
-      return helpCommand(rest, io, meta.version);
+      return helpCommand(rest, io, shownVersion(io.env, meta.version));
     }
     if (command === "--version" || command === "-v" || command === "version") {
-      io.out.write(`snappy-export ${meta.version}\n`);
+      io.out.write(`snappy-export ${shownVersion(io.env, meta.version)}\n`);
       return 0;
     }
     const run = Object.hasOwn(COMMANDS, command) ? COMMANDS[command] : undefined;
