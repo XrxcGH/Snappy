@@ -292,17 +292,17 @@ export interface Outcome<T> {
 /** Outcomes of the data files that were read; absent when a file was not there or could not be opened. @internal */
 export type Outcomes = { [K in Target]?: Outcome<TargetValues[K]> };
 
-const PARSERS: { [K in Target]: (json: unknown) => { value: TargetValues[K]; issues: ExportIssue[] } } = {
+const PARSERS: { [K in Target]: (json: unknown, known?: ReadonlySet<string>) => { value: TargetValues[K]; issues: ExportIssue[] } } = {
   friends: (json) => {
     const r = parseFriendsJson(json);
     return { value: r.friends, issues: r.issues };
   },
-  chats: (json) => {
-    const r = parseChatHistoryJson(json);
+  chats: (json, known) => {
+    const r = parseChatHistoryJson(json, known);
     return { value: r.chats, issues: r.issues };
   },
-  snaps: (json) => {
-    const r = parseSnapHistoryJson(json);
+  snaps: (json, known) => {
+    const r = parseSnapHistoryJson(json, known);
     return { value: r.chats, issues: r.issues };
   },
   memories: (json) => {
@@ -311,17 +311,32 @@ const PARSERS: { [K in Target]: (json: unknown) => { value: TargetValues[K]; iss
   },
 };
 
+/**
+ * The usernames in the friends file that a conversation can be with: current and removed friends,
+ * requests, blocked and ignored people (not the hidden suggestions). Undefined without a friends
+ * file. Lets the chat parsers tell a one-to-one chat from a group when the layout does not.
+ * @internal
+ */
+export function usernamesOf(friends: ParsedFriends | undefined): ReadonlySet<string> | undefined {
+  if (friends === undefined) return undefined;
+  const out = new Set<string>();
+  for (const list of [friends.friends, friends.deletedFriends, friends.sentRequests, friends.pendingRequests, friends.blocked, friends.ignored]) {
+    for (const r of list) out.add(r.username);
+  }
+  return out.size > 0 ? out : undefined;
+}
+
 /** Parse a data file that is already JSON (or a projection of it holding only allowlisted fields). Never throws. @internal */
-export function parseTargetJson<K extends Target>(target: K, json: unknown): Outcome<TargetValues[K]> {
-  const parsed = PARSERS[target](json);
+export function parseTargetJson<K extends Target>(target: K, json: unknown, known?: ReadonlySet<string>): Outcome<TargetValues[K]> {
+  const parsed = PARSERS[target](json, known);
   return { value: parsed.value, issues: parsed.issues };
 }
 
 /** Decode and parse one data file held in memory. Never throws. @internal */
-export function parseTarget<K extends Target>(target: K, bytes: Uint8Array): Outcome<TargetValues[K]> {
+export function parseTarget<K extends Target>(target: K, bytes: Uint8Array, known?: ReadonlySet<string>): Outcome<TargetValues[K]> {
   const r = parseJsonBytes(TARGET_NAMES[target], bytes);
   if (r.value === undefined) return { issues: r.issues };
-  const parsed = PARSERS[target](r.value);
+  const parsed = PARSERS[target](r.value, known);
   return { value: parsed.value, issues: [...r.issues, ...parsed.issues] };
 }
 
@@ -390,7 +405,7 @@ export function assemble(
   for (const target of Object.keys(TARGET_NAMES) as Target[]) {
     const entry = targets.get(target);
     const bytes = entry && read(entry);
-    if (bytes) (outcomes as Record<Target, unknown>)[target] = parseTarget(target, bytes);
+    if (bytes) (outcomes as Record<Target, unknown>)[target] = parseTarget(target, bytes, usernamesOf(outcomes.friends?.value));
   }
   return finishExport(files, media, outcomes, issues, exportedAt, part);
 }

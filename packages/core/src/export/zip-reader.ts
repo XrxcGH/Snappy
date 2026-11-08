@@ -35,6 +35,7 @@ import {
   planJsonReads,
   splitListing,
   targetOf,
+  usernamesOf,
   zipEncryptedIssue,
   zipEntryTooLargeIssue,
   zipEntryUnreadableIssue,
@@ -594,8 +595,8 @@ const STREAM_FAILURES: Record<Exclude<JsonStreamErrorCode, "source">, { code: st
  * All or nothing, like parsing a whole file: a file that turns out to be damaged gives no events.
  * Throws (ZipEntryError and the like) when the entry cannot be read at all.
  */
-async function streamHistory(reader: RandomAccessReader, info: ZipEntryInfo, target: "chats" | "snaps"): Promise<Outcome<ChatEvent[]>> {
-  const history = new HistoryReader(target === "chats" ? "chat" : "snap");
+async function streamHistory(reader: RandomAccessReader, info: ZipEntryInfo, target: "chats" | "snaps", known?: ReadonlySet<string>): Promise<Outcome<ChatEvent[]>> {
+  const history = new HistoryReader(target === "chats" ? "chat" : "snap", known);
   let records = 0;
   try {
     for await (const { conversationKey, record } of projectConversations(inflateSource(reader, info), { keepFields: [...HISTORY_KEEP_FIELDS] })) {
@@ -724,7 +725,7 @@ export async function parseExportFromReader(
     const target = targetOf(wanted) as Target;
     const info = entries[listing.indexOf(wanted)] as ZipEntryInfo;
     try {
-      if (target === "chats" || target === "snaps") outcomes[target] = await streamHistory(reader, info, target);
+      if (target === "chats" || target === "snaps") outcomes[target] = await streamHistory(reader, info, target, usernamesOf(outcomes.friends?.value));
       else if (target === "friends") outcomes.friends = await streamList(reader, info, "friends");
       else outcomes.memories = await streamList(reader, info, "memories");
     } catch (e) {

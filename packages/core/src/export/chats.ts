@@ -134,10 +134,20 @@ export class HistoryReader {
   private conversations = 0;
   private groups = 0;
 
-  constructor(history: HistoryFile) {
+  // Plain field, not a parameter property: Node's type stripping (used by tools/) rejects those.
+  private readonly known: ReadonlySet<string> | undefined;
+  /** Events of groups that may be one-to-one chats with a friend (see reconcile): where they are, and with whom. */
+  private lone: { start: number; count: number; partner: string }[] = [];
+
+  /**
+   * `known` is the set of usernames from the friends file (friends, removed friends, requests,
+   * blocked): a conversation whose partner is one of them is one-to-one whatever its title says.
+   */
+  constructor(history: HistoryFile, known?: ReadonlySet<string>) {
     this.file = FILE_NAME[history];
     this.noun = NOUN[history];
     this.code = history;
+    this.known = known;
   }
 
   /** Start the conversation `rawKey` (also registers one that turns out to be empty). "" means a bare list. */
@@ -209,6 +219,7 @@ export class HistoryReader {
   /** Close the last conversation and return the events and the notes about the file. */
   finish(): { chats: ChatEvent[]; issues: ExportIssue[] } {
     this.flush();
+    this.reconcile();
     const { file, noun, code, issues } = this;
     const verb = (n: number): string => (n === 1 ? "was" : "were");
     if (this.badEntries > 0) issues.push(issue("warning", `${code}-invalid-entries`, `${entries(this.badEntries)} in ${file} could not be read and ${this.badEntries === 1 ? "was" : "were"} skipped.`));
@@ -233,19 +244,48 @@ export class HistoryReader {
     return { chats: this.events, issues };
   }
 
+  /**
+   * Groups with one saved sender who is a friend: when most conversations of the file look like
+   * groups, the layout (display names as keys or titles) is the reason and not the chats, so these are
+   * one-to-one chats with that friend. In a file where groups are the exception they stay groups.
+   */
+  private reconcile(): void {
+    if (this.lone.length === 0 || this.conversations === 0 || this.groups / this.conversations <= GROUPS_WARN_SHARE) return;
+    for (const { start, count, partner } of this.lone) {
+      for (let i = start; i < start + count; i++) {
+        const e = this.events[i] as ChatEvent;
+        this.events[i] = { ...e, conversation: partner, isGroup: false };
+      }
+      this.groups--;
+    }
+    this.lone = [];
+  }
+
   private flush(): void {
     if (this.entered && this.key !== undefined) {
       const key = this.key;
       // With no received sender and no title signal (the owner is the only saved sender) the chat
       // cannot be proven 1:1: a key that is not username-shaped is treated as a group title and hashed.
-      const isGroup =
+      let isGroup =
         this.titleSignal ||
         this.others.size >= 2 ||
         (this.others.size === 1 && !this.others.has(normUser(key))) ||
         (this.others.size === 0 && !looksLikeUsername(key));
-      const conversation = isGroup ? groupId(key) : normUser(key);
+      const partner = normUser(key);
+      // The friends list settles what the layout cannot. A key that is itself a friend's username is a
+      // one-to-one chat, whatever title the entries carry. A key that is not (a display name) with a
+      // single other sender who is a friend is decided at the end, once it is clear whether the
+      // whole file is keyed that way (see reconcile): a real group with one saved sender looks the same.
+      let lone: string | undefined;
+      if (isGroup && this.known !== undefined && this.others.size <= 1) {
+        const sole = this.others.size === 1 ? ([...this.others][0] as string) : undefined;
+        if (this.known.has(partner) && (sole === undefined || sole === partner)) isGroup = false;
+        else if (sole !== undefined && this.known.has(sole)) lone = sole;
+      }
+      const conversation = isGroup ? groupId(key) : partner;
       this.conversations++;
       if (isGroup) this.groups++;
+      if (lone !== undefined) this.lone.push({ start: this.events.length, count: this.rows.length, partner: lone });
       for (const r of this.rows) {
         if (r.sent === undefined) this.directionUnknown++;
         this.events.push({ conversation, isGroup, direction: directionOf(r.sent), kind: r.kind, at: r.at });
@@ -259,8 +299,8 @@ export class HistoryReader {
 }
 
 /** Parse an already-decoded history file. Never throws. */
-function parseHistory(obj: unknown, history: HistoryFile): { chats: ChatEvent[]; issues: ExportIssue[] } {
-  const reader = new HistoryReader(history);
+function parseHistory(obj: unknown, history: HistoryFile, known?: ReadonlySet<string>): { chats: ChatEvent[]; issues: ExportIssue[] } {
+  const reader = new HistoryReader(history, known);
   if (Array.isArray(obj)) {
     reader.begin("");
     for (const raw of obj) {
@@ -289,14 +329,14 @@ function parseHistory(obj: unknown, history: HistoryFile): { chats: ChatEvent[];
 }
 
 /** Parse json/chat_history.json into metadata-only events. Never throws. */
-export function parseChatHistoryJson(obj: unknown): { chats: ChatEvent[]; issues: ExportIssue[] } {
-  return parseHistory(obj, "chat");
+export function parseChatHistoryJson(obj: unknown, known?: ReadonlySet<string>): { chats: ChatEvent[]; issues: ExportIssue[] } {
+  return parseHistory(obj, "chat", known);
 }
 
 /**
  * Parse json/snap_history.json (the same layout as the chat history, without message text) into
  * metadata-only events whose kind is the Snap's media type. Never throws.
  */
-export function parseSnapHistoryJson(obj: unknown): { chats: ChatEvent[]; issues: ExportIssue[] } {
-  return parseHistory(obj, "snap");
+export function parseSnapHistoryJson(obj: unknown, known?: ReadonlySet<string>): { chats: ChatEvent[]; issues: ExportIssue[] } {
+  return parseHistory(obj, "snap", known);
 }
