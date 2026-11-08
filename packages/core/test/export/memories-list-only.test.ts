@@ -4,7 +4,7 @@ import { validateExport } from "../../src/export/parse.ts";
 import { bytesReader, mergeParsedExports, parseExportFromReader } from "../../src/export/zip-reader.ts";
 import { enc } from "./helpers.ts";
 
-const NOTE = "The ZIP files you added hold the Memories list but no photos or videos. If your export has more parts, add them. If not, choose Export your Memories to rescue them.";
+const NOTE = "These ZIP files hold the Memories list but no photos or videos. Add other parts, or choose Export your Memories.";
 const entry = (i: number, link: string) => ({ Date: `2024-03-0${i + 1} 10:00:00 UTC`, "Media Type": "Image", Location: "never read", "Download Link": link });
 const emptyLinks = { "Saved Media": [entry(0, ""), entry(1, ""), entry(2, "")] };
 
