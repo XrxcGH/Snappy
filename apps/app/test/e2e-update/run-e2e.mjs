@@ -11,7 +11,8 @@
  * tauri.e2e.conf.json), so its install folder (%LOCALAPPDATA%\Snappy E2E), its registry key and its data
  * (%LOCALAPPDATA%\com.snappy.e2e) are separate from a real Snappy. It trusts only TEST keys made fresh in a temporary folder
  * (the private keys are never kept and never printed), and it talks only to a server bound to 127.0.0.1. Do not run it with a
- * real Snappy open: the updater refuses to run while another snappy.exe exists, and the drill would report that.
+ * real Snappy open: the test program is named snappy-e2e.exe, so a real Snappy (snappy.exe) is neither counted by the test app's
+ * updater nor ended by the drill, which stops only processes that run from the test app's own install folder.
  */
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -37,7 +38,9 @@ const LOCAL = process.env.LOCALAPPDATA;
 const INSTALL_DIR = path.join(LOCAL, "Snappy E2E");
 const DATA_DIR = path.join(LOCAL, "com.snappy.e2e");
 const UPDATES = path.join(DATA_DIR, "updates");
-const EXE = path.join(INSTALL_DIR, "snappy.exe");
+// The test build has its own program name (mainBinaryName in tauri.e2e.conf.json), so a real Snappy (snappy.exe) is never mistaken
+// for it, by this drill or by the updater, which counts other copies by program file name.
+const EXE = path.join(INSTALL_DIR, "snappy-e2e.exe");
 const results = [];
 const log = (m) => console.log(m);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -88,7 +91,18 @@ function build(version, pubs) {
 
 // ------------------------------------------------------------------------------------------------ the machine
 const installedVersion = () => (existsSync(EXE) ? ps(`(Get-Item '${EXE}').VersionInfo.ProductVersion`) : "");
-const stop = () => spawnSync("taskkill", ["/IM", "snappy.exe", "/F", "/T"], { stdio: "ignore" });
+/**
+ * Ends the test app and what it started, and nothing else: the processes whose program file is inside the test app's own
+ * install folder, and web engine processes that use the test app's own profile folder (they can outlive the app). Found by
+ * path, never by image name, which would also end a real Snappy that is open.
+ */
+const stop = () => {
+  const dir = INSTALL_DIR.replace(/'/g, "''");
+  const profile = path.basename(DATA_DIR).replace(/'/g, "''");
+  const mine = `($_.ProcessId -ne $PID) -and (($_.ExecutablePath -and $_.ExecutablePath.StartsWith('${dir}\\', [StringComparison]::OrdinalIgnoreCase)) -or ($_.Name -eq 'msedgewebview2.exe' -and $_.CommandLine -and $_.CommandLine.IndexOf('${profile}', [StringComparison]::OrdinalIgnoreCase) -ge 0))`;
+  const script = `Get-CimInstance Win32_Process | Where-Object { ${mine} } | ForEach-Object { & taskkill /PID $_.ProcessId /F /T 2>&1 | Out-Null }`;
+  spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", script], { stdio: "ignore" });
+};
 const state = () => (existsSync(path.join(UPDATES, "updater.json")) ? JSON.parse(readFileSync(path.join(UPDATES, "updater.json"), "utf8")) : {});
 const seed = (patch) => {
   mkdirSync(UPDATES, { recursive: true });
@@ -118,6 +132,8 @@ const removeEverything = () => {
   const retry = { recursive: true, force: true, maxRetries: 60, retryDelay: 500 };
   rmSync(DATA_DIR, retry);
   rmSync(path.join(process.env.APPDATA, "com.snappy.e2e"), retry);
+  // A silent install makes the desktop shortcut, as Tauri's template does. The uninstaller removes it, but a run cut short may not have.
+  ps(`Remove-Item -LiteralPath (Join-Path ([Environment]::GetFolderPath('Desktop')) 'Snappy E2E.lnk') -Force -ErrorAction SilentlyContinue`);
   ps(`Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors\\Snappy E2E' -Recurse -Force -ErrorAction SilentlyContinue; if (-not (Get-ChildItem 'HKCU:\\Software\\Snappy contributors' -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath 'HKCU:\\Software\\Snappy contributors' -Force -ErrorAction SilentlyContinue }`);
 };
 function launch(endpoint) {
@@ -200,8 +216,11 @@ async function main() {
     ["oversize", () => ({ declaredLength: 64 * 1024 * 1024 + 1 }), "size"],
     ["no-length", () => ({ noLength: true }), "size"],
     ["content-encoding", () => ({ contentEncoding: "gzip" }), "size"],
-    ["downgrade", () => ({ version: "0.9.0", signature: "" }), null],
-    ["same-version", () => ({ version: V.base, signature: "" }), null],
+    // These two carry a real signature (any non-empty one passes the manifest check), so the manifest is accepted and the
+    // version comparison is what decides. With an empty signature it would be refused earlier, as NoSignature, and the
+    // test would pass even if the comparison were deleted.
+    ["downgrade", () => ({ version: "0.9.0" }), null],
+    ["same-version", () => ({ version: V.base }), null],
   ];
   const copyAs = (file, name) => {
     const to = path.join(work, name);
@@ -222,6 +241,12 @@ async function main() {
       record(`${name}: the manifest was refused (asked, never counted as a check, no error saved)`, s.last_attempt_unix > 0 && !s.last_checked_unix && !s.last_error, JSON.stringify(s));
     } else {
       record(`${name}: the error is ${errorCode ?? "none (nothing newer)"}`, (s.last_error ?? null) === errorCode, JSON.stringify(s));
+    }
+    if (errorCode === null) {
+      // The version comparison made the decision: the manifest was accepted (counted as a check) and the installer was never asked for.
+      const manifests = server.requests.filter((r) => r.path.includes("latest.json")).length;
+      const installers = server.requests.filter((r) => r.path.endsWith("setup.exe")).length;
+      record(`${name}: the manifest was accepted and counted, and the installer was never requested`, s.last_checked_unix > 0 && manifests >= 1 && installers === 0, `${JSON.stringify(s)} manifests=${manifests} installers=${installers}`);
     }
     stop();
   }

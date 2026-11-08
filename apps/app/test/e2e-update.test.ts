@@ -138,6 +138,30 @@ describe("the drill", () => {
     expect(overlay.productName).not.toBe(real.productName);
   });
 
+  it("gives the test app its own program name and stops it by path, never by image name (a real Snappy may be open)", () => {
+    const overlay = JSON.parse(readFileSync(path.join(drill, "tauri.e2e.conf.json"), "utf8"));
+    const real = JSON.parse(readFileSync(path.join(here, "..", "src-tauri", "tauri.conf.json"), "utf8"));
+    expect(overlay.mainBinaryName).toBe("snappy-e2e");
+    expect(real.mainBinaryName).toBeUndefined(); // the real program stays snappy.exe
+    const run = readFileSync(path.join(drill, "run-e2e.mjs"), "utf8");
+    expect(run).toContain('path.join(INSTALL_DIR, "snappy-e2e.exe")');
+    expect(run).not.toMatch(/"\/IM"|taskkill[^\n]*\/IM|IM snappy/i);
+    const stop = /const stop = \(\) => \{[\s\S]*?\n\};/.exec(run)?.[0] ?? "";
+    expect(stop).toContain("ExecutablePath");
+    expect(stop).toContain("StartsWith(");
+    expect(stop).toContain("taskkill /PID");
+    expect(stop).not.toMatch(/snappy\.exe/);
+  });
+
+  it("gives the downgrade and same-version scenarios a signature, so the version comparison decides, and checks that it did", () => {
+    const run = readFileSync(path.join(drill, "run-e2e.mjs"), "utf8");
+    for (const name of ["downgrade", "same-version"]) {
+      const line = run.split("\n").find((l) => l.includes(`["${name}"`)) ?? "";
+      expect(line, name).not.toContain("signature");
+    }
+    expect(run).toContain("s.last_checked_unix > 0 && manifests >= 1 && installers === 0");
+  });
+
   it("holds no key, passphrase or signing secret, and builds the test installers with the test feature only there", () => {
     for (const name of readdirSync(drill)) {
       const text = readFileSync(path.join(drill, name), "utf8");
