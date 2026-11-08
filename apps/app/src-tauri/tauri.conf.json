@@ -44,7 +44,7 @@
     "licenseFile": "../../../LICENSE",
     "category": "Utility",
     "shortDescription": "Organize your own Snapchat data export, on your device.",
-    "longDescription": "Snappy reads the Snapchat Download My Data export that you already have, on your own device. It keeps a friend ledger, a cleanup queue and a Memories rescue. It uses friend usernames and dates only and needs no account access. Snappy itself makes one update check, which you can turn off; the Network use section of docs/RELEASES.md says what it sends and what the system web engine may do on its own.",
+    "longDescription": "Snappy reads the Snapchat Download My Data export that you already have, on your own device. It builds a tidy friend list, a Cleanup queue and a Memories rescue. It uses friend usernames and dates only and needs no account access. Its only network request is an update check that you can turn off.",
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"

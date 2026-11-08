@@ -79,9 +79,20 @@ describe("desktop shell config", () => {
     // on its own, so only Snappy's own code may be said to make no connections, and the text points at the details.
     const text = `${conf.bundle.shortDescription ?? ""} ${conf.bundle.longDescription ?? ""}`;
     expect(text).not.toMatch(/(?<!Snappy itself )\b(makes?|has|uses?) no (network|internet) (connections?|access|traffic|requests?)/i);
-    expect(conf.bundle.longDescription).toMatch(/Snappy itself makes one update check, which you can turn off/);
-    expect(conf.bundle.longDescription).toMatch(/Network use/);
+    expect(conf.bundle.longDescription).toMatch(/Its only network request is an update check that you can turn off\./);
     expect(text).not.toMatch(/\b(never|nothing) (leaves|sent|sends)\b|100%|guarantee/i);
+  });
+
+  it("words the installer description for the person who installs it: no internal terms, no repository file they do not have", () => {
+    // These texts show in the Windows file properties and the installer metadata. A person who installed Snappy has no
+    // copy of the repository, so the text may not point at one, and it keeps to the words the app uses.
+    const text = `${conf.bundle.shortDescription ?? ""} ${conf.bundle.longDescription ?? ""}`;
+    expect(text).not.toMatch(/ledger/i);
+    expect(text).not.toMatch(/docs\/|\.md/i);
+    expect(text).not.toMatch(/web engine/i);
+    expect(conf.bundle.longDescription).toMatch(/^Snappy reads the Snapchat Download My Data export that you already have, on your own device\./);
+    expect(conf.bundle.longDescription).toMatch(/a tidy friend list, a Cleanup queue and a Memories rescue/);
+    expect(conf.bundle.longDescription).toMatch(/needs no account access/);
   });
 
   it("holds the dashboard's policy: nothing may connect, no remote anything", () => {
