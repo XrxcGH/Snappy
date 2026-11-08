@@ -7,9 +7,11 @@ import { platform } from "../platform.ts";
 import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
 import type { View } from "./context.ts";
 
-/** What the desktop app adds to this page. The engine paragraphs name only what was tested, on Windows. */
-function desktopNote(system: "windows" | "other"): string[] {
-  return system === "windows" ? [privacy.desktopOwnPage, privacy.desktopWindows, privacy.desktopWindowsTest, privacy.desktopWindowsOff] : [privacy.desktopOwnPage, privacy.desktopOther];
+/** What the desktop app adds to this page. The engine paragraphs name only what was checked, and only for the system that was checked. */
+function desktopNote(system: "windows" | "macos" | "other"): string[] {
+  if (system === "windows") return [privacy.desktopOwnPage, privacy.desktopWindows, privacy.desktopWindowsTest, privacy.desktopWindowsOff];
+  if (system === "macos") return [privacy.desktopOwnPage, privacy.desktopMac, privacy.desktopMacTest, privacy.desktopMacLimit];
+  return [privacy.desktopOwnPage, privacy.desktopOther];
 }
 
 /** The legal line is shown once per page, in the footer; this page does not repeat it. */

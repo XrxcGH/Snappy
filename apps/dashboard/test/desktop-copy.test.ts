@@ -23,6 +23,7 @@ vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
 const WEB: Platform = {};
 const DESKTOP: Platform = { desktop: "windows", profileLinks: false, release: { version: "0.1.0-beta.1", beta: true } };
+const DESKTOP_MAC: Platform = { desktop: "macos" };
 const DESKTOP_OTHER: Platform = { desktop: "other" };
 
 afterEach(() => setPlatform({}));
@@ -117,10 +118,12 @@ describe("desktop wording versus web wording", () => {
     expect(changed).toEqual(DIFFERENCES.map(([path]) => path).sort());
   });
 
-  it("gives macOS and Linux the same desktop wording as Windows", () => {
+  it("gives macOS and Linux the same desktop wording as Windows, apart from the engine note on the Privacy page (which is not in the list above)", () => {
     const windows = allText(DESKTOP);
-    const other = allText(DESKTOP_OTHER);
-    expect([...other.entries()].filter(([k, v]) => windows.get(k) !== v).map(([k]) => k)).toEqual([]);
+    for (const system of [DESKTOP_MAC, DESKTOP_OTHER]) {
+      const other = allText(system);
+      expect([...other.entries()].filter(([k, v]) => windows.get(k) !== v).map(([k]) => k)).toEqual([]);
+    }
   });
 
   it("reads the platform at the moment of use, so setting it back brings the web text back", () => {

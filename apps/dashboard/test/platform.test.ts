@@ -148,6 +148,21 @@ describe("with the desktop app", () => {
     expect(privacy.desktopWindowsOff).toMatch(/could change/);
   });
 
+  it("adds the macOS note: the system WebKit view, one automated test, and its limits, with no WebView2 words", () => {
+    setPlatform({ desktop: "macos" });
+    const text = renderPrivacy().textContent;
+    for (const line of [privacy.desktopOwnPage, privacy.desktopMac, privacy.desktopMacTest, privacy.desktopMacLimit]) expect(text).toContain(line);
+    expect(text).not.toContain(privacy.desktopWindows);
+    expect(text).not.toContain(privacy.desktopOther);
+    expect(text).not.toContain(privacy.networkDetail);
+    expect(text).not.toMatch(/WebView2|Microsoft/);
+    // Hedged: one automated test on a build computer, a separate component Snappy does not control, and a system update can change it.
+    expect(privacy.desktopMacTest).toMatch(/one automated test on a build computer/);
+    expect(privacy.desktopMac).toMatch(/Snappy does not control/);
+    expect(privacy.desktopMacLimit).toMatch(/cannot see everything/);
+    expect(privacy.desktopMacLimit).toMatch(/can change/);
+  });
+
   it("says only that the engine was not checked on other systems", () => {
     setPlatform({ desktop: "other" });
     const text = renderPrivacy().textContent;
