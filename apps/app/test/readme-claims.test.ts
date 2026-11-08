@@ -64,10 +64,36 @@ describe("the checks that need the built program", () => {
     expect(tab).toMatch(/Nobody has run this yet/);
   });
 
+  it("lists the web engine's Crashpad folder in the sockets and files check", () => {
+    const sockets = find(/list the sockets of its process tree/);
+    expect(sockets).toMatch(/Crashpad/);
+    expect(sockets).toMatch(/watson_metadata/);
+    expect(sockets).toMatch(/no `\.dmp` file/);
+  });
+
   it("lists the zoom check at 200 and 300 percent with Ctrl and plus", () => {
     const zoom = find(/Page zoom/);
     expect(zoom).toMatch(/Ctrl and plus/);
     expect(zoom).toMatch(/200 percent/);
     expect(zoom).toMatch(/300 percent/);
+  });
+});
+
+describe("the crash dump finding", () => {
+  const conf = JSON.parse(read("src-tauri", "tauri.conf.json")) as { app: { windows: { additionalBrowserArgs?: string }[] } };
+  const args = conf.app.windows[0]?.additionalBrowserArgs ?? "";
+
+  it("is recorded with the switches that were tried and what each one did", () => {
+    const start = readme.indexOf("### Record of the crash dump finding");
+    expect(start).toBeGreaterThan(0);
+    const record = readme.slice(start, readme.indexOf("\n## ", start));
+    expect(record).toMatch(/--disable-breakpad/);
+    expect(record).toMatch(/--disable-crash-reporter/);
+    expect(record).toMatch(/neither switch stops the dump/i);
+    expect(record).toMatch(/Not measured/);
+  });
+
+  it("keeps the switches that did not work out of the window's browser arguments (they would only suggest a protection that is not there)", () => {
+    expect(args).not.toMatch(/--disable-breakpad|--disable-crash-reporter/);
   });
 });

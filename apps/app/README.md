@@ -66,6 +66,9 @@ a change to `src-tauri/` or the frontend build, run these by hand on a test buil
    Expect none. A positive control that shows the sampler works: launch a `dev-hooks` build with
    `SNAPPY_WEBVIEW_ARGS=--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection`, which leaves the sign-in
    features on.
+   Also look at what the web engine keeps in its profile folder (`EBWebView` under `WEBVIEW2_USER_DATA_FOLDER`, or the
+   installed program's own folder): the `Crashpad` folder (`reports`, `attachments`, `settings.dat`, `watson_metadata`)
+   must hold no `.dmp` file after a normal run. After a forced renderer crash it does (see the crash dump record below).
 6. Downloads, on Windows and on macOS. Every Save and Download button makes a file in the page and clicks a link to it,
    and the page says "saved" without being told whether the web engine kept the file. WKWebView on macOS treats such a
    link differently from WebView2, and a blocked download would still read as saved. With a synthetic export loaded,
@@ -103,7 +106,7 @@ The Windows program checks the repository's GitHub releases for a newer version 
 | `transport_windows.rs` | WinHTTP, the only file that may use it: no redirects, cookies or authentication, no certificate override, TLS 1.2 and 1.3, no `Accept-Encoding`, `Content-Length` required for the installer. |
 | `install_kind.rs` | Updates only the per-user installer's copy it runs from, never elevated. |
 | `launch_windows.rs` | Starts the installer (`/P /UPDATE /R`) while holding a handle nobody can write through, and opens the one fixed releases page. The only other file with `unsafe`. |
-| `mod.rs` | The state machine: hourly limit, 60 second limit for Check now, 24 hour back-off for a rejected file, 48 hour limit for a staged one, two attempts per version at launch, one operation at a time. |
+| `mod.rs` | The state machine: hourly limit, 60 second limit for Check now, 24 hour back-off for a rejected file, 48 hour limit for a staged one, two attempts per version at launch, one operation at a time. An automatic run reads the setting again after the manifest, while the installer downloads and before staging: if the person turned the check off meanwhile it stops, deletes what it fetched and stages nothing (a run the person asked for is not affected). |
 
 The page may ask five questions (`update_status`, `update_check`, `update_install(idle)`, `update_set_auto(auto)`, `update_open_releases`) and passes nothing else: no address, host, header, version or path. `update_install` runs only the file that was downloaded and verified, and only when the page says it is idle and the shell sees no picked file, no recent read and no other copy running. `test/shell-config.test.ts` pins this.
 
@@ -158,6 +161,26 @@ a build runner has no Microsoft account, so nothing automated notices a change. 
 `msedgewebview2.exe` should block it, but nobody has tested one (creating it needs administrator rights).
 The system web engines on Linux and Android have not been checked. The macOS one has only been looked at by the
 automated test in `tools/macos/` (see "macOS build" below).
+
+### Record of the crash dump finding (maintainers)
+
+Question: does a switch stop the web engine from writing crash dumps into its profile folder? Method: a debug build of the
+shell (browser arguments from `tauri.conf.json`, plus `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` for a debugging port), a fresh
+profile folder per run, the page attached over the debugging port, the renderer crashed with the DevTools command
+`Page.crash`, then the profile folder listed 12 seconds later. Runtime 157.0.4341.42, Windows 11, one computer.
+
+| Extra switches | `Crashpad/reports/*.dmp` after the crash |
+| --- | --- |
+| none | 1 file, about 6 MB, and a `watson_metadata` file |
+| `--disable-breakpad` | 1 file, about 6 MB, and a `watson_metadata` file |
+| `--disable-crash-reporter --disable-breakpad` | 1 file, about 6 MB, and a `watson_metadata` file |
+
+So neither switch stops the dump: this engine writes it with Crashpad, which those switches do not control. They are not in
+`tauri.conf.json`, and a test fails if one is added without a new run of this record. Not measured: what the dump holds (a
+renderer crash dump is a copy of process memory, so it may hold what was on the page, such as usernames or a passphrase being
+typed), whether Windows uploads it (that follows the person's Windows diagnostic-data setting, which Snappy does not control),
+and whether the uninstaller removes the folder. The page's wording about this belongs in `docs/RELEASES.md` and the Privacy
+page (`privacy.desktop*`), and has to say only what is shown here.
 
 ## macOS build
 
