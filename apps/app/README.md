@@ -221,6 +221,6 @@ and is described in [docs/RELEASES.md](../../docs/RELEASES.md) (what CI checks, 
   `package.json` here. The release workflow refuses a tag that disagrees. The macOS files repeat the number
   (`src-tauri/Info.plist` and `bundleVersion` in `src-tauri/tauri.macos.conf.json`, without a pre-release suffix),
   and `test/macos-config.test.ts` fails when they disagree.
-- The page size limit in `apps/dashboard/test/build.test.ts` applies to the desktop frontend too. Do not raise it
-  to make room for shell code.
+- The page size limit in `apps/dashboard/test/page-size-limit.ts` applies to the desktop frontend too: the web page
+  and the desktop page share it. Do not raise it to make room for shell code.
 - Regenerate icons with `npm run icons -w @snappy-export/app` after the brand icon changes.
