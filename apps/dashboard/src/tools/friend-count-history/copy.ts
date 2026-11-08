@@ -7,7 +7,7 @@
  * column names are not repeated.
  */
 import { tools } from "../../copy.ts";
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const them = (n: number): string => (n === 1 ? "that friend" : "them");
 
@@ -30,8 +30,8 @@ export const copy = {
   removedHeader: "Removed by you",
   gainHeader: "Biggest gain",
   dropHeader: "Biggest drop",
-  unitGain: (month: string, n: number) => `${month}, up ${n}`,
-  unitDrop: (month: string, n: number) => `${month}, down ${n}`,
+  unitGain: (month: string, n: number) => `${month}, up ${formatCount(n)}`,
+  unitDrop: (month: string, n: number) => `${month}, down ${formatCount(n)}`,
 
   monthsHeading: "Month by month",
   monthsCaption: "Friends added and removed each month",
@@ -40,10 +40,10 @@ export const copy = {
   monthRemovedHeader: "Removed",
   monthFriendsHeader: "Friends",
   unitSoFar: (month: string) => `${month} (so far)`,
-  unitAdded: (n: number) => `${n} added`,
-  unitRemoved: (n: number) => `${n} removed`,
+  unitAdded: (n: number) => `${formatCount(n)} added`,
+  unitRemoved: (n: number) => `${formatCount(n)} removed`,
   unitFriends: (n: number) => countOf(n, "friend", "friends"),
-  monthsShownLine: (shown: number, total: number) => `Showing the latest ${countOf(shown, "month", "months")} of ${total}.`,
+  monthsShownLine: (shown: number, total: number) => `Showing the latest ${countOf(shown, "month", "months")} of ${formatCount(total)}.`,
 
   compareHeading: "Against your saved history",
   compareCaption: "Saved snapshots compared with the curve",
@@ -52,11 +52,11 @@ export const copy = {
   curveHeader: "Curve",
   gapHeader: "Gap",
   resultHeader: "Result",
-  unitSaved: (n: number) => `${n} saved`,
-  unitCurve: (n: number) => `${n} on the curve`,
-  unitGap: (gap: number) => (gap === 0 ? "no gap" : gap > 0 ? `${gap} more saved` : `${-gap} fewer saved`),
+  unitSaved: (n: number) => `${formatCount(n)} saved`,
+  unitCurve: (n: number) => `${formatCount(n)} on the curve`,
+  unitGap: (gap: number) => (gap === 0 ? "no gap" : gap > 0 ? `${formatCount(gap)} more saved` : `${formatCount(-gap)} fewer saved`),
   statuses: { close: "Close", differs: "Differs" },
-  comparisonsShownLine: (shown: number, total: number) => `Showing the latest ${shown} of ${countOf(total, "snapshot", "snapshots")}.`,
+  comparisonsShownLine: (shown: number, total: number) => `Showing the latest ${formatCount(shown)} of ${countOf(total, "snapshot", "snapshots")}.`,
 
   noDatesNote: "No friend in your export has a usable date, so Snappy cannot draw a curve.",
   curveHighNote: "Anyone who left your list on their own is not on the curve. Earlier months may run high.",
@@ -72,7 +72,7 @@ export const copy = {
   oneSnapshotNote: "Only one snapshot was saved, so the comparison is a single point.",
   agreeNote: (n: number) => `The curve and your saved history are close at ${countOf(n, "snapshot", "snapshots")}.`,
   disagreeNote: (disagreeing: number, compared: number, gap: number) =>
-    `The curve and your saved history differ at ${disagreeing} of ${countOf(compared, "snapshot", "snapshots")}. The largest gap is ${countOf(gap, "friend", "friends")}.`,
+    `The curve and your saved history differ at ${formatCount(disagreeing)} of ${countOf(compared, "snapshot", "snapshots")}. The largest gap is ${countOf(gap, "friend", "friends")}.`,
   exportErrorsNote: "Your export has errors, so the curve may be off. Run the export check for details.",
   otherNote: tools.otherNote,
 } as const;

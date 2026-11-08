@@ -15,7 +15,7 @@ export const copy = {
     body: "Snappy found no usable usernames in your friends lists, so there is nothing to save.",
   },
 
-  doneAnnounce: (friends: number, blocked: number, ignored: number) => `Backup ready: ${countOf(friends, "friend", "friends")}, ${blocked} blocked, ${ignored} ignored.`,
+  doneAnnounce: (friends: number, blocked: number, ignored: number) => `Backup ready: ${countOf(friends, "friend", "friends")}, ${formatCount(blocked)} blocked, ${formatCount(ignored)} ignored.`,
 
   contentsHeading: "What the backup holds",
   contentsCaption: "People in the backup, by list",

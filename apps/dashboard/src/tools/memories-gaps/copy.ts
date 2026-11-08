@@ -4,7 +4,7 @@
  * Nothing here holds an export value: counts and month names come in as arguments, and no function takes or returns a username.
  */
 import { tools } from "../../copy.ts";
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
@@ -55,7 +55,7 @@ export const copy = {
   whereMiddle: "Between Memories",
   whereEnd: "Since last Memory",
   noGapsLine: (minGap: number): string => `No gaps of ${countOf(minGap, "month", "months")} or more.`,
-  moreLine: (shown: number, total: number): string => `Showing the first ${shown} of ${total}. Raise the shortest gap to see fewer.`,
+  moreLine: (shown: number, total: number): string => `Showing the first ${formatCount(shown)} of ${formatCount(total)}. Raise the shortest gap to see fewer.`,
 
   busiestHeading: "Busiest times",
   busiestCaption: "Months with the most Memories",

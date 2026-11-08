@@ -4,8 +4,9 @@
  * lookalike usernames and memories gaps). One assertion per rule, so a later edit cannot bring an old wording back.
  * Synthetic data only.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { tools } from "../../src/copy.ts";
+import { TOOLS } from "../../src/tools/registry.ts";
 import { copy as activityCalendar } from "../../src/tools/activity-calendar/copy.ts";
 import { copy as anniversaries } from "../../src/tools/anniversaries/copy.ts";
 import { copy as blockedReview } from "../../src/tools/blocked-review/copy.ts";
@@ -17,6 +18,12 @@ import { copy as friendsTable } from "../../src/tools/friends-table/copy.ts";
 import { copy as habits } from "../../src/tools/habits/copy.ts";
 import { copy as lookalikeUsernames } from "../../src/tools/lookalike-usernames/copy.ts";
 import { copy as memoriesGaps } from "../../src/tools/memories-gaps/copy.ts";
+
+import { textOf } from "../copy-rules.ts";
+import { renderSettled, sampleState, sampleWorkspace } from "./harness.ts";
+
+// A page announces its result; what it says is checked in each tool's own test.
+vi.mock("../../src/announce.ts", () => ({ announce: () => undefined }));
 
 export const COPIES: Record<string, Record<string, unknown>> = {
   "activity-calendar": activityCalendar,
@@ -72,6 +79,56 @@ describe("the buttons that make a file", () => {
     expect(friendsBackup.downloadLabel).toBe("Save JSON");
     expect(hits(/\bdownload/i)).toEqual([]);
   });
+});
+
+/** A year, as the pages write one. */
+const isYear = (digits: string): boolean => digits.length === 4 && Number(digits) >= 1900 && Number(digits) <= 2100;
+/** The 4-digit-or-longer numbers in a text that are not a year: a count with no thousands separator. */
+const bareCounts = (text: string): string[] => (text.match(/\b\d{4,}\b/g) ?? []).filter((d) => !isYear(d));
+/** The functions that take a year, not a count: a year is written without a separator on purpose. */
+const YEAR_FUNCTIONS = /^(yearHeading|yearRunsCaption|unitMonth|unitMonthYear|yearColumnHeader|unitInYear|yearAdjustedNote|yearEmptyNote)\(/;
+
+describe("counts", () => {
+  it("go through formatCount in every string that interpolates one, so 12345 is written 12,345", () => {
+    const n = 12345;
+    const said = [
+      anniversaries.moreLine(n, n),
+      memoriesGaps.moreLine(n, n),
+      lookalikeUsernames.truncatedNote(n, n),
+      friendsBackup.doneAnnounce(n, n, n),
+      blockedReview.doneAnnounce(n, n),
+      friendCountHistory.unitGain("Mar 2026", n),
+      friendCountHistory.unitDrop("Mar 2026", n),
+      friendCountHistory.unitAdded(n),
+      friendCountHistory.unitRemoved(n),
+      friendCountHistory.monthsShownLine(n, n),
+      friendCountHistory.unitSaved(n),
+      friendCountHistory.unitCurve(n),
+      friendCountHistory.unitGap(n),
+      friendCountHistory.unitGap(-n),
+      friendCountHistory.comparisonsShownLine(n, n),
+      friendCountHistory.disagreeNote(n, n, n),
+    ];
+    expect(said.filter((s) => bareCounts(s).length > 0)).toEqual([]);
+    expect(friendCountHistory.unitAdded(n)).toBe("12,345 added");
+    expect(blockedReview.doneAnnounce(n, n)).toContain("12,345 may be worth a second look");
+  });
+
+  it("hold in the pages as drawn: no number of four digits or more that is not a year, in any tool of the group", async () => {
+    await sampleWorkspace();
+    const sample = await sampleState();
+    const pages: string[] = [];
+    for (const id of Object.keys(COPIES)) {
+      const tool = TOOLS.find((t) => t.id === id);
+      expect(tool, id).toBeDefined();
+      const { root } = await renderSettled((tool as (typeof TOOLS)[number]).view, sample);
+      pages.push(`${id}: ${bareCounts(textOf(root)).join(", ")}`);
+    }
+    expect(pages.filter((p) => !p.endsWith(": "))).toEqual([]);
+    // The sample holds counts past a thousand, so the check above has something to catch.
+    const { root } = await renderSettled((TOOLS.find((t) => t.id === "export-check") as (typeof TOOLS)[number]).view, sample);
+    expect(root.textContent).toMatch(/\b\d{1,3}(,\d{3})+\b/);
+  }, 60_000);
 });
 
 describe("the note for something a page cannot describe, and the word for what is left out", () => {

@@ -5,7 +5,7 @@
  * A lookalike proves nothing, so the words only ever say a pair may be worth a second look.
  */
 import { tools } from "../../copy.ts";
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const pairs = (n: number): string => countOf(n, "pair", "pairs");
 const has = (n: number): string => (n === 1 ? "has" : "have");
@@ -47,7 +47,7 @@ export const copy = {
   readOnlyNote: "Snappy only compares the names in your export. It looks no one up and changes nothing in Snapchat.",
   noPeopleNote: "Snappy found no usernames to compare. The export may be short.",
   foundNote: (n: number): string => `${pairs(n)} may be worth a second look.`,
-  truncatedNote: (shown: number, total: number): string => `Snappy lists the closest ${countOf(shown, "pair", "pairs")} of ${total}.`,
+  truncatedNote: (shown: number, total: number): string => `Snappy lists the closest ${countOf(shown, "pair", "pairs")} of ${formatCount(total)}.`,
   duplicatesNote: (n: number): string => `${countOf(n, "extra row", "extra rows")} ${n === 1 ? "repeats" : "repeat"} a person already listed. Snappy counts each person once.`,
   blankNote: (n: number): string => `${countOf(n, "row", "rows")} ${has(n)} no username. Snappy leaves ${them(n)} out.`,
   overlongNote: (n: number): string => `${countOf(n, "username", "usernames")} ${is(n)} too long to compare. Snappy leaves ${them(n)} out.`,

@@ -3,7 +3,7 @@
  * text they are (Heading, Header, Note, Line, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts come in as arguments, and no function takes or returns a username.
  */
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const isOne = (n: number): boolean => n === 1;
 
@@ -46,7 +46,7 @@ export const copy = {
   whenHeader: "When",
   yearsCell: (years: number, milestone: boolean): string => (milestone ? `${countOf(years, "year", "years")}, milestone` : countOf(years, "year", "years")),
   whenCell: (days: number): string => (days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${countOf(days, "day", "days")}`),
-  moreLine: (shown: number, total: number): string => `Showing the first ${shown} of ${total}. Choose a shorter window to see fewer.`,
+  moreLine: (shown: number, total: number): string => `Showing the first ${formatCount(shown)} of ${formatCount(total)}. Choose a shorter window to see fewer.`,
 
   caveatNote: "Dates come from when each connection was created. They may not match when you first met.",
   leapNote: "Anniversaries for Feb 29 fall on Feb 28 in years that have no Feb 29.",

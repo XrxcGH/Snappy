@@ -4,7 +4,7 @@
  * Nothing here holds an export value: counts and dates come in as arguments, and no function takes a username.
  */
 import { tools } from "../../copy.ts";
-import { countOf } from "../../format.ts";
+import { countOf, formatCount } from "../../format.ts";
 
 const people = (n: number): string => countOf(n, "person", "people");
 const has = (n: number): string => (n === 1 ? "has" : "have");
@@ -21,7 +21,7 @@ export const copy = {
 
   doneAnnounce: (total: number, worthLook: number): string =>
     worthLook > 0
-      ? `Review finished. ${people(total)} in your lists, ${worthLook} may be worth a second look.`
+      ? `Review finished. ${people(total)} in your lists, ${formatCount(worthLook)} may be worth a second look.`
       : `Review finished. ${people(total)} in your lists.`,
 
   countsHeading: "Your lists",
