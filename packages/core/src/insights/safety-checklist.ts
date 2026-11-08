@@ -26,6 +26,24 @@ export const SAFETY_ITEM_IDS = [
 
 export type SafetyItemId = (typeof SAFETY_ITEM_IDS)[number];
 
+const BLOCKED_BASE = "Check that the people you blocked are the ones you meant to.";
+const PENDING_BASE = "Set who can send you Snaps and friend requests.";
+
+/**
+ * What each item asks, in a short label and one hint line. This is the one source of the words: the
+ * command line and the dashboard's Safety checklist page both read them from here. The two counts the
+ * export can add (blocked people, pending requests) are appended to the hints of their own items.
+ */
+export const SAFETY_ITEM_TEXT: Readonly<Record<SafetyItemId, { label: string; hint: string }>> = {
+  "two-step-verification": { label: "Turn on two-step verification", hint: "Asks for a code when you log in, even if someone has your password." },
+  "recovery-contacts": { label: "Check recovery email and phone", hint: "Make sure you can still get back in if you lose access." },
+  "strong-password": { label: "Use a strong, unique password", hint: "Avoid a password you use on other sites." },
+  "connected-apps": { label: "Review connected apps", hint: "Remove apps you no longer use or trust." },
+  "who-can-contact-you": { label: "Choose who can contact you", hint: PENDING_BASE },
+  "blocked-list": { label: "Review your blocked list", hint: BLOCKED_BASE },
+  "logged-in-devices": { label: "Check logged-in devices", hint: "Log out of any device you do not use or recognize." },
+};
+
 /**
  * "once" items are done and stay done. "review" items are worth a fresh look now and then, so a
  * tick older than `reviewEveryDays` is reported as "stale" rather than counted as done forever.

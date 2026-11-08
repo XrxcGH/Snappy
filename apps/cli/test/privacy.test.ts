@@ -30,7 +30,7 @@ describe("the command", () => {
     expect(out).toContain("To do");
     expect(out).not.toMatch(/\bDone {2,}/);
     expect(out).toContain("Next\n  Who can contact you.");
-    expect(out).toContain("Mark it with --done contact-me.");
+    expect(out).toContain("Run again with --done contact-me when you have checked it.");
     expect(out).toContain("Nothing is marked yet.");
     expect(out).toContain("These marks are what you told Snappy. It cannot see your settings.");
     expect(out).toContain("Marks are not saved.");
@@ -50,9 +50,9 @@ describe("the command", () => {
     // Marks are not saved, so the next command keeps the earlier marks.
     const marked = ["contact-me", "search", "quick-add"];
     const inListOrder = IDS.filter((id) => marked.includes(id));
-    expect(out).toContain(`Mark it with --done ${[...inListOrder, "group-invites"].join(",")}.`);
+    expect(out).toContain(`Run again with --done ${[...inListOrder, "group-invites"].join(",")} when you have checked it.`);
     expect(out).not.toContain("(group-invites)");
-    expect(out).not.toContain("Mark it with --done group-invites.");
+    expect(out).not.toContain("Run again with --done group-invites when");
     expect(out).not.toContain("Nothing is marked yet.");
     const again = await runInsight(privacyCommand, []);
     expect(again.out).toContain("0 of 9 settings marked done");
@@ -70,12 +70,22 @@ describe("the command", () => {
     expectBrandSafe(all.out, "all done");
   });
 
-  it("uses its own wording for the map setting", async () => {
+  it("names the map setting without the retired word", async () => {
     const { out } = await runInsight(privacyCommand, ["--json"]);
     expect(out).not.toMatch(/ghost/i);
     const text = (await runInsight(privacyCommand, [])).out;
     expect(text).toContain("Map and location sharing");
     expect(text).not.toMatch(/ghost/i);
+  });
+
+  it("prints the labels and hints from core, with Snaps capitalized, and no lowercase snaps", async () => {
+    const text = (await runInsight(privacyCommand, [], makeIo({ columns: 200 }))).out;
+    for (const i of insights.privacyTuneup.PRIVACY_TUNEUP_ITEMS) {
+      expect(text, i.id).toContain(i.title);
+      expect(text, i.id).toContain(i.hint);
+    }
+    expect(text).toContain("Check who may send you Snaps and chats.");
+    expect(text).not.toMatch(/\bsnaps\b/);
   });
 
   it("prints JSON with ids, states and counts, and a clock-based date", async () => {

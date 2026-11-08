@@ -43,15 +43,16 @@ export const PRIVACY_TUNEUP_SECTIONS: readonly { id: TuneupSectionId; title: str
 
 /**
  * The checklist, in display order. Ids are part of the API: never rename one. Titles and hints describe each
- * setting in general terms; the app's own labels and menus may differ and change over time.
+ * setting in general terms; the app's own labels and menus may differ and change over time. This is the one
+ * source of the words: the command line and the dashboard's Privacy tune-up page both read them from here.
  */
 export const PRIVACY_TUNEUP_ITEMS: readonly TuneupItemDef[] = [
-  { id: "contact-me", section: "contact", title: "Who can contact you", hint: "Check who can send you snaps and chats." },
-  { id: "group-invites", section: "contact", title: "Group chat invites", hint: "Check who can add you to group chats." },
-  { id: "view-story", section: "visibility", title: "Who can see your story", hint: "Pick friends only, custom or public." },
-  { id: "quick-add", section: "visibility", title: "Quick add visibility", hint: "Decide if you show up in suggestions." },
-  { id: "search", section: "visibility", title: "Who can find you in search", hint: "Check if people can look you up." },
-  { id: "map-location", section: "location", title: "Map and ghost mode", hint: "Check who can see you on the map." },
+  { id: "contact-me", section: "contact", title: "Who can contact you", hint: "Check who may send you Snaps and chats." },
+  { id: "group-invites", section: "contact", title: "Group chat invites", hint: "Check who may add you to group chats." },
+  { id: "view-story", section: "visibility", title: "Who can see your story", hint: "Choose friends only, custom or public." },
+  { id: "quick-add", section: "visibility", title: "Quick add suggestions", hint: "Decide whether you show up in suggestions." },
+  { id: "search", section: "visibility", title: "Who can find you", hint: "Check whether people can look you up." },
+  { id: "map-location", section: "location", title: "Map and location sharing", hint: "Check who may see you on the Snap Map." },
   { id: "spotlight-profile", section: "public", title: "Spotlight and public profile", hint: "Check what is public." },
   { id: "personalized-ads", section: "data", title: "Personalized ads", hint: "Check which ad settings are on." },
   { id: "data-sharing", section: "data", title: "Data sharing", hint: "Check what you share with apps and partners." },

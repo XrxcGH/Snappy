@@ -5,6 +5,8 @@
 import { insights } from "@snappy-export/core";
 import type { ParsedExport } from "@snappy-export/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderSafety } from "../../../cli/src/commands/safety.ts";
+import { createTerm } from "../../../cli/src/term.ts";
 import { createActions } from "../../src/actions.ts";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
@@ -91,6 +93,14 @@ describe("the tool", () => {
 
   it("has a label and a hint for every item core lists, and no other item", () => {
     expect(Object.keys(copy.items)).toEqual(ITEM_IDS);
+  });
+
+  it("uses the labels and hints core holds, which the command line prints too", () => {
+    const printed = renderSafety(insights.safetyChecklist.buildSafetyChecklist({ now: 0 }), createTerm({ env: {}, isTTY: false, columns: 200 }), false);
+    for (const id of ITEM_IDS) {
+      expect(copy.items[id], id).toEqual(insights.safetyChecklist.SAFETY_ITEM_TEXT[id]);
+      expect(printed, id).toContain(copy.items[id].label);
+    }
   });
 });
 

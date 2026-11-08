@@ -34,16 +34,6 @@ type Checklist = insights.safetyChecklist.SafetyChecklist;
 type Item = insights.safetyChecklist.SafetyItem;
 type Note = insights.safetyChecklist.SafetyNote;
 
-const LABEL: Record<insights.safetyChecklist.SafetyItemId, string> = {
-  "two-step-verification": "Turn on two-step verification",
-  "recovery-contacts": "Check recovery email and phone",
-  "strong-password": "Use a strong, unique password",
-  "connected-apps": "Review connected apps",
-  "who-can-contact-you": "Choose who can contact you",
-  "blocked-list": "Review your blocked list",
-  "logged-in-devices": "Check logged-in devices",
-};
-
 const STATUS: Record<insights.safetyChecklist.SafetyStatus, string> = {
   done: "Done",
   todo: "To do",
@@ -94,7 +84,7 @@ export function renderSafety(result: Checklist, term: Term, verbose: boolean): s
       "Checklist",
       term.table(
         [{ header: "#", align: "right" }, { header: "Status" }, { header: "Id" }, { header: "What to check" }],
-        result.items.map((i) => [String(i.order), STATUS[i.status], i.id, LABEL[i.id] ?? "Review this item"]),
+        result.items.map((i) => [String(i.order), STATUS[i.status], i.id, insights.safetyChecklist.SAFETY_ITEM_TEXT[i.id]?.label ?? "Review this item"]),
       ),
     ),
   );

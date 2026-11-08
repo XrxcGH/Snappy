@@ -5,6 +5,8 @@
  */
 import { insights } from "@snappy-export/core";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { renderPrivacy } from "../../../cli/src/commands/privacy.ts";
+import { createTerm } from "../../../cli/src/term.ts";
 import { createActions } from "../../src/actions.ts";
 import { resetAnalysisCache } from "../../src/analysis.ts";
 import { tools } from "../../src/copy.ts";
@@ -50,6 +52,17 @@ beforeEach(() => {
 });
 
 const text = (el: FakeElement, selector: string): string[] => el.querySelectorAll(selector).map((e) => e.textContent);
+
+describe("one set of words for the page and the command line", () => {
+  it("shows each label and hint on the page exactly as the command prints them", () => {
+    const printed = renderPrivacy(insights.privacyTuneup.buildPrivacyTuneup([], 0), createTerm({ env: {}, isTTY: false, columns: 200 }), false);
+    for (const item of ITEMS) {
+      expect(copy.items[item.id], item.id).toEqual({ label: item.title, hint: item.hint });
+      expect(printed, item.id).toContain(item.title);
+      expect(printed, item.id).toContain(item.hint);
+    }
+  });
+});
 const boxes = (root: FakeElement): FakeElement[] => root.querySelectorAll("input");
 
 /** The page with real actions, so a mark goes through the dashboard's own tick mechanism. */

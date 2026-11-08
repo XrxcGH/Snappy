@@ -3,10 +3,13 @@
  * text they are (Heading, Hint, Note, Line, Announce), because the copy lint reads the kind from the key.
  * Nothing here holds an export value: counts come in as arguments, never a username.
  */
+import { insights } from "@snappy-export/core";
 import { countOf } from "../../format.ts";
 
-const blockedBase = "Check that the people you blocked are the ones you meant to.";
-const pendingBase = "Set who can send you Snaps and friend requests.";
+/** The words for each step come from core, so the command line says the same thing. */
+const itemText = insights.safetyChecklist.SAFETY_ITEM_TEXT;
+const blockedBase = itemText["blocked-list"].hint;
+const pendingBase = itemText["who-can-contact-you"].hint;
 
 export const copy = {
   title: "Safety checklist",
@@ -23,15 +26,7 @@ export const copy = {
   reviewLine: "Settings can change. A fresh look every few months may help.",
 
   stepsHeading: "Safety steps",
-  items: {
-    "two-step-verification": { label: "Turn on two-step verification", hint: "Asks for a code when you log in, even if someone has your password." },
-    "recovery-contacts": { label: "Check recovery email and phone", hint: "Make sure you can still get back in if you lose access." },
-    "strong-password": { label: "Use a strong, unique password", hint: "Avoid a password you use on other sites." },
-    "connected-apps": { label: "Review connected apps", hint: "Remove apps you no longer use or trust." },
-    "who-can-contact-you": { label: "Choose who can contact you", hint: pendingBase },
-    "blocked-list": { label: "Review your blocked list", hint: blockedBase },
-    "logged-in-devices": { label: "Check logged-in devices", hint: "Log out of any device you do not use or recognize." },
-  },
+  items: itemText,
   blockedHint: (n: number) => `${blockedBase} Your export lists ${countOf(n, "blocked person", "blocked people")}.`,
   pendingHint: (n: number) => `${pendingBase} Your export lists ${countOf(n, "pending request", "pending requests")}.`,
 

@@ -36,11 +36,6 @@ type Item = insights.privacyTuneup.TuneupItem;
 
 const OWN_OPTIONS = { done: { type: "string", multiple: true } } as const;
 
-/** Core names the settings in general terms. This keeps Snappy's own wording where it differs. */
-const TITLE: Record<string, string> = {
-  "map-location": "Map and location sharing",
-};
-
 const STATE_LABEL: Record<insights.privacyTuneup.TuneupItemState, string> = {
   done: "Done",
   skipped: "Skipped",
@@ -74,12 +69,6 @@ function noteText(n: insights.privacyTuneup.TuneupNote): string {
   }
 }
 
-/** The result with Snappy's own titles, used for both text and JSON. */
-function localized(result: Result): Result {
-  const retitle = (i: Item): Item => ({ ...i, title: TITLE[i.id] ?? i.title });
-  return { ...result, sections: result.sections.map((s) => ({ ...s, items: s.items.map(retitle) })) };
-}
-
 /** Two lines per setting: its state, id and title, then the hint. The state is a word, never color alone. */
 function itemLines(items: Item[], idWidth: number): string[] {
   return items.flatMap((i) => [
@@ -89,7 +78,7 @@ function itemLines(items: Item[], idWidth: number): string[] {
 }
 
 export function renderPrivacy(raw: Result, term: Term, verbose: boolean): string {
-  const result = localized(raw);
+  const result = raw;
   const p = result.progress;
   const all = result.sections.flatMap((s) => s.items);
   const idWidth = Math.max(0, ...all.map((i) => i.id.length));
@@ -107,7 +96,7 @@ export function renderPrivacy(raw: Result, term: Term, verbose: boolean): string
   if (next !== undefined) {
     // Marks are not saved, so the command to run next carries every done id plus the next one.
     const ids = [...all.filter((i) => i.state === "done" && i.id !== next.id).map((i) => i.id), next.id];
-    out.push(...section(term, "Next", [`${next.title}.`, `Mark it with --done ${ids.join(",")}.`]));
+    out.push(...section(term, "Next", [`${next.title}.`, `Run again with --done ${ids.join(",")} when you have checked it.`]));
   }
 
   const notes: NoteLine[] = result.notes.map((n) => ({ severity: n.code === "entries_ignored" ? "warning" : "info", code: n.code, text: noteText(n) }));
@@ -133,7 +122,7 @@ export async function runPrivacy(args: string[], io: Io): Promise<number> {
   const now = io.now();
   const result = insights.privacyTuneup.buildPrivacyTuneup(done.map((id) => ({ id, state: "done" as const })), now);
 
-  if (flags.json) io.out.write(jsonText({ generatedAt: new Date(now).toISOString(), ...localized(result) }));
+  if (flags.json) io.out.write(jsonText({ generatedAt: new Date(now).toISOString(), ...result }));
   else io.out.write(renderPrivacy(result, term, flags.verbose === true));
   return 0;
 }
