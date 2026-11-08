@@ -12,7 +12,7 @@ const them = (n: number): string => (n === 1 ? "it" : "them");
 export const copy = {
   title: "Friends table",
   oneLiner: "Sort and filter your friends in one table.",
-  description: "See every friend with when you added them, your last chat or Snap and a few hints. Sort, filter and download it.",
+  description: "See every friend with when you added them, your last chat or Snap and a few hints. Sort, filter and save it.",
   reads: "Usernames and added dates from your friends list, plus who sent each saved chat and Snap and when.",
   empty: {
     title: "No friends to show",
@@ -89,7 +89,7 @@ export const copy = {
   unitWaitingYou: "waiting on you",
   unitWaitingThem: "waiting on them",
 
-  downloadLabel: "Download CSV",
+  downloadLabel: "Save CSV",
   downloadNote: "The file lists the friends in the table above, with usernames. Keep it private.",
 
   hintNote: "Hints are guesses from saved chats and Snaps. An export can miss messages, so check in Snapchat.",

@@ -55,14 +55,20 @@ export function stringsOf(source: unknown, args: readonly unknown[][], at = ""):
   return out;
 }
 
-/** Every string of the eleven tools, as "tool: path: text". */
-export const everyString = (args: readonly unknown[][] = SMALL): string[] =>
-  Object.entries(COPIES).flatMap(([id, c]) => stringsOf(c, args).map(([path, text]) => `${id}: ${path}: ${text}`));
-
-export const bigStrings = (): string[] => everyString(BIG);
+/** The strings of the eleven tools whose text matches, as "tool: path: text" (the key path is not matched). */
+export const hits = (re: RegExp, args: readonly unknown[][] = SMALL): string[] =>
+  Object.entries(COPIES).flatMap(([id, c]) => stringsOf(c, args).filter(([, text]) => re.test(text)).map(([path, text]) => `${id}: ${path}: ${text}`));
 
 describe("where a person checks", () => {
   it("says Snapchat, never the app, which inside Snappy means Snappy", () => {
-    expect(everyString().filter((s) => /\bin the app\b|\bthe app\b/i.test(s))).toEqual([]);
+    expect(hits(/\bin the app\b|\bthe app\b/i)).toEqual([]);
+  });
+});
+
+describe("the buttons that make a file", () => {
+  it("say Save, because the app has no download and its file dialog says save", () => {
+    expect(friendsTable.downloadLabel).toBe("Save CSV");
+    expect(friendsBackup.downloadLabel).toBe("Save JSON");
+    expect(hits(/\bdownload/i)).toEqual([]);
   });
 });

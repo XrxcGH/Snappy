@@ -29,11 +29,11 @@ export const copy = {
   unknownTimeLine: "Snappy could not tell when this backup was made.",
 
   nextHeading: "What to do next",
-  saveStep: "Download the file and keep it somewhere private.",
+  saveStep: "Save the file and keep it somewhere private.",
   keepStep: "The file lists usernames, so treat it like a contact list.",
   compareStep: "To check it against a later export, use the command below with the compare option.",
 
-  downloadLabel: "Download JSON",
+  downloadLabel: "Save JSON",
   downloadNote: "The file holds usernames. Keep it private.",
 
   skippedNote: (n: number) => `${countOf(n, "entry", "entries")} had no usable username and ${n === 1 ? "was" : "were"} left out.`,

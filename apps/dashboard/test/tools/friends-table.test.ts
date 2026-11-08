@@ -486,7 +486,7 @@ describe("the download", () => {
   it("offers the file with a short note that it lists usernames", async () => {
     const { root } = await renderSettled(view, crafted());
     expect(text(root, "button").filter((t) => t === copy.downloadLabel)).toHaveLength(1);
-    expect(copy.downloadLabel).toBe("Download CSV");
+    expect(copy.downloadLabel).toBe("Save CSV");
     expect(copy.downloadNote).toContain("usernames");
   });
 });
