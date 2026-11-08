@@ -4,6 +4,14 @@ This page is for people who want to try Snappy on a Mac. It says which file to d
 
 **Status.** No release has been published yet. The macOS app is built and started by an automated test on a GitHub computer for every change, and the maintainers have no Mac. So nobody has used this build on a real Mac yet: you would be the first. [RELEASES.md](RELEASES.md) lists what the automated test checks and what it cannot.
 
+## What the beta is
+
+Snappy is the dashboard from this repository in its own window: the cleanup queue, Memories rescue, the Tools page and the in-app commands. It reads the Snapchat export that you already have, on your computer. This is an early test build, version `0.1.0-beta.1`. Expect rough edges, and please report them.
+
+- It is **unsigned** (see below), so macOS warns you the first time you open it.
+- It **does not update itself and never checks for updates**. The Windows app has an update check; the macOS app has none. To get a newer beta, download the newer disk image. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
+- It has **no telemetry** and no account, and Snappy itself sends nothing over a network.
+
 ## Which file, and why
 
 The file is `Snappy_0.1.0-beta.1_universal.dmg`.
