@@ -14,6 +14,8 @@ import { button } from "./button.ts";
 export const SEARCH_DEBOUNCE_MS = 120;
 
 const queries = new Map<string, string>();
+/** Bumped whenever every search is forgotten, so a box that is being replaced does not store text typed before that. */
+let epoch = 0;
 
 /** What is typed in the search box of one list (empty when nothing). */
 export const searchQuery = (listKey: string): string => queries.get(listKey) ?? "";
@@ -25,6 +27,7 @@ export function setSearchQuery(listKey: string, query: string): void {
 
 /** Forget every search. Lock and Delete data do this through the analysis reset, and "Clear filters" does it too. */
 export function clearSearches(): void {
+  epoch++;
   queries.clear();
 }
 onAnalysisReset(clearSearches);
@@ -57,6 +60,7 @@ export function listSearch(options: ListSearchOptions): HTMLElement {
   };
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let typedAt = epoch;
   const commit = (): void => {
     clearTimeout(timer);
     timer = undefined;
@@ -71,6 +75,7 @@ export function listSearch(options: ListSearchOptions): HTMLElement {
   input.addEventListener("input", () => {
     showClear();
     clearTimeout(timer);
+    typedAt = epoch;
     timer = setTimeout(commit, SEARCH_DEBOUNCE_MS);
   });
   input.addEventListener("keydown", (event) => {
@@ -83,12 +88,13 @@ export function listSearch(options: ListSearchOptions): HTMLElement {
   clear.addEventListener("click", reset);
   showClear();
   // A repaint of the page around the box (a filter changed) disposes this scope before the 120 ms are up. Keep what is
-  // typed, so the box that replaces this one reads it, rather than dropping it and bringing back the older search.
+  // typed, so the box that replaces this one reads it, rather than dropping it and bringing back the older search. When
+  // the searches were cleared after the typing ("Clear filters", Lock, Delete data) the typed text is dropped instead.
   onDispose(() => {
     if (timer === undefined) return;
     clearTimeout(timer);
     timer = undefined;
-    setSearchQuery(options.listKey, input.value);
+    if (typedAt === epoch) setSearchQuery(options.listKey, input.value);
   });
 
   return h("div", { class: "field list-search" }, h("label", { class: "label", for: id }, lists.searchLabel), h("div", { class: "search-row" }, input, clear));
