@@ -32,7 +32,7 @@ const baseName = (p: string): string => p.slice(p.lastIndexOf("/") + 1).toLowerC
  * left out, so the person gets one cause and one remedy, not five contradictory notices.
  */
 const ROOT_CAUSE_CODES: ReadonlySet<string> = new Set([
-  "zip-unreadable", "zip-entry-unreadable", "zip-encrypted", "zip-unsupported-method", "zip-entry-too-large", "nested-zip", "html-only-export",
+  "zip-unreadable", "zip-entry-unreadable", "zip-encrypted", "zip-unsupported-method", "zip-entry-too-large", "nested-zip", "html-only-export", "no-export-files",
 ]);
 
 /** A data file that was found but could not be read as JSON: it explains an empty friends list on its own. */
@@ -47,7 +47,9 @@ export type FailureClass =
   /** The ZIP file holds other ZIP files: unzip it once and choose the parts inside. */
   | "nested-zip"
   /** The export holds only HTML pages: request it again with JSON files. */
-  | "html-only";
+  | "html-only"
+  /** The ZIP file holds no Snapchat export files: choose the ZIP file downloaded from Snapchat. */
+  | "no-files";
 
 /**
  * The root cause among `issues` (the parse issues plus the output of validateExport), or
@@ -62,6 +64,7 @@ export function failureClass(issues: readonly { code: string }[]): FailureClass 
   }
   if (codes.has("nested-zip")) return "nested-zip";
   if (codes.has("html-only-export")) return "html-only";
+  if (codes.has("no-export-files")) return "no-files";
   return undefined;
 }
 
@@ -130,8 +133,15 @@ export function validateExport(parsed: ParsedExport, hints: ValidateHints = {}):
     out.push(issue("error", "html-only-export", "This export has only HTML files. Request a new export and choose JSON."));
   }
 
+  // Files were listed, but none has the name of a Snapchat export file (the list holds those names only, see maskFileList).
+  const rootCause = (parsed.issues ?? []).some((i) => ROOT_CAUSE_CODES.has(i.code));
+  const noExportFiles = !rootCause && names.length > 0 && !(hasHtml && !hasJson) && names.every((n) => n.startsWith("<file-"));
+  if (noExportFiles) {
+    out.push(issue("error", "no-export-files", "No Snapchat export files were found in this ZIP file. Choose the ZIP file you downloaded from Snapchat."));
+  }
+
   // One cause, one message: what only follows from it is not reported next to it.
-  const explained = (hasHtml && !hasJson) || (parsed.issues ?? []).some((i) => ROOT_CAUSE_CODES.has(i.code));
+  const explained = (hasHtml && !hasJson) || noExportFiles || rootCause;
 
   const found = parsed.issues ?? [];
   if (totalFriendRecords === 0) {
