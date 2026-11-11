@@ -289,6 +289,8 @@ const INSTALLER_PUBLISHER: &str = "Snappy contributors";
 pub fn run() {
     scrub_webview_environment();
     tauri::Builder::default()
+        // The page's policy forbids every connection, so its messages go by postMessage only (see the script).
+        .invoke_system(include_str!("ipc_postmessage.js"))
         .plugin(tauri_plugin_dialog::init())
         .manage(PickedState::default())
         .manage(ReadClock::default())

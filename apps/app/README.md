@@ -129,8 +129,10 @@ What needs a window or an install: the update drill in `test/e2e-update` (hand-r
   setting `location` are refused, and on Windows the web engine is stopped from sending the request. The desktop
   app also shows no "Open in Snapchat" button: in tests, the engine still opened a connection to the target of a
   blocked link.
-- The page keeps the dashboard's `connect-src 'none'`. The default reader uses no IPC. The fallback reader's
-  IPC works because Tauri falls back from fetch to `postMessage`; the console shows one blocked-fetch warning.
+- The page keeps the dashboard's `connect-src 'none'`. The default reader uses no IPC. The page's messages to the
+  shell (the update commands and the fallback reader) go by `postMessage` only: `src-tauri/src/ipc_postmessage.js`
+  replaces Tauri's sender, which first tried a request that the policy refused and logged violations and errors on
+  every load. A load of the built program should show no console errors and no policy violations.
 - Release builds start WebView2 with its background services off and the account sign-in features `msOneAuthWAM`
   and `msForceOneAuthWAM` disabled. That depends on the installed WebView2 version, so it is not a promise: the
   Windows WebView2 runtime is a separate Microsoft component that Snappy does not control, and nothing in CI can
