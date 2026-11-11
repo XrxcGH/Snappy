@@ -148,6 +148,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
     // The consequence is stated before any action, in both modes.
     notice("warning", lists.removalNote),
     shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
+    shown.length === 0 || (queueSort !== "newest" && queueSort !== "oldest") ? null : h("p", { class: "caption" }, lists.sortNote),
     shown.length === 0
       ? h(
           "div",

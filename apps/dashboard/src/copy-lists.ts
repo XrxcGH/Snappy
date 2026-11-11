@@ -28,6 +28,8 @@ export const lists = {
   noMatchSearch: "No one matches. Clear the search to see more.",
   sortLabel: "Sort",
   sortOptions: { likely: "Most likely", newest: "Newest signal", oldest: "Oldest signal", confidence: "Confidence" },
+  // Said under the count while Newest signal or Oldest signal is chosen: the date they go by is not on the row.
+  sortNote: "Sorted by the latest dated signal for each person. Rows with none come last.",
   clearFiltersButton: "Clear filters",
 
   // The spreadsheet file each finding list saves, by the list's key ("ghost" is Disappeared friends, "one-way" Unaccepted requests, "dormant" Quiet friends).

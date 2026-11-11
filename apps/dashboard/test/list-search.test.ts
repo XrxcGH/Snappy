@@ -164,9 +164,32 @@ describe("search on the Cleanup queue", () => {
     expect(rowNames(root).length).toBeGreaterThan(0);
   });
 
-  it("names the date a newest or oldest sort uses, which the rows do not show", () => {
-    expect(lists.sortOptions.newest).toBe("Newest signal");
-    expect(lists.sortOptions.oldest).toBe("Oldest signal");
+  it("lets Clear filters win over text typed a moment before it", () => {
+    const { root, store } = mount(cleanupView, { ...sample, cleanup: { ...sample.cleanup, category: "dormant" } });
+    type(root, "zzz");
+    vi.advanceTimersByTime(120);
+    // More text, then Clear filters inside the 120 ms: the box being replaced must not store "zzzq" again.
+    type(root, "zzzq");
+    byLabel(root, lists.clearFiltersButton)!.click();
+    vi.advanceTimersByTime(120);
+    expect(store.get().cleanup.category).toBe("all");
+    expect(searchQuery("queue")).toBe("");
+    expect(searchBox(root).value).toBe("");
+    expect(rowNames(root).length).toBeGreaterThan(0);
+  });
+
+  it("says what Newest signal and Oldest signal go by, and only while one of them is chosen", () => {
+    const { root } = mount(cleanupView, sample);
+    const sort = all(root, "select").find((s) => s.getAttribute("id") === "filter-sort")!;
+    expect(textOf(root)).not.toContain(lists.sortNote);
+    for (const order of ["newest", "oldest"]) {
+      sort.value = order;
+      sort.fire("change");
+      expect(textOf(root)).toContain(lists.sortNote);
+    }
+    sort.value = "confidence";
+    sort.fire("change");
+    expect(textOf(root)).not.toContain(lists.sortNote);
   });
 
   it("brings everything back with Clear filters", () => {
