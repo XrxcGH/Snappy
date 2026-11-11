@@ -103,3 +103,10 @@ describe("the export check tables", () => {
     expect(declared("export-check", ".tool-export-check .table td", /min-width:\s*40\.01rem/)).toMatch(/white-space:\s*nowrap/);
   });
 });
+
+describe("the friends backup compare box", () => {
+  it("keeps its line, its button and its result a step apart, and shows no empty result box", () => {
+    expect(declared("friends-backup", ".tool-friends-backup .backup-compare")).toMatch(/display:\s*grid[^}]*gap:\s*var\(--space-4\)/);
+    expect(declared("friends-backup", ".tool-friends-backup .backup-compare-result:empty")).toMatch(/display:\s*none/);
+  });
+});

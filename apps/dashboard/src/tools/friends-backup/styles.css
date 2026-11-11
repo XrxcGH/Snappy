@@ -1,0 +1,6 @@
+/* Friends backup: the compare box keeps its line, its button and its result a step apart, as the sections around it do. Tokens only. */
+.tool-friends-backup .backup-compare { display: grid; gap: var(--space-4); }
+.tool-friends-backup .backup-compare p, .tool-friends-backup .backup-compare .actions { margin: 0; }
+.tool-friends-backup .backup-compare-result { display: grid; gap: var(--space-3); }
+.tool-friends-backup .backup-compare-result:empty { display: none; }
+.tool-friends-backup .backup-compare-result p { margin: 0; }
