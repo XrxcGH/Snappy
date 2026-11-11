@@ -43,7 +43,7 @@ describe("the checks that need the built program", () => {
   it("lists every Save and Download button that only a built program can prove, for both systems", () => {
     const downloads = find(/Downloads, on Windows and on macOS/);
     expect(downloads).not.toBe("");
-    for (const label of ["Save list", "Download JSON", "Download calendar", "Download CSV", "Save all"]) expect(downloads).toContain(label);
+    for (const label of ["Save list", "Download JSON", "Save calendar", "Download CSV", "Save all"]) expect(downloads).toContain(label);
   });
 
   it("names Save and Download labels that exist in the dashboard", () => {
@@ -54,7 +54,7 @@ describe("the checks that need the built program", () => {
       ["..", "dashboard", "src", "tools", "friends-table", "copy.ts"],
     ];
     const all = sources.map((p) => read(...p)).join("\n");
-    for (const label of ["Save list", "Download JSON", "Download calendar file", "Download CSV", "Save all"]) expect(all).toContain(`"${label}"`);
+    for (const label of ["Save list", "Download JSON", "Save calendar file", "Download CSV", "Save all"]) expect(all).toContain(`"${label}"`);
   });
 
   it("lists the macOS Tab check (Full Keyboard Access) and says it was not run", () => {
