@@ -443,6 +443,12 @@ describe("describeStructureFromReader leaves HTML, media and other files out", (
     const empty = await describeStructureFromReader([]);
     expect(formatStructureReport(empty)).toContain("Left out on purpose: 0 HTML, 0 photo/video/audio and 0 other files (not opened).");
   });
+
+  it("says '1 other file' when exactly one other file was left out", async () => {
+    const one = await describeStructureFromReader([bytesReader(buildFixtureZip([{ name: "notes.txt" }]))]);
+    expect(one.leftOut).toEqual({ html: 0, media: 0, other: 1 });
+    expect(formatStructureReport(one)).toContain("Left out on purpose: 0 HTML, 0 photo/video/audio and 1 other file (not opened).");
+  });
 });
 
 // --------------------------------------------------------------------- canary ---

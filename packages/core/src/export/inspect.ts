@@ -707,7 +707,7 @@ export function formatStructureReport(r: StructureReport): string {
     }
   }
   if (r.leftOut) {
-    out.push("", `Left out on purpose: ${r.leftOut.html} HTML, ${r.leftOut.media} photo/video/audio and ${r.leftOut.other} other files (not opened).`);
+    out.push("", `Left out on purpose: ${r.leftOut.html} HTML, ${r.leftOut.media} photo/video/audio and ${r.leftOut.other} other ${r.leftOut.other === 1 ? "file" : "files"} (not opened).`);
   }
   return out.join("\n") + "\n";
 }
