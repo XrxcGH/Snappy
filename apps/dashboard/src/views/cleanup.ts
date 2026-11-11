@@ -53,8 +53,13 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
   }
   // An export was read and the queue is empty: say so, and point to the next step rather than the first one.
   if (a.queue.summary.total === 0) {
+    // Disappeared needs two exports and Quiet needs chat history: zero from a check that could not run is not "all clear".
+    const needsTwo = a.snapshotCount < 2;
+    const unchecked = needsTwo || !a.hasChats;
+    const title = unchecked ? cleanup.nothingFoundSoFar : cleanup.nothingFound;
+    const body = unchecked ? cleanup.notAllChecked(needsTwo, !a.hasChats) : cleanup.nothingFoundBody;
     return [
-      emptyState({ icon: "check", spot: "overview", category: "cleanup", title: cleanup.nothingFound, body: cleanup.nothingFoundBody, actions: [routeLink("start", common.addExport, "primary")] }),
+      emptyState({ icon: "check", spot: "overview", category: "cleanup", title, body, actions: [routeLink("start", common.addExport, "primary")] }),
       keepListSection(actions, a.workspace.allowlist),
     ];
   }

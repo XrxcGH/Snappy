@@ -351,6 +351,16 @@ export const cleanup = {
   emptyBody: "The queue fills when Snappy finds disappeared friends, unaccepted requests, or quiet friends. Add your export to begin.",
   nothingFound: "Nothing to review",
   nothingFoundBody: "Snappy found no one to review. Add a newer export in a few weeks to check again.",
+  nothingFoundSoFar: "Nothing found so far",
+  /** Zero is not "all clear" when a check could not run: say which ones did not. */
+  notAllChecked: (needsTwoExports: boolean, needsChats: boolean) =>
+    needsTwoExports && needsChats
+      ? "Disappeared needs two exports. Quiet needs chat or Snap history."
+      : needsTwoExports
+        ? "Disappeared needs two exports, so it was not checked."
+        : needsChats
+          ? "Quiet needs chat or Snap history, so it was not checked."
+          : "Snappy found no one to review.",
   filtersLabel: "Filter the list",
   categoryLabel: "Category",
   confidenceLabel: "Confidence",
