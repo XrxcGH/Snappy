@@ -9,7 +9,8 @@ import { setPlatform } from "../src/platform.ts";
 import type { State } from "../src/reducer.ts";
 import { OUT_CAP_DESKTOP } from "../src/terminal/session.ts";
 import type { View } from "../src/views/context.ts";
-import { all, byLabel, mount, sampleStateOf, textOf } from "./lists-harness.ts";
+import type { FakeElement } from "./fake-dom.ts";
+import { all, byKey, byLabel, mount, sampleStateOf, textOf } from "./lists-harness.ts";
 
 vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
@@ -51,5 +52,23 @@ describe("Memories rescue in the desktop app", () => {
     const { root } = mount(memoriesView, sample);
     expect(textOf(root)).not.toContain("A full rescue needs the command line tool.");
     expect(byLabel(root, common.openGuide)).toBeUndefined();
+  });
+});
+
+describe("The size cap field on the Memories page", () => {
+  it("hides the meter and notes for the old cap while the cap is refused", () => {
+    const { root } = mount(memoriesView, sample);
+    const input = byKey(root, "cap-input")!;
+    const blocks = all(root, ".meter-block");
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]!.hidden).toBe(false);
+    input.value = "abc";
+    (root.querySelector("form.cap-form") as FakeElement).fire("submit");
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+    expect(textOf(root.querySelector("#cap-error") as FakeElement)).not.toBe("");
+    expect(blocks[0]!.hidden).toBe(true);
+    input.value = "5";
+    (root.querySelector("form.cap-form") as FakeElement).fire("submit");
+    expect(blocks[0]!.hidden).toBe(false);
   });
 });

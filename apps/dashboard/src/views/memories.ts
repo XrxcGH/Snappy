@@ -93,17 +93,17 @@ function storageSection(ctx: ViewContext, meter: NonNullable<Analysis["plan"]>["
     0,
   );
 
-  return section(
-    memories.meterHeading,
-    capForm(ctx, capGiB),
+  // Everything below the form was worked out for the cap in use, so a refused cap hides it until a good one is set.
+  const result: (HTMLElement | null)[] = [
     h("div", { class: "meter-block" }, h("p", { class: "meter-head" }, h("span", { class: "meter-name" }, memories.meterName), " ", h("span", { class: "meter-text" }, text)), bar),
     hasSizes ? null : notice("info", memories.noSizes),
     hasSizes && meter.unknownSizeCount > 0 ? h("p", {}, memories.unknownSizes(meter.unknownSizeCount)) : null,
     hasSizes ? h("p", {}, meter.fractionOfCap >= 1 ? memories.overCap : meter.projectedCapAt !== null ? memories.projection(formatMonth(meter.projectedCapAt)) : memories.noProjection) : null,
-  );
+  ];
+  return section(memories.meterHeading, capForm(ctx, capGiB, result), ...result);
 }
 
-function capForm(ctx: ViewContext, capGiB: number): HTMLElement {
+function capForm(ctx: ViewContext, capGiB: number, result: readonly (HTMLElement | null)[]): HTMLElement {
   const input = h("input", {
     id: "cap-input",
     class: "input input-narrow",
@@ -131,11 +131,13 @@ function capForm(ctx: ViewContext, capGiB: number): HTMLElement {
     if (gib === undefined) {
       input.setAttribute("aria-invalid", "true");
       error.textContent = memories.capError;
+      for (const el of result) if (el) el.hidden = true;
       input.focus();
       return;
     }
     input.removeAttribute("aria-invalid");
     error.textContent = "";
+    for (const el of result) if (el) el.hidden = false;
     ctx.actions.setCapGiB(gib);
     announce(memories.capSet);
   });
