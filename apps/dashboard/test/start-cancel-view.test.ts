@@ -77,15 +77,15 @@ describe("Cancel", () => {
 });
 
 describe("the chooser while reading", () => {
-  it("keeps the chooser, the drop zone and the sample button out of reach, and gives them back afterwards", () => {
+  it("keeps the chooser, the folder button, the drop zone and the sample button out of reach, and gives them back afterwards", () => {
     const { view, store } = page();
     const disabled = (key: string): boolean => (view.querySelector(`[data-key=${key}]`) as FakeElement).hasAttribute("disabled");
     const busy = (): boolean => (view.querySelector(".dropzone") as FakeElement).classList.contains("dropzone-busy");
-    expect([disabled("choose-files"), disabled("try-sample"), busy()]).toEqual([false, false, false]);
+    expect([disabled("choose-files"), disabled("choose-folder"), disabled("try-sample"), busy()]).toEqual([false, false, false, false]);
     store.dispatch({ type: "import-started", steps: 2, sample: false });
-    expect([disabled("choose-files"), disabled("try-sample"), busy()]).toEqual([true, true, true]);
+    expect([disabled("choose-files"), disabled("choose-folder"), disabled("try-sample"), busy()]).toEqual([true, true, true, true]);
     store.dispatch({ type: "import-canceled", message: startFlow.stopped });
-    expect([disabled("choose-files"), disabled("try-sample"), busy()]).toEqual([false, false, false]);
+    expect([disabled("choose-files"), disabled("choose-folder"), disabled("try-sample"), busy()]).toEqual([false, false, false, false]);
   });
 });
 
