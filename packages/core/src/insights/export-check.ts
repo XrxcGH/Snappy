@@ -40,6 +40,8 @@ export interface SectionCheck {
   status: SectionStatus;
   /** Items found: distinct friends, chat events, Snaps, Memories entries or bundled Memories files. */
   count: number;
+  /** `memories_files` only: how many of those files are overlays (captions and stickers), when any are. */
+  overlays?: number;
 }
 
 export interface PartsCheck {
@@ -284,7 +286,7 @@ export function checkExport(input: ExportCheckInput): ExportCheck {
     { id: "chat_history", need: "recommended", status: sectionStatus(coverage.chats.count, listed.chat_history, brokenFile.chat_history), count: coverage.chats.count },
     { id: "snap_history", need: "recommended", status: sectionStatus(coverage.snaps.count, listed.snap_history, brokenFile.snap_history), count: coverage.snaps.count },
     { id: "memories_list", need: "recommended", status: sectionStatus(coverage.memories.count, listed.memories_list, brokenFile.memories_list), count: coverage.memories.count },
-    { id: "memories_files", need: "optional", status: mediaCount > 0 ? "present" : "missing", count: mediaCount },
+    { id: "memories_files", need: "optional", status: mediaCount > 0 ? "present" : "missing", count: mediaCount, ...((pairing?.overlays ?? 0) > 0 && mediaCount > 0 ? { overlays: pairing?.overlays } : {}) },
   ];
   function friendsStatus(): SectionStatus {
     if (distinctFriends.size > 0) return "present";

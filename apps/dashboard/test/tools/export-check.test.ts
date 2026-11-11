@@ -189,6 +189,17 @@ describe("the page", () => {
     expect((await renderSettled(view, real({}, { parts: 1 }))).root.querySelector(".caption")?.textContent).toBe("1 ZIP file read.");
   });
 
+  it("says that the Memories files count includes the overlays, and says nothing when there are none", async () => {
+    const pairing = (overlays: number) => ({ ...((base.latest as ParsedExport).memoriesPairing as NonNullable<ParsedExport["memoriesPairing"]>), overlays });
+    const withOverlays = computeExportCheck(dataOf(real({ memoriesPairing: pairing(8) }))).check;
+    expect(withOverlays.sections.find((s) => s.id === "memories_files")?.overlays).toBe(8);
+    const shown = (await renderSettled(view, real({ memoriesPairing: pairing(8) }))).root.textContent;
+    expect(shown).toContain("Memories files include 8 overlays. Overlays are captions and stickers.");
+    expect((await renderSettled(view, real({ memoriesPairing: pairing(1) }))).root.textContent).toContain("Memories files include 1 overlay.");
+    expect((await renderSettled(view, real({ memoriesPairing: pairing(0) }))).root.textContent).not.toContain("overlay");
+    expect(computeExportCheck(dataOf(real({ memoriesPairing: pairing(0) }))).check.sections.find((s) => s.id === "memories_files")).not.toHaveProperty("overlays");
+  });
+
   it("announces the verdict politely once, and without a name", async () => {
     await renderSettled(view, sample);
     expect(said).toHaveLength(1);

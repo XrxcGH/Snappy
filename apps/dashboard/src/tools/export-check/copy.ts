@@ -24,6 +24,8 @@ export const copy = {
   partsLine: (n: number) => `${countOf(n, "ZIP file", "ZIP files")} read.`,
   /** Under the sections: this page does not take the friend count Snapchat shows, and the command does. */
   friendCountLine: "To catch a short friends list, add --friend-count and your Snapchat count.",
+  /** Under the sections, when some of the Memories files are overlays: the count above includes them, the Memories page counts them apart. */
+  overlaysLine: (n: number) => `Memories files include ${countOf(n, "overlay", "overlays")}. Overlays are captions and stickers.`,
   sectionHeader: "Section",
   statusHeader: "Status",
   itemsHeader: "Items",

@@ -106,11 +106,13 @@ function pillOf(s: insights.exportCheck.SectionCheck): PillKind {
 }
 
 function foundSection({ check, partsKnown }: ExportCheckResult): HTMLElement {
+  const overlays = check.sections.find((s) => s.id === "memories_files")?.overlays ?? 0;
   const rows = check.sections.map((s): TableCell[] => [copy.sections[s.id], copy.statuses[s.status], { text: formatCount(s.count), label: copy.unitItems(s.count) }]);
   return section(
     copy.foundHeading,
     partsKnown && check.parts.count > 0 ? h("p", { class: "caption" }, copy.partsLine(check.parts.count)) : null,
     h("p", { class: "caption" }, ...withOptions(copy.friendCountLine)),
+    overlays > 0 ? h("p", { class: "caption" }, copy.overlaysLine(overlays)) : null,
     dataTable(copy.foundCaption, [copy.sectionHeader, copy.statusHeader, copy.itemsHeader], rows, { pills: { column: 1, kinds: check.sections.map(pillOf) } }),
   );
 }
