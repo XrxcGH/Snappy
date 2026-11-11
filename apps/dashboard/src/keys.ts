@@ -1,12 +1,13 @@
 /**
  * Keyboard shortcuts for the whole app, one listener on the window. `?` shows the list, `/` jumps to the page's search
- * box, and `g` then a letter goes to a page (o Overview, c Cleanup queue, t Tools, m Memories rescue, s Settings,
+ * box, `u` undoes the last Keep while its toast shows, and `g` then a letter goes to a page (o Overview, c Cleanup queue, t Tools, m Memories rescue, s Settings,
  * h Start). Keys are lowercase only. Nothing happens while someone is typing in a field or holds Ctrl, Meta or Alt, so
  * the browser's own shortcuts and every text box keep working. A pending `g` shows a small "Go to..." pill for
  * 1.5 seconds and is announced politely once. Nothing is stored and nothing is read from the export.
  */
 import { announce } from "./announce.ts";
 import { button } from "./components/button.ts";
+import { undoToast } from "./components/toast.ts";
 import { routes } from "./copy.ts";
 import type { RouteId } from "./copy.ts";
 import { shellCopy } from "./copy-shell.ts";
@@ -22,6 +23,7 @@ export const PENDING_MS = 1500;
 export const SHORTCUTS: readonly { keys: readonly string[]; label: () => string }[] = [
   { keys: ["?"], label: () => shellCopy.shortcutShowList },
   { keys: ["/"], label: () => shellCopy.shortcutSearch },
+  { keys: ["u"], label: () => shellCopy.shortcutUndoKeep },
   ...Object.entries(GO_KEYS).map(([key, route]) => ({ keys: ["g", key], label: () => shellCopy.shortcutGoTo(routes[route].label) })),
 ];
 
@@ -152,6 +154,9 @@ export function installKeys(target: KeyTarget, options: KeysOptions): () => void
         event.preventDefault();
         search.focus();
       }
+    } else if (key === "u") {
+      // Undo for the toast after Keep, from wherever focus is. Nothing happens when no toast is showing.
+      if (undoToast()) event.preventDefault();
     } else if (key === "g") {
       pending = true;
       pill = h("p", { class: "keys-pending", "aria-hidden": "true" }, h("kbd", { class: "key" }, "g"), shellCopy.goPendingStatus);

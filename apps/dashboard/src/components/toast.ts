@@ -6,6 +6,9 @@
  * the same sentence is spoken through the polite live region by whoever shows it, so this element is not a live
  * region and nothing is read twice. Usernames reach it as text, only through displayUsername, and never the title.
  *
+ * Undo is also one key away: while a Keep toast shows, the U key (see keys.ts) presses it, so a keyboard user whose focus has
+ * moved on to the next Keep does not have to walk back through the list.
+ *
  * A page that can show a toast draws `toastHost()` once; the shell draws `shellToastHost()` for the pages that do not. A
  * note and a Keep toast sit side by side, each with its own time, so neither takes the other away. Leaving the page
  * removes its host and its timers. Nothing is stored.
@@ -38,6 +41,8 @@ interface Host {
   element: HTMLElement;
   show(options: ToastOptions): void;
   dismiss(): void;
+  /** Press the action of the Keep toast that is showing. False when none is. */
+  undo(): boolean;
 }
 
 /** The host of the page on screen, and the shell's own host that serves every page that draws none. */
@@ -99,6 +104,7 @@ function makeSlot(paint: () => void) {
 function makeHost(): Host {
   const element = h("div", { class: "toast-host" });
   let count = 0;
+  let press: (() => void) | undefined;
   // A Keep toast with Undo and a note (a copy, a save) have a place each, so a note never takes Undo away before its time.
   const slots = {} as { action: ReturnType<typeof makeSlot>; note: ReturnType<typeof makeSlot> };
   const paint = (): void => {
@@ -120,6 +126,7 @@ function makeHost(): Host {
           onclick: () => {
             slots.action.dismiss();
             count = 0;
+            press = undefined;
             options.onAction!();
             options.afterAction?.(element);
           },
@@ -132,14 +139,21 @@ function makeHost(): Host {
       h("p", { class: "toast-text" }, options.text(Math.max(count, 1))),
       undo,
     );
+    if (acts) press = () => undo?.click();
     (acts ? slots.action : slots.note).place(toast);
   };
   const dismiss = (): void => {
     count = 0;
+    press = undefined;
     slots.action.dismiss();
     slots.note.dismiss();
   };
-  return { element, show, dismiss };
+  const undoNow = (): boolean => {
+    if (press === undefined) return false;
+    press();
+    return true;
+  };
+  return { element, show, dismiss, undo: undoNow };
 }
 
 /** The element a page draws once to be able to show toasts. Fixed at the bottom of the window; empty when no toast is showing. */
@@ -173,6 +187,11 @@ export function showToast(options: ToastOptions): boolean {
 /** A toast with a sentence and nothing to press: the visible side of a Copy, a Save or an opened file. A failure is marked as one. */
 export function showNote(text: string, kind?: "error"): boolean {
   return showToast({ text: () => text, kind });
+}
+
+/** Press Undo on the Keep toast that is showing. Returns false when there is none. */
+export function undoToast(): boolean {
+  return (active ?? fallback)?.undo() ?? false;
 }
 
 /** Take the toast away now. */

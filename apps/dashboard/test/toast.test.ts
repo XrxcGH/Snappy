@@ -7,6 +7,7 @@ import type { Candidate } from "@snappy-export/core";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { common } from "../src/copy.ts";
 import { lists } from "../src/copy-lists.ts";
+import { undoToast } from "../src/components/toast.ts";
 import { displayUsername } from "../src/safe.ts";
 import { Scope, runInScope } from "../src/reactive.ts";
 import type { State } from "../src/reducer.ts";
@@ -69,6 +70,20 @@ describe("the Keep toast", () => {
     const back = keepButtons(root).find((b) => nameOfKeep(b) === name);
     expect(back, "the row is back").toBeDefined();
     expect(FakeElement.lastFocused).toBe(back);
+  });
+
+  it("takes the latest Keep back from one key press, wherever focus is, and does nothing without a toast", () => {
+    const { root, store } = mount(cleanupView, sample);
+    expect(undoToast(), "no toast yet").toBe(false);
+    const first = keepButtons(root)[0]!;
+    const name = nameOfKeep(first);
+    first.click();
+    expect(store.get().sample?.allowlist).toEqual([name]);
+    expect(undoToast()).toBe(true);
+    expect(store.get().sample?.allowlist).toEqual([]);
+    expect(toastOf(root)).toBeUndefined();
+    expect(FakeElement.lastFocused).toBe(keepButtons(root).find((b) => nameOfKeep(b) === name));
+    expect(undoToast(), "the toast is gone").toBe(false);
   });
 
   it("stays eight seconds, then goes", () => {

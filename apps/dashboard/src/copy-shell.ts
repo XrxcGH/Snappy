@@ -74,6 +74,7 @@ export const shellCopy = {
   shortcutsNote: "Shortcuts work when you are not typing in a field. Nothing is remembered.",
   shortcutShowList: "Show this list",
   shortcutSearch: "Jump to the search box",
+  shortcutUndoKeep: "Undo the last keep",
   shortcutGoTo: (place: string) => `Go to ${place}`,
   /** Joins the two keys of a chord: g, then o. */
   unitThen: "then",

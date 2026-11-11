@@ -126,6 +126,16 @@ describe("g then a letter", () => {
   });
 });
 
+describe("u undoes the last Keep", () => {
+  it("does nothing, and is not swallowed, when no toast is showing", () => {
+    expect(press("u").defaultPrevented).toBe(false);
+  });
+
+  it("is listed with the other shortcuts", () => {
+    expect(SHORTCUTS.some((s) => s.keys.join("") === "u" && s.label() === shellCopy.shortcutUndoKeep)).toBe(true);
+  });
+});
+
 describe("what the shortcuts ignore", () => {
   const typing: [string, unknown][] = [
     ["an input", new FakeElement("input")],
