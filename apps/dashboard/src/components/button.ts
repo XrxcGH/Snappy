@@ -20,6 +20,8 @@ export interface ButtonOptions {
   disabled?: boolean;
   pressed?: boolean;
   type?: "button" | "submit";
+  /** The data-key of the control to focus when this one is gone after a repaint and no control of its kind is left. */
+  focusNext?: string;
   /** Extra class names after the button's own (for example a placement class). */
   className?: string;
 }
@@ -34,6 +36,7 @@ export function button(options: ButtonOptions): HTMLButtonElement {
       "aria-label": options.ariaLabel,
       "aria-pressed": options.pressed === undefined ? undefined : String(options.pressed),
       "data-key": options.key,
+      "data-focus-next": options.focusNext,
       disabled: options.disabled,
     },
     options.icon ? icon(options.icon, 20) : null,

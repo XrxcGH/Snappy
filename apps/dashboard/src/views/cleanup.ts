@@ -154,7 +154,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
           "div",
           { class: "empty-inline" },
           h("p", {}, noMatchText(view)),
-          filtersActive(view) ? h("div", { class: "actions" }, button({ label: lists.clearFiltersButton, key: "clear-filters", onclick: onClear })) : null,
+          filtersActive(view) ? h("div", { class: "actions" }, button({ label: lists.clearFiltersButton, key: "clear-filters", focusNext: `search:${QUEUE}`, onclick: onClear })) : null,
         )
       : view.guided
         ? guidedPanel(ctx, a, shown)
@@ -237,6 +237,7 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
           button({
             label: cleanup.clearChecks,
             key: "clear-checks",
+            focusNext: `search:${QUEUE}`,
             onclick: () => {
               actions.clearChecked();
               announce(cleanup.checksCleared);

@@ -217,6 +217,17 @@ describe("sample-data strip", () => {
     expect(page.root.querySelector(".banner-slim")).not.toBeNull();
     expect(openPage().root.querySelector(".banner-slim")).toBeNull();
   });
+
+  it("moves focus to the page heading when Clear removes the strip and the button with it", () => {
+    const page = openPage({ ...initialState(), sample });
+    page.go("cleanup");
+    const clear = (page.root.querySelector(".banner-slim") as FakeElement).querySelector("button") as FakeElement;
+    FakeElement.lastFocused = null;
+    (fakeDocument as unknown as { activeElement: unknown }).activeElement = clear;
+    click(clear);
+    expect(page.root.querySelector(".banner-slim")).toBeNull();
+    expect(FakeElement.lastFocused).toBe(page.root.querySelector("#page-title"));
+  });
 });
 
 /** Text of the blocks people read, one entry per block, skipping blocks that only wrap other blocks. */

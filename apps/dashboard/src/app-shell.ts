@@ -160,6 +160,8 @@ export function buildShell(root: HTMLElement, ctx: ViewContext): Shell {
               onclick: () => {
                 actions.clearSample();
                 announce(shell.sampleCleared);
+                // The strip, and the button with it, is gone: focus goes to the page heading, as after a page change.
+                outlet.querySelector<HTMLElement>("#page-title")?.focus({ preventScroll: true });
               },
             }),
           )

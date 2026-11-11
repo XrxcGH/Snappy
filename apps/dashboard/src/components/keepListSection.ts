@@ -85,6 +85,8 @@ export function keepListSection(actions: Pick<Actions, "keep" | "unkeep">, allow
                 ariaLabel: lists.keepRemoveFor(user),
                 icon: "close",
                 key: `keep-remove:${key}`,
+                // The last name has no Remove button left to land on: the box that adds one is next.
+                focusNext: "keep-add",
                 onclick: () => {
                   actions.unkeep(key);
                   announce(lists.keepRemoved(user));

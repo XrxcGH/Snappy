@@ -58,6 +58,8 @@ interface FocusMemo {
   key: string;
   kind: string;
   index: number;
+  /** The data-key of the control to land on when this one and its kind are gone (data-focus-next). */
+  next: string;
 }
 
 const keyedControls = (root: HTMLElement): HTMLElement[] => [...root.querySelectorAll<HTMLElement>("[data-key]")];
@@ -71,7 +73,7 @@ function focusedKey(root: HTMLElement): FocusMemo | null {
   const key = active.dataset.key ?? "";
   const kind = kindOf(key);
   const index = kind === "" ? -1 : keyedControls(root).filter((el) => (el.dataset.key ?? "").startsWith(kind)).indexOf(active);
-  return { key, kind, index };
+  return { key, kind, index, next: active.dataset.focusNext ?? "" };
 }
 
 function restoreFocus(root: HTMLElement, memo: FocusMemo | null): void {
@@ -84,6 +86,8 @@ function restoreFocus(root: HTMLElement, memo: FocusMemo | null): void {
     const siblings = controls.filter((el) => (el.dataset.key ?? "").startsWith(memo.kind));
     target = siblings[Math.min(memo.index, siblings.length - 1)];
   }
+  // The control named by data-focus-next (a search box, an add box), when the one that had focus cleared itself away.
+  if (target === undefined && memo.next !== "") target = controls.find((el) => el.dataset.key === memo.next);
   // Nothing comparable is left: park focus on the region rather than at the top of the page.
   (target ?? root).focus({ preventScroll: true });
 }
