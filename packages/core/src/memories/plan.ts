@@ -17,11 +17,11 @@ import type {
 import { DAY_MS } from "../util.ts";
 
 /**
- * Default storage cap: 5 GiB.
+ * Default storage cap: 5 GB (decimal, 5,000 MB).
  * UNVERIFIED policy figure (the free-tier Memories allowance is not confirmed anywhere we
  * can check offline and may change), so it is always overridable via `capBytes`.
  */
-const DEFAULT_CAP_BYTES = 5 * 1024 ** 3;
+const DEFAULT_CAP_BYTES = 5 * 1000 ** 3;
 const DEFAULT_LOOKBACK_DAYS = 365;
 /** Minimum observed history before a growth rate is trusted. */
 const MIN_GROWTH_SPAN_DAYS = 30;
@@ -241,7 +241,7 @@ function buildMeter(
   return { knownBytes, unknownSizeCount, capBytes, fractionOfCap: knownBytes / capBytes, projectedCapAt, growthBytesPerDay };
 }
 
-/** Storage meter over non-duplicate items. `capBytes` defaults to an UNVERIFIED 5 GiB. */
+/** Storage meter over non-duplicate items. `capBytes` defaults to an UNVERIFIED 5 GB. */
 export function storageMeter(
   items: MemoryItem[],
   opts: { capBytes?: number; now?: number; lookbackDays?: number } = {},

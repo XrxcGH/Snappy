@@ -10,9 +10,9 @@
  *  - Order: newest year first by default, so recent Memories are saved first. Undated items
  *    always last. Inside a year: images, then videos, then unknown (photos are
  *    small and many, so they cover the most memories per byte). Inside a type: oldest first.
- *  - Goal: the caller's bytes. A goal that is not a positive number falls back to the 5 GiB
+ *  - Goal: the caller's bytes. A goal that is not a positive number falls back to the 5 GB
  *    default that plan.ts uses (an unverified figure) and a note says so.
- *  - Batch size: 1 GiB. Batches are filled in download order and a new one starts when the next
+ *  - Batch size: 1 GB. Batches are filled in download order and a new one starts when the next
  *    item would not fit (next-fit), so a batch never mixes distant years more than it must.
  *    An item larger than a batch gets its own batch, flagged `oversize`.
  *  - "Fits" is a prefix of the download order: items are taken until the first one that would
@@ -31,7 +31,7 @@ export type StoragePlanOrder = "newest-first" | "oldest-first";
 export interface StoragePlanOptions {
   /** Download order of years. Default "newest-first". */
   order?: StoragePlanOrder;
-  /** Largest size of one batch, in bytes. Default 1 GiB. */
+  /** Largest size of one batch, in bytes. Default 1 GB. */
   batchBytes?: number;
   /** Epoch ms. Enables the future-date check and the meter's cap projection. */
   now?: number;
@@ -148,7 +148,7 @@ export interface StoragePlan {
   notes: PlanNote[];
 }
 
-const DEFAULT_BATCH_BYTES = 1024 ** 3;
+const DEFAULT_BATCH_BYTES = 1000 ** 3;
 const DATE_LOW = Date.UTC(1990, 0, 1);
 const DATE_HIGH = Date.UTC(2100, 0, 1);
 const TYPES: readonly MemoryMediaType[] = ["image", "video", "unknown"];

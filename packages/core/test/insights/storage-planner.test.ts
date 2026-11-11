@@ -3,8 +3,8 @@ import { planMemoryStorage } from "../../src/insights/storage-planner.ts";
 import { planMemories } from "../../src/memories/plan.ts";
 import type { MemoryItem } from "../../src/types.ts";
 
-const MB = 1024 ** 2;
-const GIB = 1024 ** 3;
+const MB = 1000 ** 2;
+const GB = 1000 ** 3;
 const NOW = Date.UTC(2026, 5, 1);
 
 function mem(id: string, over: Partial<MemoryItem> = {}): MemoryItem {
@@ -15,7 +15,7 @@ const y = (year: number, m = 1, d = 1) => Date.UTC(year, m, d, 12, 0, 0);
 
 describe("planMemoryStorage: basics", () => {
   it("handles empty input", () => {
-    const plan = planMemoryStorage([], GIB, { now: NOW });
+    const plan = planMemoryStorage([], GB, { now: NOW });
     expect(plan.totals).toMatchObject({ items: 0, knownBytes: 0, unsized: 0, isLowerBound: false });
     expect(plan.byYear).toEqual([]);
     expect(plan.byPart).toEqual([]);
@@ -27,7 +27,7 @@ describe("planMemoryStorage: basics", () => {
   });
 
   it("plans a single item", () => {
-    const plan = planMemoryStorage([mem("a", { partIndex: 2 })], GIB, { now: NOW });
+    const plan = planMemoryStorage([mem("a", { partIndex: 2 })], GB, { now: NOW });
     expect(plan.totals.items).toBe(1);
     expect(plan.byYear).toHaveLength(1);
     expect(plan.byYear[0]!).toMatchObject({ year: 2023, items: 1, knownBytes: MB, share: 1, fit: "all" });
@@ -44,9 +44,9 @@ describe("planMemoryStorage: basics", () => {
       mem("c", { date: y(2022), sizeBytes: 2 * MB, partIndex: 2 }),
       mem("d", { date: y(2022), mediaType: "unknown", sizeBytes: 1 * MB }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.totals.knownBytes).toBe(16 * MB);
-    expect(plan.totals.knownBytes).toBe(planMemories(items, { capBytes: GIB }).meter.knownBytes);
+    expect(plan.totals.knownBytes).toBe(planMemories(items, { capBytes: GB }).meter.knownBytes);
     expect(plan.byYear.map((r) => [r.year, r.items, r.knownBytes])).toEqual([
       [2021, 2, 13 * MB],
       [2022, 2, 3 * MB],
@@ -63,8 +63,8 @@ describe("planMemoryStorage: basics", () => {
 
   it("falls back to the default goal and batch size with notes", () => {
     const plan = planMemoryStorage([mem("a")], -5, { batchBytes: Number.NaN });
-    expect(plan.goalBytes).toBe(5 * GIB);
-    expect(plan.batchBytes).toBe(GIB);
+    expect(plan.goalBytes).toBe(5 * GB);
+    expect(plan.batchBytes).toBe(GB);
     expect(plan.notes.map((n) => n.code)).toEqual(["goal-defaulted", "batch-size-defaulted"]);
   });
 });
@@ -77,7 +77,7 @@ describe("planMemoryStorage: sizes", () => {
       mem("c", { sizeBytes: -1 }),
       mem("d", { sizeBytes: Number.NaN }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.totals).toMatchObject({ items: 4, knownBytes: 4 * MB, unsized: 3, isLowerBound: true });
     expect(plan.byYear[0]!).toMatchObject({ unsized: 3 });
     expect(plan.notes).toContainEqual({ code: "lower-bound", params: { unsized: 3 } });
@@ -87,14 +87,14 @@ describe("planMemoryStorage: sizes", () => {
   });
 
   it("marks a group with only unsized items as 'unsized'", () => {
-    const plan = planMemoryStorage([mem("a", { sizeBytes: undefined })], GIB);
+    const plan = planMemoryStorage([mem("a", { sizeBytes: undefined })], GB);
     expect(plan.priority[0]!.fit).toBe("unsized");
     expect(plan.byYear[0]!.fit).toBe("unsized");
     expect(plan.fit.fitsAll).toBe(true);
   });
 
   it("keeps a zero-byte item as known", () => {
-    const plan = planMemoryStorage([mem("a", { sizeBytes: 0, date: y(2020) })], GIB);
+    const plan = planMemoryStorage([mem("a", { sizeBytes: 0, date: y(2020) })], GB);
     expect(plan.totals).toMatchObject({ knownBytes: 0, unsized: 0 });
     expect(plan.batches[0]!.itemIds).toEqual(["a"]);
   });
@@ -109,7 +109,7 @@ describe("planMemoryStorage: goal, order and fit", () => {
   ];
 
   it("fits everything when the goal is large enough", () => {
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.fit).toMatchObject({ fitsAll: true, items: 4, bytes: 140 * MB, deferredItems: 0, deferredBytes: 0 });
     expect(plan.byYear.every((r) => r.fit === "all")).toBe(true);
     expect(plan.notes).toEqual([]);
@@ -156,9 +156,9 @@ describe("planMemoryStorage: goal, order and fit", () => {
       mem("a-newer", { date: y(2022, 8, 20), sizeBytes: MB + 1 }),
       mem("z-older", { date: y(2022, 1, 5), sizeBytes: MB + 2 }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.batches[0]!.itemIds).toEqual(["z-older", "a-newer"]);
-    expect(planMemoryStorage([...items].reverse(), GIB).batches[0]!.itemIds).toEqual(["z-older", "a-newer"]);
+    expect(planMemoryStorage([...items].reverse(), GB).batches[0]!.itemIds).toEqual(["z-older", "a-newer"]);
   });
 
   it("puts images, then videos, then unknown inside a year", () => {
@@ -167,7 +167,7 @@ describe("planMemoryStorage: goal, order and fit", () => {
       mem("v", { date: y(2022), mediaType: "video", sizeBytes: MB + 2 }),
       mem("i", { date: y(2022), mediaType: "image", sizeBytes: MB + 3 }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.priority.map((c) => c.type)).toEqual(["image", "video", "unknown"]);
     expect(plan.batches[0]!.itemIds).toEqual(["i", "v", "u"]);
     // Only a goal that holds two items keeps the first two in that order.
@@ -185,7 +185,7 @@ describe("planMemoryStorage: goal, order and fit", () => {
 describe("planMemoryStorage: batches", () => {
   it("packs in download order and respects the batch size", () => {
     const items = [1, 2, 3, 4, 5].map((n) => mem(`m${n}`, { date: y(2020 + n), sizeBytes: 40 * MB, partIndex: n % 2 + 1 }));
-    const plan = planMemoryStorage(items, GIB, { batchBytes: 100 * MB });
+    const plan = planMemoryStorage(items, GB, { batchBytes: 100 * MB });
     expect(plan.batches.map((b) => b.itemIds)).toEqual([["m5", "m4"], ["m3", "m2"], ["m1"]]);
     for (const b of plan.batches) expect(b.bytes).toBeLessThanOrEqual(100 * MB);
     expect(plan.batches[0]!).toMatchObject({ index: 1, firstYear: 2025, lastYear: 2024, parts: [1, 2] });
@@ -195,20 +195,20 @@ describe("planMemoryStorage: batches", () => {
 
   it("fills a batch to exactly the batch size", () => {
     const items = [mem("a", { date: y(2024), sizeBytes: 50 * MB }), mem("b", { date: y(2023), sizeBytes: 50 * MB })];
-    const plan = planMemoryStorage(items, GIB, { batchBytes: 100 * MB });
+    const plan = planMemoryStorage(items, GB, { batchBytes: 100 * MB });
     expect(plan.batches).toHaveLength(1);
     expect(plan.batches[0]!).toMatchObject({ items: 2, bytes: 100 * MB, oversize: false });
     // One byte more starts a second batch.
-    const over = planMemoryStorage([...items, mem("c", { date: y(2022), sizeBytes: 1 })], GIB, { batchBytes: 100 * MB });
+    const over = planMemoryStorage([...items, mem("c", { date: y(2022), sizeBytes: 1 })], GB, { batchBytes: 100 * MB });
     expect(over.batches.map((b) => b.itemIds)).toEqual([["a", "b"], ["c"]]);
   });
 
   it("does not flag an item equal to the batch size as oversize", () => {
-    const plan = planMemoryStorage([mem("a", { sizeBytes: 100 * MB })], GIB, { batchBytes: 100 * MB });
+    const plan = planMemoryStorage([mem("a", { sizeBytes: 100 * MB })], GB, { batchBytes: 100 * MB });
     expect(plan.batches).toHaveLength(1);
     expect(plan.batches[0]!.oversize).toBe(false);
     expect(plan.notes.map((n) => n.code)).not.toContain("oversize-items");
-    const bigger = planMemoryStorage([mem("a", { sizeBytes: 100 * MB + 1 })], GIB, { batchBytes: 100 * MB });
+    const bigger = planMemoryStorage([mem("a", { sizeBytes: 100 * MB + 1 })], GB, { batchBytes: 100 * MB });
     expect(bigger.batches[0]!.oversize).toBe(true);
   });
 
@@ -218,7 +218,7 @@ describe("planMemoryStorage: batches", () => {
       mem("huge", { date: y(2023), sizeBytes: 500 * MB, mediaType: "video" }),
       mem("small2", { date: y(2022), sizeBytes: 10 * MB }),
     ];
-    const plan = planMemoryStorage(items, GIB, { batchBytes: 100 * MB });
+    const plan = planMemoryStorage(items, GB, { batchBytes: 100 * MB });
     expect(plan.batches.map((b) => [b.itemIds, b.oversize])).toEqual([
       [["small1"], false],
       [["huge"], true],
@@ -236,7 +236,7 @@ describe("planMemoryStorage: dates", () => {
       mem("c", { date: 0 }),
       mem("d", { date: y(2022) }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.byYear.map((r) => [r.year, r.items])).toEqual([[2022, 1], [null, 3]]);
     expect(plan.priority.map((c) => c.year)).toEqual([2022, null]);
     expect(plan.batches.flatMap((b) => b.itemIds)).toEqual(["d", "a", "b", "c"]);
@@ -245,12 +245,12 @@ describe("planMemoryStorage: dates", () => {
 
   it("treats dates after now as undated and says so, but only when now is given", () => {
     const items = [mem("a", { date: y(2030) }), mem("b", { date: y(2020) })];
-    const withNow = planMemoryStorage(items, GIB, { now: NOW });
+    const withNow = planMemoryStorage(items, GB, { now: NOW });
     expect(withNow.byYear.map((r) => r.year)).toEqual([2020, null]);
     expect(withNow.notes).toContainEqual({ code: "future-dates", params: { items: 1 } });
     expect(withNow.notes.map((n) => n.code)).not.toContain("undated-items");
 
-    const without = planMemoryStorage(items, GIB);
+    const without = planMemoryStorage(items, GB);
     expect(without.byYear.map((r) => r.year)).toEqual([2020, 2030]);
     expect(without.notes).toEqual([]);
   });
@@ -258,7 +258,7 @@ describe("planMemoryStorage: dates", () => {
   it("keeps a date equal to now and treats now plus one ms as future", () => {
     const plan = planMemoryStorage(
       [mem("a", { date: NOW, sizeBytes: MB + 1 }), mem("b", { date: NOW + 1, sizeBytes: MB + 2 })],
-      GIB,
+      GB,
       { now: NOW },
     );
     expect(plan.byYear.map((r) => [r.year, r.items])).toEqual([[2026, 1], [null, 1]]);
@@ -276,7 +276,7 @@ describe("planMemoryStorage: dates", () => {
         mem("c", { date: high, sizeBytes: MB + 3 }),
         mem("d", { date: high + 1, sizeBytes: MB + 4 }),
       ],
-      GIB,
+      GB,
     );
     expect(plan.byYear.map((r) => [r.year, r.items])).toEqual([[1990, 1], [2100, 1], [null, 2]]);
   });
@@ -288,7 +288,7 @@ describe("planMemoryStorage: dates", () => {
         mem("b", { date: Date.UTC(2023, 11, 31, 23, 59, 59, 999), sizeBytes: MB + 2 }),
         mem("c", { date: Date.UTC(2024, 0, 1, 0, 0, 0, 0), sizeBytes: MB + 3 }),
       ],
-      GIB,
+      GB,
     );
     expect(plan.byYear.map((r) => [r.year, r.items])).toEqual([[2023, 1], [2024, 2]]);
     // Oldest first inside the 2024 image group: January 1 before February 29.
@@ -298,7 +298,7 @@ describe("planMemoryStorage: dates", () => {
   it("buckets years by UTC", () => {
     const plan = planMemoryStorage(
       [mem("a", { date: Date.UTC(2022, 11, 31, 23, 59, 59) }), mem("b", { date: Date.UTC(2023, 0, 1, 0, 0, 0) })],
-      GIB,
+      GB,
     );
     expect(plan.byYear.map((r) => r.year)).toEqual([2022, 2023]);
   });
@@ -307,7 +307,7 @@ describe("planMemoryStorage: dates", () => {
 describe("planMemoryStorage: duplicates and case", () => {
   it("leaves probable duplicates out of every number", () => {
     const items = [mem("a", { zipPath: "m/x.jpg" }), mem("b", { zipPath: "m/x.jpg" })];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.totals).toMatchObject({ items: 1, knownBytes: MB, duplicatesSkipped: 1 });
     expect(plan.notes).toContainEqual({ code: "duplicates-skipped", params: { items: 1 } });
   });
@@ -319,10 +319,10 @@ describe("planMemoryStorage: duplicates and case", () => {
       mem("abc", { date: y(2022), sizeBytes: MB + 2 }),
       mem("ABC", { date: y(2022), sizeBytes: MB + 3 }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.totals.items).toBe(3);
     expect(plan.batches[0]!.itemIds).toEqual(["ABC", "Abc", "abc"]);
-    expect(planMemoryStorage([...items].reverse(), GIB).batches[0]!.itemIds).toEqual(["ABC", "Abc", "abc"]);
+    expect(planMemoryStorage([...items].reverse(), GB).batches[0]!.itemIds).toEqual(["ABC", "Abc", "abc"]);
   });
 
   it("breaks ties by id so the result does not depend on input order", () => {
@@ -343,14 +343,14 @@ describe("planMemoryStorage: bad input", () => {
       mem("b", { partIndex: 1.5, sizeBytes: MB + 1 }),
       mem("c", { partIndex: -2, sizeBytes: MB + 2 }),
     ];
-    const plan = planMemoryStorage(items, GIB);
+    const plan = planMemoryStorage(items, GB);
     expect(plan.byType[2]!).toMatchObject({ type: "unknown", items: 1 });
     expect(plan.byPart).toEqual([{ part: null, items: 3, knownBytes: 3 * MB + 3, unsized: 0 }]);
     expect(plan.batches[0]!.parts).toEqual([]);
   });
 
   it("copes with a non-finite now", () => {
-    expect(() => planMemoryStorage([mem("a")], GIB, { now: Number.NaN })).not.toThrow();
+    expect(() => planMemoryStorage([mem("a")], GB, { now: Number.NaN })).not.toThrow();
   });
 });
 

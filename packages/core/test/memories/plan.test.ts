@@ -3,7 +3,7 @@ import { claimUniquePath, memoryFileName, planMemories, storageMeter } from "../
 import type { MemoryItem } from "../../src/types.ts";
 import { DAY_MS } from "../../src/util.ts";
 
-const GIB = 1024 ** 3;
+const GB = 1000 ** 3;
 const NOW = Date.UTC(2024, 5, 1, 0, 0, 0);
 
 function mem(id: string, over: Partial<MemoryItem> = {}): MemoryItem {
@@ -251,10 +251,10 @@ describe("counts", () => {
 });
 
 describe("storageMeter", () => {
-  it("defaults the cap to 5 GiB and reports fraction and unknown sizes", () => {
-    const m = storageMeter([mem("a", { sizeBytes: GIB }), mem("b", { sizeBytes: 1.5 * GIB }), mem("c")]);
-    expect(m.capBytes).toBe(5 * GIB);
-    expect(m.knownBytes).toBe(2.5 * GIB);
+  it("defaults the cap to 5 GB and reports fraction and unknown sizes", () => {
+    const m = storageMeter([mem("a", { sizeBytes: GB }), mem("b", { sizeBytes: 1.5 * GB }), mem("c")]);
+    expect(m.capBytes).toBe(5 * GB);
+    expect(m.knownBytes).toBe(2.5 * GB);
     expect(m.unknownSizeCount).toBe(1);
     expect(m.fractionOfCap).toBeCloseTo(0.5, 10);
   });
@@ -267,8 +267,8 @@ describe("storageMeter", () => {
 
   it("honours a custom cap and ignores invalid ones", () => {
     expect(storageMeter([mem("a", { sizeBytes: 50 })], { capBytes: 100 }).fractionOfCap).toBe(0.5);
-    expect(storageMeter([], { capBytes: 0 }).capBytes).toBe(5 * GIB);
-    expect(storageMeter([], { capBytes: Number.NaN }).capBytes).toBe(5 * GIB);
+    expect(storageMeter([], { capBytes: 0 }).capBytes).toBe(5 * GB);
+    expect(storageMeter([], { capBytes: Number.NaN }).capBytes).toBe(5 * GB);
   });
 
   it("computes growth and projection with a fixed now", () => {
