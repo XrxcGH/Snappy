@@ -561,6 +561,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 */
 .segmented { display: inline-flex; justify-self: start; flex-wrap: nowrap; max-width: 100%; gap: 2px; padding: 2px; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--surface-sunken); }
 .segmented .btn { border: 2px solid transparent; border-radius: calc(var(--radius-md) - 2px); justify-self: auto; flex: 0 1 auto; padding-inline: var(--space-4); min-height: var(--target-min); }
+/* The theme control has three buttons, and no room for them in one row at about 500 percent zoom: they wrap rather than widen the page. */
+.segmented-theme { flex-wrap: wrap; }
 .segmented .btn:not([aria-pressed="true"]):hover { background: var(--tint-violet-1); }
 .segmented .btn[aria-pressed="true"] { background: var(--tint-violet-2); border-color: var(--accent); color: var(--text); font-weight: 700; }
 

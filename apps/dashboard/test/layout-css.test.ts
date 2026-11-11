@@ -281,6 +281,12 @@ describe("the command block header", () => {
   });
 });
 
+describe("the Settings theme control at about 500 percent zoom", () => {
+  it("wraps its three buttons instead of holding the page wider than the window", () => {
+    expect(declared(".segmented-theme")).toMatch(/flex-wrap:\s*wrap/);
+  });
+});
+
 describe("forced colors (Windows high contrast)", () => {
   const forced = (selector: string): string => rules.filter((r) => r.selector === selector && r.media.length === 1 && /forced-colors:\s*active/.test(r.media[0] ?? "")).map((r) => r.body).join(" ");
 
