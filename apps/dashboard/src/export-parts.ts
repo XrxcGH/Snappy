@@ -53,7 +53,12 @@ export interface PartScan {
   friends: boolean;
   /** It holds a JSON file, or an HTML page outside memories/ (a later part holds photos and videos and a memories page of its own, no more). */
   pages: boolean;
+  /** It holds photos, videos or sound files, or a memories page: what a later part is made of. */
+  media: boolean;
 }
+
+/** Photo, video and sound files: the same kinds core counts as media (packages/core/src/export/layout.ts). */
+const MEDIA_FILE = /\.(?:jpe?g|png|gif|webp|heic|heif|bmp|mp4|mov|m4v|webm|3gp|avi|mkv|mp3|m4a|aac|wav|ogg|opus)$/;
 
 const baseOf = (path: string): string => (path.split("/").pop() ?? "").toLowerCase();
 
@@ -62,7 +67,8 @@ export async function scanPart(blob: Blob): Promise<PartScan> {
   const { entries } = await listZipEntries(blobReader(blob));
   const lower = entries.map((e) => e.name.toLowerCase());
   const pages = lower.some((n) => n.endsWith(".json") || (n.endsWith(".html") && !n.startsWith("memories/") && !n.includes("/memories/")));
-  return { listed: entries.length > 0, friends: lower.some((n) => baseOf(n) === "friends.json"), pages };
+  const media = lower.some((n) => MEDIA_FILE.test(n) || n.startsWith("memories/") || n.includes("/memories/"));
+  return { listed: entries.length > 0, friends: lower.some((n) => baseOf(n) === "friends.json"), pages, media };
 }
 
 export type PartsCheck<T> =
@@ -76,7 +82,7 @@ export type PartsCheck<T> =
 /**
  * Decide, from the names and the scans (in the same order as `files`), whether these parts can be read as one export.
  * Two exports are told apart by the digits in the names (a browser's "(1)" copy of a part keeps its number).
- * Parts that are only photos and videos are refused when nothing chosen holds the lists. A part that could not be listed is
+ * Parts that are only photos and videos are refused when nothing chosen holds the lists. A ZIP that holds neither (other ZIP files, text files) goes on to the reader, which says what it is. A part that could not be listed is
  * judged by its name alone, so that reading it gives the person the real reason it failed.
  */
 export function checkParts<T extends NamedPart>(files: readonly T[], scans: readonly PartScan[]): PartsCheck<T> {
@@ -87,7 +93,7 @@ export function checkParts<T extends NamedPart>(files: readonly T[], scans: read
   }
 
   const withScan = files.map((file, i) => ({ name: file.name, file, scan: scans[i] as PartScan }));
-  const mediaOnly = withScan.every(({ file, scan }) => (scan.listed ? !scan.pages : LATER_PART.test(file.name ?? "")));
+  const mediaOnly = withScan.every(({ file, scan }) => (scan.listed ? !scan.pages && scan.media : LATER_PART.test(file.name ?? "")));
   if (withScan.length > 0 && mediaOnly) return { kind: "later-only" };
 
   const byName = orderParts(withScan);

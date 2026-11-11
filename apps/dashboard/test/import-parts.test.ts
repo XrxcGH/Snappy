@@ -3,6 +3,7 @@
  * two different exports are refused, the part with the lists is the first part whatever its name, and parts of
  * photos and videos only are refused whatever their names. Synthetic data only.
  */
+import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import { start } from "../src/copy.ts";
 import { startFlow } from "../src/copy-start.ts";
@@ -28,9 +29,10 @@ describe("exportId", () => {
 });
 
 describe("checkParts", () => {
-  const lists: PartScan = { listed: true, friends: true, pages: true };
-  const media: PartScan = { listed: true, friends: false, pages: false };
-  const unlisted: PartScan = { listed: false, friends: false, pages: false };
+  const lists: PartScan = { listed: true, friends: true, pages: true, media: false };
+  const media: PartScan = { listed: true, friends: false, pages: false, media: true };
+  const other: PartScan = { listed: true, friends: false, pages: false, media: false };
+  const unlisted: PartScan = { listed: false, friends: false, pages: false, media: false };
   const named = (...names: string[]): { name: string }[] => names.map((name) => ({ name }));
 
   it("puts the part that holds the lists first, then the others in number order", () => {
@@ -62,7 +64,12 @@ describe("checkParts", () => {
   it("calls parts later parts when none of them holds a JSON or HTML page, whatever the names", () => {
     expect(checkParts(named("holiday.zip", "mydata~1.zip"), [media, media])).toEqual({ kind: "later-only" });
     // A part with HTML pages only is an export in the wrong format, which the reader explains.
-    expect(checkParts(named("mydata~1.zip"), [{ listed: true, friends: false, pages: true }]).kind).toBe("ok");
+    expect(checkParts(named("mydata~1.zip"), [{ listed: true, friends: false, pages: true, media: false }]).kind).toBe("ok");
+  });
+
+  it("does not call a ZIP with no lists and no photos or videos a later part: the reader says what it is", () => {
+    expect(checkParts(named("mydata~1.zip"), [other]).kind).toBe("ok");
+    expect(checkParts(named("notes.zip", "mydata~1-2.zip"), [other, media]).kind).toBe("ok");
   });
 
   it("judges a part it could not list by its name alone, so reading it can say why it failed", () => {
@@ -75,12 +82,19 @@ describe("checkParts", () => {
 describe("scanPart", () => {
   it("sees the lists in the first part and none in a part of photos and videos", async () => {
     const [base, second] = partFiles(2) as [File, File];
-    expect(await scanPart(base)).toEqual({ listed: true, friends: true, pages: true });
-    expect(await scanPart(second)).toMatchObject({ listed: true, friends: false, pages: false });
+    expect(await scanPart(base)).toEqual({ listed: true, friends: true, pages: true, media: true });
+    expect(await scanPart(second)).toMatchObject({ listed: true, friends: false, pages: false, media: true });
+  });
+
+  it("sees no photos or videos in a ZIP that holds only a ZIP or text files", async () => {
+    const text = new TextEncoder().encode("hello");
+    expect(await scanPart(new File([zipSync({ "inner.zip": [new Uint8Array(30), { level: 0 }] }) as BlobPart], "a.zip"))).toEqual({ listed: true, friends: false, pages: false, media: false });
+    expect(await scanPart(new File([zipSync({ "notes.txt": text }) as BlobPart], "b.zip"))).toMatchObject({ pages: false, media: false });
+    expect(await scanPart(new File([zipSync({ "photos/a.jpg": text }) as BlobPart], "c.zip"))).toMatchObject({ pages: false, media: true });
   });
 
   it("reports a file that is not a zip as not listed", async () => {
-    expect(await scanPart(new File([new Uint8Array(500)], "x.zip"))).toEqual({ listed: false, friends: false, pages: false });
+    expect(await scanPart(new File([new Uint8Array(500)], "x.zip"))).toEqual({ listed: false, friends: false, pages: false, media: false });
   });
 });
 
@@ -133,5 +147,16 @@ describe("importing parts by what they hold", () => {
     expect(store.get().import.message).toBe(start.laterPartsOnly);
     expect(await actions.importZips([rename(second, "mydata~1700000000000.zip")])).toBe("failed");
     expect(store.get().import.message).toBe(start.laterPartsOnly);
+  });
+
+  it("does not call a ZIP of other ZIP files or of text files the numbered parts", async () => {
+    const inner = zipSync({ "json/friends.json": new TextEncoder().encode("{}") });
+    const { store, actions } = setup();
+    for (const entries of [{ "mydata~1700000000000.zip": [inner, { level: 0 }] }, { "notes.txt": new TextEncoder().encode("hello") }] as const) {
+      const file = new File([zipSync(entries as never) as BlobPart], "holder.zip", { type: "application/zip" });
+      await actions.importZips([file]);
+      expect(store.get().import.message).not.toBe(start.laterPartsOnly);
+      if ("mydata~1700000000000.zip" in entries) expect(store.get().import.issues?.map((i) => i.code)).toContain("nested-zip");
+    }
   });
 });
