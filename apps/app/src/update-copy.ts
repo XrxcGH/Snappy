@@ -33,7 +33,6 @@ export const updateCopy = {
 
   // Settings card
   cardHeading: "Updates",
-  versionLabel: (version: string): string => `Version ${version}`,
   checkNowButton: "Check now",
   checkingLabel: "Checking…",
   toggleLabel: "Check for updates on launch",

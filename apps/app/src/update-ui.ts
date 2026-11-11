@@ -280,7 +280,6 @@ export function mountUpdates(bridge: Bridge): Mounted {
   };
 
   // ---- Settings card -----------------------------------------------------------------------------------------------
-  const cardVersion = h("p", { class: "caption" });
   const cardLast = h("p", { class: "caption" });
   const cardResult = h("p", { class: "update-result", role: "status", "aria-live": "polite" });
   // aria-disabled, not disabled, while a check runs: a disabled button loses the keyboard focus it has.
@@ -288,10 +287,14 @@ export function mountUpdates(bridge: Bridge): Mounted {
     if (cardCheck.getAttribute("aria-disabled") !== "true") void checkNow();
   } });
   const cardToggle = h("input", { type: "checkbox", class: "check-input", role: "switch", id: "update-auto", "data-key": "update:auto" });
-  cardToggle.addEventListener("change", () => void bridge.setAuto(cardToggle.checked).then(() => refresh()));
+  cardToggle.addEventListener("change", () => {
+    // The last check's answer belongs to that check, not to the switch: it goes when the switch moves.
+    result = null;
+    paintCard();
+    void bridge.setAuto(cardToggle.checked).then(() => refresh());
+  });
   const card = section(
     copy.cardHeading,
-    cardVersion,
     h("div", { class: "actions" }, cardCheck),
     h("label", { class: "check", for: "update-auto" }, cardToggle, h("span", {}, copy.toggleLabel)),
     cardLast,
@@ -310,7 +313,9 @@ export function mountUpdates(bridge: Bridge): Mounted {
 
   const paintCard = (): void => {
     if (!status) return;
-    cardVersion.textContent = copy.versionLabel(status.current);
+    // A check that just failed is not "Not checked yet" as well: the failure line below says what happened.
+    const failed = result === "unreachable" || result === "couldNotCheck";
+    cardLast.hidden = status.lastCheckedUnix <= 0 && failed;
     cardLast.textContent = status.lastCheckedUnix > 0 ? copy.lastChecked(whenText(status.lastCheckedUnix)) : copy.neverChecked;
     cardToggle.checked = status.auto;
     const busy = checking !== null || status.state === "checking" || status.state === "downloading";

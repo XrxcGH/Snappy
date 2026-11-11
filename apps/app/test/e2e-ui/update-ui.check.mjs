@@ -256,7 +256,7 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   const card = page.locator(".update-card");
   ok((await card.count()) === 1, "the Updates card is in Settings");
   const text = await card.innerText();
-  ok(text.includes("Updates") && text.includes("Version 0.1.0-beta.3") && text.includes("Last checked") && text.includes("Check for updates on launch"), "with the version, the last check and the switch", text);
+  ok(text.includes("Updates") && !text.includes("Version") && text.includes("Last checked") && text.includes("Check for updates on launch"), "with the last check and the switch, and no version (About has it)", text);
   ok(text.includes("Asks github.com for the newest version. Sends no ID and none of your data."), "and the one-line note");
   ok(await card.locator("#update-auto").isChecked(), "the switch shows the shell's value");
   const order = await page.locator(".cols > section > h2").allInnerTexts();
@@ -283,6 +283,7 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   await page.waitForTimeout(1500);
   ok((await card.innerText()).includes("You’re up to date."), "and says You’re up to date. otherwise");
   await page.locator("#update-auto").check();
+  ok(!(await card.innerText()).includes("You’re up to date."), "moving the switch clears the last check's answer");
   await shot(page, "settings-wide-light", true);
   ok((await page.evaluate(() => document.scrollingElement.scrollWidth <= innerWidth)), "no horizontal scroll at the wide size");
   await page.context().close();
