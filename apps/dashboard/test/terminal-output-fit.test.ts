@@ -149,6 +149,13 @@ describe("the output box styles", () => {
     expect(rule(".t-log")).toMatch(/scrollbar-gutter:\s*stable/);
   });
 
+  it("draws the digits plain, like the rest of the page, and keeps them one monospace cell wide", () => {
+    // JetBrains Mono slashes its zero. "Snappy Digits" goes first so only 0 to 9 switch; tabular-nums gives them the mono advance.
+    const log = rule(".t-log");
+    expect(log).toMatch(/font-family:\s*"Snappy Digits",\s*var\(--font-mono\)/);
+    expect(log).toMatch(/font-variant-numeric:\s*tabular-nums/);
+  });
+
   it("draws a line of box and block characters tight, so the logo's pieces touch", () => {
     const art = rule(".t-art");
     expect(art).toMatch(/line-height:\s*1;/);

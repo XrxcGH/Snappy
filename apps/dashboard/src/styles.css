@@ -652,10 +652,10 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 .btn[aria-disabled="true"], .btn[aria-disabled="true"]:hover { background: var(--surface-sunken); color: var(--text-muted); border-color: var(--border); cursor: not-allowed; }
 /* Terminal output. The ground is the sunken surface; every color comes from a token, and each class below is
    checked against that ground in both themes by test/ansi-contrast.test.ts. Nothing here moves, so there is
-   nothing to switch off for reduced motion. */
+   nothing to switch off for reduced motion. The digits come from "Snappy Digits" (plain zero, tabular width = one mono cell), the rest from the mono face. */
 .t-log {
   position: relative; background: var(--surface-sunken); color: var(--text); border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4); font-family: var(--font-mono); font-size: var(--text-14); line-height: 1.5;
+  padding: var(--space-3) var(--space-4); font-family: "Snappy Digits", var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-14); line-height: 1.5;
   white-space: pre-wrap; overflow-wrap: anywhere; overflow: auto; max-height: min(24rem, 70vh); scrollbar-gutter: stable;
 }
 .t-line { min-height: 1.5em; }
