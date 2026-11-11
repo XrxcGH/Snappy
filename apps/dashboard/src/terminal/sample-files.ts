@@ -17,8 +17,18 @@ export const SAMPLE_ZIP_NAME = `mydata~${SAMPLE_NOW}.zip`;
  */
 export const canUseSample = (spec: CommandSpec): boolean => spec.needsFile && spec.effect !== "store" && !spec.needsPassphrase;
 
-/** The sample export as one ZIP file, the same made-up one the dashboard shows. */
-export function sampleRunFiles(): RunFile[] {
-  const zip = syntheticExportZip({ now: SAMPLE_NOW, phase: 2, realisticMemories: true, storageShowcase: true });
+/**
+ * Whether the command saves files into the output folder, so it has to extract them. The sample's Memories declare big sizes over
+ * a few bytes (for the storage views), and a file like that cannot be extracted: it would fail as damaged.
+ */
+export const extractsFiles = (spec: CommandSpec): boolean => spec.effect === "folder";
+
+/**
+ * The sample export as one ZIP file, the same made-up one the dashboard shows. For a command that extracts files the Memories keep
+ * their real tiny sizes instead of the declared ones, so every one of them saves.
+ */
+export function sampleRunFiles(spec?: CommandSpec): RunFile[] {
+  const storageShowcase = spec === undefined || !extractsFiles(spec);
+  const zip = syntheticExportZip({ now: SAMPLE_NOW, phase: 2, realisticMemories: true, storageShowcase });
   return [{ name: SAMPLE_ZIP_NAME, blob: new Blob([zip as BlobPart], { type: "application/zip" }) }];
 }

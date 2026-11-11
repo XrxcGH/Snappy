@@ -13,7 +13,7 @@ import type { CommandSpec } from "./commands.ts";
 import { createPickedFiles } from "./picked-files.ts";
 import type { PickedFiles } from "./picked-files.ts";
 import { createRunner } from "./runner.ts";
-import { canUseSample, sampleRunFiles } from "./sample-files.ts";
+import { canUseSample, extractsFiles, sampleRunFiles } from "./sample-files.ts";
 import type { Channel, RunFile } from "./run-types.ts";
 
 const MB = 1000 * 1000;
@@ -58,7 +58,7 @@ export interface SessionOptions {
   /** Replaces the picked files as the source of a Run's files (tests). */
   getFiles?: () => readonly RunFile[];
   /** The sample export's files. Default: the made-up export the dashboard's sample is built from (tests give a small stand-in). */
-  sampleFiles?: () => RunFile[];
+  sampleFiles?: (spec: CommandSpec) => RunFile[];
   columns?: () => number;
   announce?: (message: string, assertive?: boolean) => void;
   now?: () => number;
@@ -103,12 +103,17 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     version: options.version ?? (() => platform().release?.version),
   });
   let sampleOn = false;
-  let sample: RunFile[] | null = null;
+  // Two forms of the sample: with the declared storage sizes, and with files that can be extracted (for a command that saves files).
+  const samples: { showcase: RunFile[] | null; extractable: RunFile[] | null } = { showcase: null, extractable: null };
+  const sampleFor = (spec: CommandSpec): RunFile[] => {
+    const key = extractsFiles(spec) ? "extractable" : "showcase";
+    return (samples[key] ??= (options.sampleFiles ?? sampleRunFiles)(spec));
+  };
   const usesSample = (spec: CommandSpec): boolean => options.getFiles === undefined && sampleOn && picked.count() === 0 && canUseSample(spec);
   const controller = createTerminalController({
     runner,
     // The files the person picked win. The sample is generated the first time a Run needs it and kept only until Lock or Delete data.
-    getFiles: options.getFiles ?? ((spec) => (usesSample(spec) ? (sample ??= (options.sampleFiles ?? sampleRunFiles)()) : picked.files())),
+    getFiles: options.getFiles ?? ((spec) => (usesSample(spec) ? sampleFor(spec) : picked.files())),
     announce: options.announce ?? speak,
     columns: () => source(),
     beforeStoreRun: options.beforeStoreRun ?? (async () => undefined),
@@ -129,7 +134,8 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
     reset() {
       controller.reset();
       picked.clear();
-      sample = null;
+      samples.showcase = null;
+      samples.extractable = null;
     },
     get supported() {
       return !spawnFailed;

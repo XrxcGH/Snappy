@@ -81,18 +81,24 @@ describe("the sample export as files", () => {
 
 describe("the real commands on the sample files", () => {
   it("every command the sample may feed reads it and exits cleanly", async () => {
-    const files = sampleRunFiles();
     const ids = COMMAND_IDS.filter((id) => canUseSample(COMMANDS[id]));
     expect(ids.length).toBeGreaterThan(15);
     const failures: string[] = [];
     for (const id of ids) {
       const spec = COMMANDS[id];
-      const r = await runInHelper(bindArgv(spec, { export: [SAMPLE_ZIP_NAME] }), { files });
-      // The rescue exits 3 ("some items failed") when a Memory has no file in the ZIP, as a few of the sample's do on purpose.
-      const clean = id === "memories-rescue" ? [0, 3] : [0];
-      if (!clean.includes(r.code)) failures.push(`${id}: exit ${r.code}: ${r.out.slice(0, 120)}`);
+      const r = await runInHelper(bindArgv(spec, { export: [SAMPLE_ZIP_NAME] }), { files: sampleRunFiles(spec) });
+      if (r.code !== 0) failures.push(`${id}: exit ${r.code}: ${r.out.slice(0, 120)}`);
     }
     expect(failures).toEqual([]);
+  }, 120_000);
+
+  it("saves every Memory that has a file when the rescue runs on the sample, with none failed", async () => {
+    const spec = COMMANDS["memories-rescue"];
+    const r = await runInHelper(bindArgv(spec, { export: [SAMPLE_ZIP_NAME] }), { files: sampleRunFiles(spec) });
+    expect(r.code).toBe(0);
+    expect(r.out).toContain(" 0 failed.");
+    expect(r.out).not.toMatch(/corrupt|damaged/);
+    expect(r.files.length).toBeGreaterThan(100);
   }, 120_000);
 });
 
@@ -141,6 +147,22 @@ describe("a Run while the sample data is showing", () => {
     session.controller.request("check");
     await tick(20);
     expect(filesOf(sent[0])).toEqual(["mine.zip"]);
+    session.reset();
+  });
+
+  it("gives a command that saves files the extractable sample, and one that only reads the declared-size sample", async () => {
+    const asked: string[] = [];
+    const { session } = recordingSession((spec) => {
+      asked.push(spec.id);
+      return [{ name: SAMPLE_ZIP_NAME, blob: new Blob(["z"]) }];
+    });
+    session.sampleMode(true);
+    for (const id of ["memories-rescue", "check", "storage", "memories-rescue"] as const) {
+      session.controller.request(id);
+      await tick(20);
+      session.controller.close(id);
+    }
+    expect(asked).toEqual(["memories-rescue", "check"]);
     session.reset();
   });
 
