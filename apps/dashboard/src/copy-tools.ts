@@ -28,8 +28,8 @@ export const cliTool = {
 };
 
 export const commandNotes = {
-  /** Under a command block on a page whose controls change the result: the command cannot read those controls. */
-  defaultView: "The command shows the default view.",
+  /** Under a command block on a page whose controls change the result: the command cannot read those controls, and it uses UTC and the real clock where the page uses this device's zone. */
+  defaultView: "The command shows the default view, in UTC with today’s date.",
   /** Under a command that cannot run here, because it reads a folder or a file this page cannot open. */
   needsTerminal: "This needs a terminal.",
   /** The name of the command text while it scrolls sideways and can be focused. */

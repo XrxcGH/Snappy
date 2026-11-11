@@ -101,6 +101,11 @@ describe("the Cleanup page's command", () => {
     expect(textOf(root)).toContain(lists.previewNote);
   });
 
+  it("does not call the command the same search, since it reads only the latest export", () => {
+    expect(lists.previewNote).not.toMatch(/same/i);
+    expect(lists.previewNote).toMatch(/latest export/);
+  });
+
   it("has no command block before there is an export", () => {
     const { root } = mount(views.cleanup!, initialState());
     expect(all(root, ".command")).toHaveLength(0);

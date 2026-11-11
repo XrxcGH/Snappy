@@ -78,7 +78,7 @@ export const lists = {
   // The warning above the Cleanup rows: short enough for one line in a notice at the page's text width.
   removalNote: "Removing a friend cannot be undone. Any streak ends.",
   // The command that finds the same people without saving anything, shown under the queue.
-  previewNote: "The same search, without saving anything to your history.",
+  previewNote: "A search of the latest export that saves nothing to your history.",
 
   // Memories rescue, in the desktop app, where Run holds only a small test.
   rescueLimitNote: (mb: number) => `Run copies a small test here, up to ${mb} MB. A full rescue needs the command line tool.`,

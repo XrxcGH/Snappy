@@ -401,4 +401,9 @@ describe("the note under a command block", () => {
     expect(kids.indexOf("note")).toBe(kids.indexOf("pre") + 1);
     expect(render(view({ command: "check" }), sample).root.querySelectorAll(".command-note")).toHaveLength(0);
   });
+
+  it("says what differs from the page: the command runs in UTC and with the real date", () => {
+    expect(commandNotes.defaultView).toMatch(/UTC/);
+    expect(commandNotes.defaultView).toMatch(/today’s date/);
+  });
 });
