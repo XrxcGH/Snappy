@@ -160,6 +160,34 @@ export function checkResult(status: UpdateStatus): "upToDate" | "unreachable" | 
   return UNREACHABLE.includes(status.error) ? "unreachable" : "couldNotCheck";
 }
 
+/** A request ("Check now", "Update now") is shown as under way until the shell is seen working on it, or this long has passed. */
+export const PENDING_MS = 5000;
+/** The shortest time a request is shown as under way. After it, a shell that is idle again has already finished. */
+export const PENDING_MIN_MS = 600;
+
+/**
+ * A request the person made that the shell has not visibly taken up yet. The shell does its work on another thread, so right
+ * after the request it can still say "idle". The request stays pending until the shell was seen working and is done, or its
+ * "last checked" time moved, or the shell is idle after a short minimum (a check that fails at once is never seen working and
+ * moves nothing), or a few seconds passed as the last resort (a refused check).
+ */
+export interface Pending {
+  until: number;
+  minUntil: number;
+  sawBusy: boolean;
+  last: number;
+}
+
+export const startPending = (status: UpdateStatus | null, now: number = Date.now()): Pending => ({ until: now + PENDING_MS, minUntil: now + PENDING_MIN_MS, sawBusy: false, last: status?.lastCheckedUnix ?? 0 });
+
+export function settle(pending: Pending | null, status: UpdateStatus, now: number = Date.now()): Pending | null {
+  if (!pending) return null;
+  const busy = status.state === "checking" || status.state === "downloading" || status.state === "installing";
+  if (busy) pending.sawBusy = true;
+  const done = (pending.sawBusy && !busy) || status.lastCheckedUnix !== pending.last || (!busy && now >= pending.minUntil) || now >= pending.until;
+  return done ? null : pending;
+}
+
 /** Pages where nothing of the person's is in progress. Any other page may hold results, a running command or a passphrase prompt. */
 const QUIET_ROUTES = new Set(["", "#", "#/", "#/start", "#/privacy", "#/settings"]);
 

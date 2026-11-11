@@ -6,7 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { RULES, collectCopy, lint } from "../../dashboard/test/copy-rules.ts";
 import { updateCopy } from "../src/update-copy.ts";
-import { bannerFor, checkResult, freshLocal, pageIsIdle, sanitizeStatus } from "../src/update-model.ts";
+import { PENDING_MIN_MS, PENDING_MS, bannerFor, checkResult, freshLocal, pageIsIdle, sanitizeStatus, settle, startPending } from "../src/update-model.ts";
 import type { Local, UpdateStatus } from "../src/update-model.ts";
 
 const raw = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
@@ -154,5 +154,28 @@ describe("the update words", () => {
     expect(updateCopy.privacyBody).toMatch(/GitHub can see your IP address, the time, and that a Snappy app asked/);
     expect(updateCopy.privacyBody).not.toMatch(/sends nothing about you/i);
     expect(updateCopy.firstRunNotice).toBe("Snappy checks GitHub for updates when it opens. Change this in Settings.");
+  });
+});
+
+describe("how long a request is shown as under way", () => {
+  it("ends soon after a check that failed at once and was never seen working", () => {
+    const failed = status({ error: "offline" });
+    const pending = startPending(status(), 1000);
+    expect(settle(pending, failed, 1000 + PENDING_MIN_MS - 1)).toBe(pending); // not before the short minimum
+    expect(settle(pending, failed, 1000 + PENDING_MIN_MS)).toBeNull();
+    expect(PENDING_MIN_MS).toBeLessThanOrEqual(600);
+    expect(PENDING_MIN_MS).toBeLessThan(PENDING_MS);
+  });
+
+  it("keeps waiting while the shell is busy, and ends when it is done", () => {
+    const pending = startPending(status(), 0);
+    expect(settle(pending, status({ state: "checking" }), PENDING_MIN_MS + 1000)).toBe(pending);
+    expect(pending.sawBusy).toBe(true);
+    expect(settle(pending, status(), PENDING_MIN_MS + 1100)).toBeNull();
+  });
+
+  it("ends when the last checked time moved, and always by the last resort", () => {
+    expect(settle(startPending(status(), 0), status({ last_checked_unix: 5 }), 10)).toBeNull();
+    expect(settle(startPending(status(), 0), status({ state: "checking" }), PENDING_MS)).toBeNull();
   });
 });

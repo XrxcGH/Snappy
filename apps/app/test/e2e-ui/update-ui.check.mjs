@@ -335,11 +335,11 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   ok((await banner(failed)).includes("Update ready."), "a failed banner's Update now also ends on the new state", await banner(failed));
   await failed.context().close();
 
-  // Check now: a shell that only reports "checking" 700 ms after the request, and ends with an error.
+  // Check now: a shell that only reports "checking" 450 ms after the request, and ends with an error.
   const card = await open({}, { hash: "#/settings" });
   await card.evaluate(() => {
     window.__shell.afterCheck = (s) => {
-      setTimeout(() => (s.status.state = "checking"), 700);
+      setTimeout(() => (s.status.state = "checking"), 450);
       setTimeout(() => Object.assign(s.status, { state: "idle", error: "offline" }), 1900);
     };
   });

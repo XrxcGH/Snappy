@@ -18,8 +18,8 @@ import { h, setVar } from "../../dashboard/src/dom.ts";
 import { announce } from "../../dashboard/src/announce.ts";
 import { updateCopy as copy } from "./update-copy.ts";
 import { updateA11yCopy as spoken } from "./update-copy-a11y.ts";
-import { actionAriaLabel, bannerFor, bannerSignature, checkResult, crossedHalfway, freshLocal, isQuietRoute, pageIsIdle, sanitizeStatus } from "./update-model.ts";
-import type { Banner, BannerAction, UpdateStatus } from "./update-model.ts";
+import { actionAriaLabel, bannerFor, bannerSignature, checkResult, crossedHalfway, freshLocal, isQuietRoute, pageIsIdle, sanitizeStatus, settle, startPending } from "./update-model.ts";
+import type { Banner, BannerAction, Pending, UpdateStatus } from "./update-model.ts";
 
 /** The shell's `invoke`, narrowed to what is used here (and replaceable in tests). */
 export type Invoke = (command: string, args?: Record<string, unknown>) => Promise<unknown>;
@@ -64,30 +64,7 @@ const POLL_BUSY_MS = 1000;
 const POLL_LAUNCH_MS = 5000;
 const POLL_LAUNCH_WINDOW_MS = 60_000;
 const UPDATED_TOAST_MS = 6000;
-/** A request ("Check now", "Update now") is shown as under way until the shell is seen working on it, or this long has passed. */
-const PENDING_MS = 5000;
 const POLL_PENDING_MS = 400;
-
-/**
- * A request the person made that the shell has not visibly taken up yet. The shell does its work on another thread, so right
- * after the request it can still say "idle". The request stays pending until the shell was seen working and is done, or
- * its "last checked" time moved, or a few seconds passed (a check that is refused or ends at once changes neither).
- */
-interface Pending {
-  until: number;
-  sawBusy: boolean;
-  last: number;
-}
-
-const startPending = (status: UpdateStatus | null): Pending => ({ until: Date.now() + PENDING_MS, sawBusy: false, last: status?.lastCheckedUnix ?? 0 });
-
-function settle(pending: Pending | null, status: UpdateStatus): Pending | null {
-  if (!pending) return null;
-  const busy = status.state === "checking" || status.state === "downloading" || status.state === "installing";
-  if (busy) pending.sawBusy = true;
-  const done = (pending.sawBusy && !busy) || status.lastCheckedUnix !== pending.last || Date.now() >= pending.until;
-  return done ? null : pending;
-}
 
 export interface Mounted {
   /** Asks the shell for its status and repaints. */
@@ -362,7 +339,7 @@ export function mountUpdates(bridge: Bridge): Mounted {
     if (next.updatedTo && !local.updatedFor) local = { ...local, updatedFor: next.updatedTo };
     if (checking) {
       // The shell may not have started yet ("idle" right after the request): the result is shown only once the shell was
-      // seen working and is done, or its "last checked" time moved, or a few seconds passed.
+      // seen working and is done, or its "last checked" time moved, or it is idle after a short minimum.
       checking = settle(checking, status);
       if (!checking) result = checkResult(status);
     }
