@@ -440,6 +440,8 @@ describe("exitLabel", () => {
     expect(label("inspect", ok(1))).toBe("Could not run");
     expect(label("inspect", ok(2))).toBe("Export has errors");
     expect(label("analyze-preview", ok(2))).toBe("Export has errors");
+    for (const id of ["check", "year-in-review", "since", "storage", "backup", "replies", "gaps"] as const) expect(label(id, ok(2))).toBe("Export has errors");
+    for (const id of ["help", "privacy", "ledger-status", "memories-preview", "rescue-manifest"] as const) expect(label(id, ok(2))).toBe("Could not run");
     expect(label("memories-rescue", ok(3))).toBe("Finished, some items failed");
     expect(label("memories-rescue", ok(2))).toBe("Could not run");
     expect(label("ledger-status", ok(3))).toBe("Could not run");

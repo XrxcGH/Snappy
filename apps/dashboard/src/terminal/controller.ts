@@ -115,7 +115,8 @@ export function exitLabel(spec: CommandSpec, result: RunResult): string {
     case 0:
       return words.done;
     case 2:
-      return command === "analyze" || command === "inspect" ? words.exportErrors : words.couldNotRun;
+      // Every command that reads an export uses 2 for "the export has errors"; memories has no 2, and rescue's 2 can be its folder.
+      return spec.needsFile && command !== "memories" && command !== "rescue" ? words.exportErrors : words.couldNotRun;
     case 3:
       return command === "memories" ? words.someFailed : words.couldNotRun;
     default:
