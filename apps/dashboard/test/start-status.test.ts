@@ -118,6 +118,19 @@ describe("what a failure says", () => {
     expect(status.querySelectorAll("a").map((a) => a.getAttribute("href"))).toEqual(["#/guide"]);
   });
 
+  it("gives one line when the ZIP holds no Snapchat export files", () => {
+    const { view, store } = page();
+    const none = issue("error", "no-export-files", "No Snapchat export files were found in this ZIP file.");
+    const noFriends = issue("error", "no-friends-section", "This export has no friends list.");
+    const media = issue("info", "media-not-opened", "Snappy listed 1 media file by name and size only.");
+    store.dispatch({ type: "import-failed", message: start.rejected, issues: [media, none, noFriends] });
+    const status = view.querySelector(".import-status") as FakeElement;
+    expect(status.textContent).toContain(none.message);
+    expect(status.textContent).not.toContain(start.rejected);
+    expect(status.textContent).not.toContain(media.message);
+    expect(status.querySelectorAll(".notice")).toHaveLength(1);
+  });
+
   it("keeps the headline and every note when the files were read but the export is incomplete", () => {
     const { view, store } = page();
     const empty = issue("error", "friends-empty-but-deleted", "The friends list is empty.");
