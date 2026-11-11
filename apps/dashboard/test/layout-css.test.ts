@@ -394,6 +394,8 @@ describe("the Cleanup lists at three across", () => {
     for (const list of [".candidate-list", ".guided-list"]) {
       // The two-across rule (an odd last card takes the row) has the same specificity, so a lone last card needs its own later rule.
       expect(xwide(`${list} > :last-child:nth-child(3n + 1)`)[0]?.body, `${list}: a lone last card says one column`).toMatch(/grid-column:\s*span 2/);
+      // An odd count that is a multiple of three (3, 9, 15...) also matches the odd rule, and its last card is the third of a full row.
+      expect(xwide(`${list} > :last-child:nth-child(3n)`)[0]?.body, `${list}: the third card of a full row stays one column`).toMatch(/grid-column:\s*span 2/);
     }
     const wide = rules.filter((r) => /^\.(?:candidate|guided)-list > /.test(r.selector) && r.media.some((q) => /min-width:\s*100rem/.test(q)));
     expect(wide.filter((r) => /grid-column:\s*1\s*\/\s*-1/.test(r.body))).toEqual([]);

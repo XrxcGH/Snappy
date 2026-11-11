@@ -844,6 +844,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
     .candidate-list > :nth-child(n), .guided-list > :nth-child(n) { grid-column: span 2; }
     /* The two-across rule above gives an odd last card the whole row with the same weight, so a lone last card says its one column here. */
     .candidate-list > :last-child:nth-child(3n + 1), .guided-list > :last-child:nth-child(3n + 1) { grid-column: span 2; }
+    .candidate-list > :last-child:nth-child(3n), .guided-list > :last-child:nth-child(3n) { grid-column: span 2; } /* an odd count in the threes: the last card ends a full row */
     .candidate-list > :nth-last-child(2):nth-child(3n + 1), .guided-list > :nth-last-child(2):nth-child(3n + 1),
     .candidate-list > :last-child:nth-child(3n + 2), .guided-list > :last-child:nth-child(3n + 2) { grid-column: span 3; }
   }
