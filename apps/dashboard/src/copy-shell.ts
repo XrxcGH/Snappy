@@ -60,7 +60,7 @@ export const shellCopy = {
   fileChosenNote: "A file is chosen. Enter its passphrase to open it.",
   fileOpenButton: "Open history file",
   fileCancelButton: "Cancel",
-  fileOpenedAnnounce: "History file opened.",
+  fileOpened: (added: number) => (added === 0 ? "History file opened. Nothing new to add." : `History file opened. ${added} ${added === 1 ? "export" : "exports"} added.`),
   fileWrongNote: "That passphrase did not open the file, or it is not a Snappy history file.",
   fileUnreadableNote: "Snappy could not read that file. A different version may have made it.",
   fileTooBigNote: "That file is too big to be a Snappy history file.",

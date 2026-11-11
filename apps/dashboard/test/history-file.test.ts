@@ -190,7 +190,9 @@ describe("Settings", () => {
     submit(form, PASS);
     await vi.waitFor(() => expect(store.get().real.ledger.snapshots.map((s) => s.id)).toEqual(["a", "b", "c"]), { timeout: 20_000 });
     expect(store.get().real.allowlist).toEqual(["theirs"]);
-    expect(announce).toHaveBeenCalledWith(shellCopy.fileOpenedAnnounce);
+    expect(announce).toHaveBeenCalledWith(shellCopy.fileOpened(2));
+    // The form is gone, so a visible note says it worked and how many exports it added.
+    expect(root.querySelectorAll(".toast")[0]?.textContent).toBe(shellCopy.fileOpened(2));
     // The section is drawn again with its two buttons back, and the Saved history card lists all three.
     expect(root.textContent).toContain(shellCopy.fileChooseButton);
     expect(root.querySelectorAll("li.history-row")).toHaveLength(3);

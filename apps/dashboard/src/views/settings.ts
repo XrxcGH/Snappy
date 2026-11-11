@@ -17,6 +17,7 @@ import { icon } from "../components/icon.ts";
 import { columns, detailsBody, disclosureSummary, pageHeader, section, subsection } from "../components/layout.ts";
 import { copyTextButton } from "../components/listActions.ts";
 import { notice } from "../components/notice.ts";
+import { showNote, toastHost } from "../components/toast.ts";
 import { platform } from "../platform.ts";
 import { passphraseForm } from "../components/passphraseForm.ts";
 import { region } from "../reactive.ts";
@@ -27,6 +28,7 @@ export const settingsView: View = (ctx) =>
     "div",
     { class: "view" },
     pageHeader(routes.settings.title, undefined, { icon: "settings" }),
+    toastHost(),
     columns(themeSection(ctx), region(ctx.store, (s) => [s.vault], (s) => storageSection(ctx, s), { className: "region region-section" }), historySection(ctx), historyFileSection(ctx), helpSection(ctx), aboutSection()),
   );
 
@@ -262,9 +264,11 @@ function historyFileSection(ctx: ViewContext): HTMLElement {
                     const bytes = await buildHistoryFile(ctx.store.get().real, pass);
                     const saved = saveBlob(HISTORY_FILE_NAME, new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" }));
                     announce(saved ? shellCopy.fileSavedAnnounce : shellCopy.fileSaveFailedNote, !saved);
+                    showNote(saved ? shellCopy.fileSavedAnnounce : shellCopy.fileSaveFailedNote, saved ? undefined : "error");
                     return saved;
                   } catch {
                     announce(shellCopy.fileSaveFailedNote, true);
+                    showNote(shellCopy.fileSaveFailedNote, "error");
                     return false;
                   }
                 },
@@ -311,8 +315,12 @@ function openFileBox(ctx: ViewContext): HTMLElement {
           return false;
         }
         // The browser's clock is only used when no export was read yet; see the reducer.
+        const before = ctx.store.get().real.ledger.snapshots.length;
         ctx.store.dispatch({ type: "history-merged", saved: result.saved, now: Date.now() });
-        announce(shellCopy.fileOpenedAnnounce);
+        // The form goes away, so the note is what says it worked and how many exports it brought.
+        const opened = shellCopy.fileOpened(ctx.store.get().real.ledger.snapshots.length - before);
+        announce(opened);
+        showNote(opened);
         showChoose(false);
         return true;
       },
