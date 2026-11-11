@@ -88,7 +88,8 @@ const HINTS_COLUMN = 5;
 /** The two dates are the first cells after the username. A date stays on one line, even in the fixed columns of a wide page. */
 const DATE_COLUMNS = 2;
 
-const cellClass = (i: number): string | undefined => (i === HINTS_COLUMN ? "cell-hints" : i < DATE_COLUMNS ? "cell-date" : undefined);
+/** Only a real date is held to one line: the sentence that stands in for a missing date is a plain string and may wrap. */
+const cellClass = (i: number, cell: TableCell): string | undefined => (i === HINTS_COLUMN ? "cell-hints" : i < DATE_COLUMNS && typeof cell !== "string" ? "cell-date" : undefined);
 
 const HEADERS = [copy.friendHeader, copy.addedHeader, copy.lastHeader, copy.totalHeader, copy.sentHeader, copy.receivedHeader, copy.hintsHeader];
 
@@ -111,7 +112,7 @@ function friendsTable(rows: readonly FriendRow[]): HTMLElement {
           "tbody",
           { role: "rowgroup" },
           ...rows.map((r) =>
-            h("tr", { role: "row" }, h("th", { scope: "row", role: "rowheader" }, usernameText(r.username)), ...cellsOf(r).map((cell, i) => h("td", { role: "cell", class: cellClass(i) }, ...cellNodes(cell)))),
+            h("tr", { role: "row" }, h("th", { scope: "row", role: "rowheader" }, usernameText(r.username)), ...cellsOf(r).map((cell, i) => h("td", { role: "cell", class: cellClass(i, cell) }, ...cellNodes(cell)))),
           ),
         ),
       ),

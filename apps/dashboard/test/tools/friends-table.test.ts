@@ -278,6 +278,17 @@ describe("the page", () => {
     expect(cellsOf(root, NAMES.fay)).toEqual([copy.noAddedCell, copy.noLastCell, copy.totalCell(0), copy.sentCell(0), copy.receivedCell(0), copy.noHintsCell]);
     for (const cell of root.querySelectorAll("tbody td")) expect(cell.textContent, "a cell with no words").toMatch(/[A-Za-z]{3,}|^-$/);
   });
+  it("holds only a real date to one line, so the sentence for a missing date may still wrap", async () => {
+    const { root } = await renderSettled(view, crafted());
+    const dateMarks = (name: string): boolean[] => {
+      const row = root.querySelectorAll("tbody tr").find((tr) => tr.textContent.includes(name)) as FakeElement;
+      return row.querySelectorAll("td").slice(0, 2).map((c) => c.classList.contains("cell-date"));
+    };
+    expect(dateMarks(NAMES.ann)).toEqual([true, true]);
+    expect(dateMarks(NAMES.eli)).toEqual([true, false]);
+    expect(dateMarks(NAMES.fay)).toEqual([false, false]);
+  });
+
 
   it("starts in username order with everyone showing, and a label for each control", async () => {
     const { root } = await renderSettled(view, crafted());
