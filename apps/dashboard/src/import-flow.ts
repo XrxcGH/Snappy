@@ -9,6 +9,7 @@ import { start } from "./copy.ts";
 import { startFlow } from "./copy-start.ts";
 import { folderFilesFromEntries, hasDataFiles } from "./folder-import.ts";
 import type { DirEntry, FolderFile } from "./folder-import.ts";
+import { spokenFailure } from "./issues.ts";
 import type { Store } from "./store.ts";
 import { navigate } from "./views/context.ts";
 
@@ -47,7 +48,7 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
     } else if (result === "busy") {
       announce(startFlow.busy);
     } else {
-      announce(s.import.message ?? start.readFailed, true);
+      announce(spokenFailure(s.import, start.readFailed), true);
     }
   };
 

@@ -5,6 +5,7 @@ import { failureClass, visibleIssues } from "@snappy-export/core";
 import { common, routes, settings, start } from "../copy.ts";
 import { startFlow } from "../copy-start.ts";
 import { formatDate } from "../format.ts";
+import { spokenFailure, unreadableIssues } from "../issues.ts";
 import { clearReloadNote, reloadNotePending } from "../unload-guard.ts";
 import { h } from "../dom.ts";
 import type { Child } from "../dom.ts";
@@ -368,7 +369,7 @@ function failureNotices(ctx: ViewContext, s: State): Child[] {
   const imp = s.import;
   const problems = visibleIssues(imp.issues ?? []);
   const help = h("p", {}, routeLink("guide", common.openGuide));
-  if (failureClass(problems) !== undefined) return [...problems.filter((i) => failureClass([i]) !== undefined).map(issueNotice), help];
+  if (failureClass(problems) !== undefined) return [...unreadableIssues(imp.issues).map(issueNotice), help];
   const lead = notice("error", imp.message ?? start.readFailed);
   // An empty friends list with removed friends may be a real list: with nothing saved to compare with, the person may go on.
   // With a saved history, or an earlier export this session, the refusal stands: a list that looks empty would make everyone vanish.
@@ -385,7 +386,7 @@ async function goOn(ctx: ViewContext): Promise<void> {
     announce(ctx.store.get().import.addedToHistory === false ? start.notAdded : start.readDone);
     navigate("overview");
   } else {
-    announce(ctx.store.get().import.message ?? start.readFailed, true);
+    announce(spokenFailure(ctx.store.get().import, start.readFailed), true);
   }
 }
 

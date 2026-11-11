@@ -69,3 +69,16 @@ describe("import progress is announced once", () => {
     expect(spoken.some((s) => s.text === start.readDone)).toBe(true);
   });
 });
+
+describe("a failure is spoken as it is shown", () => {
+  it("says the one cause on screen when a text file was renamed .zip", async () => {
+    const { flow, view } = page({ runImport: runImport });
+    await flow.files([new File([new TextEncoder().encode("this is not a zip file")], "export.zip", { type: "application/zip" })]);
+    const shown = (view.querySelector(".import-status") as FakeElement).querySelector(".notice")?.textContent ?? "";
+    const failures = spoken.filter((s) => s.assertive).map((s) => s.text);
+    expect(failures).toHaveLength(1);
+    expect(shown).toContain("could not read this file as a ZIP file");
+    expect(shown).toContain(failures.join(""));
+    expect(failures).not.toContain(start.rejected);
+  });
+});
