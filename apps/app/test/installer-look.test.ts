@@ -70,8 +70,30 @@ describe("the installer hook and language files", () => {
       .map((l) => l.trim())
       .filter((l) => l !== "" && !l.startsWith(";"));
 
-  it("leave the desktop shortcut tick box unticked, and do nothing else", () => {
-    expect(codeOf(hooks)).toEqual(["!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED"]);
+  it("leave the desktop shortcut tick box unticked, and add only the picture fitting file", () => {
+    expect(codeOf(hooks)).toEqual(["!define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED", '!include "${__FILEDIR__}\\pictures.nsh"']);
+  });
+
+  it("fit the wizard's pictures to their controls with smoothing on a scaled display, and keep the 1x pictures otherwise", () => {
+    const pictures = readFileSync(path.join(tauri, "installer", "pictures.nsh"), "utf8");
+    const code = codeOf(pictures).join("\n");
+    // It runs when the wizard opens, only above 96 dpi, from the two 3x files that are committed.
+    expect(code).toContain("!define MUI_CUSTOMFUNCTION_GUIINIT SnappyPictures");
+    expect(code).toContain("${If} $0 > 96");
+    for (const name of ["header-3x.bmp", "sidebar-3x.bmp"]) {
+      expect(code).toContain(`\${SNAPPY_PICTURES_DIR}\\${name}`);
+      expect(readFileSync(path.join(tauri, "installer", name)).length).toBeGreaterThan(1000);
+    }
+    // The shrink is a StretchBlt in HALFTONE mode (4) with the brush origin reset, not NSIS's pixel copy (COLORONCOLOR, 3).
+    expect(code).toContain("gdi32::SetStretchBltMode(p $snDstDc, i 4)");
+    expect(code).toContain("gdi32::SetBrushOrgEx(");
+    expect(code).toContain("gdi32::StretchBlt(");
+    // The header is handed over as a branding image; the side picture replaces the file the Welcome and Finish pages load.
+    expect(code).toContain('SetBrandingImage /IMGID=1046 /RESIZETOFIT "$PLUGINSDIR\\snappy-header.bmp"');
+    expect(code).toContain('"$PLUGINSDIR\\modern-wizard.bmp"');
+    // The control sizes come from the wizard itself, not from a table of display scales.
+    expect(code).toContain("user32::GetClientRect(p r1, @ r2)");
+    expect(code).toContain("user32::MapDialogRect(p $HWNDPARENT, p r2)");
   });
 
   it("change one line of the uninstaller's wording, the tick box that deletes the saved data", () => {
