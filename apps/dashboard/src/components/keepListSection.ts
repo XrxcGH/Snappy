@@ -34,7 +34,7 @@ export function keepKeyFrom(typed: string): string | null {
 /** What to tell someone whose username was refused: too long, or not one plain username. Null when it is accepted. */
 export function keepErrorFor(typed: string): string | null {
   if (keepKeyFrom(typed) !== null) return null;
-  return typed.trim().replace(/^@/, "").length > MAX_USERNAME ? lists.keepAddTooLong : lists.keepAddError;
+  return typed.trim().replace(/^@/, "").toLowerCase().length > MAX_USERNAME ? lists.keepAddTooLong : lists.keepAddError;
 }
 
 export function keepListSection(actions: Pick<Actions, "keep" | "unkeep">, allowlist: readonly string[]): HTMLElement {

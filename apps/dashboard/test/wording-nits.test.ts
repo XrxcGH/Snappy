@@ -25,7 +25,7 @@ describe("counts", () => {
   });
 
   it("says what the kept toast counts, as a sentence", () => {
-    expect(lists.keptCount(2)).toBe("2 people are on your keep list.");
+    expect(lists.keptCount(2)).toBe("2 people added to your keep list.");
   });
 
   it("counts the Disappeared list and keeps the order, like the other two lists", () => {
@@ -49,6 +49,8 @@ describe("keepErrorFor", () => {
     expect(keepErrorFor("two names")).toBe(lists.keepAddError);
     expect(keepErrorFor("")).toBe(lists.keepAddError);
     expect(keepErrorFor("amy")).toBeNull();
+    // The length is measured after lower-casing, like the key itself ("İ" lower-cases to two characters).
+    expect(keepErrorFor("İ".repeat(33))).toBe(lists.keepAddTooLong);
     expect(lists.keepAddTooLong).not.toBe(lists.keepAddError);
   });
 });

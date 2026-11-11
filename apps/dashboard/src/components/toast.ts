@@ -2,7 +2,7 @@
  * A small confirmation, shown after Keep with one action ("ghost_5 is on your keep list. Undo") or alone after a copy,
  * a save or opening a file ("List copied.", or an error such as "Snappy could not copy..."). One toast at a time,
  * for eight seconds, paused while the pointer or keyboard focus is on it. A second Keep inside that time replaces it
- * and counts up ("3 kept."), and Undo then takes back the latest one only. The toast is for the eyes and the pointer:
+ * and counts up ("3 people added to your keep list."), and Undo then takes back the latest one only. The toast is for the eyes and the pointer:
  * the same sentence is spoken through the polite live region by whoever shows it, so this element is not a live
  * region and nothing is read twice. Usernames reach it as text, only through displayUsername, and never the title.
  *

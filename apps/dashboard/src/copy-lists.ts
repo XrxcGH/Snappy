@@ -12,10 +12,10 @@ export const lists = {
   copyUsernameButton: "Copy username",
   guidedNoteNoLinks: "Go one person at a time. Copy each username, find them in Snapchat, remove them if you want, then mark Done.",
 
-  // The toast after Keep. The sentence for one person is common.kept; a second Keep in the same eight seconds counts up.
+  // The toast after Keep. The sentence for one person is common.kept; a second Keep in the same eight seconds counts the people added in that time.
   toastLabel: "Keep list update",
   undoButton: "Undo",
-  keptCount: (n: number) => `${formatCount(n)} people are on your keep list.`,
+  keptCount: (n: number) => `${formatCount(n)} people added to your keep list.`,
   /** The queue's summary line, with how many people are on the keep list: "43 people to review, 1 kept". */
   summaryKept: (summary: string, kept: number) => `${summary}, ${kept} kept`,
 
