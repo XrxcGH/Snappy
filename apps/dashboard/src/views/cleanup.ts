@@ -15,7 +15,7 @@ import { categoryOfCandidate, categoryTag } from "../components/category.ts";
 import { confidenceBadge } from "../components/confidenceBadge.ts";
 import { icon } from "../components/icon.ts";
 import { keepListSection } from "../components/keepListSection.ts";
-import { listActions } from "../components/listActions.ts";
+import { listActions, say } from "../components/listActions.ts";
 import { disclosureSummary, emptyState, pageHeader, section, slideIn } from "../components/layout.ts";
 import { notice } from "../components/notice.ts";
 import { pagedList, resetPaging } from "../components/pagedList.ts";
@@ -259,7 +259,7 @@ function copyUsernameLabeled(username: string): HTMLButtonElement {
     ariaLabel: common.copyUsername(user),
     icon: "copy",
     key: `copy:${username}`,
-    onclick: () => void copyText(username).then((ok) => announce(ok ? common.copiedUsername(user) : common.copyFailed)),
+    onclick: () => void copyText(username).then((ok) => say(ok, common.copiedUsername(user), common.copyFailed)),
   });
 }
 

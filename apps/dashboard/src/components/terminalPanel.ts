@@ -13,6 +13,7 @@ import type { TerminalSession } from "../terminal/session.ts";
 import { button } from "./button.ts";
 import { confirmCard } from "./confirmCard.ts";
 import { icon } from "./icon.ts";
+import { say } from "./listActions.ts";
 import type { IconName } from "./icon.ts";
 import { notice } from "./notice.ts";
 import { outFiles } from "./outFiles.ts";
@@ -189,7 +190,7 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
           icon: "copy",
           variant: "secondary",
           key: `${options.key}:copy-output`,
-          onclick: () => void copyText(view.plainText()).then((ok) => announce(ok ? terminal.copiedOutputAnnounce : common.copyFailed)),
+          onclick: () => void copyText(view.plainText()).then((ok) => say(ok, terminal.copiedOutputAnnounce, common.copyFailed)),
         });
         const close = button({
           label: terminal.closeButton,

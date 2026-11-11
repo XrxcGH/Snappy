@@ -8,6 +8,7 @@ import type { CommandId } from "../terminal/commands.ts";
 import type { RunResult } from "../terminal/run-types.ts";
 import type { TerminalSession } from "../terminal/session.ts";
 import { button } from "./button.ts";
+import { showNote } from "./toast.ts";
 
 /** The first files are listed one by one; the rest are counted. */
 export const LISTED_FILES = 50;
@@ -35,8 +36,11 @@ export function outFiles(session: TerminalSession, options: OutFilesOptions): HT
   const problem = h("p", { class: "field-error", role: "status" });
   const report = (result: SaveResult): void => {
     problem.textContent = result === "too-big" ? terminal.outTooBigNote : result === "failed" ? terminal.outSaveFailedNote : "";
-    if (result === "saved") announce(terminal.outSavedAnnounce);
-    else announce(problem.textContent, true);
+    // A failure is already written on the page, under the buttons; a save gets the same note as every other save.
+    if (result === "saved") {
+      announce(terminal.outSavedAnnounce);
+      showNote(terminal.outSavedAnnounce);
+    } else announce(problem.textContent, true);
   };
 
   const rows = files.slice(0, LISTED_FILES).map((file, i) =>

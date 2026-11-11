@@ -10,6 +10,7 @@ import type { ViewContext } from "../views/context.ts";
 import { button } from "./button.ts";
 import { scrollRegion } from "./dataTable.ts";
 import { fileChip } from "./fileChip.ts";
+import { say } from "./listActions.ts";
 import { terminalPanel } from "./terminalPanel.ts";
 
 export interface CommandBlockOptions {
@@ -107,7 +108,7 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
     variant: "secondary",
     ariaLabel: terminal.copyFor(spec.title),
     key: `${options.key}:copy`,
-    onclick: () => void copyText(text).then((ok) => announce(ok ? terminal.copiedCommandAnnounce : common.copyFailed)),
+    onclick: () => void copyText(text).then((ok) => say(ok, terminal.copiedCommandAnnounce, common.copyFailed)),
   });
 
   update();
@@ -148,7 +149,7 @@ function copyOnlyBlock(id: CommandId, options: CommandBlockOptions): HTMLElement
     variant: "secondary",
     ariaLabel: terminal.copyFor(title),
     key: `${options.key}:copy`,
-    onclick: () => void copyText(text).then((ok) => announce(ok ? terminal.copiedCommandAnnounce : common.copyFailed)),
+    onclick: () => void copyText(text).then((ok) => say(ok, terminal.copiedCommandAnnounce, common.copyFailed)),
   });
   return h(
     "div",
