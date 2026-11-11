@@ -20,6 +20,7 @@ import { copy } from "../../src/tools/privacy-tuneup/copy.ts";
 import { descriptor } from "../../src/tools/privacy-tuneup/index.ts";
 import { applyMarks, computePrivacyTuneup } from "../../src/tools/privacy-tuneup/model.ts";
 import { view } from "../../src/tools/privacy-tuneup/view.ts";
+import { copy as safetyCopy } from "../../src/tools/safety-checklist/copy.ts";
 import { collectCopy, lint, RULES } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
 import { installFakeDom } from "../fake-dom.ts";
@@ -236,6 +237,13 @@ describe("the copy", () => {
     expect(all).not.toMatch(/\b(tick|ticked|ticks|verified|checked for you|unfriended|purge|dormant|locally)\b/i);
     expect(copy.doneAnnounce(9)).toBe("Privacy tune-up ready. 9 settings to review.");
     expect(copy.progressText(2, 9)).toBe("2 of 9 marked done");
+  });
+
+  it("says the finished state like the safety checklist, and gives the percent tile its own label", () => {
+    expect(copy.progressText(9, 9)).toBe("All 9 marked done");
+    expect(copy.progressText(9, 9).replace("9", "7")).toBe(safetyCopy.progressText(7, 7));
+    expect(copy.percentHeader).not.toBe(copy.meterName);
+    expect(copy.percentHeader).not.toBe(copy.progressHeading);
   });
 
   it("starts from a fresh state without a mark", () => {

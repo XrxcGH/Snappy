@@ -17,10 +17,10 @@ export const copy = {
   progressHeading: "Your progress",
   progressLabel: "Settings marked done",
   meterName: "Progress",
-  progressText: (done: number, total: number) => `${done} of ${total} marked done`,
+  progressText: (done: number, total: number) => (done === total ? `All ${total} marked done` : `${done} of ${total} marked done`),
   doneHeader: "Marked done",
   leftHeader: "Left to review",
-  percentHeader: "Progress",
+  percentHeader: "Percent done",
   unitOf: (done: number, total: number) => `${done} of ${total}`,
   unitPercent: (percent: number) => `${Math.round(percent)}%`,
 
