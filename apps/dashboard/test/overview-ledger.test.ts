@@ -40,6 +40,20 @@ describe("the Overview from a saved history", () => {
   });
 });
 
+describe("the Overview while the saved history is locked", () => {
+  it("says the history is locked and offers Unlock, not Add export", () => {
+    const base = initialState();
+    const locked: State = { ...base, vault: { ...base.vault, hasSaved: true, phase: "locked" } };
+    const { root } = mount(overviewView, locked);
+    const text = textOf(root);
+    expect(text).toContain(overview.lockedTitle);
+    expect(text).not.toContain(overview.emptyTitle);
+    const link = all(root, "a").find((a) => textOf(a) === overview.lockedAction);
+    expect(link?.getAttribute("href")).toBe("#/start");
+    expect(all(root, "a").some((a) => textOf(a) === overview.emptyAction)).toBe(false);
+  });
+});
+
 describe("the Overview from an export", () => {
   it("keeps the export's words when the export has no Memories", () => {
     const { root } = mount(overviewView, noMemories);
