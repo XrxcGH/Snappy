@@ -74,8 +74,9 @@ a change to `src-tauri/` or the frontend build, run these by hand on a test buil
    link differently from WebView2, and a blocked download would still read as saved. With a synthetic export loaded,
    press each of these and find the file in the Downloads folder, with the right name and the right content:
    Cleanup "Save list" (a spreadsheet file), Friends backup "Save JSON", the Export reminder's "Save calendar
-   file" (open the `.ics` in a calendar app), a Friends table "Save CSV", and, after `demo --run` on the Guide
-   page, one output file's "Save" and then "Save all" (a `.zip` that opens). If a file does not arrive, "Copy list" is
+   file" (open the `.ics` in a calendar app), a Friends table "Save CSV", and, on the Guide page, after
+   `memories` (Memories rescue) and "Save files" on a synthetic export, one output file's "Save" and then "Save all"
+   (a `.zip` that opens). `demo --run` makes no files. If a file does not arrive, "Copy list" is
    the fallback for the Cleanup list: say so in the report and do not call the build ready.
 7. Keyboard on macOS (Full Keyboard Access). WKWebView often skips buttons and links on Tab unless the system setting
    "Keyboard navigation" is on, or Option+Tab is used. With the setting off, press Tab from the top of the Start page and

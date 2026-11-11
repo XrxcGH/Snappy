@@ -46,6 +46,13 @@ describe("the checks that need the built program", () => {
     for (const label of ["Save list", "Save JSON", "Save calendar", "Save CSV", "Save all"]) expect(downloads).toContain(label);
   });
 
+  it("gets the Save all files from Memories rescue, which demo --run does not produce", () => {
+    const downloads = find(/Downloads, on Windows and on macOS/);
+    expect(downloads).toMatch(/Memories rescue/);
+    expect(downloads).toContain("Save files");
+    expect(downloads).not.toMatch(/after `demo --run`/);
+  });
+
   it("names Save and Download labels that exist in the dashboard", () => {
     const sources = [
       ["..", "dashboard", "src", "copy.ts"],
