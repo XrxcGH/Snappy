@@ -156,6 +156,14 @@ describe("findDormant", () => {
     expect(findDormant(p, { now: NOW })).toEqual(out);
   });
 
+  it("orders by longest silence when the score has saturated, then no-chat friends, then name", () => {
+    // 600+ days is past 3x the 180-day window, so every score ties; silence must still decide.
+    const friends = ["a", "b", "c", "d", "e", "f"].map((n) => friend(n, 3000));
+    const chats = [ev("a", 931), ev("b", 1509), ev("c", 1190), ev("d", 752), ev("e", 1496), OLD_ANCHOR];
+    const out = findDormant(exp(friends, chats), { now: NOW });
+    expect(out.map((c) => c.key)).toEqual(["b", "e", "c", "a", "d", "f"]);
+  });
+
   it("scales to 100k chat events and 5k friends", () => {
     const friends = Array.from({ length: 5000 }, (_, i) => friend(`f${i}`, 900));
     const chats: ChatEvent[] = [];

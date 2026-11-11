@@ -53,6 +53,7 @@ export function findDormant(parsed: ParsedExport, opts: { now: number; days?: nu
 
   const seen = new Set<string>();
   const out: Candidate[] = [];
+  const lastOf = new Map<Candidate, number>();
   for (const friend of parsed.friends.friends) {
     const key = normUser(friend.username);
     if (!key || seen.has(key)) continue;
@@ -61,10 +62,19 @@ export function findDormant(parsed: ParsedExport, opts: { now: number; days?: nu
     const last = lastEvent.get(key);
     if (last === undefined && !coversWindow) continue;
     const candidate = assess(friend, key, last, asOf, windowMs, days);
-    if (candidate) out.push(candidate);
+    if (!candidate) continue;
+    out.push(candidate);
+    if (last !== undefined) lastOf.set(candidate, last);
   }
 
-  return out.sort((a, b) => b.score - a.score || cmpKey(a.key, b.key));
+  // The silence weight saturates at 3x the window, so scores tie often. Break ties by the oldest
+  // last event (longest silence first), friends with no saved chats after those, then by name.
+  return out.sort(
+    (a, b) =>
+      b.score - a.score ||
+      (lastOf.get(a) ?? Infinity) - (lastOf.get(b) ?? Infinity) ||
+      cmpKey(a.key, b.key),
+  );
 }
 
 function assess(
