@@ -6,7 +6,7 @@ import { buildFixtureZip } from "../../../packages/core/test/export/zip-fixture.
 import { LATER, makeIo, run, stripPaths, tempDir, writeDemoPair } from "./helpers.ts";
 
 const enc = (v: unknown): Uint8Array => new TextEncoder().encode(JSON.stringify(v));
-const LEFT_OUT = /Left out on purpose: \d+ HTML, \d+ photo\/video\/audio and \d+ other files? \(not opened\)\./;
+const LEFT_OUT = /Left out on purpose: \d+ HTML, \d+ photo\/video\/audio and \d+ other files \(not opened\)\./;
 
 describe("snappy-export inspect", () => {
   it("prints the structure report with unknown keys masked, and never a value", async () => {
