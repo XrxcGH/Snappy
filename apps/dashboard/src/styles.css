@@ -525,6 +525,8 @@ img, svg { max-width: 100%; }
   border-radius: var(--radius-lg);
 }
 .candidate.bar-left, .guided-row.bar-left { padding-inline-start: var(--space-6); }
+/* A long queue holds hundreds of rows. Rows scrolled out of view skip layout and paint, so "Show more" costs about the same on page twelve as on page two. */
+.candidate-list > .candidate, .guided-list > .guided-row { content-visibility: auto; contain-intrinsic-size: auto 9rem; }
 /* Rows are focused after "Show more"; they keep the global focus ring so the position is visible. */
 .candidate-head, .guided-who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
 .candidate-evidence { overflow-wrap: anywhere; }

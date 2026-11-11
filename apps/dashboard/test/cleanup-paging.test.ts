@@ -3,6 +3,9 @@
  * of a press does not grow with the list), and a filter change goes back to the first page, as a search or an order does.
  * Synthetic data only.
  */
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { addSnapshot, bytesReader, emptyLedger, mergeParsedExports, parseExportFromReader, snapshotFromExport, syntheticExportZip } from "@snappy-export/core";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { common } from "../src/copy.ts";
@@ -63,5 +66,15 @@ describe("the Cleanup queue", () => {
     select.value = "ghost";
     select.fire("change");
     expect(queueRows(root)).toBeLessThanOrEqual(50);
+  });
+});
+
+describe("the stylesheet for a long queue", () => {
+  it("lets rows that are scrolled out of view skip layout and paint", () => {
+    const css = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const rule = /\.candidate-list > \.candidate, \.guided-list > \.guided-row \{([^}]*)\}/.exec(css);
+    expect(rule).not.toBeNull();
+    expect(rule![1]).toMatch(/content-visibility:\s*auto/);
+    expect(rule![1]).toMatch(/contain-intrinsic-size:\s*auto /);
   });
 });
