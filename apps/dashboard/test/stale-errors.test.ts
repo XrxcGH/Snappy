@@ -14,7 +14,7 @@ describe("messages that go away once the cause is fixed", () => {
   it("the passphrase form clears its message when either field changes", async () => {
     const { passphraseForm } = await import("../src/components/passphraseForm.ts");
     const form = runInScope(new Scope(true), () => passphraseForm({ mode: "set", submitLabel: "Save", busy: false, key: "t", onSubmit: async () => true })) as unknown as FakeElement;
-    const [a, b] = form.querySelectorAll("input") as FakeElement[];
+    const [a, b] = (form.querySelectorAll("input") as FakeElement[]).filter((i) => i.getAttribute("name") !== "username");
     const error = form.querySelector(".field-error") as FakeElement;
     const submit = (): void => form.fire("submit", { preventDefault: () => undefined });
     (a as FakeElement).value = "short";
