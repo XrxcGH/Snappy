@@ -82,7 +82,14 @@ export function listSearch(options: ListSearchOptions): HTMLElement {
   });
   clear.addEventListener("click", reset);
   showClear();
-  onDispose(() => clearTimeout(timer));
+  // A repaint of the page around the box (a filter changed) disposes this scope before the 120 ms are up. Keep what is
+  // typed, so the box that replaces this one reads it, rather than dropping it and bringing back the older search.
+  onDispose(() => {
+    if (timer === undefined) return;
+    clearTimeout(timer);
+    timer = undefined;
+    setSearchQuery(options.listKey, input.value);
+  });
 
   return h("div", { class: "field list-search" }, h("label", { class: "label", for: id }, lists.searchLabel), h("div", { class: "search-row" }, input, clear));
 }
