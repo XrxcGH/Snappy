@@ -12,7 +12,7 @@ const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url
 const block = /\/\* track T2 \*\/([\s\S]*?)\/\* end track T2 \*\//.exec(css)?.[1] ?? "";
 
 const remOf = (value: string): number => Number(/([\d.]+)rem/.exec(value)?.[1] ?? Number.NaN);
-const rule = (selector: string): string => new RegExp(`${selector.replace(/[.#]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(block)?.[1] ?? "";
+const rule = (selector: string): string => new RegExp(`${selector.replace(/[.#\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(block)?.[1] ?? "";
 
 describe("the Start page's block of the style sheet", () => {
   it("exists once, opened and closed", () => {

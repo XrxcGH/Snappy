@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(path.join(here, "..", "src", "update.css"), "utf8");
 const ui = readFileSync(path.join(here, "..", "src", "update-ui.ts"), "utf8");
-const rule = (selector: string): string => new RegExp(`(?:^|\\n)${selector.replace(/[.[\]:()*]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+const rule = (selector: string): string => new RegExp(`(?:^|\\n)${selector.replace(/[.[\]:()*\\]/g, "\\$&")}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
 
 describe("the update banner takes no room at the top of the page", () => {
   it("floats over the window, out of the flow, instead of sitting above the page heading", () => {

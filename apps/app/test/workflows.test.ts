@@ -365,7 +365,7 @@ describe("workflow trust boundaries (the real files)", () => {
   it("makes the owner the required reviewer of the files that pin the tool run with the signing passphrase", () => {
     const owners = readFileSync(path.join(repo, ".github", "CODEOWNERS"), "utf8");
     for (const file of ["/package.json", "/package-lock.json", "/apps/app/package.json", "/apps/app/tools/", "/apps/app/src-tauri/Cargo.lock"]) {
-      expect(owners, file).toMatch(new RegExp(`^${file.replace(/[./]/g, "\\$&")}\\s+@XrxcGH$`, "m"));
+      expect(owners, file).toMatch(new RegExp(`^${file.replace(/[./\\]/g, "\\$&")}\\s+@XrxcGH$`, "m"));
     }
   });
 
