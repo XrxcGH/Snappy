@@ -56,6 +56,16 @@ describe("runImport", () => {
     expect(new Set(progress.map((p) => p.steps))).toEqual(new Set([3]));
   });
 
+  it("does not say 100 percent until the last part is parsed, since the bytes are read before the parsing ends", async () => {
+    for (const blobs of [partFiles(2), [partFiles(2)[0] as File]]) {
+      const { progress } = await collect(blobs);
+      const last = progress[progress.length - 1] as ImportProgress;
+      expect(last.fraction).toBe(1);
+      expect(last.step).toBe(last.steps);
+      for (const p of progress.filter((q) => q.step < q.steps)) expect(Math.round((p.fraction as number) * 100)).toBeLessThan(100);
+    }
+  });
+
   it("reports at most one update per percent point, plus one per part", async () => {
     const { progress } = await collect(partFiles(2));
     // 101 percent points, 4 forced reports (three parts and the end): a loose upper bound.

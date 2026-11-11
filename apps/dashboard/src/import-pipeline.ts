@@ -81,6 +81,9 @@ function planOf(entries: readonly ZipEntryInfo[]): Plan {
 
 const overlap = (start: number, end: number, r: Range): number => Math.max(0, Math.min(end, r.end) - Math.max(start, r.start));
 
+/** The most the bar shows before the last part is parsed: reading the bytes is not the whole job. */
+const MOST_WHILE_READING = 0.99;
+
 export const runImport: ImportRunner = async (blobs, hooks) => {
   const now = hooks.now ?? ((): number => performance.now());
   const readers = blobs.map(blobReader);
@@ -101,7 +104,8 @@ export const runImport: ImportRunner = async (blobs, hooks) => {
   let lastPercent = -1;
   let lastYield = now();
   const report = (force: boolean): void => {
-    const fraction = total > 0 ? Math.min(1, done / total) : null;
+    // Every byte can be read while the last part is still being parsed, so 100% is kept for the end.
+    const fraction = total > 0 ? Math.min(step < readers.length ? MOST_WHILE_READING : 1, done / total) : null;
     const percent = fraction === null ? -1 : Math.floor(fraction * 100);
     if (!force && percent === lastPercent) return;
     lastPercent = percent;
