@@ -27,7 +27,7 @@ export const lists = {
   matchCount: (shown: number, total: number) => `${shown} of ${total} match`,
   noMatchSearch: "No one matches. Clear the search to see more.",
   sortLabel: "Sort",
-  sortOptions: { likely: "Most likely", newest: "Newest", oldest: "Oldest", confidence: "Confidence" },
+  sortOptions: { likely: "Most likely", newest: "Newest signal", oldest: "Oldest signal", confidence: "Confidence" },
   clearFiltersButton: "Clear filters",
 
   // The spreadsheet file each finding list saves, by the list's key ("ghost" is Disappeared friends, "one-way" Unaccepted requests, "dormant" Quiet friends).

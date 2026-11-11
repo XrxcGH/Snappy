@@ -150,6 +150,25 @@ describe("search on the Cleanup queue", () => {
     expect(clear.hasAttribute("hidden")).toBe(true);
   });
 
+  it("keeps a search that was just emptied empty when a filter changes before the box commits", () => {
+    const { root, actions } = mount(cleanupView, sample);
+    type(root, "zzz");
+    vi.advanceTimersByTime(120);
+    expect(rowNames(root)).toHaveLength(0);
+    // Delete the text, then change a filter inside the 120 ms: the repaint must not bring "zzz" back.
+    type(root, "");
+    actions.setCleanupView({ category: "ghost" });
+    vi.advanceTimersByTime(120);
+    expect(searchBox(root).value).toBe("");
+    expect(searchQuery("queue")).toBe("");
+    expect(rowNames(root).length).toBeGreaterThan(0);
+  });
+
+  it("names the date a newest or oldest sort uses, which the rows do not show", () => {
+    expect(lists.sortOptions.newest).toBe("Newest signal");
+    expect(lists.sortOptions.oldest).toBe("Oldest signal");
+  });
+
   it("brings everything back with Clear filters", () => {
     const { root, store } = mount(cleanupView, { ...sample, cleanup: { ...sample.cleanup, category: "dormant" } });
     type(root, "zzz");

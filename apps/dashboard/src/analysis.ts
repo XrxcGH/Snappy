@@ -177,7 +177,7 @@ export function filterCandidates(items: readonly Candidate[], filter: QueueFilte
   return items.filter((c) => (filter.category === "all" || c.category === filter.category) && (filter.confidence === "all" || c.confidence === filter.confidence) && matchesQuery(c.key, filter.query));
 }
 
-/** "likely" is the order the queue arrives in (highest score first). The others re-sort; ties keep that order. */
+/** "likely" is the order the queue arrives in (highest score first). The others re-sort; ties keep that order. Newest and oldest use the date of a person's latest signal, which the row does not show, so the menu says "signal". */
 export type QueueSort = "likely" | "newest" | "oldest" | "confidence";
 
 const CONFIDENCE_RANK: Record<Candidate["confidence"], number> = { high: 3, medium: 2, low: 1 };
