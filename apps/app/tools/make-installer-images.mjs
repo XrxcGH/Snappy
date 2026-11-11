@@ -1,13 +1,20 @@
 /**
- * Draws the two pictures of the Windows installer (the NSIS wizard) from the brand logo and tokens, and
- * writes them as 24-bit BMP files:
+ * Draws the pictures of the Windows installer (the NSIS wizard) from the brand logo and tokens, and writes
+ * them as 24-bit BMP files, each at two sizes:
  *
- *   header.bmp   150 x 57 px, the strip at the top of the inner wizard pages
- *   sidebar.bmp  164 x 314 px, the left side of the Welcome and Finish pages
+ *   header.bmp      150 x 57 px    the strip at the top of the inner wizard pages
+ *   sidebar.bmp     164 x 314 px   the left side of the Welcome and Finish pages
+ *   header-3x.bmp   450 x 171 px   the same picture drawn at three times the size
+ *   sidebar-3x.bmp  492 x 942 px
+ *
+ * The first two are what the wizard shows at 100% display scaling. NSIS stretches a bitmap to its control
+ * with a plain pixel copy (no smoothing), so on a scaled display installer/pictures.nsh shrinks the 3x files
+ * to the exact size of the control with a smoothing filter and hands that to the wizard (see docs/RELEASES.md).
  *
  * It needs nothing installed: it reads the mark's bars from brand/logo/snappy-mark.svg and the outlined
  * wordmark from brand/logo/snappy-wordmark.svg, the colors from brand/tokens/tokens.css, and draws them
- * itself (anti-aliased, four by four samples a pixel). The same files give the same bytes.
+ * itself (anti-aliased, eight by eight samples a pixel, from the exact outlines). The same files give the
+ * same bytes.
  *
  *   node apps/app/tools/make-installer-images.mjs [--out <folder>]    (default: apps/app/src-tauri/installer)
  *   node apps/app/tools/make-installer-images.mjs --check              (fails if the committed files differ)
@@ -39,8 +46,8 @@ const VIOLET_ON_DARK = token("brand-violet-on-dark");
 const WHITE = [255, 255, 255];
 
 // ---------- shapes ----------
-const ARC_STEPS = 12;
-const QUAD_STEPS = 8;
+const ARC_STEPS = 32;
+const QUAD_STEPS = 12;
 
 /** The mark: each bar as a pill (every rx in the file is half the bar's height), and whether it is the spine. */
 function markBars() {
@@ -110,7 +117,7 @@ function wordmarkPolygons() {
 const place = (polys, scale, dx, dy) => polys.map((p) => p.map(([x, y]) => [x * scale + dx, y * scale + dy]));
 
 // ---------- drawing ----------
-const SS = 4;
+const SS = 8;
 
 class Canvas {
   constructor(width, height, ground) {
@@ -122,7 +129,7 @@ class Canvas {
 
   /** Fills polygons (non-zero winding) in one color, anti-aliased by sampling. */
   fill(polys, color) {
-    const cov = new Float64Array(this.width * this.height);
+    const cov = new Float32Array(this.width * this.height);
     const edges = [];
     let top = Infinity;
     let bottom = -Infinity;
@@ -197,7 +204,11 @@ function drawMark(canvas, bars, x, y, scale, barColor, spineColor) {
 
 const markSize = (bars) => ({ w: Math.max(...bars.map((b) => b.x + b.w)) - Math.min(...bars.map((b) => b.x)), h: Math.max(...bars.map((b) => b.y + b.h)) - Math.min(...bars.map((b) => b.y)) });
 
-export function drawImages() {
+/**
+ * One scene at `k` times its nominal size. The layout is in whole nominal pixels, with the mark at a scale where each
+ * bar is a whole number of pixels, so at k = 1 the bars start and end on the pixel grid; k only multiplies it.
+ */
+function drawScene(k) {
   const bars = markBars();
   const word = wordmarkPolygons();
   const wordW = 162.54;
@@ -205,24 +216,28 @@ export function drawImages() {
   const m = markSize(bars);
 
   // Sidebar: the dark brand ground, the mark over the wordmark, and a violet edge at the foot.
-  const side = new Canvas(164, 314, INK);
-  const sMark = 1.7;
-  drawMark(side, bars, (164 - m.w * sMark) / 2, 78, sMark, BONE, VIOLET_ON_DARK);
-  const sWord = 0.62;
-  side.fill(place(word, sWord, (164 - wordW * sWord) / 2, 78 + m.h * sMark + 22), BONE);
-  side.fill([[[0, 308], [164, 308], [164, 314], [0, 314]]], VIOLET_ON_DARK);
+  const side = new Canvas(164 * k, 314 * k, INK);
+  const sMark = 1.75 * k; // 14 px bars, 21 px apart, at k = 1
+  drawMark(side, bars, 40 * k, 78 * k, sMark, BONE, VIOLET_ON_DARK);
+  const sWord = 0.62 * k;
+  side.fill(place(word, sWord, (164 * k - wordW * sWord) / 2, 198 * k), BONE);
+  side.fill([[[0, 308 * k], [164 * k, 308 * k], [164 * k, 314 * k], [0, 314 * k]]], VIOLET_ON_DARK);
 
   // Header: a white ground like the wizard page, the mark beside the wordmark, centered.
-  const head = new Canvas(150, 57, WHITE);
-  const hMark = 0.7;
-  const hWord = 0.42;
-  const gap = 9;
-  const total = m.w * hMark + gap + wordW * hWord;
-  const x0 = (150 - total) / 2;
-  drawMark(head, bars, x0, (57 - m.h * hMark) / 2, hMark, INK, VIOLET);
-  head.fill(place(word, hWord, x0 + m.w * hMark + gap, (57 - wordH * hWord) / 2), INK);
+  const head = new Canvas(150 * k, 57 * k, WHITE);
+  const hMark = 0.75 * k; // 6 px bars, 9 px apart, at k = 1
+  const hWord = 0.42 * k;
+  const x0 = 18 * k;
+  drawMark(head, bars, x0, 7 * k, hMark, INK, VIOLET);
+  head.fill(place(word, hWord, x0 + m.w * hMark + 9 * k, 20 * k), INK);
 
-  return { "header.bmp": head.bmp(), "sidebar.bmp": side.bmp() };
+  return { header: head.bmp(), sidebar: side.bmp() };
+}
+
+export function drawImages() {
+  const one = drawScene(1);
+  const three = drawScene(3);
+  return { "header.bmp": one.header, "sidebar.bmp": one.sidebar, "header-3x.bmp": three.header, "sidebar-3x.bmp": three.sidebar };
 }
 
 function main() {

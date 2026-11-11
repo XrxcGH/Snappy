@@ -32,6 +32,15 @@ describe("the wizard pictures", () => {
     expect(side.size).toBe(side.bytes);
   });
 
+  it("also come at three times the size, which the installer shrinks to the wizard's own size on a scaled display", () => {
+    for (const [name, w, h] of [["header-3x.bmp", 450, 171], ["sidebar-3x.bmp", 492, 942]] as const) {
+      const d = dims(path.join(tauri, "installer", name));
+      expect(d, name).toMatchObject({ magic: "BM", w, h, bits: 24 });
+      expect(d.size, name).toBe(d.bytes);
+      expect(readFileSync(path.join(tauri, "installer", name)).readUInt32LE(30), `${name} is not compressed`).toBe(0);
+    }
+  });
+
   it("are what the script draws now, so a logo or token change cannot leave them behind", () => {
     expect(() => execFileSync(process.execPath, [script, "--check"], { stdio: "pipe" })).not.toThrow();
   });
@@ -42,7 +51,7 @@ describe("the wizard pictures", () => {
     try {
       execFileSync(process.execPath, [script, "--out", a], { stdio: "pipe" });
       execFileSync(process.execPath, [script, "--out", b], { stdio: "pipe" });
-      for (const name of ["header.bmp", "sidebar.bmp"]) {
+      for (const name of ["header.bmp", "sidebar.bmp", "header-3x.bmp", "sidebar-3x.bmp"]) {
         expect(readFileSync(path.join(a, name)).equals(readFileSync(path.join(b, name))), name).toBe(true);
         expect(readFileSync(path.join(a, name)).equals(readFileSync(path.join(tauri, "installer", name))), name).toBe(true);
       }
