@@ -50,6 +50,20 @@ export function peopleByChange(r: SinceLastExport): Record<ChangeKind, SincePers
   };
 }
 
+/** What the person chose on the page: the saved export to compare with, or null for the latest one before this export. */
+export interface SinceParams {
+  previousId: string | null;
+}
+export const DEFAULT_PARAMS: SinceParams = { previousId: null };
+
+/** The saved exports a person may pick from: every one except the snapshot of this very export, newest first. Empty when saving is off. */
+export function pickableSnapshots(data: ToolData): Snapshot[] {
+  const { parsed } = data;
+  if (parsed === null || !data.savedHistory) return [];
+  const current = snapshotFromExport(parsed, { takenAt: parsed.exportedAt ?? data.now });
+  return data.ledger.snapshots.filter((s) => s.id !== current.id && Number.isFinite(s.takenAt)).sort((a, b) => b.takenAt - a.takenAt);
+}
+
 /** True when two exports were compared. */
 export const isComparable = (r: SinceResult): boolean => r.result.comparable;
 
@@ -71,13 +85,15 @@ export function choosePrevious(snapshots: readonly Snapshot[], current: Snapshot
   return previous ?? nearestNewer;
 }
 
-export function computeSinceLastExport(data: ToolData): SinceResult {
+export function computeSinceLastExport(data: ToolData, params: SinceParams = DEFAULT_PARAMS): SinceResult {
   const { parsed } = data;
   if (parsed === null) throw new Error("needs an export");
   const takenAt = parsed.exportedAt ?? data.now;
   const current = snapshotFromExport(parsed, { takenAt });
   // Only really saved exports count. With saving off the ledger holds this session's own imports, which are not history.
-  const previous = data.savedHistory ? choosePrevious(data.ledger.snapshots, current) : undefined;
+  // A chosen export that is no longer in the history (deleted since) is ignored, and the default one is used.
+  const picked = params.previousId === null ? undefined : pickableSnapshots(data).find((s) => s.id === params.previousId);
+  const previous = picked ?? (data.savedHistory ? choosePrevious(data.ledger.snapshots, current) : undefined);
   const result = insights.sinceLastExport.sinceLastExport({
     ...(previous !== undefined && { previous }),
     current,

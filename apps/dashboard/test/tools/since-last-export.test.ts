@@ -12,11 +12,11 @@ import { COMMANDS, displayText } from "../../src/terminal/commands.ts";
 import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/since-last-export/copy.ts";
 import { descriptor } from "../../src/tools/since-last-export/index.ts";
-import { choosePrevious, computeSinceLastExport, csvFileName, csvRows, peopleByChange } from "../../src/tools/since-last-export/model.ts";
+import { choosePrevious, computeSinceLastExport, csvFileName, csvRows, peopleByChange, pickableSnapshots } from "../../src/tools/since-last-export/model.ts";
 import { view } from "../../src/tools/since-last-export/view.ts";
 import { RULES, collectCopy, lint, useNames } from "../copy-rules.ts";
 import type { FakeElement } from "../fake-dom.ts";
-import { emptyState, render, renderSettled, sampleState, sampleWorkspace, stateWith } from "./harness.ts";
+import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
 const said: string[] = [];
 const saved: { fileName: string; text: string; mime: string }[] = [];
@@ -405,6 +405,68 @@ describe("without an export", () => {
 
   it("says a friends list is missing when the export has none", () => {
     expect(text(render(view, real({ friends: [] })).root, ".empty-title")).toEqual([tools.needs.friendsTitle]);
+  });
+});
+
+describe("choosing an older saved export", () => {
+  const OLD_AT = at(2026, 1, 1);
+  const threeSaved = () => ledgerOf(snapshot("old", OLD_AT, ["a", "z"]), snapshot("p", PREVIOUS_AT, ["a", "b", "c"], ["r1", "r2"]));
+  const pick = async (state: State, id: string) => {
+    const r = await renderSettled(view, state);
+    const select = r.root.querySelector("#since-last-export-previous") as FakeElement;
+    select.value = id;
+    select.fire("change");
+    await settled(r.root);
+    return { root: r.root, select };
+  };
+
+  it("lists the saved exports by date and friend count, newest first, after the default", async () => {
+    const { root } = await renderSettled(view, real({ ledger: threeSaved() }));
+    const select = root.querySelector("#since-last-export-previous") as FakeElement;
+    expect(select.querySelectorAll("option").map((o) => [o.getAttribute("value"), o.textContent])).toEqual([
+      ["", copy.pickLatestLabel],
+      ["p", copy.pickChoiceLabel("Mar 1, 2026", 3)],
+      ["old", copy.pickChoiceLabel("Jan 1, 2026", 2)],
+    ]);
+    expect(root.textContent).toContain(copy.pickLabel);
+    expect(root.textContent).toContain(copy.compareLine("Mar 1, 2026", "May 1, 2026", 61));
+  });
+
+  it("compares with the one chosen, and the numbers follow it", async () => {
+    const { root } = await pick(real({ ledger: threeSaved() }), "old");
+    expect(root.textContent).toContain(copy.compareLine("Jan 1, 2026", "May 1, 2026", 120));
+    expect(root.textContent).not.toContain(copy.compareLine("Mar 1, 2026", "May 1, 2026", 61));
+    expect(root.textContent).toContain(copy.friendsLine(2, 3));
+  });
+
+  it("goes back to the latest when the default is chosen again", async () => {
+    const { root, select } = await pick(real({ ledger: threeSaved() }), "old");
+    select.value = "";
+    select.fire("change");
+    await settled(root);
+    expect(root.textContent).toContain(copy.compareLine("Mar 1, 2026", "May 1, 2026", 61));
+  });
+
+  it("is not offered with one export or none to choose from, or when nothing is saved", async () => {
+    for (const state of [real(), real({ ledger: ledgerOf() }), real({ ledger: threeSaved(), saving: false })]) {
+      const { root } = await renderSettled(view, state);
+      expect(root.querySelector("#since-last-export-previous")).toBeNull();
+    }
+  });
+
+  it("ignores a choice that is no longer in the history, and never offers this export itself", () => {
+    const state = real({ ledger: threeSaved() });
+    const data = dataOf(state);
+    expect(computeSinceLastExport(data, { previousId: "gone" }).result.previousAt).toBe(PREVIOUS_AT);
+    expect(computeSinceLastExport(data, { previousId: "old" }).result.previousAt).toBe(OLD_AT);
+    expect(pickableSnapshots(data).map((x) => x.id)).toEqual(["p", "old"]);
+    expect(pickableSnapshots(dataOf(real({ ledger: threeSaved(), saving: false })))).toEqual([]);
+  });
+
+  it("shows only dates and counts in the choice, never a username", async () => {
+    const { root } = await renderSettled(view, real({ ledger: threeSaved() }));
+    const field = (root.querySelector("#since-last-export-previous") as FakeElement).parentNode as FakeElement;
+    expect(field.textContent).not.toContain(CANARY);
   });
 });
 

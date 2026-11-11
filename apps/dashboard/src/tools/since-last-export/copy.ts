@@ -22,6 +22,12 @@ export const copy = {
     body: "Snappy compares exports kept in your saved history. Save your history with a passphrase in Settings to keep them.",
   },
 
+  pickLabel: "Compare with",
+  pickHelp: "Choose an older saved export to compare this one with. Only dates and friend counts are shown.",
+  pickLatestLabel: "Latest saved before this export",
+  /** One saved export in the choice: its date and how many friends it listed. */
+  pickChoiceLabel: (date: string, friends: number) => `${date}, ${countOf(friends, "friend", "friends")}`,
+
   doneAnnounce: (added: number, left: number) => `Comparison finished. ${countOf(added, "friend", "friends")} added, ${formatCount(left)} no longer listed.`,
   emptyAnnounce: "Comparison finished. There is no earlier export to compare.",
 

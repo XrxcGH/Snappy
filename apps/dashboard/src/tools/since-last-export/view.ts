@@ -1,7 +1,9 @@
 import { dataTable } from "../../components/dataTable.ts";
 import type { TableCell } from "../../components/dataTable.ts";
 import { factList, section, subsection } from "../../components/layout.ts";
+import { icon } from "../../components/icon.ts";
 import { toolView } from "../../components/toolPage.ts";
+import type { ToolUi } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { usernameText } from "../../components/usernameChip.ts";
 import { toCsv } from "../../csv.ts";
@@ -9,8 +11,8 @@ import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
-import { GROUPS, computeSinceLastExport, csvFileName, csvRows, isComparable, peopleByChange } from "./model.ts";
-import type { ChangeKind, SinceNote, SinceResult } from "./model.ts";
+import { DEFAULT_PARAMS, GROUPS, computeSinceLastExport, csvFileName, csvRows, isComparable, peopleByChange, pickableSnapshots } from "./model.ts";
+import type { ChangeKind, SinceNote, SinceParams, SinceResult } from "./model.ts";
 
 export const meta: ToolMeta = { id: "since-last-export", group: "your-export", category: "cleanup", icon: "calendar", needs: ["export", "friends"] };
 
@@ -151,9 +153,37 @@ function activitySection({ result }: SinceResult): HTMLElement | null {
   );
 }
 
-export const view = toolView<SinceResult, Record<string, never>>({
+/**
+ * The choice of saved export to compare with. It shows only when there is more than one export to choose from, and holds
+ * dates and friend counts, never a username.
+ */
+function controls(ui: ToolUi<SinceParams>): HTMLElement | null {
+  const options = pickableSnapshots(ui.data);
+  if (options.length < 2) return null;
+  const select = h(
+    "select",
+    { id: "since-last-export-previous", class: "input", "data-key": "since-last-export-previous", "aria-describedby": "since-last-export-previous-help" },
+    h("option", { value: "", selected: ui.params.previousId === null }, copy.pickLatestLabel),
+    ...options.map((s) => h("option", { value: s.id, selected: s.id === ui.params.previousId }, copy.pickChoiceLabel(formatDate(s.takenAt), s.friends.length))),
+  );
+  select.addEventListener("change", () => ui.set({ previousId: select.value === "" ? null : select.value }));
+  // The select draws no native arrow: the chevron is its own icon.
+  const chevron = icon("chevron-right", 16);
+  chevron.setAttribute("class", "icon select-chevron");
+  return h(
+    "div",
+    { class: "field" },
+    h("label", { class: "label", for: "since-last-export-previous" }, copy.pickLabel),
+    h("div", { class: "select-wrap" }, select, chevron),
+    h("p", { class: "caption", id: "since-last-export-previous-help" }, copy.pickHelp),
+  );
+}
+
+export const view = toolView<SinceResult, SinceParams>({
   meta,
   copy,
+  params: DEFAULT_PARAMS,
+  controls,
   compute: computeSinceLastExport,
   isEmpty: (r) => !isComparable(r),
   summary: (r) => (isComparable(r) ? copy.doneAnnounce(r.result.counts.added ?? 0, r.result.counts.disappeared ?? 0) : copy.emptyAnnounce),
