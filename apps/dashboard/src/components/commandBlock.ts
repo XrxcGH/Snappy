@@ -31,6 +31,8 @@ export interface CommandBlockOptions {
    * no file chip and no output, and says "This needs a terminal." in a line of its own.
    */
   copyOnly?: boolean;
+  /** On a copy-only block: leave the catalog command's export files out, for a command that reads none (such as a check of a folder). */
+  withoutExport?: boolean;
 }
 
 /** The line that leads to the Export guide section on getting the command line tool. A page that explains commands outside a block can use it too. */
@@ -138,7 +140,8 @@ export function commandBlock(ctx: ViewContext, id: CommandId, options: CommandBl
 function copyOnlyBlock(id: CommandId, options: CommandBlockOptions): HTMLElement {
   const spec = COMMANDS[id];
   const title = options.title ?? spec.title;
-  const text = displayTextWith(spec, options.append ?? []);
+  const shown = options.withoutExport === true ? { ...spec, argv: spec.argv.filter((a) => typeof a === "string") } : spec;
+  const text = displayTextWith(shown, options.append ?? []);
   const copy = button({
     label: common.copy,
     icon: "copy",

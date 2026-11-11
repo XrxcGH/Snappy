@@ -149,7 +149,7 @@ describe("the page", () => {
     const counts = Object.fromEntries(root.querySelectorAll(".stat").map((s) => [s.querySelector(".stat-label")?.textContent, s.querySelector(".stat-value")?.textContent]));
     expect(counts).toEqual({ [copy.memoriesHeader]: "4", [copy.photosHeader]: "2", [copy.videosHeader]: "1", [copy.otherHeader]: "1", [copy.overlaysHeader]: "1", [copy.undatedHeader]: "2" });
     expect(text(root, ".step-list li").map((s) => s.replace(/^\d/, ""))).toEqual([copy.saveStep, copy.rescueStep, copy.verifyStep]);
-    expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS["rescue-manifest"]));
+    expect(root.querySelectorAll(".command").find((b) => !b.classList.contains("command-copy-only"))?.querySelector("code")?.textContent).toBe(displayText(COMMANDS["rescue-manifest"]));
     expect(root.querySelectorAll("table")).toHaveLength(0);
   });
 
@@ -158,7 +158,7 @@ describe("the page", () => {
     vi.stubGlobal("navigator", { clipboard: { writeText: async (t: string) => void written.push(t) } });
     try {
       const { root } = await renderSettled(view, real(mixed()));
-      const block = root.querySelectorAll(".check-command")[0] as FakeElement;
+      const block = root.querySelectorAll(".command-copy-only")[0] as FakeElement;
       expect(block.querySelector(".command-title")?.textContent).toBe(copy.verifyTitle);
       const shown = block.querySelector("code")?.textContent ?? "";
       expect(shown).toBe(verifyText());
@@ -246,7 +246,7 @@ describe("what is missing", () => {
     const { root } = render(view, initialState());
     expect(text(root, ".empty-title")).toEqual([tools.needs.exportTitle]);
     expect(root.querySelector(".empty a")?.getAttribute("href")).toBe("#/start");
-    expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS["rescue-manifest"]));
+    expect(root.querySelectorAll(".command").find((b) => !b.classList.contains("command-copy-only"))?.querySelector("code")?.textContent).toBe(displayText(COMMANDS["rescue-manifest"]));
     expect(root.querySelector(".tool-result")).toBeNull();
   });
 

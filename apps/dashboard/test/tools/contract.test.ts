@@ -20,7 +20,7 @@ import { resetAnalysisCache } from "../../src/analysis.ts";
 import * as mainCopy from "../../src/copy.ts";
 import { tools as toolsCopy } from "../../src/copy.ts";
 import { commandNotes } from "../../src/copy-tools.ts";
-import { COMMANDS, COMMAND_IDS, displayText } from "../../src/terminal/commands.ts";
+import { COMMANDS, COMMAND_IDS, displayText, displayTextWith } from "../../src/terminal/commands.ts";
 import { GROUPS, TOOLS, toolById } from "../../src/tools/registry.ts";
 import type { ToolCopy, ToolDescriptor, ToolNeed } from "../../src/tools/types.ts";
 import { RULES, ancestors, clip, collectCopy, hasClass, lint, renderedEntries, sentences, strayCapitals, textBlocks, textOf, useNames, words } from "../copy-rules.ts";
@@ -233,8 +233,10 @@ describe.each(ids)("tool %s", (id) => {
           const code = block.querySelector("code")?.textContent ?? "";
           const buttons = block.querySelector(".command-head")?.querySelectorAll("button").map((b) => b.textContent);
           if (block.classList.contains("command-copy-only")) {
-            // A command that names a file or folder this page cannot open: the catalog command and more words, Copy only, and the reason.
-            expect([...shown.keys()].some((text) => code.startsWith(`${text} `)), `${id} (${label}) copy-only: ${code}`).toBe(true);
+            // A command that names a file or folder this page cannot open: the catalog command (or, for a command that reads no export, its
+            // words without the export files) and more words, Copy only, and the reason.
+            const starts = [...shown.keys(), ...COMMAND_IDS.map((c) => displayTextWith({ ...COMMANDS[c], argv: COMMANDS[c].argv.filter((a) => typeof a === "string") }, []))];
+            expect(starts.some((text) => code.startsWith(`${text} `)), `${id} (${label}) copy-only: ${code}`).toBe(true);
             expect(buttons, `${id} (${label})`).toEqual(["Copy"]);
             expect(block.querySelector(".command-note")?.textContent, `${id} (${label})`).toBe(commandNotes.needsTerminal);
             continue;

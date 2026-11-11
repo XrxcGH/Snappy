@@ -1,17 +1,12 @@
-import { announce } from "../../announce.ts";
-import { copyText } from "../../clipboard.ts";
-import { button } from "../../components/button.ts";
-import { scrollRegion } from "../../components/dataTable.ts";
+import { commandBlock } from "../../components/commandBlock.ts";
 import type { IconName } from "../../components/icon.ts";
 import { section, stat, statGrid, stepCards } from "../../components/layout.ts";
 import { toolPage } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
-import { common, terminal } from "../../copy.ts";
-import { commandNotes } from "../../copy-tools.ts";
 import { h } from "../../dom.ts";
 import { formatCount } from "../../format.ts";
 import { COMMANDS, displayTextWith } from "../../terminal/commands.ts";
-import type { View } from "../../views/context.ts";
+import type { View, ViewContext } from "../../views/context.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeRescueManifest, manifestText } from "./model.ts";
@@ -53,24 +48,15 @@ export function verifyText(): string {
   return displayTextWith({ ...COMMANDS["rescue-manifest"], argv: ["rescue"] }, ["--verify", copy.verifyManifestExample, "--folder", copy.verifyFolderExample]);
 }
 
-function verifyBlock(): HTMLElement {
-  const text = verifyText();
-  const copyButton = button({
-    label: common.copy,
-    icon: "copy",
-    variant: "secondary",
-    ariaLabel: terminal.copyFor(copy.verifyTitle),
-    key: "rescue-verify:copy",
-    onclick: () => void copyText(text).then((ok) => announce(ok ? terminal.copiedCommandAnnounce : common.copyFailed)),
+/** The check, as the shared copy-only command block: no export is named, and the check's own words follow the bare `rescue`. */
+const verifyBlock = (ctx: ViewContext): HTMLElement =>
+  commandBlock(ctx, "rescue-manifest", {
+    key: "rescue-verify",
+    copyOnly: true,
+    withoutExport: true,
+    title: copy.verifyTitle,
+    append: ["--verify", copy.verifyManifestExample, "--folder", copy.verifyFolderExample],
   });
-  return h(
-    "div",
-    { class: "check-command code-block" },
-    h("div", { class: "command-head" }, h("p", { class: "command-title" }, copy.verifyTitle), h("div", { class: "command-actions" }, copyButton)),
-    scrollRegion(h("pre", { class: "code" }, h("code", {}, text)), commandNotes.textLabel, (label) => label),
-    h("p", { class: "command-note" }, commandNotes.needsTerminal),
-  );
-}
 
 export const view: View = (ctx) =>
   toolPage<RescueManifestResult, Record<string, never>>(ctx, {
@@ -93,7 +79,7 @@ export const view: View = (ctx) =>
             tile(copy.undatedHeader, c.undated, "calendar"),
           ),
         ),
-        section(copy.checkHeading, stepCards([copy.saveStep, copy.rescueStep, copy.verifyStep]), verifyBlock()),
+        section(copy.checkHeading, stepCards([copy.saveStep, copy.rescueStep, copy.verifyStep]), verifyBlock(ctx)),
       ];
     },
     notes: ({ notes, repeats }): ToolNote[] => [
