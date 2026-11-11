@@ -193,11 +193,15 @@ export function capFileList(list: string[], issues: ExportIssue[]): string[] {
  * (by part number). One note holds the total, however many parts there are.
  * @internal
  */
-export function mediaNotOpenedIssue(partCounts: Record<number, number>): ExportIssue {
+export function mediaNotOpenedIssue(partCounts: Record<number, number>, partMemories: Record<number, number> = {}): ExportIssue {
   const total = Object.values(partCounts).reduce((n, c) => n + c, 0);
+  const memories = Object.values(partMemories).reduce((n, c) => n + c, 0);
+  // The Export check counts Memories files only, so say how many of the listed files those are.
+  const share = memories > 0 && memories < total ? `, ${memories} of them ${memories === 1 ? "a Memories file" : "Memories files"}` : "";
   return {
-    ...issue("info", "media-not-opened", `Snappy listed ${total} media ${total === 1 ? "file" : "files"} by name and size only. It did not open ${total === 1 ? "it" : "them"}.`),
+    ...issue("info", "media-not-opened", `Snappy listed ${total} media ${total === 1 ? "file" : "files"} by name and size only${share}. It did not open ${total === 1 ? "it" : "them"}.`),
     partCounts: { ...partCounts },
+    ...(memories > 0 ? { partMemories: { ...partMemories } } : {}),
   };
 }
 
@@ -207,14 +211,16 @@ export function mediaNotOpenedIssue(partCounts: Record<number, number>): ExportI
  */
 export function combineMediaNotOpened(issues: ExportIssue[]): ExportIssue[] {
   const counts: Record<number, number> = {};
+  const memories: Record<number, number> = {};
   let first = -1;
   issues.forEach((i, at) => {
     if (i.code !== "media-not-opened") return;
     if (first < 0) first = at;
     for (const [part, n] of Object.entries(i.partCounts ?? {})) counts[Number(part)] = Math.max(counts[Number(part)] ?? 0, n);
+    for (const [part, n] of Object.entries(i.partMemories ?? {})) memories[Number(part)] = Math.max(memories[Number(part)] ?? 0, n);
   });
   if (first < 0) return issues;
-  return issues.flatMap((i, at) => (i.code !== "media-not-opened" ? [i] : at === first ? [mediaNotOpenedIssue(counts)] : []));
+  return issues.flatMap((i, at) => (i.code !== "media-not-opened" ? [i] : at === first ? [mediaNotOpenedIssue(counts, memories)] : []));
 }
 
 /**
@@ -435,7 +441,7 @@ export function finishExport(
     pairingIssues.push(...(bundled.length === 0 ? r.issues.map(listOnlyNote) : r.issues));
   }
 
-  if (media.length > 0) issues.push(mediaNotOpenedIssue({ [part]: media.length }));
+  if (media.length > 0) issues.push(mediaNotOpenedIssue({ [part]: media.length }, { [part]: bundled.length }));
   const fileList = capFileList(maskFileList(files.map((e) => e.path)), issues);
   // Last, so that mergeParsedExports can replace them by the notes for the whole export.
   issues.push(...pairingIssues);

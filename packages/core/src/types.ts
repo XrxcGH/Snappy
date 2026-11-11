@@ -151,6 +151,8 @@ export interface ExportIssue {
    * that merging parts adds them up once and merging a part again adds nothing.
    */
   partCounts?: Record<number, number>;
+  /** `media-not-opened` only: how many of those files sit in a Memories folder, by part, merged the same way. */
+  partMemories?: Record<number, number>;
 }
 
 /**

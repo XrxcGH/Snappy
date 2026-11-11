@@ -47,6 +47,38 @@ describe("the media note across parts", () => {
   });
 });
 
+describe("the media note says how many of the files are Memories files", () => {
+  /** A part with `memories` Memories files and `chat` photos outside the Memories folder. */
+  async function mixed(memories: number, chat: number, part: number): Promise<ParsedExport> {
+    const files: Record<string, Uint8Array> = { "json/friends.json": enc({ Friends: [{ Username: "amy_1" }] }) };
+    for (let i = 0; i < memories; i++) files[`memories/2024-01-01_${part}-${i}-main.jpg`] = new Uint8Array(4);
+    for (let i = 0; i < chat; i++) files[`chat_media/2024-01-01_${part}-${i}.jpg`] = new Uint8Array(4);
+    return parseExportFromReader(bytesReader(zipSync(files)), { part });
+  }
+
+  it("adds the Memories share when other media files are counted too", async () => {
+    const merged = mergeParsedExports([await mixed(5, 2, 1), await mixed(10, 0, 2)]);
+    expect(mediaNotes(merged)[0]?.message).toBe("Snappy listed 17 media files by name and size only, 15 of them Memories files. It did not open them.");
+  });
+
+  it("reads in the singular for one Memories file", async () => {
+    const one = await mixed(1, 2, 1);
+    expect(mediaNotes(one)[0]?.message).toBe("Snappy listed 3 media files by name and size only, 1 of them a Memories file. It did not open them.");
+  });
+
+  it("says nothing more when every file is a Memories file, or none is", async () => {
+    expect(mediaNotes(await mixed(3, 0, 1))[0]?.message).toBe("Snappy listed 3 media files by name and size only. It did not open them.");
+    expect(mediaNotes(await mixed(0, 3, 1))[0]?.message).toBe("Snappy listed 3 media files by name and size only. It did not open them.");
+  });
+
+  it("counts a part once however often it is merged", async () => {
+    const parts = [await mixed(5, 2, 1), await mixed(10, 0, 2)];
+    const merged = mergeParsedExports(parts);
+    expect(mediaNotes(mergeParsedExports([merged, parts[1] as ParsedExport]))[0]?.message).toContain("17 media files");
+    expect(mediaNotes(mergeParsedExports([merged, parts[1] as ParsedExport]))[0]?.message).toContain("15 of them");
+  });
+});
+
 describe("the file list note is for the inspect report", () => {
   const html = (n: number, tag: string) => Array.from({ length: n }, (_, i) => `html/<file-${tag}${i + 1}>.html`);
   const part = (fileList: string[]): ParsedExport => ({ friends: emptyFriends(), chats: [], memories: [], fileList, issues: [] });

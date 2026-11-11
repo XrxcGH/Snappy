@@ -810,7 +810,7 @@ const cloneRecord = <T extends object>(r: T): T => ({ ...r });
 
 const SEVERITY_RANK = { info: 0, warning: 1, error: 2 } as const;
 /** Same note, same wording and (for the per-part counts) the same parts: parts with equal counts stay separate until they are added up. */
-const issueKey = (i: ExportIssue): string => `${i.code}\u0000${i.message}${i.partCounts === undefined ? "" : `\u0000${JSON.stringify(i.partCounts)}`}`;
+const issueKey = (i: ExportIssue): string => `${i.code}\u0000${i.message}${i.partCounts === undefined ? "" : `\u0000${JSON.stringify(i.partCounts)}${JSON.stringify(i.partMemories ?? {})}`}`;
 
 const mergeIssue = (a: ExportIssue, b: ExportIssue): ExportIssue => (SEVERITY_RANK[b.severity] > SEVERITY_RANK[a.severity] ? { ...a, severity: b.severity } : a);
 
