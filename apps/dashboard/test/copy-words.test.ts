@@ -155,6 +155,12 @@ describe("Snapchat's option names", () => {
     expect(copy.guide.rangeHeading).toBe("Choose the “All Time” range");
   });
 
+  it("tells Start to select Export your Memories, which the guide table marks as needed for rescue", () => {
+    const row = copy.guide.rows.find(([name]) => name === "Export your Memories");
+    expect(row?.[1]).toBe("Yes, for rescue");
+    expect(copy.start.exportPoints.some((point) => point.includes("“Export your Memories”"))).toBe(true);
+  });
+
   it("asks for chat or Snap history in the same words on the Overview and the Tools hub", () => {
     expect(copy.tools.statusNeeds.chats).toBe(copy.overview.needsChats);
     expect(copy.tools.statusNeeds.chats).toBe("Needs chat or Snap history");

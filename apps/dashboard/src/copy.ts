@@ -153,6 +153,7 @@ export const start = {
   exportPoints: [
     "Select “Export JSON files” and “User information”.",
     "Set the date range to “All Time”.",
+    "To rescue Memories, also select “Export your Memories”.",
     "Chat and Snap history is optional. It lets Snappy find quiet friends.",
   ],
   countHeading: "Add your friend count",
