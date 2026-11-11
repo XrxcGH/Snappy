@@ -832,11 +832,10 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   /* Lists of people: two equal columns, a last odd card takes the whole row, and a card that opens does not stretch its neighbor. */
   .candidate-list, .guided-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .candidate-list > :last-child:nth-child(odd), .guided-list > :last-child:nth-child(odd) { grid-column: 1 / -1; }
-  /* From --bp-xwide the people are three across, in a grid of six: a lone last card takes the row and the last two share it. */
+  /* From --bp-xwide the people are three across, in a grid of six: a lone last card keeps one column and the last two share the row. */
   @media (min-width: 100rem) {
     .candidate-list, .guided-list { grid-template-columns: repeat(6, minmax(0, 1fr)); }
     .candidate-list > :nth-child(n), .guided-list > :nth-child(n) { grid-column: span 2; }
-    .candidate-list > :last-child:nth-child(3n + 1), .guided-list > :last-child:nth-child(3n + 1) { grid-column: 1 / -1; }
     .candidate-list > :nth-last-child(2):nth-child(3n + 1), .guided-list > :nth-last-child(2):nth-child(3n + 1),
     .candidate-list > :last-child:nth-child(3n + 2), .guided-list > :last-child:nth-child(3n + 2) { grid-column: span 3; }
   }

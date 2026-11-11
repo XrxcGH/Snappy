@@ -347,3 +347,20 @@ describe("the Tools hub tile status", () => {
     expect(new Set(tools.map((t) => t.icon)).size).toBe(tools.length);
   });
 });
+
+describe("the Cleanup lists at three across", () => {
+  const xwide = (selector: string): Rule[] => rulesFor(selector).filter((r) => r.media.some((q) => /min-width:\s*100rem/.test(q)));
+
+  it("keeps a lone last card at one column (a span of two in six), never the whole row", () => {
+    expect(declared(".candidate-list > :nth-child(n)")).toMatch(/grid-column:\s*span 2/);
+    for (const list of [".candidate-list", ".guided-list"]) {
+      expect(xwide(`${list} > :last-child:nth-child(3n + 1)`), `${list}: no rule for a lone last card`).toEqual([]);
+    }
+    const wide = rules.filter((r) => /^\.(?:candidate|guided)-list > /.test(r.selector) && r.media.some((q) => /min-width:\s*100rem/.test(q)));
+    expect(wide.filter((r) => /grid-column:\s*1\s*\/\s*-1/.test(r.body))).toEqual([]);
+  });
+
+  it("lets the last two of a short row share it", () => {
+    expect(xwide(".candidate-list > :last-child:nth-child(3n + 2)")[0]?.body).toMatch(/grid-column:\s*span 3/);
+  });
+});
