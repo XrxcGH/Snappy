@@ -25,6 +25,8 @@ export interface CandidateRowOptions {
   profileLinks?: boolean;
   /** Show the category tag (icon and label) after the confidence badge: for lists that mix categories, such as the cleanup queue. */
   showCategory?: boolean;
+  /** The data-key of the control to focus after Undo keep when no other Undo keep button is left, such as the list's search box. */
+  focusNext?: string;
 }
 
 /** After an Undo the person is back in the list: focus their Keep button again, if the page shows that row. */
@@ -56,6 +58,7 @@ export function candidateRow(options: CandidateRowOptions): HTMLElement {
             ariaLabel: common.unkeepFor(user),
             icon: "close",
             key: `unkeep:${candidate.key}`,
+            focusNext: options.focusNext,
             onclick: () => {
               actions.unkeep(candidate.key);
               announce(common.unkept(user));

@@ -299,7 +299,7 @@ function protectedSection(actions: Actions, items: readonly Candidate[], profile
     { class: "protected" },
     disclosureSummary(cleanup.protectedHeading(items.length), "protected-summary"),
     h("p", {}, cleanup.protectedBody),
-    pagedList(items, (candidate, index) => candidateRow({ candidate, actions, mode: "protected", index, profileLinks, showCategory: true }), { key: "queue-protected", className: "rows candidate-list", skipLink: true, pages: true }),
+    pagedList(items, (candidate, index) => candidateRow({ candidate, actions, mode: "protected", index, profileLinks, showCategory: true, focusNext: `search:${QUEUE}` }), { key: "queue-protected", className: "rows candidate-list", skipLink: true, pages: true }),
   );
   details.open = protectedOpen;
   details.addEventListener("toggle", () => {

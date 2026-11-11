@@ -33,7 +33,7 @@ function candidateList(a: Analysis, items: readonly Candidate[], actions: Action
     items,
     (c, index) => {
       const reasons = protectedBy.get(c.key) ?? [];
-      return candidateRow({ candidate: { ...c, protectedBy: reasons }, actions, mode: reasons.length > 0 ? "protected" : "review", index, profileLinks: profileLinksShown(a.sample) });
+      return candidateRow({ candidate: { ...c, protectedBy: reasons }, actions, mode: reasons.length > 0 ? "protected" : "review", index, profileLinks: profileLinksShown(a.sample), focusNext: `search:${key}` });
     },
     { key, className: "rows candidate-list", skipLink: true },
   );
