@@ -43,37 +43,36 @@ function render(ctx: ViewContext, a: Analysis, capGiB: number): Child[] {
       h("p", {}, memories.duplicatesNote),
     ),
     // Two independent sections: side by side on a wide screen.
-    columns(...pairingSections(a), storageSection(ctx, plan.meter, capGiB)),
+    columns(pairingSection(a), storageSection(ctx, plan.meter, capGiB)),
     rescueSection(ctx),
     relatedTools(["storage-planner", "memories-gaps", "memories-on-this-day", "rescue-manifest"]),
   ];
 }
 
 /**
- * What the export holds for the listed Memories. Counts only: no file name or path is ever shown. The section is followed
- * by the two sub-sections that explain missing files, in the same order, so a wide screen can flow them down two columns.
+ * What the export holds for the listed Memories. Counts only: no file name or path is ever shown. The two sub-sections
+ * that explain missing files, and what to do, stay inside this one section, so the advice never drifts under Storage
+ * when a wide screen flows the page down two columns, and each column starts with an h2.
  */
-function pairingSections(a: Analysis): HTMLElement[] {
+function pairingSection(a: Analysis): HTMLElement {
   const facts = pairingFacts(a.parsed, a.workspace.issues);
-  if (!facts) return [section(memories.pairingHeading, notice("info", memories.pairingNone))];
-  return [
-    section(
-      memories.pairingHeading,
-      statGrid(
-        stat(memories.pairingHave, formatCount(facts.have), { icon: "file", scope: "memories" }),
-        stat(memories.pairingMissing, formatCount(facts.missing), { icon: "file-missing", scope: "memories" }),
-        stat(memories.pairingOverlayLabel, formatCount(facts.overlays), { icon: "photo", scope: "memories" }),
-      ),
-      facts.overlays > 0 ? h("p", {}, memories.pairingOverlays) : null,
-      facts.linksEmpty ? notice("info", memories.pairingLinksEmpty) : null,
+  if (!facts) return section(memories.pairingHeading, notice("info", memories.pairingNone));
+  return section(
+    memories.pairingHeading,
+    statGrid(
+      stat(memories.pairingHave, formatCount(facts.have), { icon: "file", scope: "memories" }),
+      stat(memories.pairingMissing, formatCount(facts.missing), { icon: "file-missing", scope: "memories" }),
+      stat(memories.pairingOverlayLabel, formatCount(facts.overlays), { icon: "photo", scope: "memories" }),
     ),
+    facts.overlays > 0 ? h("p", {}, memories.pairingOverlays) : null,
+    facts.linksEmpty ? notice("info", memories.pairingLinksEmpty) : null,
     ...(facts.missing > 0
       ? [
           subsection(memories.pairingWhyHeading, h("ul", { class: "plain-list" }, ...memories.pairingWhy.map((text) => h("li", {}, text)))),
           subsection(memories.pairingTodoHeading, h("p", {}, memories.pairingTodo)),
         ]
       : []),
-  ];
+  );
 }
 
 function storageSection(ctx: ViewContext, meter: NonNullable<Analysis["plan"]>["meter"], capGiB: number): HTMLElement {
