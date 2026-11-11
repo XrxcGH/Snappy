@@ -368,7 +368,7 @@ describe("one name for what a passphrase protects: the saved history", () => {
   it("gives each thing in Settings one label: one Saved history heading, one name for deleting it", () => {
     expect(shellCopy.historyHeading).not.toBe(copy.settings.storageHeading);
     expect(copy.settings.deleteHeading).toBe("Delete saved history");
-    expect(copy.settings.deleteButton).toBe("Delete history");
+    expect(copy.settings.deleteButton).toBe("Delete saved history");
     expect(copy.settings.deleteConfirm).toBe(copy.settings.deleteButton);
     expect(copy.shell.betaLine).not.toMatch(/version/i);
   });

@@ -611,10 +611,10 @@ export const settings = {
   lockBody: "Clears your results from the screen and keeps your saved history. You need your passphrase to open it again.",
   deleteHeading: "Delete saved history",
   deleteBody: "Removes your saved history and clears the screen. This cannot be undone.",
-  deleteButton: "Delete history",
+  deleteButton: "Delete saved history",
   deleteConfirmTitle: "Delete saved history?",
   deleteConfirmBody: "This deletes your saved history, keep list, checkmarks, and checklist marks, and cannot be undone. Your export files are not touched.",
-  deleteConfirm: "Delete history",
+  deleteConfirm: "Delete saved history",
   deleteCancel: "Cancel",
   deleted: "Saved history deleted.",
   get deleteFailed(): string {
