@@ -56,6 +56,18 @@ describe("the filter and sort models", () => {
     expect(keys("confidence")).toEqual(["c", "b", "d", "a", "e"]);
     expect(sortCandidates(items, "likely")).not.toBe(items);
   });
+
+  it("keeps quiet friends with no saved chat last under Oldest, even though their friendship is dated", () => {
+    const friendship = (at: number): Candidate["evidence"][number] => ({ signal: "friendship-older-than-window", detail: "Friends since a date.", weight: 1, at });
+    const items = [
+      candidate("none", { category: "dormant", evidence: [{ signal: "no-saved-chats", detail: "No saved chat or Snap with this friend in the export.", weight: 1 }, friendship(10)] }),
+      candidate("old", { category: "dormant", evidence: [{ signal: "last-saved-chat-old", detail: "Last chat or Snap on a date.", weight: 1, at: 200 }, friendship(10)] }),
+      candidate("new", { category: "dormant", evidence: [{ signal: "last-saved-chat-old", detail: "Last chat or Snap on a date.", weight: 1, at: 300 }, friendship(10)] }),
+    ];
+    const keys = (order: Parameters<typeof sortCandidates>[1]): string[] => sortCandidates(items, order).map((c) => c.key);
+    expect(keys("oldest")).toEqual(["old", "new", "none"]);
+    expect(keys("newest")).toEqual(["new", "old", "none"]);
+  });
 });
 
 let cleanupView: View;

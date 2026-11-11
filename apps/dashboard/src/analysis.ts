@@ -182,10 +182,10 @@ export type QueueSort = "likely" | "newest" | "oldest" | "confidence";
 
 const CONFIDENCE_RANK: Record<Candidate["confidence"], number> = { high: 3, medium: 2, low: 1 };
 
-/** The newest date among a person's evidence, or undefined when none of it is dated. */
+/** The newest date among a person's evidence, or undefined when none of it is dated. The friendship date is left out: it is not a sign of contact, and it would put people with no saved chat first under Oldest. */
 function newestEvidence(c: Candidate): number | undefined {
   let latest: number | undefined;
-  for (const e of c.evidence) if (typeof e.at === "number" && Number.isFinite(e.at) && (latest === undefined || e.at > latest)) latest = e.at;
+  for (const e of c.evidence) if (e.signal !== "friendship-older-than-window" && typeof e.at === "number" && Number.isFinite(e.at) && (latest === undefined || e.at > latest)) latest = e.at;
   return latest;
 }
 
