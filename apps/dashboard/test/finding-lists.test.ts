@@ -75,7 +75,7 @@ describe.each([
     const items = itemsOf(key);
     const { save, copy } = buttonsOf(root);
     save.click();
-    expect(saved).toEqual([{ name: fileName, text: queueToCsv(items), mime: "text/csv" }]);
+    expect(saved).toEqual([{ name: fileName, text: queueToCsv(items, false), mime: "text/csv" }]);
     copy.click();
     await Promise.resolve();
     expect(copied).toEqual([queueToText(items)]);
@@ -92,8 +92,17 @@ describe.each([
     vi.advanceTimersByTime(120);
     const matching = items.filter((c) => c.key.toLowerCase().includes(part.toLowerCase()));
     buttonsOf(root).save.click();
-    expect(saved[0]?.text).toBe(queueToCsv(matching));
+    expect(saved[0]?.text).toBe(queueToCsv(matching, false));
     expect(saved[0]?.name).toBe(fileName);
+  });
+});
+
+describe.each(["ghost", "one-way", "dormant", "queue"])("the %s list page with sample data", (key) => {
+  it("saves a file with no profile links", () => {
+    const { root } = mount(views[key]!, sample);
+    buttonsOf(root).save.click();
+    expect(saved[0]!.text).toContain(itemsOf(key)[0]!.key);
+    expect(saved[0]!.text).not.toContain("snapchat.com");
   });
 });
 

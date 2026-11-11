@@ -122,6 +122,13 @@ describe("filterCandidates and list export", () => {
     expect(lines[1]).toContain(items[0]?.key);
     expect(queueToText(items).trim().split("\n")).toEqual(items.map((c) => c.key));
   });
+
+  it("fills the profile link column only when links are on", async () => {
+    const items = analyze(await sampleState()).queue.items.slice(0, 3);
+    expect(queueToCsv(items)).toContain("https://www.snapchat.com/add/");
+    expect(queueToCsv(items, true)).toContain("https://www.snapchat.com/add/");
+    expect(queueToCsv(items, false)).not.toContain("snapchat.com");
+  });
 });
 
 describe("export health", () => {

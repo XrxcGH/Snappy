@@ -46,6 +46,9 @@ export function routeLink(route: string, label: string, variant: ButtonVariant =
   return h("a", { class: `btn btn-${variant}`, href: `#/${route}` }, h("span", {}, label), ...extra);
 }
 
+/** Whether profile links show for this data: never for sample names, and not where the shell has them off. */
+export const profileLinksShown = (sample: boolean): boolean => !sample && platform().profileLinks !== false;
+
 /**
  * Link to a friend's Snapchat profile in a new tab, or null when the username is not plain
  * enough to link safely. The visible text stays short; the accessible name says who and that

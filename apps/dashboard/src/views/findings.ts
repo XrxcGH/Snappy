@@ -9,7 +9,7 @@ import { lists } from "../copy-lists.ts";
 import { append, h } from "../dom.ts";
 import type { Child } from "../dom.ts";
 import { formatCount } from "../format.ts";
-import { routeLink } from "../components/button.ts";
+import { profileLinksShown, routeLink } from "../components/button.ts";
 import { CATEGORY_ICON } from "../components/category.ts";
 import type { CategoryId } from "../components/category.ts";
 import { candidateRow } from "../components/candidateRow.ts";
@@ -33,7 +33,7 @@ function candidateList(a: Analysis, items: readonly Candidate[], actions: Action
     items,
     (c, index) => {
       const reasons = protectedBy.get(c.key) ?? [];
-      return candidateRow({ candidate: { ...c, protectedBy: reasons }, actions, mode: reasons.length > 0 ? "protected" : "review", index, profileLinks: !a.sample });
+      return candidateRow({ candidate: { ...c, protectedBy: reasons }, actions, mode: reasons.length > 0 ? "protected" : "review", index, profileLinks: profileLinksShown(a.sample) });
     },
     { key, className: "rows candidate-list", skipLink: true },
   );
@@ -53,7 +53,7 @@ function searchableList(a: Analysis, items: readonly Candidate[], actions: Actio
     slot.replaceChildren();
     append(slot, [
       // The count line and Save and Copy share one line. Save and Copy hold the rows that are showing, so a search narrows the file too.
-      h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: lists.areas[key].csvFile })),
+      h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: lists.areas[key].csvFile, profileLinks: profileLinksShown(a.sample) })),
       shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
       shown.length === 0 ? h("p", { class: "empty-inline" }, lists.noMatchSearch) : candidateList(a, shown, actions, key),
     ]);

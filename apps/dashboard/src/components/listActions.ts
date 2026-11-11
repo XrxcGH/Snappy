@@ -16,6 +16,8 @@ import { button } from "./button.ts";
 export interface ListActionsOptions {
   /** The name of the saved file, such as "snappy-disappeared.csv". */
   fileName: string;
+  /** Whether the "Profile link" column is filled in. False for sample names and where the shell has links off, like the rows. */
+  profileLinks: boolean;
 }
 
 let counter = 0;
@@ -37,7 +39,7 @@ export function listActions(items: readonly Candidate[], options: ListActionsOpt
     icon: "export",
     key: "save-list",
     disabled: items.length === 0,
-    onclick: () => announce(saveTextFile(options.fileName, queueToCsv(items), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
+    onclick: () => announce(saveTextFile(options.fileName, queueToCsv(items, options.profileLinks), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
   });
   const copy = button({
     label: cleanup.copyList,

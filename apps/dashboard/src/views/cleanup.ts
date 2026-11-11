@@ -6,10 +6,9 @@ import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { categories, cleanup, common, routes, tools } from "../copy.ts";
 import { lists } from "../copy-lists.ts";
-import { platform } from "../platform.ts";
 import { append, h } from "../dom.ts";
 import type { Child } from "../dom.ts";
-import { button, profileLink, routeLink } from "../components/button.ts";
+import { button, profileLink, profileLinksShown, routeLink } from "../components/button.ts";
 import { candidateRow } from "../components/candidateRow.ts";
 import { clearSearches, listSearch, searchQuery, setSearchQuery } from "../components/listSearch.ts";
 import { categoryOfCandidate, categoryTag } from "../components/category.ts";
@@ -138,7 +137,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
   const { actions } = ctx;
   return [
     // The count line and Save and Copy share one line.
-    h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: cleanup.csvFile })),
+    h("div", { class: "list-bar" }, h("p", { class: "summary" }, summary), listActions(shown, { fileName: cleanup.csvFile, profileLinks: profileLinksShown(a.sample) })),
     // The consequence is stated before any action, in both modes.
     notice("warning", lists.removalNote),
     shown.length === 0 ? null : h("p", { class: "caption" }, lists.confidenceKey),
@@ -151,7 +150,7 @@ function listParts(ctx: ViewContext, a: Analysis, view: CleanupView, shown: read
         )
       : view.guided
         ? guidedPanel(ctx, a, shown)
-        : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: !a.sample, showCategory: true }), { key: "queue-review", className: "rows candidate-list", skipLink: true }),
+        : pagedList(shown, (candidate, index) => candidateRow({ candidate, actions, index, profileLinks: profileLinksShown(a.sample), showCategory: true }), { key: "queue-review", className: "rows candidate-list", skipLink: true }),
   ];
 }
 
@@ -221,7 +220,7 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
     "section",
     { class: "guided", "aria-label": cleanup.guidedLabel },
     // With no profile link to open (the desktop app, the sample data) the note says to copy the username instead.
-    h("p", {}, profileLinksShown(a) ? cleanup.guidedNote : lists.guidedNoteNoLinks),
+    h("p", {}, profileLinksShown(a.sample) ? cleanup.guidedNote : lists.guidedNoteNoLinks),
     h("div", { class: "guided-progress" }, h("p", { class: "summary" }, text), slideIn(progressBar({ label: cleanup.progressLabel, value: done / items.length, valueText: text }), 0)),
     done > 0
       ? h(
@@ -239,14 +238,13 @@ function guidedPanel(ctx: ViewContext, a: Analysis, items: readonly Candidate[])
       : null,
     pagedList(
       items,
-      (candidate, index) => guidedRow(actions, candidate, checked.has(candidate.key), items, a, index, profileLinksShown(a)),
+      (candidate, index) => guidedRow(actions, candidate, checked.has(candidate.key), items, a, index, profileLinksShown(a.sample)),
       { key: "queue-guided", className: "rows guided-list", skipLink: true },
     ),
   );
 }
 
 /** Whether the rows show an "Open profile" link: never for sample names, and not where the shell turned links off. */
-const profileLinksShown = (a: Analysis): boolean => !a.sample && platform().profileLinks !== false;
 
 /** A labeled Copy button, for a guided row that has no profile link: copying the name is then the way to find the person. */
 function copyUsernameLabeled(username: string): HTMLButtonElement {
