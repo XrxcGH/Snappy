@@ -69,7 +69,8 @@ export const copy = {
 
   hourHeading: "By hour of day",
   hourCaption: "Replies by hour of day",
-  hourLine: (zone: string): string => `The hour is when the reply was sent, in ${zone}.`,
+  /** A no-break space before the zone keeps the zone label from sitting alone on the last line. */
+  hourLine: (zone: string): string => `The hour is when the reply was sent, in ${zone}.`,
   hourHeader: "Hour",
   hourYouHeader: "You",
   hourThemHeader: "Friends",

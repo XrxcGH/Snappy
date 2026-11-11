@@ -351,6 +351,10 @@ describe("the page", () => {
     expect(r.root.querySelector("select")).toBe(select);
   });
 
+  it("keeps the zone label with the word before it, so it never sits alone on the last line", () => {
+    for (const zone of ["UTC", "UTC-8:00", "UTC+5:30"]) expect(copy.hourLine(zone).endsWith(`in\u00a0${zone}.`), zone).toBe(true);
+  });
+
   it("starts in the zone of the device, or the one chosen in Settings, and keeps a pick on this page only", async () => {
     deviceAt(-300);
     const [a] = names as [string];
