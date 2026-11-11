@@ -3,7 +3,7 @@
  * page, and once more inside the helper. The page never parses text into a command (it builds the
  * argument list from a catalog entry), so this is a second lock, not the first.
  *
- *  - Only help, demo, inspect, analyze, memories, ledger and the insight commands (check, storage and so on) run here.
+ *  - Only help, demo, inspect, analyze, memories, history (and its older name, ledger) and the insight commands (check, storage and so on) run here.
  *  - Flags that need the network (--download, --concurrency) or a path on the person's own disk
  *    (--passphrase-file, --ledger, --csv, --dir) are refused for every command.
  *  - Every other flag must be one the command really has.
@@ -16,7 +16,7 @@
 /** The insight commands behind the tool pages. They read an export and print; none of them is allowed to write a file here. */
 export const INSIGHT_NAMES = ["check", "storage", "backup", "replies", "reply-speed", "reach-out", "habits", "calendar", "closest", "safety", "anniversaries", "on-this-day", "gaps", "blocked", "lookalikes", "friend-count", "friends", "rescue", "privacy", "remind", "since", "year"] as const;
 
-export const ALLOWED_COMMANDS = ["help", "demo", "inspect", "analyze", "memories", "ledger", ...INSIGHT_NAMES] as const;
+export const ALLOWED_COMMANDS = ["help", "demo", "inspect", "analyze", "memories", "history", "ledger", ...INSIGHT_NAMES] as const;
 
 export type PolicyReason =
   | "empty"
@@ -62,6 +62,8 @@ export const RULES: Readonly<Record<(typeof ALLOWED_COMMANDS)[number], CommandRu
     positional: "files",
   },
   memories: { flags: [...COMMON, "dry-run", "no-color"], values: { out: "out", layout: "text", "cap-gb": "text" }, positional: "files" },
+  history: { flags: [...COMMON, "no-color"], values: {}, positional: "status" },
+  // The older name of history, still accepted but never shown.
   ledger: { flags: [...COMMON, "no-color"], values: {}, positional: "status" },
   // Every insight command also has --json and --no-color. Their other options are left out on purpose: the app runs the plain form.
   check: { flags: [...COMMON, "json", "no-color"], values: { "friend-count": "text" }, positional: "files" },

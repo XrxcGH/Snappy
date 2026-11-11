@@ -106,7 +106,7 @@ export const COMMANDS: Readonly<Record<CommandId, CommandSpec>> = {
   "analyze-save": entry("analyze-save", ["analyze", exportSlot()], { needsPassphrase: true, effect: "store" }),
   "memories-preview": entry("memories-preview", ["memories", exportSlot(), "--dry-run"]),
   "memories-rescue": entry("memories-rescue", ["memories", exportSlot(), "--out", outSlot], { effect: "folder" }),
-  "ledger-status": entry("ledger-status", ["ledger", "status"], { needsPassphrase: true }),
+  "ledger-status": entry("ledger-status", ["history", "status"], { needsPassphrase: true }),
   check: entry("check", ["check", exportSlot()]),
   storage: entry("storage", ["storage", exportSlot()]),
   backup: entry("backup", ["backup", exportSlot()]),

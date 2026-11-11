@@ -21,6 +21,8 @@ describe("checkArgv: what runs", () => {
       ["analyze", "/in/a.zip"],
       ["memories", "/in/a.zip", "--dry-run"],
       ["memories", "/in/a.zip", "/in/b.zip", "--out", "/out/memories", "--layout", "year"],
+      ["history", "status"],
+      ["help", "history"],
       ["ledger", "status"],
       ["check", "/in/a.zip", "/in/b.zip", "--friend-count", "120", "--json"],
       ["storage", "/in/a.zip"],
@@ -99,6 +101,8 @@ describe("checkArgv: where files may be", () => {
 
   it("allows file arguments only where the command takes them", () => {
     expect(reason(["demo", "/in/a.zip"])).toBe("extra-argument");
+    expect(reason(["history", "/in/a.zip"])).toBe("extra-argument");
+    expect(reason(["history", "status", "status"])).toBe("extra-argument");
     expect(reason(["ledger", "/in/a.zip"])).toBe("extra-argument");
     expect(reason(["ledger", "status", "status"])).toBe("extra-argument");
     expect(reason(["help", "keep"])).toBe("extra-argument");

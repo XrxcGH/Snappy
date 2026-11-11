@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { COMMAND_OPTIONS } from "../../cli/src/cli.ts";
+import { COMMAND_ALIASES, COMMAND_OPTIONS } from "../../cli/src/cli.ts";
 import { terminal } from "../src/copy.ts";
 import { CLI_PREFIX, COMMANDS, COMMAND_IDS, OUT_FOLDER, bindArgv, displayText } from "../src/terminal/commands.ts";
 import type { CommandSpec } from "../src/terminal/commands.ts";
@@ -18,7 +18,11 @@ describe("what Copy shows", () => {
     expect(displayText(COMMANDS["analyze-save"])).toBe('npm run snappy-export -- analyze "<your export folder>"');
     expect(displayText(COMMANDS.help)).toBe("npm run snappy-export -- help");
     expect(displayText(COMMANDS["demo-run"])).toBe("npm run snappy-export -- demo --run");
-    expect(displayText(COMMANDS["ledger-status"])).toBe("npm run snappy-export -- ledger status");
+    expect(displayText(COMMANDS["ledger-status"])).toBe("npm run snappy-export -- history status");
+  });
+
+  it("never shows an older command name that help leaves out", () => {
+    for (const id of COMMAND_IDS) expect(Object.keys(COMMAND_ALIASES), id).not.toContain(COMMANDS[id].argv[0]);
   });
 
   it("shows each insight command in its plainest form, and only the ones that read an export ask for files", () => {
