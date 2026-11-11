@@ -34,7 +34,7 @@ Both public keys are compiled in. Release builds refuse to compile with placehol
 | A downgrade or a replay | The version must strictly increase and is bound to the signature. The installer refuses downgrades too. |
 | A page that tries to steer an update | The page cannot choose what is installed. At worst it restarts the app, switches the setting, or opens the fixed releases page after failures. |
 | Updating in the middle of work | The program restarts only when the page says it is idle and no picked file is open. Otherwise the update waits for the next launch. |
-| Another copy or a higher privilege | The updater runs only from the per-user installer’s folder, never elevated, and never while another Snappy process exists. |
+| Another copy or a higher privilege | The updater runs only from the per-user installer’s folder, never elevated, and it never installs while another Snappy process exists (checking is not affected). |
 | A compromised build dependency | Not eliminated. The maintainer installs and runs the exact file before signing, builds are locked, and a daily public check compares the published files with the keys. |
 
 Not covered: someone who holds the signing key can target copies that have not updated yet, until those copies update. Rotating keys is documented in the release runbooks.
