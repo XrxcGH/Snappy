@@ -209,4 +209,20 @@ describe("folders dropped on the page", () => {
     expect(zips).toHaveLength(2);
     expect(folders).toHaveLength(1);
   });
+
+  it("says so on Start when a ZIP and a folder are dropped together, and reads neither", async () => {
+    const store = createStore(initialState());
+    const folders: FolderFile[][] = [];
+    const zips: unknown[] = [];
+    const actions = {
+      importFolder: async (f: readonly FolderFile[]) => (folders.push([...f]), "failed" as const),
+      importZips: async (f: readonly NamedBlob[]) => (zips.push(f), "failed" as const),
+    } as unknown as Actions;
+    const flow = createImportFlow({ store, actions });
+    await flow.drop(transfer([dirEntry("mydata~1", [dirEntry("json", [fileEntry("friends.json")])]), null], [new File([], "mydata~1"), new File(["x"], "mydata~1.zip")]));
+    expect(folders).toHaveLength(0);
+    expect(zips).toHaveLength(0);
+    expect(store.get().import.phase).toBe("failed");
+    expect(store.get().import.message).toBe(startFlow.dropMixed);
+  });
 });

@@ -71,6 +71,15 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
       const entries = [...(transfer?.items ?? [])].flatMap((item) => (item.kind === "file" ? [(item as EntryItem).webkitGetAsEntry?.() ?? null] : [])).filter((e) => e !== null);
       const files = [...(transfer?.files ?? [])] as NamedBlob[];
       if (entries.some((e) => e.isDirectory)) {
+        // A ZIP dropped with a folder would be ignored without a word, so neither is read and Start says why.
+        if (files.some((f) => /\.zip$/i.test(f.name ?? ""))) {
+          if (store.get().import.phase === "reading") announce(startFlow.busy);
+          else {
+            store.dispatch({ type: "import-failed", message: startFlow.dropMixed });
+            announce(startFlow.dropMixed, true);
+          }
+          return;
+        }
         // Even a folder with nothing of the export in it is answered: the actions say what they looked for.
         const found = await folderFilesFromEntries(entries);
         return settle(() => actions.importFolder(found));

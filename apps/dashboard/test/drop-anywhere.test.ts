@@ -5,7 +5,7 @@
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { startFlow } from "../src/copy-start.ts";
-import { carriesFiles, installDropAnywhere } from "../src/drop-anywhere.ts";
+import { REFUSAL_MS, carriesFiles, installDropAnywhere } from "../src/drop-anywhere.ts";
 import type { DropDeps, DropTarget } from "../src/drop-anywhere.ts";
 import type { ImportFlow } from "../src/import-flow.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
@@ -140,6 +140,23 @@ describe("a drop", () => {
     expect(page.flows).toEqual([]);
     expect(spoken).toEqual([startFlow.busy]);
     expect(page.note().hasAttribute("hidden")).toBe(true);
+  });
+
+  it("shows the refusal on screen for a few seconds, not only to a screen reader", () => {
+    vi.useFakeTimers();
+    try {
+      const page = install(true);
+      page.fire("drop", drag(["Files"]));
+      const refusal = body.querySelector(".drop-refusal") as FakeElement;
+      expect(refusal.textContent).toBe(startFlow.busy);
+      expect(refusal.querySelectorAll("[role=status]")).toHaveLength(0);
+      vi.advanceTimersByTime(REFUSAL_MS);
+      expect(refusal.textContent).toBe("");
+      page.stop();
+      expect(body.querySelector(".drop-refusal")).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("is not run twice when the Start page's own drop zone already took it", () => {
