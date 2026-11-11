@@ -815,15 +815,21 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   ol.step-list > .step-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 @media (min-width: 72rem) {
-  /* The Tools hub is a grid of twelve columns and the count of the group picks the spans, so no group ends on a lone tile:
-     one or two across the row (spans 12 and 6), three across (4), four across (3), five as three and two (4 and 6) and seven as
-     four and three (3 and 4). */
+  /* The Tools hub is a grid of twelve columns and the count of the group picks the spans. A tile is one width in every row of its
+     group: one or two across the row (spans 12 and 6), three across (4), four across (3), five as three with the last two centered
+     (4, from columns 3 and 7), and seven as four with the last three centered, in a grid of eight columns (2, from columns 2, 4 and 6). */
   .tiles-tools { grid-template-columns: repeat(12, minmax(0, 1fr)); }
   .tiles-tools .tile:nth-child(n) { grid-column: span 4; }
   .tiles-tools.tiles-n-1 .tile:nth-child(n) { grid-column: span 12; }
   .tiles-tools.tiles-n-2 .tile:nth-child(n) { grid-column: span 6; }
-  .tiles-tools.tiles-n-4 .tile:nth-child(n), .tiles-tools.tiles-n-7 .tile:nth-child(-n+4) { grid-column: span 3; }
-  .tiles-tools.tiles-n-5 .tile:nth-child(n+4) { grid-column: span 6; }
+  .tiles-tools.tiles-n-4 .tile:nth-child(n) { grid-column: span 3; }
+  .tiles-tools.tiles-n-5 .tile:nth-child(4) { grid-column: 3 / span 4; }
+  .tiles-tools.tiles-n-5 .tile:nth-child(5) { grid-column: 7 / span 4; }
+  .tiles-tools.tiles-n-7 { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .tiles-tools.tiles-n-7 .tile:nth-child(n) { grid-column: span 2; }
+  .tiles-tools.tiles-n-7 .tile:nth-child(5) { grid-column: 2 / span 2; }
+  .tiles-tools.tiles-n-7 .tile:nth-child(6) { grid-column: 4 / span 2; }
+  .tiles-tools.tiles-n-7 .tile:nth-child(7) { grid-column: 6 / span 2; }
   /* Six short counts are one row. */
   .tiles-stats.tiles-n-6 .tile { grid-column: span 1; }
   /* Independent sections flow down two balanced columns, in document order. Each one stays whole. */

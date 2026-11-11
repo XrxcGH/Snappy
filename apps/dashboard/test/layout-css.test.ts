@@ -64,39 +64,65 @@ describe("the wide layout starts at the desktop app's default window", () => {
   });
 });
 
-/** The spans a Tools hub group of `count` tiles gets in the wide layout, tile by tile, from the stylesheet's own rules. */
-function wideSpans(count: number): number[] {
-  const klass = `tiles-n-${Math.min(count, 7)}`;
-  const spans: number[] = [];
-  for (let index = 1; index <= count; index++) {
-    let span = 0;
-    for (const rule of rules) {
-      const m = /^\.tiles-tools(?:\.(tiles-n-\d))? \.tile:nth-child\((n|n\+(\d+)|-n\+(\d+))\)$/.exec(rule.selector);
-      if (m === null) continue;
-      if (!rule.media.some((q) => /min-width:\s*72rem/.test(q))) continue;
-      if (m[1] !== undefined && m[1] !== klass) continue;
-      const mine = m[2] === "n" || (m[3] !== undefined && index >= Number(m[3])) || (m[4] !== undefined && index <= Number(m[4]));
-      const value = /grid-column:\s*span (\d+)/.exec(rule.body);
-      if (mine && value !== null) span = Number(value[1]);
-    }
-    spans.push(span);
-  }
-  return spans;
+interface Placed {
+  span: number;
+  /** The column an explicit `N / span M` placement starts at, or null for auto placement. */
+  start: number | null;
 }
 
-/** Fill rows of twelve columns, the way grid auto-placement does, and return the tile count of each row and its filled columns. */
-function rowsOf(spans: number[]): { tiles: number; columns: number }[] {
-  const rows: { tiles: number; columns: number }[] = [];
-  let current = { tiles: 0, columns: 0 };
-  for (const span of spans) {
-    if (current.columns + span > 12) {
-      rows.push(current);
-      current = { tiles: 0, columns: 0 };
-    }
-    current.tiles++;
-    current.columns += span;
+/** The columns and the placement a Tools hub group of `count` tiles gets in the wide layout, tile by tile, from the stylesheet's own rules. */
+function widePlacement(count: number): { columns: number; tiles: Placed[] } {
+  const klass = `tiles-n-${Math.min(count, 7)}`;
+  const wide = (rule: Rule): boolean => rule.media.some((q) => /min-width:\s*72rem/.test(q));
+  let columns = 12;
+  for (const rule of rules) {
+    const m = /^\.tiles-tools(?:\.(tiles-n-\d))?$/.exec(rule.selector);
+    const grid = /grid-template-columns:\s*repeat\((\d+),/.exec(rule.body);
+    if (m !== null && grid !== null && wide(rule) && (m[1] === undefined || m[1] === klass)) columns = Number(grid[1]);
   }
-  if (current.tiles > 0) rows.push(current);
+  const tiles: Placed[] = [];
+  for (let index = 1; index <= count; index++) {
+    let placed: Placed = { span: 0, start: null };
+    for (const rule of rules) {
+      const m = /^\.tiles-tools(?:\.(tiles-n-\d))? \.tile:nth-child\((n|\d+|n\+(\d+)|-n\+(\d+))\)$/.exec(rule.selector);
+      if (m === null || !wide(rule)) continue;
+      if (m[1] !== undefined && m[1] !== klass) continue;
+      const mine = m[2] === "n" || m[2] === String(index) || (m[3] !== undefined && index >= Number(m[3])) || (m[4] !== undefined && index <= Number(m[4]));
+      const value = /grid-column:\s*(?:(\d+) \/ )?span (\d+)/.exec(rule.body);
+      if (mine && value !== null) placed = { span: Number(value[2]), start: value[1] === undefined ? null : Number(value[1]) };
+    }
+    tiles.push(placed);
+  }
+  return { columns, tiles };
+}
+
+/** The spans of a group's tiles in the wide layout. */
+const wideSpans = (count: number): number[] => widePlacement(count).tiles.map((t) => t.span);
+
+/**
+ * Place the tiles the way grid auto-placement does and return each row: its tile count, the columns it fills, and the
+ * empty columns at its left and right. A tile with a start column goes to a new row when that column is already past.
+ */
+function rowsOf(count: number): { tiles: number; columns: number; left: number; right: number }[] {
+  const { columns: total, tiles } = widePlacement(count);
+  const rows: { tiles: number; columns: number; left: number; right: number }[] = [];
+  let cursor = 1;
+  let row = { tiles: 0, columns: 0, left: 0, right: total };
+  const close = (): void => {
+    if (row.tiles > 0) rows.push(row);
+    row = { tiles: 0, columns: 0, left: 0, right: total };
+    cursor = 1;
+  };
+  for (const { span, start } of tiles) {
+    if (start !== null ? start < cursor : cursor + span - 1 > total) close();
+    const at = start ?? cursor;
+    if (row.tiles === 0) row.left = at - 1;
+    row.tiles++;
+    row.columns += span;
+    cursor = at + span;
+    row.right = total - (cursor - 1);
+  }
+  close();
   return rows;
 }
 
@@ -111,24 +137,36 @@ describe("the Tools hub rows", () => {
     expect(rules.filter((r) => r.selector.startsWith(".tiles-tools") && r.media.some((q) => /min-width:\s*100rem/.test(q)))).toEqual([]);
   });
 
-  it("fills every row of every group and leaves no group ending on a lone tile", () => {
+  it("fills every row of every group, or centers a short last row, and leaves no group ending on a lone tile", () => {
     expect(groups.length).toBeGreaterThan(0);
     for (const { id, count } of groups) {
       const spans = wideSpans(count);
       expect(spans.every((s) => s > 0), `${id}: every tile has a span`).toBe(true);
-      const rows = rowsOf(spans);
-      for (const row of rows) expect(row.columns, `${id} (${count} tiles): a row of ${row.tiles} fills the 12 columns`).toBe(12);
+      const rows = rowsOf(count);
+      for (const row of rows) {
+        // A row either fills the grid or leaves the same empty columns on both sides.
+        expect(row.left, `${id} (${count} tiles): a row of ${row.tiles} is centered or full`).toBe(row.right);
+      }
       if (count > 1) expect(rows[rows.length - 1]?.tiles, `${id} (${count} tiles): the last row`).toBeGreaterThan(1);
     }
   });
 
+  it("gives every tile of a group the same width, so a short last row is no wider or narrower than the rows above it", () => {
+    for (const { id, count } of groups) expect(new Set(wideSpans(count)).size, `${id} (${count} tiles): one span`).toBe(1);
+  });
+
   it("lays out four as four across, five as three and two, seven as four and three, two as two", () => {
-    expect(rowsOf(wideSpans(4)).map((r) => r.tiles)).toEqual([4]);
-    expect(rowsOf(wideSpans(5)).map((r) => r.tiles)).toEqual([3, 2]);
-    expect(rowsOf(wideSpans(7)).map((r) => r.tiles)).toEqual([4, 3]);
-    expect(rowsOf(wideSpans(2)).map((r) => r.tiles)).toEqual([2]);
-    expect(rowsOf(wideSpans(3)).map((r) => r.tiles)).toEqual([3]);
-    expect(rowsOf(wideSpans(1)).map((r) => r.tiles)).toEqual([1]);
+    expect(rowsOf(4).map((r) => r.tiles)).toEqual([4]);
+    expect(rowsOf(5).map((r) => r.tiles)).toEqual([3, 2]);
+    expect(rowsOf(7).map((r) => r.tiles)).toEqual([4, 3]);
+    expect(rowsOf(2).map((r) => r.tiles)).toEqual([2]);
+    expect(rowsOf(3).map((r) => r.tiles)).toEqual([3]);
+    expect(rowsOf(1).map((r) => r.tiles)).toEqual([1]);
+  });
+
+  it("centers the last two of five and the last three of seven", () => {
+    expect(rowsOf(5).map((r) => r.left)).toEqual([0, 2]);
+    expect(rowsOf(7).map((r) => r.left)).toEqual([0, 1]);
   });
 
   it("uses one column count for every group below the wide layout", () => {

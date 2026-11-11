@@ -209,7 +209,8 @@ describe("tools", () => {
     expect(css).toMatch(/\.tiles-tools\s*\{\s*--tile-rows:\s*5/);
     // From the wide layout the hub is twelve columns and the count of the group picks the spans (test/layout-css.test.ts measures the rows).
     expect(css).toMatch(/\.tiles-tools\s*\{\s*grid-template-columns:\s*repeat\(12,/);
-    expect(css).toMatch(/\.tiles-tools\.tiles-n-5 \.tile:nth-child\(n\+4\)\s*\{\s*grid-column:\s*span 6/);
+    expect(css).toMatch(/\.tiles-tools\.tiles-n-5 \.tile:nth-child\(4\)\s*\{\s*grid-column:\s*3 \/ span 4/);
+    expect(css).toMatch(/\.tiles-tools\.tiles-n-7\s*\{\s*grid-template-columns:\s*repeat\(8,/);
   });
 
   it("colors every tool through its group's category, with orange for the Memories group alone", () => {
