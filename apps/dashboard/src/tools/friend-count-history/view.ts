@@ -70,6 +70,8 @@ function summarySection({ history }: FriendCountResult): HTMLElement {
       { label: copy.nowHeader, value: formatCount(totals.currentCount ?? 0), icon: "people" },
       { label: copy.addedHeader, value: formatCount(totals.joined), icon: "import" },
       { label: copy.removedHeader, value: formatCount(totals.left), icon: "remove" },
+      // Now is these plus Added minus Removed, so the figures reconcile at a glance.
+      ...(totals.startingCount > 0 ? [{ label: copy.undatedHeader, value: formatCount(totals.startingCount), icon: "calendar" as const }] : []),
       ...(best ? [{ label: copy.gainHeader, value: copy.unitGain(monthText(best.month), best.net), icon: "calendar" as const }] : []),
       ...(worst ? [{ label: copy.dropHeader, value: copy.unitDrop(monthText(worst.month), -worst.net), icon: "calendar" as const }] : []),
     ]),

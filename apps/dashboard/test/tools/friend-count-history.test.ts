@@ -179,6 +179,15 @@ describe("the page", () => {
     expect(summary.join(" ")).toContain("Feb 2025, down 1");
   });
 
+  it("shows the friends with no start date beside the totals, so Now equals them plus Added minus Removed", async () => {
+    const friends = [person("a", at(2025, 1)), person("b"), person("c")];
+    const { root } = await renderSettled(view, real({ friends, deleted: [{ ...person("d", at(2025, 1)), deletedAt: at(2025, 2) }] }));
+    const facts = Object.fromEntries(root.querySelectorAll(".fact").map((f) => [text(f, "dt")[0], text(f, "dd")[0]]));
+    expect(facts).toMatchObject({ [copy.nowHeader]: "3", [copy.addedHeader]: "2", [copy.removedHeader]: "1", [copy.undatedHeader]: "2" });
+    const plain = await renderSettled(view, real());
+    expect(text(plain.root, ".fact dt")).not.toContain(copy.undatedHeader);
+  });
+
   it("marks a snapshot that differs from the curve with a no pill and one that is close with a yes pill", async () => {
     const ledger = ledgerOf(snapshot("1", at(2025, 5), 3), snapshot("2", at(2025, 9), 30));
     const { root } = await renderSettled(view, real({}, { ledger }));

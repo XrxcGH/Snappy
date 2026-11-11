@@ -30,6 +30,7 @@ export const copy = {
   nowHeader: "Friends now",
   addedHeader: "Added",
   removedHeader: "Removed by you",
+  undatedHeader: "No start date",
   gainHeader: "Biggest gain",
   dropHeader: "Biggest drop",
   /** "Mar 2026", from a year and a month number (1 to 12): a short month, because it sits in a table or a fact. */
