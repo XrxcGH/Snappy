@@ -91,14 +91,16 @@ function controls(ui: ToolUi<OnThisDayParams>): HTMLElement {
   );
 }
 
+const dayRefused = (r: OnThisDayResult): boolean => r.notes.some((n) => n.code === "invalid-target");
+
 function daySection(r: OnThisDayResult): HTMLElement {
   const near = r.windowDays > 0;
   // A day core refuses (a year outside what it reads) is not shown back as a date: Date.UTC would fold years 0 to 99 into the 1900s.
-  const refused = r.notes.some((n) => n.code === "invalid-target");
+  const refused = dayRefused(r);
   return section(
     copy.dayHeading,
     refused ? null : h("p", {}, copy.lookingLine(dayText(r), r.isToday, r.windowDays)),
-    h("p", {}, r.total === 0 ? copy.noneLine(near) : copy.foundLine(r.total, r.years.length, near)),
+    h("p", {}, refused ? copy.invalidLine : r.total === 0 ? copy.noneLine(near) : copy.foundLine(r.total, r.years.length, near)),
     r.total === 0
       ? null
       : dataTable(
@@ -143,7 +145,7 @@ export const view = toolView<OnThisDayResult, OnThisDayParams>({
   params: START,
   compute: computeMemoriesOnThisDay,
   isEmpty: (r) => r.counts.dated === 0,
-  summary: (r) => (r.counts.dated === 0 ? copy.emptyAnnounce : r.total === 0 ? copy.noneAnnounce(r.windowDays > 0) : copy.foundAnnounce(r.total, r.windowDays > 0)),
+  summary: (r) => (r.counts.dated === 0 ? copy.emptyAnnounce : dayRefused(r) ? copy.invalidAnnounce : r.total === 0 ? copy.noneAnnounce(r.windowDays > 0) : copy.foundAnnounce(r.total, r.windowDays > 0)),
   controls,
   render: (r) => [daySection(r), yearsSection(r), topDaysSection(r)],
   notes: (r): ToolNote[] => [{ kind: "info", text: copy.offsetNote(offsetLabel(r.utcOffsetMinutes)) }, ...r.notes.map(noteOf)],

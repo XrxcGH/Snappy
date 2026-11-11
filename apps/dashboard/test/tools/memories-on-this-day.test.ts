@@ -296,6 +296,9 @@ describe("the controls", () => {
       expect(r.root.textContent).toContain(copy.invalidDayNote);
       expect(r.root.textContent).not.toContain("Looking at");
       expect(r.root.textContent).not.toContain("1901");
+      expect(r.root.textContent).toContain(copy.invalidLine);
+      expect(r.root.textContent).not.toContain(copy.noneLine(false));
+      expect(said.at(-1)).toBe(copy.invalidAnnounce);
     }
   });
 

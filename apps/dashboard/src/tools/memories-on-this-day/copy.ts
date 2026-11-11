@@ -31,6 +31,7 @@ export const copy = {
   foundLine: (total: number, years: number, near: boolean) =>
     `${countOf(total, "Memory", "Memories")} from ${near ? "around this" : "this"} day in ${countOf(years, "year", "years")}.`,
   noneLine: (near: boolean) => `No Memories from ${near ? "around this" : "this"} day in earlier years.`,
+  invalidLine: "That day is not a valid date.",
   dayCaption: "Memories on this day, by year",
   yearHeader: "Year",
   whenHeader: "When",
@@ -59,6 +60,7 @@ export const copy = {
 
   foundAnnounce: (total: number, near: boolean) => `${countOf(total, "Memory", "Memories")} found from ${near ? "around " : ""}this day in earlier years.`,
   noneAnnounce: (near: boolean) => `No Memories found from ${near ? "around " : ""}this day in earlier years.`,
+  invalidAnnounce: "That day is not a valid date.",
   emptyAnnounce: "No Memories have a usable date.",
 
   offsetNote: (label: string) => `Dates use ${label}, a fixed offset that does not follow daylight saving.`,
