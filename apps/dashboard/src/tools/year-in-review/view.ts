@@ -1,6 +1,8 @@
 import type { insights } from "@snappy-export/core";
+import { button } from "../../components/button.ts";
 import { dataTable } from "../../components/dataTable.ts";
 import type { TableCell } from "../../components/dataTable.ts";
+import { offerFile } from "../../components/fileOffer.ts";
 import { factList, section, stat, statGrid } from "../../components/layout.ts";
 import { icon } from "../../components/icon.ts";
 import { toolView } from "../../components/toolPage.ts";
@@ -9,6 +11,7 @@ import { h, setVar } from "../../dom.ts";
 import { formatCount, formatDate, formatPercent } from "../../format.ts";
 import { offsetLabel, OFFSETS, startingOffset } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
+import { cardCsvText, cardFileName, cardSvg } from "./card.ts";
 import { copy } from "./copy.ts";
 import { availableYears, computeYear, DEFAULT_PARAMS } from "./model.ts";
 import type { YearParams, YearView } from "./model.ts";
@@ -155,6 +158,30 @@ function memoryMonths({ memories }: YearView): HTMLElement | null {
   return memories === null ? null : section(copy.memoriesMonthHeading, barList(memories.byMonth.map((m) => m.total)));
 }
 
+/**
+ * The name-free card as an image. The file is made only when the button is pressed, and the same Copy fallback that every file
+ * save has is given beside it, because an engine that blocks a download says nothing.
+ */
+function cardSection(v: YearView): HTMLElement {
+  const fallback = h("div", { class: "download-slot" });
+  return section(
+    copy.cardHeading,
+    h("p", {}, copy.cardNote),
+    h(
+      "div",
+      { class: "actions" },
+      button({
+        label: copy.imageButton,
+        icon: "export",
+        variant: "secondary",
+        key: "year-card-save",
+        onclick: () => fallback.replaceChildren(offerFile({ fileName: cardFileName(v, "svg"), text: cardSvg(v), mime: "image/svg+xml" }).fallback),
+      }),
+    ),
+    fallback,
+  );
+}
+
 /** A select with the shared chevron: the same markup the other tools use for a choice of one. */
 function selectField(id: string, label: string, help: string, options: { value: string; text: string; selected: boolean }[], onChange: (value: string) => void): HTMLElement {
   const select = h(
@@ -215,12 +242,13 @@ export const view = toolView<YearView, YearParams>({
     result.year === null ? copy.emptyAnnounce : activity === null ? copy.quietAnnounce(result.year) : copy.summaryAnnounce(result.year, activity.total.total),
   isEmpty: ({ result }) => result.year === null,
   controls,
-  render: (v) => [glance(v), busiest(v), dates(v), direction(v), months(v), memoryMonths(v)],
+  render: (v) => [glance(v), busiest(v), dates(v), direction(v), months(v), memoryMonths(v), cardSection(v)],
   notes: ({ result, activity, tiles }): ToolNote[] => [
     ...result.notes.map((n): ToolNote => ({ kind: WARNINGS.includes(n.code) ? "warning" : "info", text: noteText(n) })),
     ...(activity !== null ? [{ kind: "info", text: copy.savedChatsNote } as const] : []),
     ...((tiles.newFriends ?? 0) > 0 ? [{ kind: "info", text: copy.currentFriendsNote } as const] : []),
   ],
+  download: { label: copy.downloadLabel, note: copy.downloadNote, build: (v) => ({ fileName: cardFileName(v, "csv"), text: cardCsvText(v), mime: "text/csv" }) },
   // The command's entry in the catalog (terminal/commands.ts) is added when the tool is registered.
   command: "year-in-review",
 });

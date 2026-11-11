@@ -14,6 +14,7 @@ import { toolData } from "../../src/tools/data.ts";
 import { copy } from "../../src/tools/year-in-review/copy.ts";
 import { descriptor } from "../../src/tools/year-in-review/index.ts";
 import { availableYears, computeYear, OFFSETS } from "../../src/tools/year-in-review/model.ts";
+import { cardCsvText, cardFileName, cardSvg } from "../../src/tools/year-in-review/card.ts";
 import { view } from "../../src/tools/year-in-review/view.ts";
 import { forgetPreferredOffset, offsetLabel, rememberOffset } from "../../src/tools/timezone.ts";
 import { RULES, collectCopy, lint, sentences, words } from "../copy-rules.ts";
@@ -22,10 +23,12 @@ import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settle
 
 const said: string[] = [];
 const saved: string[] = [];
+const savedFiles: { fileName: string; text: string; mime: string }[] = [];
 vi.mock("../../src/announce.ts", () => ({ announce: (text: string) => void said.push(text) }));
 vi.mock("../../src/download.ts", () => ({
-  saveTextFile: (fileName: string) => {
+  saveTextFile: (fileName: string, text: string, mime: string) => {
     saved.push(fileName);
+    savedFiles.push({ fileName, text, mime });
     return true;
   },
   saveBlob: () => true,
@@ -53,6 +56,7 @@ beforeEach(() => {
   resetAnalysisCache();
   said.length = 0;
   saved.length = 0;
+  savedFiles.length = 0;
   forgetPreferredOffset();
   deviceAt(0);
 });
@@ -218,6 +222,99 @@ const year2025 = async (): Promise<{ root: FakeElement; select: FakeElement }> =
   await settled(r.root);
   return { root: r.root, select };
 };
+
+describe("the name-free card and the CSV", () => {
+  const craftedView = () => computeYear(dataOf(withExport(crafted())), { year: 2025, utcOffsetMinutes: 0 });
+
+  it("builds the CSV from the numbers on the page: a section, an item and a count, with the month totals", () => {
+    const csv = cardCsvText(craftedView());
+    expect(csv.startsWith("\uFEFF")).toBe(true);
+    const rows = csv.replace(/^\uFEFF/, "").trim().split("\r\n");
+    expect(rows[0]).toBe('"Section","Item","Count"');
+    expect(rows).toContain('"At a glance","Chats and Snaps","40"');
+    expect(rows).toContain('"At a glance","Active days","3"');
+    expect(rows).toContain('"At a glance","Longest gap","12"');
+    expect(rows).toContain('"By month","Mar","40"');
+    expect(rows).toContain('"By month","Jan","0"');
+    expect(rows).toContain('"Memories by month","Feb","2"');
+    expect(rows).toHaveLength(1 + 6 + 12 + 12);
+  });
+
+  it("leaves a number the export cannot give as an empty cell, not a zero", () => {
+    const rows = cardCsvText(computeYear(dataOf(withExport({ chats: run(10, FEB_2_2026) })), { year: 2026, utcOffsetMinutes: 0 })).split("\r\n");
+    expect(rows).toContain('"At a glance","Memories",""');
+    expect(rows).toContain('"At a glance","Chats and Snaps","10"');
+  });
+
+  it("builds the image as SVG: the year, the six numbers, the busiest month and a bar for each month", () => {
+    const svg = cardSvg(craftedView());
+    expect(svg.startsWith('<svg xmlns="http://www.w3.org/2000/svg"')).toBe(true);
+    expect(svg.trim().endsWith("</svg>")).toBe(true);
+    const words = [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
+    expect(words).toEqual(expect.arrayContaining(["Year in review 2025", copy.chatsLabel, "40", copy.activeDaysLabel, "3", copy.gapLabel, "12", copy.cardBusiestLine("March"), ...copy.months, copy.cardFooter]));
+    expect(svg.match(/<rect x="\d+" y="\d+" width="64"/g)).toHaveLength(12);
+    expect(svg).toContain(`aria-label="${copy.cardLabel(2025)}"`);
+  });
+
+  it("holds no username, writes no markup from a value and loads nothing", () => {
+    const withNames = withExport({ ...crafted(), friends: [friend(Date.UTC(2025, 0, 5))] });
+    const view2025 = computeYear(dataOf(withNames), { year: 2025, utcOffsetMinutes: 0 });
+    for (const file of [cardSvg(view2025), cardCsvText(view2025)]) {
+      expect(file).not.toContain(CANARY);
+      expect(file).not.toContain(FRIEND_CANARY);
+      // The one address in the file is the SVG namespace, which names a standard and loads nothing.
+      expect(file.replace('xmlns="http://www.w3.org/2000/svg"', "")).not.toMatch(/https?:|<script|<image|<foreignObject|href=|onload=/i);
+    }
+    const svg = cardSvg(view2025);
+    // Between the tags nothing is raw markup, and every ampersand starts an entity.
+    for (const m of svg.matchAll(/>([^<]+)</g)) expect(m[1]).not.toMatch(/[<>"]|&(?!amp;|lt;|gt;|quot;)/);
+  });
+
+  it("paints the image with the brand tokens as the page resolves them, and writes no color of its own", () => {
+    const tokens: Record<string, string> = { "--brand-ink": "#101010", "--brand-bone": "#eeeeee", "--brand-violet": "#7755ff" };
+    vi.stubGlobal("document", { documentElement: {} });
+    vi.stubGlobal("getComputedStyle", () => ({ getPropertyValue: (name: string) => tokens[name] ?? "" }));
+    try {
+      const svg = cardSvg(craftedView());
+      expect(svg).toContain('fill="#eeeeee"');
+      expect(svg).toContain('fill="#7755ff"');
+      expect(svg).toContain('fill="#101010"');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(cardSvg(craftedView())).not.toMatch(/#[0-9a-f]{3,8}/i);
+  });
+
+  it("names the files for the year, and has no year in the name when there is none", () => {
+    expect(cardFileName(craftedView(), "svg")).toBe("snappy-year-in-review-2025.svg");
+    expect(cardFileName(craftedView(), "csv")).toBe("snappy-year-in-review-2025.csv");
+    expect(cardFileName(computeYear(dataOf(withExport({}))), "svg")).toBe("snappy-year-in-review.svg");
+  });
+
+  it("saves the image only when Save image is pressed, offers the Copy fallback and says it was saved", async () => {
+    const { root } = await year2025();
+    expect(cells(root, ".section-title")).toContain(copy.cardHeading);
+    expect(root.textContent).toContain(copy.cardNote);
+    expect(savedFiles).toEqual([]);
+    said.length = 0;
+    (root.querySelectorAll("button").find((b) => b.textContent === copy.imageButton) as FakeElement).click();
+    expect(savedFiles).toHaveLength(1);
+    expect(savedFiles[0]).toMatchObject({ fileName: "snappy-year-in-review-2025.svg", mime: "image/svg+xml" });
+    expect(savedFiles[0]?.text).toBe(cardSvg(craftedView()));
+    expect(said).toEqual([tools.downloadSaved]);
+    expect(root.querySelector(".download-fallback")).not.toBeNull();
+  });
+
+  it("saves the CSV with the shared Save CSV button", async () => {
+    const { root } = await year2025();
+    expect(root.querySelector("button[data-key='tool-download']")?.textContent).toBe("Save CSV");
+    expect(root.textContent).toContain(copy.downloadNote);
+    root.querySelector("button[data-key='tool-download']")?.click();
+    expect(savedFiles).toHaveLength(1);
+    expect(savedFiles[0]).toMatchObject({ fileName: "snappy-year-in-review-2025.csv", mime: "text/csv" });
+    expect(savedFiles[0]?.text).toBe(cardCsvText(craftedView()));
+  });
+});
 
 describe("the page", () => {
   it("shows the sample's tiles, tables, bar lists, key dates, notes and the command", async () => {
@@ -445,11 +542,12 @@ describe("the page", () => {
     expect(notes.filter((n) => n === copy.currentFriendsNote)).toHaveLength(1);
   });
 
-  it("has no download and builds no file", async () => {
+  it("builds no file until a Save button is pressed, and names its buttons Save, never Download", async () => {
     const { root } = await renderSettled(view, withExport(crafted()));
     expect(root.querySelectorAll("button").filter((b) => /download/i.test(b.textContent))).toHaveLength(0);
-    expect(headings(root)).not.toContain(tools.downloadHeading);
+    expect(root.querySelectorAll("button").map((b) => b.textContent)).toEqual(expect.arrayContaining([copy.imageButton, copy.downloadLabel]));
     expect(saved).toEqual([]);
+    expect(savedFiles).toEqual([]);
   });
 });
 

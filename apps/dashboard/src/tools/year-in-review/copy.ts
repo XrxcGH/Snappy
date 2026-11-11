@@ -89,6 +89,19 @@ export const copy = {
   months: MONTHS,
   monthsLong: MONTHS_LONG,
 
+  cardHeading: "Year card",
+  cardNote: "The image holds only the numbers above. It has no usernames.",
+  imageButton: "Save image",
+  /** In the image file: the title, what a screen reader hears for it, the busiest month line and the footer. */
+  cardTitle: (year: number) => (isYear(year) ? `Year in review ${year}` : ""),
+  cardLabel: (year: number) => (isYear(year) ? `Year in review card for ${year}` : "Year in review card"),
+  cardBusiestLine: (month: string) => `Busiest month: ${month}`,
+  cardFooter: "Made offline with Snappy. It holds no names.",
+  downloadLabel: "Save CSV",
+  downloadNote: "The file holds the numbers above and no usernames.",
+  /** The column names of the CSV file. */
+  csvHeaders: ["Section", "Item", "Count"],
+
   noDataNote: "Nothing has a usable date, so there is no year to show.",
   yearInvalidNote: "That year could not be used, so Snappy chose the latest one.",
   noActivityDataNote: "No chats or Snaps with a usable date were found.",
