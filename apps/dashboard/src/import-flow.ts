@@ -10,6 +10,7 @@ import { startFlow } from "./copy-start.ts";
 import { folderFilesFromEntries, hasDataFiles } from "./folder-import.ts";
 import type { DirEntry, FolderFile } from "./folder-import.ts";
 import { spokenFailure } from "./issues.ts";
+import { refuse } from "./refusal.ts";
 import type { Store } from "./store.ts";
 import { navigate } from "./views/context.ts";
 
@@ -34,7 +35,7 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
   const settle = async (begin: () => Promise<ImportResult>): Promise<void> => {
     // A read is already going: say so, and leave it alone.
     if (store.get().import.phase === "reading") {
-      announce(startFlow.busy);
+      refuse(startFlow.busy);
       return;
     }
     // Nothing is said here as the read starts: the progress block says it, once, as it changes.
@@ -46,7 +47,7 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
     } else if (result === "canceled") {
       announce(startFlow.stopped);
     } else if (result === "busy") {
-      announce(startFlow.busy);
+      refuse(startFlow.busy);
     } else {
       announce(spokenFailure(s.import, start.readFailed), true);
     }
@@ -71,13 +72,12 @@ export function createImportFlow(ctx: { store: Store; actions: Actions }): Impor
       const entries = [...(transfer?.items ?? [])].flatMap((item) => (item.kind === "file" ? [(item as EntryItem).webkitGetAsEntry?.() ?? null] : [])).filter((e) => e !== null);
       const files = [...(transfer?.files ?? [])] as NamedBlob[];
       if (entries.some((e) => e.isDirectory)) {
-        // A ZIP dropped with a folder would be ignored without a word, so neither is read and Start says why.
-        if (files.some((f) => /\.zip$/i.test(f.name ?? ""))) {
-          if (store.get().import.phase === "reading") announce(startFlow.busy);
-          else {
-            store.dispatch({ type: "import-failed", message: startFlow.dropMixed });
-            announce(startFlow.dropMixed, true);
-          }
+        // A ZIP dropped with a folder would be ignored without a word, so neither is read and the page says why. A folder
+        // that is named like a ZIP does not count: only a file entry (or a file that no folder entry accounts for) does.
+        const folderNames = new Set(entries.filter((e) => e.isDirectory).map((e) => e.name));
+        const zipFile = entries.some((e) => !e.isDirectory && /\.zip$/i.test(e.name ?? "")) || files.some((f) => /\.zip$/i.test(f.name ?? "") && !folderNames.has(f.name ?? ""));
+        if (zipFile) {
+          refuse(store.get().import.phase === "reading" ? startFlow.busy : startFlow.dropMixed);
           return;
         }
         // Even a folder with nothing of the export in it is answered: the actions say what they looked for.

@@ -4,10 +4,10 @@
  * flow as the Start page's own drop zone runs. Only drags that carry files count: dragging text or a link does nothing here
  * (the browser is still kept from opening a dropped file and leaving the page).
  */
-import { announce } from "./announce.ts";
 import { startFlow } from "./copy-start.ts";
 import { h } from "./dom.ts";
 import type { ImportFlow } from "./import-flow.ts";
+import { clearRefusal, refuse } from "./refusal.ts";
 
 /** The few things of a window the handler uses, so it can be tried without a browser. */
 export interface DropTarget {
@@ -23,9 +23,6 @@ export interface DropDeps {
   toStart(): void;
 }
 
-/** How long the refusal of a drop stays on screen. */
-export const REFUSAL_MS = 5000;
-
 /** True when the drag carries files (a text or link drag lists other types). */
 export function carriesFiles(event: DragEvent): boolean {
   return Array.from(event.dataTransfer?.types ?? []).includes("Files");
@@ -35,16 +32,6 @@ export function carriesFiles(event: DragEvent): boolean {
 export function installDropAnywhere(target: DropTarget, deps: DropDeps): () => void {
   const note = h("div", { class: "drop-overlay", "aria-hidden": "true", hidden: true }, h("p", { class: "drop-overlay-text" }, startFlow.dropOverlayTitle));
   document.body.appendChild(note);
-  // A drop that is refused is also written on screen, at the bottom of the window, in the toast's look. Not a live region: announce() speaks it.
-  const refusal = h("div", { class: "toast-host drop-refusal" });
-  document.body.appendChild(refusal);
-  let refusalTimer: ReturnType<typeof setTimeout> | undefined;
-  const refuse = (text: string): void => {
-    announce(text);
-    refusal.replaceChildren(h("div", { class: "toast" }, h("p", { class: "toast-text" }, text)));
-    clearTimeout(refusalTimer);
-    refusalTimer = setTimeout(() => refusal.replaceChildren(), REFUSAL_MS);
-  };
   // Entering and leaving the page's children fire pairs of events; counting them keeps the note from flickering.
   let depth = 0;
   const show = (on: boolean): void => {
@@ -92,8 +79,7 @@ export function installDropAnywhere(target: DropTarget, deps: DropDeps): () => v
   for (const [type, fn] of handlers) target.addEventListener(type, fn);
   return () => {
     for (const [type, fn] of handlers) target.removeEventListener(type, fn);
-    clearTimeout(refusalTimer);
     note.remove();
-    refusal.remove();
+    clearRefusal();
   };
 }

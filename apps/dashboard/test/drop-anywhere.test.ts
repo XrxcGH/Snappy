@@ -5,9 +5,10 @@
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { startFlow } from "../src/copy-start.ts";
-import { REFUSAL_MS, carriesFiles, installDropAnywhere } from "../src/drop-anywhere.ts";
+import { carriesFiles, installDropAnywhere } from "../src/drop-anywhere.ts";
 import type { DropDeps, DropTarget } from "../src/drop-anywhere.ts";
 import type { ImportFlow } from "../src/import-flow.ts";
+import { REFUSAL_MS } from "../src/refusal.ts";
 import { FakeElement, installFakeDom } from "./fake-dom.ts";
 
 const spoken: string[] = [];

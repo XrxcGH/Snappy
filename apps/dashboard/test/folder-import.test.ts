@@ -16,6 +16,8 @@ import { initialState } from "../src/reducer.ts";
 import { NOW, partFiles, setup } from "./export-fixtures.ts";
 
 vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
+const refused: string[] = [];
+vi.mock("../src/refusal.ts", () => ({ refuse: (m: string) => void refused.push(m), clearRefusal: () => undefined }));
 
 const SMALL = { friendCount: 40, chatMessageCount: 200, memoryCount: 40 };
 
@@ -210,19 +212,60 @@ describe("folders dropped on the page", () => {
     expect(folders).toHaveLength(1);
   });
 
-  it("says so on Start when a ZIP and a folder are dropped together, and reads neither", async () => {
-    const store = createStore(initialState());
+  /** Actions that only count what they are asked to read. */
+  function counting(): { folders: FolderFile[][]; zips: unknown[]; actions: Actions } {
     const folders: FolderFile[][] = [];
     const zips: unknown[] = [];
     const actions = {
       importFolder: async (f: readonly FolderFile[]) => (folders.push([...f]), "failed" as const),
       importZips: async (f: readonly NamedBlob[]) => (zips.push(f), "failed" as const),
     } as unknown as Actions;
+    return { folders, zips, actions };
+  }
+
+  it("says so, on screen, when a ZIP and a folder are dropped together, and reads neither", async () => {
+    refused.length = 0;
+    const store = createStore(initialState());
+    const { folders, zips, actions } = counting();
     const flow = createImportFlow({ store, actions });
-    await flow.drop(transfer([dirEntry("mydata~1", [dirEntry("json", [fileEntry("friends.json")])]), null], [new File([], "mydata~1"), new File(["x"], "mydata~1.zip")]));
+    const tree = dirEntry("mydata~1", [dirEntry("json", [fileEntry("friends.json")])]);
+    await flow.drop(transfer([tree, fileEntry("mydata~1.zip")], [new File([], "mydata~1"), new File(["x"], "mydata~1.zip")]));
     expect(folders).toHaveLength(0);
     expect(zips).toHaveLength(0);
-    expect(store.get().import.phase).toBe("failed");
-    expect(store.get().import.message).toBe(startFlow.dropMixed);
+    expect(refused).toEqual([startFlow.dropMixed]);
+    expect(store.get().import.phase).toBe("idle");
+  });
+
+  it("says the read is busy, on screen, when that mixed drop comes during a read", async () => {
+    refused.length = 0;
+    const store = createStore(initialState());
+    store.dispatch({ type: "import-started", steps: 1, sample: false });
+    expect(store.get().import.phase).toBe("reading");
+    const { folders, zips, actions } = counting();
+    const flow = createImportFlow({ store, actions });
+    await flow.drop(transfer([dirEntry("mydata~1", []), null], [new File([], "mydata~1"), new File(["x"], "a.zip")]));
+    expect(refused).toEqual([startFlow.busy]);
+    expect(folders.length + zips.length).toBe(0);
+  });
+
+  it("says the read is busy, on screen, for any drop during a read", async () => {
+    refused.length = 0;
+    const store = createStore(initialState());
+    store.dispatch({ type: "import-started", steps: 1, sample: false });
+    const { zips, actions } = counting();
+    const flow = createImportFlow({ store, actions });
+    await flow.drop(transfer([null], [new File(["x"], "tiny.zip")]));
+    expect(refused).toEqual([startFlow.busy]);
+    expect(zips).toHaveLength(0);
+  });
+
+  it("does not count a folder that is named like a ZIP as a ZIP", async () => {
+    refused.length = 0;
+    const store = createStore(initialState());
+    const { folders, actions } = counting();
+    const flow = createImportFlow({ store, actions });
+    await flow.drop(transfer([dirEntry("export.zip", [dirEntry("json", [fileEntry("friends.json")])]), dirEntry("other", [])], [new File([], "export.zip"), new File([], "other")]));
+    expect(refused).toEqual([]);
+    expect(folders).toHaveLength(1);
   });
 });
