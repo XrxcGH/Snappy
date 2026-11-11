@@ -401,6 +401,27 @@ describe("Close all", () => {
     expect(FakeElement.lastFocused).toBe(b.run);
   });
 
+  it("counts only the outputs on this page: one that is not on screen does not offer the button, and Close all leaves it alone", async () => {
+    const { s, a, b, finish } = await two();
+    await finish("inspect", 0);
+    await finish("check", 1);
+    // The person goes to another page: the second block is no longer drawn, though its output is kept.
+    b.scope.dispose();
+    expect(s.controller.state("check").kind).toBe("finished");
+    expect(s.controller.openOutputs()).toBe(1);
+    expect(buttons(a.el)).toEqual([terminal.copyOutputButton, terminal.closeButton]);
+    // Coming back draws it again, and both outputs are on screen.
+    const back = await panelFor("check", s);
+    expect(s.controller.openOutputs()).toBe(2);
+    expect(buttons(a.el)).toEqual([terminal.copyOutputButton, terminal.closeButton, terminalTools.closeAll]);
+    expect(buttons(back.el)).toEqual([terminal.copyOutputButton, terminal.closeButton, terminalTools.closeAll]);
+    // Close all closes what is on screen and leaves an output on another page open.
+    back.scope.dispose();
+    s.controller.closeAll();
+    expect(s.controller.state("inspect").kind).toBe("idle");
+    expect(s.controller.state("check").kind).toBe("finished");
+  });
+
   it("leaves a Run that is still working alone", async () => {
     const { s, finish } = await two();
     await finish("inspect", 0);

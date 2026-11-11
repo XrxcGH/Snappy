@@ -61,11 +61,13 @@ export interface TerminalController {
   subscribe(id: CommandId, listener: () => void): () => void;
   /** Hear when the page-wide lock turns on or off. */
   subscribeBusy(listener: () => void): () => void;
-  /** How many outputs are open now: blocks whose last Run ended and whose output is still showing. */
+  /** How many outputs are open now: blocks on the page whose last Run ended and whose output is still showing. */
   openOutputs(): number;
   /** Hear when the number of open outputs changes. Returns the unsubscribe function. */
   subscribeOpen(listener: () => void): () => void;
-  /** Close every open output. A Run that is working is left alone. */
+  /** A block for this command is on the page now. Returns the function to call when it leaves. Only drawn blocks count as open. */
+  mount(id: CommandId): () => void;
+  /** Close every open output on the page. A Run that is working, and an output on another page, are left alone. */
   closeAll(): void;
   /** The person pressed Run. */
   request(id: CommandId): void;
@@ -141,18 +143,24 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
   const notify = (id: CommandId): void => {
     for (const listener of [...entry(id).listeners]) listener();
   };
-  const finishedIds = (): CommandId[] => [...entries].filter(([, e]) => e.state.kind === "finished").map(([id]) => id);
+  /** How many blocks for each command are drawn now: a person who leaves a page takes its blocks away, and the outputs stay. */
+  const mounted = new Map<CommandId, number>();
+  /** The commands whose output is open and on the page now. */
+  const finishedIds = (): CommandId[] => [...entries].filter(([id, e]) => e.state.kind === "finished" && (mounted.get(id) ?? 0) > 0).map(([id]) => id);
   const openListeners = new Set<() => void>();
   let openCount = 0;
-  const set = (id: CommandId, state: PanelState): void => {
-    entry(id).state = state;
-    notify(id);
+  const syncOpen = (): void => {
     // Other blocks care only about how many outputs are open, not about what is in them.
     const n = finishedIds().length;
     if (n !== openCount) {
       openCount = n;
       for (const listener of [...openListeners]) listener();
     }
+  };
+  const set = (id: CommandId, state: PanelState): void => {
+    entry(id).state = state;
+    notify(id);
+    syncOpen();
   };
   const setActive = (id: CommandId | null): void => {
     active = id;
@@ -253,6 +261,19 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
     subscribeOpen(listener) {
       openListeners.add(listener);
       return () => void openListeners.delete(listener);
+    },
+    mount(id) {
+      mounted.set(id, (mounted.get(id) ?? 0) + 1);
+      syncOpen();
+      let left = false;
+      return () => {
+        if (left) return;
+        left = true;
+        const n = (mounted.get(id) ?? 1) - 1;
+        if (n > 0) mounted.set(id, n);
+        else mounted.delete(id);
+        syncOpen();
+      };
     },
     closeAll() {
       for (const id of finishedIds()) {

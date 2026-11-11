@@ -76,7 +76,8 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
     if (wanted && closeAll === null) {
       closeAll = button({
         label: terminalTools.closeAll,
-        variant: "quiet",
+        // Outlined like Copy output, so when the row wraps at phone width its edge lines up with the button above (a quiet button's text sits one padding in).
+        variant: "secondary",
         ariaLabel: terminalTools.closeAllFor,
         key: `${options.key}:close-all`,
         onclick: () => {
@@ -233,6 +234,8 @@ export function terminalPanel(session: TerminalSession, options: TerminalPanelOp
     if (log) log.element.hidden = controller.transcript(id).size === 0;
   };
 
+  // This block is on the page until its view goes away: only outputs that are drawn count toward Close all.
+  onDispose(controller.mount(id));
   draw();
   onDispose(controller.subscribe(id, draw));
   onDispose(controller.subscribeOpen(syncCloseAll));
