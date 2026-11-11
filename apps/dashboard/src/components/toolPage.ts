@@ -50,6 +50,8 @@ export interface ToolUi<P> {
   readonly ticks: readonly string[];
   /** Change the tool's parameters. The result is computed again and only the result repaints. */
   set(patch: Partial<P>): void;
+  /** Take the result off the page, for a control whose value cannot be used. The next set() draws it again. */
+  clear(): void;
 }
 
 export interface ToolDownload<R> {
@@ -132,6 +134,12 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
         set(patch) {
           params = { ...params, ...patch };
           settle(true);
+        },
+        clear() {
+          turn++;
+          scope.dispose();
+          host.removeAttribute("aria-busy");
+          host.replaceChildren();
         },
       };
       const host = h("div", { class: "tool-result", "aria-busy": "true" });

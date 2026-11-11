@@ -316,7 +316,7 @@ describe("the controls", () => {
     expect(said[0]).toContain("of 10 GB");
   });
 
-  it("refuses a goal that is not a number, says so, and keeps the plan it had", async () => {
+  it("refuses a goal that is not a number, says so, and shows no plan beside it", async () => {
     const r = render(view, real(crafted(), 2));
     await settled(r.root);
     const input = r.root.querySelector("input") as FakeElement;
@@ -328,12 +328,31 @@ describe("the controls", () => {
       expect(input.getAttribute("aria-invalid"), bad).toBe("true");
     }
     expect(r.root.querySelector(".field-error")?.getAttribute("role")).toBe("alert");
-    expect(text(r.root, ".facts dd")).toEqual(["8", "4", "3"]);
+    expect(text(r.root, ".facts dd")).toEqual([]);
+    expect(r.root.querySelectorAll(".tool-result section")).toHaveLength(0);
     expect(said).toEqual([]);
-    input.value = "3";
+    input.value = "2";
     (r.root.querySelector("form") as FakeElement).fire("submit");
+    await settled(r.root);
     expect(r.root.querySelector(".field-error")?.textContent).toBe("");
     expect(input.hasAttribute("aria-invalid")).toBe(false);
+    expect(text(r.root, ".facts dd")).toEqual(["8", "4", "3"]);
+  });
+
+  it("puts a refused goal back to the one in use when the order changes", async () => {
+    const r = render(view, real(crafted(), 2));
+    await settled(r.root);
+    const input = r.root.querySelector("input") as FakeElement;
+    input.value = "abc";
+    (r.root.querySelector("form") as FakeElement).fire("submit");
+    const select = r.root.querySelector("select") as FakeElement;
+    select.value = "oldest-first";
+    select.fire("change");
+    await settled(r.root);
+    expect(input.getAttribute("value") ?? input.value).toBe("2");
+    expect(input.hasAttribute("aria-invalid")).toBe(false);
+    expect(r.root.querySelector(".field-error")?.textContent).toBe("");
+    expect(text(r.root, ".facts dd")).toEqual(["8", "4", "3"]);
   });
 
   it("has a button and a select with names, and no inline style", async () => {

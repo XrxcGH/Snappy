@@ -1,7 +1,7 @@
 /**
  * The two inputs of the planner: the storage goal and which year to save first. Built once per page, so typing is
  * never interrupted when the result repaints. A goal that is not a sensible number is refused on the spot and
- * never reaches the plan.
+ * never reaches the plan, and the plan of the goal before it is taken off the page.
  */
 import { button } from "../../components/button.ts";
 import { icon } from "../../components/icon.ts";
@@ -31,7 +31,15 @@ export function storageControls(ui: ToolUi<StoragePlannerParams>): HTMLElement {
     h("option", { value: "newest-first", selected: ui.params.order === "newest-first" }, copy.newestLine),
     h("option", { value: "oldest-first", selected: ui.params.order === "oldest-first" }, copy.oldestLine),
   );
-  select.addEventListener("change", () => ui.set({ order: select.value === "oldest-first" ? "oldest-first" : "newest-first" }));
+  select.addEventListener("change", () => {
+    // The plan drawn next uses the goal it last had, so a refused goal is put back to that one first.
+    if (input.getAttribute("aria-invalid") === "true") {
+      input.value = String(ui.params.goalGiB ?? ui.data.capGiB);
+      input.removeAttribute("aria-invalid");
+      error.textContent = "";
+    }
+    ui.set({ order: select.value === "oldest-first" ? "oldest-first" : "newest-first" });
+  });
   const chevron = icon("chevron-right", 16);
   chevron.setAttribute("class", "icon select-chevron");
 
@@ -54,6 +62,8 @@ export function storageControls(ui: ToolUi<StoragePlannerParams>): HTMLElement {
     if (gib === undefined) {
       input.setAttribute("aria-invalid", "true");
       error.textContent = copy.goalError;
+      // The old plan was made for another goal, so none is shown beside a goal that was refused.
+      ui.clear();
       input.focus();
       return;
     }
