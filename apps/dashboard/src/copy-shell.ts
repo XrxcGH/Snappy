@@ -63,6 +63,7 @@ export const shellCopy = {
   fileOpenedAnnounce: "History file opened.",
   fileWrongNote: "That passphrase did not open the file, or it is not a Snappy history file.",
   fileUnreadableNote: "Snappy could not read that file. A different version may have made it.",
+  fileTooBigNote: "That file is too big to be a Snappy history file.",
 
   // Keyboard shortcuts: the dialog, the buttons that open it, and the short status after "g".
   shortcutsTitle: "Keyboard shortcuts",

@@ -24,14 +24,14 @@ export async function buildHistoryFile(saved: Saved, passphrase: string): Promis
   return sealLedger(packSaved(saved), passphrase);
 }
 
-export type HistoryFileResult = { ok: true; saved: Saved } | { ok: false; problem: "passphrase" | "unreadable" };
+export type HistoryFileResult = { ok: true; saved: Saved } | { ok: false; problem: "passphrase" | "unreadable" | "too-big" };
 
 /**
  * Open a chosen file. The seal answers a wrong passphrase and a file that is not a sealed history in the same way, on
- * purpose, so both come back as "passphrase". Only a history from a newer version (or a failure of the engine) is "unreadable".
+ * purpose, so both come back as "passphrase". A file over the size limit is "too-big". Only a history from a newer version (or a failure of the engine) is "unreadable".
  */
 export async function readHistoryFile(file: Blob, passphrase: string): Promise<HistoryFileResult> {
-  if (file.size > MAX_HISTORY_FILE_BYTES) return { ok: false, problem: "unreadable" };
+  if (file.size > MAX_HISTORY_FILE_BYTES) return { ok: false, problem: "too-big" };
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
     return { ok: true, saved: unpackSaved(await openLedger(bytes, passphrase)) };

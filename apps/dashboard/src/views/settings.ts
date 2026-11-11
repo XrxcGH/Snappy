@@ -305,7 +305,7 @@ function openFileBox(ctx: ViewContext): HTMLElement {
         status.replaceChildren();
         const result = await readHistoryFile(file, pass);
         if (!result.ok) {
-          const text = result.problem === "passphrase" ? shellCopy.fileWrongNote : shellCopy.fileUnreadableNote;
+          const text = result.problem === "passphrase" ? shellCopy.fileWrongNote : result.problem === "too-big" ? shellCopy.fileTooBigNote : shellCopy.fileUnreadableNote;
           status.replaceChildren(notice("error", text));
           announce(text, true);
           return false;

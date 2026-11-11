@@ -69,7 +69,7 @@ describe("the file", () => {
     expect(await readHistoryFile(asFile(new Uint8Array(200).fill(7)), PASS)).toEqual({ ok: false, problem: "passphrase" });
     expect(await readHistoryFile(asFile(new Uint8Array(0)), PASS)).toEqual({ ok: false, problem: "passphrase" });
     const huge = { size: MAX_HISTORY_FILE_BYTES + 1, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Blob;
-    expect(await readHistoryFile(huge, PASS)).toEqual({ ok: false, problem: "unreadable" });
+    expect(await readHistoryFile(huge, PASS)).toEqual({ ok: false, problem: "too-big" });
   });
 
   it("knows whether there is anything to save", () => {
