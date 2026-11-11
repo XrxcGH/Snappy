@@ -9,6 +9,7 @@ import { usernameText } from "../../components/usernameChip.ts";
 import { common } from "../../copy.ts";
 import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
+import type { View } from "../../views/context.ts";
 import type { ToolMeta } from "../types.ts";
 import { controls } from "./controls.ts";
 import { copy } from "./copy.ts";
@@ -149,14 +150,26 @@ function pagedTable(rows: readonly FriendRow[]): HTMLElement {
   return h("div", { class: "paged" }, host, footer);
 }
 
-export const view = toolView<FriendsTableResult, FriendsTableParams>({
+/** What the page last said about its result: the filters and the order. A new page starts with nothing said. */
+let lastSaid: { filterKey: string; order: string } | null = null;
+
+/** The line for a result: the opening line, or what the filters matched, or, when only the order changed, the new order. */
+function summaryOf(result: FriendsTableResult): string {
+  const { table, rows, filtered } = result;
+  const before = lastSaid;
+  lastSaid = { filterKey: result.filterKey, order: result.order };
+  if (before !== null && before.filterKey === result.filterKey && before.order !== result.order) return copy.sortedAnnounce(copy.sortLabels[result.order]);
+  // A filter is announced with its result, so a person who filters hears how many matched (or that none did), not the opening line again.
+  if (filtered) return rows.length === 0 ? copy.noMatchLine : copy.matchLine(rows.length, table.summary.friends);
+  return copy.doneAnnounce(table.summary.friends, table.summary.quiet, table.summary.waiting);
+}
+
+const page = toolView<FriendsTableResult, FriendsTableParams>({
   meta,
   copy,
   params: DEFAULT_PARAMS,
   compute: computeFriendsTable,
-  // A filter is announced with its result, so a person who filters hears how many matched (or that none did), not the opening line again.
-  summary: ({ table, rows, filtered }) =>
-    filtered ? (rows.length === 0 ? copy.noMatchLine : copy.matchLine(rows.length, table.summary.friends)) : copy.doneAnnounce(table.summary.friends, table.summary.quiet, table.summary.waiting),
+  summary: summaryOf,
   // Nothing in the table at all. A filter that matches no one is not empty: the controls stay and a line says so.
   isEmpty: ({ table }) => table.summary.friends === 0,
   controls,
@@ -187,3 +200,8 @@ export const view = toolView<FriendsTableResult, FriendsTableParams>({
   },
   command: "friends",
 });
+
+export const view: View = (ctx) => {
+  lastSaid = null;
+  return page(ctx);
+};

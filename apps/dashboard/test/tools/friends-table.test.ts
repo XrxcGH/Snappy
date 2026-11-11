@@ -409,6 +409,44 @@ describe("the page", () => {
     for (const line of said) for (const name of Object.values(NAMES)) expect(line).not.toContain(name);
   });
 
+  it("announces the new order, and only the order, when the sort changes, and says nothing else about the opening line again", async () => {
+    const r = await renderSettled(view, crafted());
+    expect(said).toEqual([copy.doneAnnounce(6, 2, 2)]);
+    const order = select(r.root, "friends-table-sort");
+    said.length = 0;
+    order.value = "added-desc";
+    order.fire("change");
+    await settled(r.root);
+    expect(said).toEqual(["Sorted by added, newest first."]);
+    // A second order is said the same way, a held result included.
+    order.value = "username-asc";
+    order.fire("change");
+    await settled(r.root);
+    expect(said).toEqual(["Sorted by added, newest first.", "Sorted by username, A to Z."]);
+    // A filter changes what is shown, so it is still said by what it matched, and the order after it is said again.
+    said.length = 0;
+    (r.root.querySelector("input#friends-table-starts") as FakeElement).value = "ZQ.B";
+    (r.root.querySelector("form") as FakeElement).fire("submit");
+    await settled(r.root);
+    expect(said).toEqual([copy.matchLine(1, 6)]);
+    order.value = "total-desc";
+    order.fire("change");
+    await settled(r.root);
+    expect(said).toEqual([copy.matchLine(1, 6), "Sorted by most chats and Snaps."]);
+    for (const line of said) for (const name of Object.values(NAMES)) expect(line).not.toContain(name);
+  });
+
+  it("starts each visit with the opening line, even when the last visit ended in another order", async () => {
+    const first = await renderSettled(view, crafted());
+    const order = select(first.root, "friends-table-sort");
+    order.value = "total-desc";
+    order.fire("change");
+    await settled(first.root);
+    said.length = 0;
+    await renderSettled(view, crafted());
+    expect(said).toEqual([copy.doneAnnounce(6, 2, 2)]);
+  });
+
   it("moves focus to the first filter before Clear filters hides itself, so a keyboard user does not fall to the top of the page", async () => {
     const r = await renderSettled(view, crafted());
     const clear = r.root.querySelectorAll("button").find((b) => b.textContent === copy.clearButton) as FakeElement;

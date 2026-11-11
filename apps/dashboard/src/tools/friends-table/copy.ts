@@ -52,6 +52,8 @@ export const copy = {
     "sent-desc": "Most sent by you",
     "received-desc": "Most sent to you",
   },
+  /** Said when only the order changed: "Sorted by added, newest first." The lowercase label is the order's own words from sortLabels. */
+  sortedAnnounce: (label: string): string => `Sorted by ${label.charAt(0).toLowerCase()}${label.slice(1)}.`,
   showLabels: {
     all: "All friends",
     quiet: "May be quiet",

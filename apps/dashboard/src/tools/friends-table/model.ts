@@ -66,6 +66,10 @@ export interface FriendsTableResult {
   filtered: boolean;
   /** The days used for the hints, so the page can say them. */
   limits: { quietDays: number; windowDays: number };
+  /** The order the rows are in, as the id the page offers it under. */
+  order: SortOrderId;
+  /** What the filters are, as one string, so the page can tell a change of order from a change of filter. Never spoken. */
+  filterKey: string;
 }
 
 const held = new WeakMap<ToolData, FriendsTable>();
@@ -97,7 +101,14 @@ export function computeFriendsTable(data: ToolData, params: FriendsTableParams =
   const filter = filterOf(params);
   const rows = insights.friendsTable.sortRows(insights.friendsTable.filterRows(table.rows, filter), params.sort, params.desc ? "desc" : "asc");
   const d = insights.friendsTable.FRIENDS_TABLE_DEFAULTS;
-  return { table, rows, filtered: Object.keys(filter).length > 0, limits: { quietDays: d.quietDays, windowDays: d.waiting.windowDays } };
+  return {
+    table,
+    rows,
+    filtered: Object.keys(filter).length > 0,
+    limits: { quietDays: d.quietDays, windowDays: d.waiting.windowDays },
+    order: orderIdOf(params),
+    filterKey: JSON.stringify(filter),
+  };
 }
 
 /** The file name: the day of the data, so the same table always gets the same name. */
