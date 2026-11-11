@@ -5,7 +5,7 @@ import { factList, section, subsection } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
 import { h, setVar } from "../../dom.ts";
-import { formatCount, formatDate, formatPercent } from "../../format.ts";
+import { formatCount, formatDate, formatDateIn, formatPercent } from "../../format.ts";
 import type { View } from "../../views/context.ts";
 import { zoneCaption } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
@@ -60,13 +60,13 @@ function weekCell(peak: insights.activityCalendar.WeekPeak | null): string {
   return peak === null ? copy.unitNoWeek : copy.unitWeek(dayText(peak.start), peak.count, peak.ties > 0);
 }
 
-function glance({ result }: CalendarView): HTMLElement {
+function glance({ result }: CalendarView, offsetMinutes: number): HTMLElement {
   const facts: Parameters<typeof factList>[0][number][] = [
     { label: copy.countedLabel, value: formatCount(result.totals.used), icon: "list" },
     { label: copy.activeDaysLabel, value: formatCount(result.totals.activeDays), icon: "calendar" },
   ];
-  if (result.first !== null) facts.push({ label: copy.firstLabel, value: formatDate(result.first), icon: "calendar" });
-  if (result.last !== null) facts.push({ label: copy.lastLabel, value: formatDate(result.last), icon: "calendar" });
+  if (result.first !== null) facts.push({ label: copy.firstLabel, value: formatDateIn(result.first, offsetMinutes), icon: "calendar" });
+  if (result.last !== null) facts.push({ label: copy.lastLabel, value: formatDateIn(result.last, offsetMinutes), icon: "calendar" });
   return factList(facts);
 }
 
@@ -236,7 +236,7 @@ const page = (params: CalendarParams): View =>
     summary: ({ result }) => (result.totals.used === 0 ? copy.emptyAnnounce : copy.summaryAnnounce(result.totals.used, result.totals.activeDays)),
     isEmpty: ({ result }) => result.totals.used === 0,
     controls: calendarControls,
-    render: (v, ui) => [section(copy.glanceHeading, glance(v), zoneCaption(ui.params.utcOffsetMinutes)), yearSection(v), monthsSection(v), runsSection(v), kindsSection(v), kindsByYearSection(v)],
+    render: (v, ui) => [section(copy.glanceHeading, glance(v, ui.params.utcOffsetMinutes), zoneCaption(ui.params.utcOffsetMinutes)), yearSection(v), monthsSection(v), runsSection(v), kindsSection(v), kindsByYearSection(v)],
     notes: ({ result }): ToolNote[] => result.notes.map((n): ToolNote => ({ kind: isWarning(n.code) ? "warning" : "info", text: noteText(n) })),
     command: "calendar",
   });

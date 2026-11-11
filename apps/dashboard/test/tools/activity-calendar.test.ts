@@ -368,6 +368,8 @@ describe("the page", () => {
     expect(r.root.querySelector("label[for=calendar-zone]")?.textContent).toBe(copy.zoneLabel);
     const runs = (): string[][] => rowsOf(r.root.querySelectorAll("table")[1] as FakeElement);
     expect(runs()[0]).toEqual([copy.activeRunRow, "1 day", "From Mar 2, 2026", "To Mar 2, 2026"]);
+    const facts = (): string[] => [...r.root.querySelectorAll(".fact")].map((f) => `${phrase(f.querySelector("dt") as FakeElement)}: ${phrase(f.querySelector("dd") as FakeElement)}`);
+    expect(facts()).toEqual(expect.arrayContaining([`${copy.firstLabel}: Mar 2, 2026`, `${copy.lastLabel}: Mar 2, 2026`]));
 
     zone.value = "180";
     zone.fire("change");
@@ -375,6 +377,7 @@ describe("the page", () => {
     await settled(r.root);
     expect(r.root.querySelectorAll("select")[0]).toBe(zone);
     expect(runs()[0]).toEqual([copy.activeRunRow, "1 day", "From Mar 3, 2026", "To Mar 3, 2026"]);
+    expect(facts()).toEqual(expect.arrayContaining([`${copy.firstLabel}: Mar 3, 2026`, `${copy.lastLabel}: Mar 3, 2026`]));
     expect(said).toHaveLength(2);
   });
 

@@ -254,6 +254,18 @@ describe("the page", () => {
     expect(said).toHaveLength(2);
   });
 
+  it("shows First and Last as dates in the chosen time zone", async () => {
+    const r = await renderSettled(view, withChats(crafted()));
+    const facts = (): string[] => [...r.root.querySelectorAll(".fact")].map((f) => `${phrase(f.querySelector("dt") as FakeElement)}: ${phrase(f.querySelector("dd") as FakeElement)}`);
+    expect(facts()).toEqual(expect.arrayContaining([`${copy.firstLabel}: Mar 6, 2026`, `${copy.lastLabel}: May 4, 2026`]));
+    const select = r.root.querySelector("select") as FakeElement;
+    // Friday 9 pm UTC is Saturday at 12:00 am in UTC+3:00, and Monday 1 pm UTC is still Monday.
+    select.value = "180";
+    select.fire("change");
+    await settled(r.root);
+    expect(facts()).toEqual(expect.arrayContaining([`${copy.firstLabel}: Mar 7, 2026`, `${copy.lastLabel}: May 4, 2026`]));
+  });
+
   it("shows the honest empty result when no chat has a usable date", async () => {
     const { root } = await renderSettled(view, withChats([chat(0), chat(0, "received")]));
     expect(root.querySelector(".empty-title")?.textContent).toBe(copy.empty.title);

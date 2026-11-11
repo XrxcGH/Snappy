@@ -6,7 +6,7 @@ import { icon } from "../../components/icon.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote, ToolUi } from "../../components/toolPage.ts";
 import { h, setVar } from "../../dom.ts";
-import { formatCount, formatDate, formatPercent } from "../../format.ts";
+import { formatCount, formatDateIn, formatPercent } from "../../format.ts";
 import type { View } from "../../views/context.ts";
 import { startingOffset, zoneCaption, zoneOptions } from "../timezone.ts";
 import type { ToolMeta } from "../types.ts";
@@ -77,14 +77,14 @@ function barList(rows: readonly { name: string; count: number }[]): HTMLElement 
   return h("ul", { class: "card hbars" }, ...rows.map((r) => barRow(r.name, r.count, max)));
 }
 
-function glance({ result }: HabitsView): HTMLElement {
+function glance({ result }: HabitsView, offsetMinutes: number): HTMLElement {
   const { totals } = result;
   const facts: Parameters<typeof factList>[0][number][] = [
     { label: copy.countedLabel, value: formatCount(totals.used), icon: "list" },
     { label: copy.activeDaysLabel, value: formatCount(result.activeDays), icon: "calendar" },
   ];
-  if (result.first !== null) facts.push({ label: copy.firstLabel, value: formatDate(result.first), icon: "calendar" });
-  if (result.last !== null) facts.push({ label: copy.lastLabel, value: formatDate(result.last), icon: "calendar" });
+  if (result.first !== null) facts.push({ label: copy.firstLabel, value: formatDateIn(result.first, offsetMinutes), icon: "calendar" });
+  if (result.last !== null) facts.push({ label: copy.lastLabel, value: formatDateIn(result.last, offsetMinutes), icon: "calendar" });
   if (result.medianGapMs !== null) facts.push({ label: copy.gapLabel, value: copy.unitGap(result.medianGapMs) || copy.noValue, icon: "queue" });
   return factList(facts);
 }
@@ -159,7 +159,7 @@ const page = (params: HabitsParams): View =>
     render: (v, ui) => {
       const { result } = v;
       return [
-        section(copy.glanceHeading, glance(v), zoneCaption(ui.params.utcOffsetMinutes)),
+        section(copy.glanceHeading, glance(v, ui.params.utcOffsetMinutes), zoneCaption(ui.params.utcOffsetMinutes)),
         busiest(v),
         direction(v),
         // The three bar lists are independent: two columns on a wide screen.
