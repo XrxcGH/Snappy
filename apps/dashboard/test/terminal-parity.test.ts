@@ -149,7 +149,7 @@ describe("the app and the command line agree", () => {
     mkdirSync(join(dir, "in"), { recursive: true });
     for (const f of pair.files) writeFileSync(join(dir, "in", f.name), f.bytes);
     const cliRun = async (argv: string[], answers: string[]) => {
-      const io = makeIo({ home: join(dir, "home"), interactive: true, columns: COLUMNS, env: { COLORTERM: "truecolor" }, answers, now: () => NOW });
+      const io = makeIo({ home: join(dir, "home"), interactive: true, columns: COLUMNS, env: { COLORTERM: "truecolor", SNAPPY_APP: "1" }, answers, now: () => NOW });
       const r = await run(argv, io);
       return { out: normalize(r.out + r.err, dir), code: r.code, asked: io.asked };
     };

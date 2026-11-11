@@ -62,7 +62,8 @@ export async function historyCommand(args: string[], io: Io): Promise<number> {
   // Real snapshots only: the keep list and the checkmarks are kept apart from them.
   const { ledger, allowlist } = await loadStore(io, ledgerPath, passphrase);
 
-  const lines: string[] = [term.bold("Saved history"), `  File: ${ledgerPath}`];
+  // Inside the app the file is in a virtual folder that exists only in the helper, so its path would mean nothing.
+  const lines: string[] = [term.bold("Saved history"), ...(io.env.SNAPPY_APP === "1" ? [] : [`  File: ${ledgerPath}`])];
   if (ledger.snapshots.length === 0) {
     lines.push("  No exports saved yet.");
   } else {

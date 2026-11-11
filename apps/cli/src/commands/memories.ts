@@ -445,7 +445,8 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
     for (const code of [...new Set(failures.map((f) => f.reason ?? "error"))]) lines.push(`  ${code}: ${failureAdvice(code, io.limits.maxBundledBytes)}`);
     if (failures.length > 0) lines.push("  Run again to retry. Finished items are skipped.");
     // With --download the links in the export were contacted, so the plain results line would overstate.
-    lines.push(`  Report: ${reportPath}`, "", download ? "Only the links in your export, and the secure addresses they forwarded to, were contacted. Nothing else has left this device." : PRIVACY_RESULTS);
+    // Inside the app the folder is virtual and exists only in the helper, so only the file name is shown.
+    lines.push(`  Report: ${io.env.SNAPPY_APP === "1" ? "memories-report.json" : reportPath}`, "", download ? "Only the links in your export, and the secure addresses they forwarded to, were contacted. Nothing else has left this device." : PRIVACY_RESULTS);
     io.out.write(lines.join("\n") + "\n");
     return failures.length > 0 ? 3 : 0;
   });
