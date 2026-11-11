@@ -83,3 +83,23 @@ describe("a very long username keeps its row inside the frame", () => {
     expect(declared("closest-fading", `${t} tbody th`)).toMatch(/overflow-wrap:\s*anywhere/);
   });
 });
+
+describe("the lookalike pair details", () => {
+  it("share one maximum width and one box, so their right edges line up", () => {
+    const level = declared("lookalike-usernames", ".tool-lookalike-usernames .pair-level");
+    const reasons = declared("lookalike-usernames", ".tool-lookalike-usernames .pair-reasons");
+    expect(level).toMatch(/max-width:\s*36rem/);
+    expect(reasons).toMatch(/max-width:\s*36rem/);
+    for (const rule of [level, reasons]) {
+      expect(rule).toMatch(/box-sizing:\s*border-box/);
+      expect(rule).toMatch(/margin:\s*0/);
+      expect(rule).toMatch(/padding:\s*0/);
+    }
+  });
+});
+
+describe("the export check tables", () => {
+  it("keep a date or a span whole on one line from the width where the table has columns", () => {
+    expect(declared("export-check", ".tool-export-check .table td", /min-width:\s*40\.01rem/)).toMatch(/white-space:\s*nowrap/);
+  });
+});

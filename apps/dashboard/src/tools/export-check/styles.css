@@ -1,0 +1,4 @@
+/* Export check: a date, a count or a span stays whole on one line in the tables, so a narrow page scrolls the table instead of breaking "Nov 6," from "2026". Tokens only. */
+@media (min-width: 40.01rem) {
+  .tool-export-check .table td { white-space: nowrap; }
+}
