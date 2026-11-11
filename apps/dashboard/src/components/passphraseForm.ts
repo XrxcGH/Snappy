@@ -75,6 +75,9 @@ export function passphraseForm(options: PassphraseFormOptions): HTMLFormElement 
   const form = h(
     "form",
     { class: "form", novalidate: true, autocomplete: "off" },
+    // Browsers expect a username field ahead of a password field (accessibility and password managers); there is no
+    // account here, so it is empty, hidden, out of the tab order and hidden from assistive technology.
+    h("input", { type: "text", name: "username", autocomplete: "username", hidden: true, tabindex: "-1", "aria-hidden": "true" }),
     first.wrap,
     ...(options.mode === "set" ? [strength] : []),
     second?.wrap ?? null,
