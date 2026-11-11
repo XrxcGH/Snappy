@@ -79,7 +79,7 @@ export async function demoCommand(args: string[], io: Io): Promise<number> {
       [
         ...intro,
         `  Earlier export: snappy-demo-earlier.zip`,
-        `  Later export:   snappy-demo-later.zip`,
+        `  Later export: snappy-demo-later.zip`,
         "",
         "These files exist only inside the app, for this run.",
         ...(flags.run ? [] : ["Add --run to analyze them here.", ""]),

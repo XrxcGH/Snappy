@@ -43,7 +43,7 @@ describe("terminal text inside the app", () => {
   it("demo gives the files plain names and no line that sends the person back to the same command", async () => {
     const plain = await run(["demo"], makeIo({ env: APP }));
     expect(plain.out).toContain("Earlier export: snappy-demo-earlier.zip");
-    expect(plain.out).toContain("Later export:   snappy-demo-later.zip");
+    expect(plain.out).toContain("Later export: snappy-demo-later.zip");
     expect(plain.out).not.toContain("demo/");
     expect(plain.out).not.toMatch(/Run snappy-export demo/);
     expect(plain.out).not.toContain("Commands to try");

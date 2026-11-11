@@ -43,7 +43,7 @@ describe("snappy-export demo", () => {
     const { code, out } = await run(["demo"], app);
     expect(code).toBe(0);
     expect(out).toContain("Earlier export: snappy-demo-earlier.zip");
-    expect(out).toContain("Later export:   snappy-demo-later.zip");
+    expect(out).toContain("Later export: snappy-demo-later.zip");
     expect(out).toContain("Add --run to analyze them here.");
     // No temporary folder path and no command built on one.
     expect(out).not.toMatch(/\/tmp\/|snappy-demo-[A-Za-z0-9]{6}\b|\\Temp\\|analyze "|memories "/);
