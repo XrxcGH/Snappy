@@ -25,7 +25,7 @@ export function setSearchQuery(listKey: string, query: string): void {
   else queries.set(listKey, query);
 }
 
-/** Forget every search. Lock and Delete data do this through the analysis reset, and "Clear filters" does it too. */
+/** Forget every search. Lock and Delete saved history do this through the analysis reset, and "Clear filters" does it too. */
 export function clearSearches(): void {
   epoch++;
   queries.clear();

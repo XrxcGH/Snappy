@@ -1,5 +1,5 @@
 /**
- * Lock and Delete data say the screen is cleared. The command blocks live outside the dashboard's store, so
+ * Lock and Delete saved history say the screen is cleared. The command blocks live outside the dashboard's store, so
  * they must be cleared with it: the transcripts, the files a command saved, the picked export files, and a
  * Run that is still working.
  */
@@ -142,7 +142,7 @@ describe("Lock", () => {
   });
 });
 
-describe("Delete data", () => {
+describe("Delete saved history", () => {
   it("clears the command output and the picked files too", async () => {
     const p = page();
     await finishedRun(p);

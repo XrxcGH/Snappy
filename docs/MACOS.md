@@ -63,7 +63,7 @@ Snappy puts files in these places on a Mac. The list comes from starting the app
 
 ## Remove Snappy and everything it stored
 
-1. Deleting the saved history cannot be undone. To keep it, save a history file first (Settings, History file). Keep your original Snapchat export, which you can add again. Then, in Snappy, open Settings and choose **Delete data**.
+1. Deleting the saved history cannot be undone. To keep it, save a history file first (Settings, History file). Keep your original Snapchat export, which you can add again. Then, in Snappy, open Settings and choose **Delete saved history**.
 2. Quit Snappy (**Snappy**, **Quit Snappy**, or Cmd+Q).
 3. Drag `Snappy.app` from Applications to the Trash and empty it. This removes the program only. macOS leaves the folders in the table above in place.
 4. To remove the rest, move these to the Trash: `~/Library/WebKit/com.snappy.export` and `~/Library/Caches/com.snappy.export`, and the two window-state paths above if they exist.

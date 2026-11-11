@@ -60,7 +60,7 @@ export function parsedFromSnapshot(snap: Snapshot): ParsedExport {
 /** Clears every memo below. Each holds its last arguments and result, so each can hold the whole export. */
 const resets: (() => void)[] = [];
 
-/** Lets a cache outside this file (the tools' results) be forgotten together with the analysis, on Lock and Delete data. */
+/** Lets a cache outside this file (the tools' results) be forgotten together with the analysis, on Lock and Delete saved history. */
 export function onAnalysisReset(reset: () => void): void {
   resets.push(reset);
 }

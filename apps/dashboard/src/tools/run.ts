@@ -4,7 +4,7 @@
  * Opening a tool paints its frame and a short "working" line first, then does the one pass over the
  * data in a later task (after a short wait, so the line is really on screen), so a large history never freezes the navigation. The result is kept per tool,
  * keyed on the data object and the tool's own parameters, so coming back to the page (or a repaint)
- * costs nothing. The memo is cleared with the analysis cache on Lock and Delete data.
+ * costs nothing. The memo is cleared with the analysis cache on Lock and Delete saved history.
  */
 import { onAnalysisReset } from "../analysis.ts";
 import type { ToolData } from "./data.ts";

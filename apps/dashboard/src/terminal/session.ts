@@ -112,7 +112,7 @@ export function createTerminalSession(options: SessionOptions): TerminalSession 
   const usesSample = (spec: CommandSpec): boolean => options.getFiles === undefined && sampleOn && picked.count() === 0 && canUseSample(spec);
   const controller = createTerminalController({
     runner,
-    // The files the person picked win. The sample is generated the first time a Run needs it and kept only until Lock or Delete data.
+    // The files the person picked win. The sample is generated the first time a Run needs it and kept only until Lock or Delete saved history.
     getFiles: options.getFiles ?? ((spec) => (usesSample(spec) ? sampleFor(spec) : picked.files())),
     announce: options.announce ?? speak,
     columns: () => source(),

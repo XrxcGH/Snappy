@@ -1,7 +1,7 @@
 /**
  * Run on the sample data: while the sample is showing and no export was picked, a command that only reads an export runs on the
  * made-up sample export. A command that saves the history or asks for a passphrase never does, the files a person picked always
- * win, and Lock or Delete data forgets the generated sample.
+ * win, and Lock or Delete saved history forgets the generated sample.
  */
 import { bytesReader, parseExportFromReader } from "@snappy-export/core";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -168,6 +168,9 @@ describe("a Run while the sample data is showing", () => {
   });
 
   it("builds the sample once, and forgets it on Lock or Delete data", async () => {
+  });
+
+  it("builds the sample once, and forgets it on Lock or Delete saved history", async () => {
     let built = 0;
     const { session } = recordingSession(() => {
       built++;

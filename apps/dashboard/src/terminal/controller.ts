@@ -85,7 +85,7 @@ export interface TerminalController {
   clearFiles(id: CommandId): void;
   /**
    * Forget everything on the page: stop a Run that is working, clear every transcript and every saved
-   * file, and put every block back to its start. For Lock and Delete data.
+   * file, and put every block back to its start. For Lock and Delete saved history.
    */
   reset(): void;
   /** What the last Run's chip says. */

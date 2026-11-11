@@ -1,7 +1,7 @@
 /**
  * Self-reported checklist ticks: the person's own word, kept only through the saved-history mechanism that already
  * exists. With saving on they are sealed with the history; otherwise they last this session and are never written.
- * The sample never touches the real list. Lock and Delete data forget them.
+ * The sample never touches the real list. Lock and Delete saved history forget them.
  */
 import { openLedger, syntheticExportZip } from "@snappy-export/core";
 import { describe, expect, it } from "vitest";
@@ -105,7 +105,7 @@ describe("ticks with saving on", () => {
     expect(unpackSaved(await openLedger(vault.blob as Uint8Array, PASS)).ticks).toEqual(["a:one", "b:two"]);
   });
 
-  it("are gone after Delete data", async () => {
+  it("are gone after Delete saved history", async () => {
     const { store, actions, vault } = setup();
     await actions.init(null);
     await actions.importZips([zip()]);

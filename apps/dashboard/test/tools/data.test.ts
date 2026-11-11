@@ -142,7 +142,7 @@ describe("held results", () => {
     expect(cachedResult("boom", data, "{}")).toBeUndefined();
   });
 
-  it("are forgotten with the analysis cache, which Lock and Delete data clear", async () => {
+  it("are forgotten with the analysis cache, which Lock and Delete saved history clear", async () => {
     const data = toolData(sample);
     await runTool("forget", data, "{}", () => "kept");
     expect(cachedResult("forget", data, "{}")).toEqual({ result: "kept" });

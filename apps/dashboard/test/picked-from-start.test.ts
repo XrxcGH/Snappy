@@ -1,6 +1,6 @@
 /**
  * The export that was read on Start is handed to the command blocks, so a command does not ask for the same export again:
- * the files are marked "from Start", a newer export replaces them, the person's own picks stay, and Lock and Delete data
+ * the files are marked "from Start", a newer export replaces them, the person's own picks stay, and Lock and Delete saved history
  * clear them with everything else. Nothing is stored. Synthetic data only.
  */
 import { beforeAll, describe, expect, it, vi } from "vitest";
@@ -141,7 +141,7 @@ describe("what an import hands to the command blocks", () => {
   });
 });
 
-describe("Lock and Delete data clear what Start handed over", () => {
+describe("Lock and Delete saved history clear what Start handed over", () => {
   function wired() {
     const s: TerminalSession = createTerminalSession({ spawn: () => null, vault: { supported: () => false, read: async () => null, write: async () => undefined, clear: async () => undefined }, vaultPhase: () => "locked", announce: () => undefined });
     const store = createStore(initialState());

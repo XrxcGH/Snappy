@@ -179,7 +179,7 @@ function deleteSection(ctx: ViewContext): HTMLElement {
 
 /**
  * The saved history as a list of the exports in it: the date and how many friends, never a name. Each can be deleted
- * in two steps, like Delete data. It shows the real history (the sample has none), and nothing while the history is locked.
+ * in two steps, like Delete saved history. It shows the real history (the sample has none), and nothing while the history is locked.
  */
 function historySection(ctx: ViewContext): HTMLElement {
   return region(
@@ -223,7 +223,7 @@ function historyRow(ctx: ViewContext, snap: Snapshot): HTMLElement {
       },
     });
     slot.replaceChildren(h("p", { class: "caption" }, shellCopy.historyConfirmNote(date)), h("div", { class: "actions" }, confirm, cancel));
-    // Cancel is the safe default, as in Delete data.
+    // Cancel is the safe default, as in Delete saved history.
     cancel.focus();
   };
   // Escape cancels, as it does everywhere else a confirmation asks.

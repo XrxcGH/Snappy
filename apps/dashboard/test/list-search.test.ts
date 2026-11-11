@@ -260,7 +260,7 @@ describe("what is typed stays in memory", () => {
     expect(searchQuery("queue")).toBe(CANARY);
     expect((document as unknown as { title: string }).title).toBe("Cleanup queue");
     expect(JSON.stringify(location)).not.toContain(CANARY);
-    // Lock and Delete data reset the analysis; the search goes with it.
+    // Lock and Delete saved history reset the analysis; the search goes with it.
     resetAnalysisCache();
     expect(searchQuery("queue")).toBe("");
     delete (globalThis as { location?: unknown }).location;

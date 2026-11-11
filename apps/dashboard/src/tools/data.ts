@@ -7,7 +7,7 @@
  *   - A tool's `compute` is a pure function of ToolData (and its own small parameters). It runs when its page
  *     opens, after the page has painted (see run.ts), in one pass, and returns a small plain result: counts,
  *     dates and codes, plus names only where a result table is meant to show them.
- *   - Results are held one per tool and forgotten with the analysis cache, so Lock and Delete data clear them too.
+ *   - Results are held one per tool and forgotten with the analysis cache, so Lock and Delete saved history clear them too.
  *
  * A pass that one day proves too heavy for the page moves into a worker task behind run.ts. Views and
  * models do not change, because they only ever see ToolData in and a plain result out.

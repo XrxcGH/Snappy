@@ -40,7 +40,7 @@ export interface Deps {
   saveTheme: (theme: Theme) => void;
   /** Reads the zip parts. The page passes the background reader; the default reads on the calling thread. */
   runImport?: ImportRunner;
-  /** Everything held on screen was forgotten (Lock or Delete data): the command output and picked files go too. */
+  /** Everything held on screen was forgotten (Lock or Delete saved history): the command output and picked files go too. */
   onWipe?: () => void;
   /**
    * An export was read and kept: its ZIP files, so the command blocks can use them without asking again. Real files only
