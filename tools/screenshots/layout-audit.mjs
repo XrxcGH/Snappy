@@ -1305,8 +1305,7 @@ function measurePage(opts) {
           if (row) row.items.push(k); else rows.push({ top: R(k).top, items: [k] });
         }
         const last = rows[rows.length - 1];
-        // a numbered run of steps flows down its columns (1, 2, 3 | 4, 5), so its second column may be shorter by design
-        if (!g.matches("ol.step-list") && rows.length >= 2 && last.items.length === 1 && R(last.items[0]).width < R(g).width * 0.9) add("wide-orphan", last.items[0], "the last row of a grid of " + kids.length + " cards holds one lone card (" + px(R(last.items[0]).width) + " of " + px(R(g).width) + "); let it span the row or share the row");
+        if (rows.length >= 2 && last.items.length === 1 && R(last.items[0]).width < R(g).width * 0.9) add("wide-orphan", last.items[0], "the last row of a grid of " + kids.length + " cards holds one lone card (" + px(R(last.items[0]).width) + " of " + px(R(g).width) + "); let it span the row or share the row");
       }
     }
     // the two columns of a balanced flow, and a numbered run of steps, are equal

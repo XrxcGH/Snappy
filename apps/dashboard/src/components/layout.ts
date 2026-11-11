@@ -85,8 +85,7 @@ export function stepSection(n: number, heading: string, ...children: Child[]): H
 export function stepCards(items: readonly string[]): HTMLElement {
   return h(
     "ol",
-    // The count picks the rows of the two-column flow on a wide screen.
-    { class: `step-list steps-n-${Math.min(items.length, 12)}`, role: "list" },
+    { class: "step-list", role: "list" },
     ...items.map((text, i) => h("li", { class: "step-card step-card-compact" }, h("span", { class: "step-num", "aria-hidden": "true" }, String(i + 1)), h("p", {}, text))),
   );
 }

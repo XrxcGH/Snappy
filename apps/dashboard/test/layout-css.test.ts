@@ -252,6 +252,14 @@ describe("running text and titles", () => {
     expect(title[0]?.media).toEqual(["(min-width: 72rem)"]);
   });
 
+  it("reads a numbered run of steps row by row (1, 2 then 3, 4), and lets a last odd step span the row", () => {
+    const list = rulesFor("ol.step-list").map((r) => r.body).join(" ");
+    expect(list).toMatch(/grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+    expect(list).not.toMatch(/grid-auto-flow:\s*column/);
+    expect(list).not.toMatch(/grid-template-rows/);
+    expect(declared("ol.step-list > .step-card:last-child:nth-child(odd)")).toMatch(/grid-column:\s*1\s*\/\s*-1/);
+  });
+
   it("lists the licenses in one column, so no tile has a label on two lines beside tiles with one", () => {
     expect(declared(".licenses")).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
     expect(rules.filter((r) => r.selector === ".licenses" && /repeat\(2/.test(r.body))).toEqual([]);
