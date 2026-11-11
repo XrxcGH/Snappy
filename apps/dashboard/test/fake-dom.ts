@@ -111,6 +111,14 @@ export class FakeElement extends FakeNode {
     this.childNodes.push(child);
     return child;
   }
+  insertBefore<T extends FakeNode>(child: T, before: FakeNode | null): T {
+    child.parentNode?.removeChild(child);
+    child.parentNode = this;
+    const at = before === null ? -1 : this.childNodes.indexOf(before);
+    if (at < 0) this.childNodes.push(child);
+    else this.childNodes.splice(at, 0, child);
+    return child;
+  }
   append(...children: (FakeNode | string)[]): void {
     for (const c of children) this.appendChild(typeof c === "string" ? new FakeText(c) : c);
   }
