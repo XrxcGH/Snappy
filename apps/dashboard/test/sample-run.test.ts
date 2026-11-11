@@ -15,6 +15,7 @@ import type { State } from "../src/reducer.ts";
 import { SAMPLE_NOW, buildSampleWorkspace } from "../src/sample.ts";
 import { createStore } from "../src/store.ts";
 import { COMMANDS, COMMAND_IDS, bindArgv } from "../src/terminal/commands.ts";
+import type { CommandSpec } from "../src/terminal/commands.ts";
 import type { CommandId } from "../src/terminal/commands.ts";
 import type { ToWorker } from "../src/terminal/protocol.ts";
 import type { Channel, RunFile } from "../src/terminal/run-types.ts";
@@ -27,7 +28,7 @@ import { runInHelper } from "./helper-harness.ts";
 const tick = (ms = 0): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /** A session whose helper is a recording channel: what the page posts to it is what a Run would have read. */
-function recordingSession(sampleFiles?: () => RunFile[]) {
+function recordingSession(sampleFiles?: (spec: CommandSpec) => RunFile[]) {
   const sent: ToWorker[] = [];
   let hear: (message: unknown) => void = () => undefined;
   // The helper reads nothing and exits at once, so one Run ends before the next begins.
