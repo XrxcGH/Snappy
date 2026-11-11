@@ -31,7 +31,10 @@ describe("number input", () => {
     expect(parseCapGiB("5")).toBe(5);
     expect(parseCapGiB("7.5")).toBe(7.5);
     expect(parseCapGiB("1,000")).toBe(1000);
-    for (const bad of ["", "0", "0.05", "-3", "abc", "10001", "1e2", ".5"]) expect(parseCapGiB(bad)).toBeUndefined();
+    expect(parseCapGiB("1,000.5")).toBe(1000.5);
+    for (const bad of ["", "0", "0.05", "-3", "abc", "10001", "1e2", ".5", "1,5", "1,5.5", "1,00", "1,0000", ",500", "1,,000"]) {
+      expect(parseCapGiB(bad)).toBeUndefined();
+    }
   });
 });
 
