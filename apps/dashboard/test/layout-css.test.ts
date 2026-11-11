@@ -402,3 +402,19 @@ describe("the Cleanup lists at three across", () => {
     expect(xwide(".candidate-list > :last-child:nth-child(3n + 2)")[0]?.body).toMatch(/grid-column:\s*span 3/);
   });
 });
+
+describe("the Settings history file box", () => {
+  it("spaces its question, note, form and Cancel one card gap apart, so the error note has the same room above and below", () => {
+    expect(declared(".history-open")).toMatch(/display:\s*grid/);
+    expect(declared(".history-open")).toMatch(/gap:\s*var\(--gap-card\)/);
+  });
+
+  it("takes no gap for an empty note", () => {
+    expect(declared(".history-open-status:empty")).toMatch(/display:\s*none/);
+  });
+
+  it("has no spacing of its own on the note, which would make the room above and below differ", () => {
+    expect(declared(".history-open-status")).not.toMatch(/margin|padding/);
+    expect(declared(".history-open > .notice")).toBe("");
+  });
+});
