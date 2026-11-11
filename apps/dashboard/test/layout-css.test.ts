@@ -298,3 +298,26 @@ describe("forced colors (Windows high contrast)", () => {
     expect(busy).toMatch(/forced-color-adjust:\s*none/);
   });
 });
+
+describe("form rows line up at the top", () => {
+  const read = (...parts: string[]): string => readFileSync(path.join(root, "apps", "dashboard", "src", ...parts), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("keeps a field's label and control at its top, so a neighbor with a help line does not stretch it", () => {
+    expect(declared(".field")).toMatch(/align-content:\s*start/);
+  });
+
+  it("starts every control of a row at the same top, however many help lines each has", () => {
+    expect(declared(".filters")).toMatch(/align-items:\s*start/);
+    expect(read("tools", "year-in-review", "styles.css")).toMatch(/\.year-controls\s*\{[^}]*align-items:\s*start/);
+  });
+
+  it("gives the storage planner's two fields the standard gap, not the tight one of a single small field", () => {
+    expect(read("tools", "storage-planner", "controls.ts")).not.toMatch(/cap-form/);
+  });
+
+  it("makes the five facts of a row equal tiles (three, then two centered)", () => {
+    expect(declared(".facts-n-5 .fact")).toMatch(/span 4/);
+    expect(declared(".facts-n-5 .fact:nth-child(4)")).toMatch(/grid-column:\s*3 \/ span 4/);
+    expect(declared(".facts-n-5 .fact:nth-child(5)")).toMatch(/grid-column:\s*7 \/ span 4/);
+  });
+});

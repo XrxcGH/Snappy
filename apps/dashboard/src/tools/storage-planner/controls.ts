@@ -37,7 +37,7 @@ export function storageControls(ui: ToolUi<StoragePlannerParams>): HTMLElement {
 
   const form = h(
     "form",
-    { class: "form cap-form", novalidate: true },
+    { class: "form", novalidate: true },
     h(
       "div",
       { class: "field" },
