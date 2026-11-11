@@ -23,10 +23,12 @@ import type { View } from "./context.ts";
 let healthOpen: boolean | undefined;
 
 export const overviewView: View = ({ store }) =>
-  h("div", { class: "view" }, pageHeader(routes.overview.title, undefined, { icon: "overview" }), region(store, dataDeps, (s) => render(analyze(s))));
+  h("div", { class: "view" }, pageHeader(routes.overview.title, undefined, { icon: "overview" }), region(store, (s) => [...dataDeps(s), s.vault.phase], (s) => render(analyze(s), s.vault.phase === "locked")));
 
-function render(a: Analysis): Child[] {
+function render(a: Analysis, locked: boolean): Child[] {
   if (a.source === "none") {
+    // A saved history that is still locked is not "no export": Start has the passphrase form, so point there.
+    if (locked) return [emptyState({ icon: "seal", spot: "import", title: overview.lockedTitle, body: overview.lockedBody, actions: [routeLink("start", overview.lockedAction, "primary")] })];
     return [emptyState({ icon: "import", spot: "import", title: overview.emptyTitle, body: overview.emptyBody, actions: [routeLink("start", overview.emptyAction, "primary")] })];
   }
   return [allClearPanel(a), findingsHeading(), findingsList(a), nextStepsSection(a), toolsSection(), countsSection(a), healthSection(a), h("p", { class: "caption" }, brand.nothingLeft)];

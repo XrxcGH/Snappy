@@ -214,6 +214,9 @@ export const overview = {
   emptyTitle: "No export yet",
   emptyBody: "Add your export to see who has disappeared, which requests were not accepted, and who is quiet.",
   emptyAction: "Add export",
+  lockedTitle: "Saved history is locked",
+  lockedBody: "Unlock it to see who has disappeared, which requests were not accepted, and who is quiet.",
+  lockedAction: "Unlock",
   healthHeading: "Export health",
   healthGood: "Snappy found no problems with your export.",
   healthIntro: (errors: number, warnings: number) => {
