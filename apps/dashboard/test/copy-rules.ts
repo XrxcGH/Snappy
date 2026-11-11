@@ -322,7 +322,7 @@ export const TEXT_BODIES = new Set(["exportBody", "addBody", "rescueBody", "rang
 /** Notes whose key does not say "note" or "help". */
 export const NOTE_KEYS = new Set([
   "kept", "unkept", "unknownSizes", "overCap", "projection", "noProjection", "noSizes", "pairingNone", "pairingLinksEmpty", "pairingTodo", "pairingOverlays", "pairingSummary",
-  "rescueNetwork", "protectedByChats", "noChatProtection", "laterPartsOnly", "skippedFiles", "notAdded", "rejected", "notZip", "readFailed", "unlockSkip", "healthFromLedger",
+  "rescueNetwork", "protectedByChats", "noChatProtection", "laterPartsOnly", "laterPartsLoaded", "skippedFiles", "notAdded", "rejected", "notZip", "readFailed", "unlockSkip", "healthFromLedger",
   "oneSnapshot", "needTwoKeep", "noChatsLedger", "ledgerOnly", "noMatch", "saveFailed", "protectedBody", "sampleBanner", "sampleLabel", "removalWarning", "storageSession", "storageLocked",
   "storageUnlocked", "storageUnsupported", "mismatch", "tooShort", "deleteFailed", "healthGood", "readDone", "sampleLoaded", "sampleBody", "unlockBody", "networkOk", "networkUnknown",
   "copyFailed", "schemaNote", "pairingWhy", "rescueCommandLabel", "healthIntro", "capError", "countError", "countHelp", "capHelp",

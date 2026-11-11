@@ -159,4 +159,16 @@ describe("importing parts by what they hold", () => {
       if ("mydata~1700000000000.zip" in entries) expect(store.get().import.issues?.map((i) => i.code)).toContain("nested-zip");
     }
   });
+
+  it("says to choose all the parts together when later parts are chosen after the first part was loaded", async () => {
+    const [base, second] = partFiles(2) as [File, File, File];
+    const { store, actions } = setup();
+    expect(await actions.importZips([rename(base, "mydata~1700000000000.zip")])).toBe("done");
+    const loaded = store.get().real.latest;
+    expect(await actions.importZips([rename(second, "mydata~1700000000000-2.zip")])).toBe("failed");
+    expect(store.get().import.message).toBe(start.laterPartsLoaded);
+    expect(start.laterPartsLoaded).not.toBe(start.laterPartsOnly);
+    expect(start.laterPartsLoaded).toMatch(/together/);
+    expect(store.get().real.latest).toBe(loaded);
+  });
 });

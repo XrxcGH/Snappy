@@ -189,7 +189,8 @@ export function createActions(store: Store, deps: Deps): Actions {
     // two different exports would merge into one set of friends, so they are refused too.
     const check = checkParts(zips, await Promise.all(zips.map((zip) => scanPart(zip))));
     if (check.kind === "later-only") {
-      store.dispatch({ type: "import-failed", message: start.laterPartsOnly });
+      // With an export already loaded, the lists are there: the person needs to choose every part together instead.
+      store.dispatch({ type: "import-failed", message: store.get().real.latest ? start.laterPartsLoaded : start.laterPartsOnly });
       return "failed";
     }
     if (check.kind === "mixed") {
