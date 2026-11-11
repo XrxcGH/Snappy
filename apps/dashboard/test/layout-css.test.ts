@@ -392,7 +392,8 @@ describe("the Cleanup lists at three across", () => {
   it("keeps a lone last card at one column (a span of two in six), never the whole row", () => {
     expect(declared(".candidate-list > :nth-child(n)")).toMatch(/grid-column:\s*span 2/);
     for (const list of [".candidate-list", ".guided-list"]) {
-      expect(xwide(`${list} > :last-child:nth-child(3n + 1)`), `${list}: no rule for a lone last card`).toEqual([]);
+      // The two-across rule (an odd last card takes the row) has the same specificity, so a lone last card needs its own later rule.
+      expect(xwide(`${list} > :last-child:nth-child(3n + 1)`)[0]?.body, `${list}: a lone last card says one column`).toMatch(/grid-column:\s*span 2/);
     }
     const wide = rules.filter((r) => /^\.(?:candidate|guided)-list > /.test(r.selector) && r.media.some((q) => /min-width:\s*100rem/.test(q)));
     expect(wide.filter((r) => /grid-column:\s*1\s*\/\s*-1/.test(r.body))).toEqual([]);
