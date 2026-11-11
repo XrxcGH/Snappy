@@ -291,7 +291,7 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   const block = privacy.locator(".update-privacy");
   ok((await block.count()) === 1, "the Privacy page has the Update check block");
   ok((await block.innerText()).includes("GitHub can see your IP address, the time, and that a Snappy app asked."), "with what GitHub can see");
-  ok((await privacy.locator("body").innerText()).includes("This page cannot connect to the internet."), "next to the existing notice that the page cannot connect");
+  ok((await privacy.locator("body").innerText()).includes("Snappy’s page cannot connect to the internet."), "next to the existing notice that the page cannot connect");
   await shot(privacy, "privacy-wide-light", true);
   await privacy.context().close();
 
