@@ -94,7 +94,7 @@ describe("macOS bundle config", () => {
       };
       const built = await builder.buildDashboard({ outDir: out, entry: path.join(root, "src", "entry.ts"), extraCss: path.join(root, "src", "update.css") });
       const html = readFileSync(built.file, "utf8");
-      const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script\b[^>]*>/g)].map((m) => m[1] ?? "");
+      const scripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/g)].map((m) => m[1] ?? "");
       expect(scripts.length).toBeGreaterThan(0);
       const sources = [...scripts, built.workerSource, built.terminalWorkerSource];
       // esbuild's table wrongly lists \p{...} escapes as missing in every Safari (they came in Safari 11.1), so that one feature is declared present.
