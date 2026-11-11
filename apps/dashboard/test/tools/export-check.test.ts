@@ -146,8 +146,10 @@ describe("the page", () => {
   it("says the friend count is something the command takes, since the page cannot", async () => {
     const { root } = await renderSettled(view, sample);
     const lines = text(root, ".caption");
-    expect(lines).toContain("To catch a short friends list, run the command with --friend-count and the number Snapchat shows.");
+    expect(lines).toContain("To catch a short friends list, add --friend-count and your Snapchat count.");
     expect(copy.friendCountLine).toContain("--friend-count");
+    expect(root.querySelectorAll("code.option-name").map((c) => c.textContent)).toEqual(["--friend-count"]);
+    for (const line of lines) expect(line.length).toBeLessThanOrEqual(80);
   });
 
   it("shows the verdict, what was found as a table with a pill for each section, the dates and the command", async () => {

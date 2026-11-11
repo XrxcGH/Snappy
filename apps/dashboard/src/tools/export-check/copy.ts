@@ -23,7 +23,7 @@ export const copy = {
   foundCaption: "Sections found in your export",
   partsLine: (n: number) => `${countOf(n, "ZIP file", "ZIP files")} read.`,
   /** Under the sections: this page does not take the friend count Snapchat shows, and the command does. */
-  friendCountLine: "To catch a short friends list, run the command with --friend-count and the number Snapchat shows.",
+  friendCountLine: "To catch a short friends list, add --friend-count and your Snapchat count.",
   sectionHeader: "Section",
   statusHeader: "Status",
   itemsHeader: "Items",

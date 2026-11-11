@@ -30,9 +30,9 @@ export const copy = {
   factFriendsHeader: "Friends listed",
   factActiveHeader: "Active recently",
   factFadingHeader: "Fading",
-  /** The two settings the page fixes, and the command options that change them. */
-  fixedLine: (halfLife: number, top: number) =>
-    `Activity counts half after ${countOf(halfLife, "day", "days")}, and each table lists up to ${formatCount(top)}. The command changes both with --half-life and --top.`,
+  /** The two settings the page fixes, and then the command options that change them: two short lines, so neither runs wide. */
+  fixedLine: (halfLife: number, top: number) => `Activity counts half after ${countOf(halfLife, "day", "days")}. Each table lists up to ${formatCount(top)}.`,
+  optionsLine: "The command changes them with --half-life and --top.",
   methodLine: (date: string, days: number) => `Counted back from ${date}. Recent means the last ${countOf(days, "day", "days")}.`,
 
   closestHeading: "Closest friends",

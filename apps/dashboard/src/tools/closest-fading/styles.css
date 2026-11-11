@@ -1,3 +1,5 @@
 /* Closest and fading: a very long username wraps inside its row, on a phone's stacked card and in a wide table alike. Tokens only. */
 .tool-closest-fading .table td, .tool-closest-fading .table th { min-width: 0; }
 .tool-closest-fading .table tbody th { overflow-wrap: anywhere; }
+/* A command option such as --top stays whole: it never breaks at its hyphens. */
+.tool-closest-fading .option-name { white-space: nowrap; }

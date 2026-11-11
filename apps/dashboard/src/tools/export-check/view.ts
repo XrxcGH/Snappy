@@ -9,6 +9,7 @@ import type { ToolNote } from "../../components/toolPage.ts";
 import { common } from "../../copy.ts";
 import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
+import { withOptions } from "../option-text.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeExportCheck } from "./model.ts";
@@ -109,7 +110,7 @@ function foundSection({ check, partsKnown }: ExportCheckResult): HTMLElement {
   return section(
     copy.foundHeading,
     partsKnown && check.parts.count > 0 ? h("p", { class: "caption" }, copy.partsLine(check.parts.count)) : null,
-    h("p", { class: "caption" }, copy.friendCountLine),
+    h("p", { class: "caption" }, ...withOptions(copy.friendCountLine)),
     dataTable(copy.foundCaption, [copy.sectionHeader, copy.statusHeader, copy.itemsHeader], rows, { pills: { column: 1, kinds: check.sections.map(pillOf) } }),
   );
 }

@@ -192,10 +192,18 @@ describe("the page", () => {
   it("says the half-life and the list length it fixes, from the settings it ran with, and the command options that change them", async () => {
     const { root } = await renderSettled(view, sample);
     const settings = computeClosestFading(toolData(sample)).settings;
-    const line = texts(root, ".caption").find((t) => t.includes("--half-life")) as string;
+    const captions = texts(root, ".caption");
+    const line = captions.find((t) => t.startsWith("Activity counts half")) as string;
     expect(line).toBe(copy.fixedLine(settings.halfLifeDays, settings.topCount));
-    expect(line).toBe("Activity counts half after 30 days, and each table lists up to 10. The command changes both with --half-life and --top.");
+    expect(line).toBe("Activity counts half after 30 days. Each table lists up to 10.");
     expect(line).not.toMatch(/undefined|NaN/);
+    expect(captions).toContain("The command changes them with --half-life and --top.");
+  });
+
+  it("keeps each command option whole in its own code element and each caption short enough to read on a phone", async () => {
+    const { root } = await renderSettled(view, sample);
+    expect(root.querySelectorAll("code.option-name").map((c) => c.textContent)).toEqual(["--half-life", "--top"]);
+    for (const caption of texts(root, ".caption")) expect(caption.length).toBeLessThanOrEqual(80);
   });
 
   it("shows the sample as an overview, a closest table, a fading table, notes and the command", async () => {

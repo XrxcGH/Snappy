@@ -2,3 +2,5 @@
 @media (min-width: 40.01rem) {
   .tool-export-check .table td { white-space: nowrap; }
 }
+/* A command option such as --friend-count stays whole: it never breaks at its hyphens. */
+.tool-export-check .option-name { white-space: nowrap; }

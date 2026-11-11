@@ -8,6 +8,7 @@ import type { ToolNote } from "../../components/toolPage.ts";
 import { h } from "../../dom.ts";
 import { formatCount, formatDate, formatPercent } from "../../format.ts";
 import { usernameText } from "../../components/usernameChip.ts";
+import { withOptions } from "../option-text.ts";
 import type { ToolMeta } from "../types.ts";
 import { copy } from "./copy.ts";
 import { computeClosestFading, DEFAULT_PARAMS, WINDOW_CHOICES } from "./model.ts";
@@ -64,6 +65,7 @@ function glanceSection(r: ClosestFadingResult): HTMLElement {
     ]),
     h("p", {}, copy.methodLine(formatDate(r.asOf), r.settings.windowDays)),
     h("p", { class: "caption" }, copy.fixedLine(r.settings.halfLifeDays, r.settings.topCount)),
+    h("p", { class: "caption" }, ...withOptions(copy.optionsLine)),
   );
 }
 
