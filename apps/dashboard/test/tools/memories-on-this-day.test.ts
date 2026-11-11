@@ -286,6 +286,19 @@ describe("the controls", () => {
     expect(r.root.textContent).toContain(copy.lookingLine("Nov 6, 2026", true, 0));
   });
 
+  it("refuses a year the calendar helpers would fold into the 1900s, without a Looking at line", async () => {
+    const r = await renderSettled(view, real());
+    const date = r.root.querySelector("#otd-date") as FakeElement;
+    for (const day of ["0001-01-01", "0099-12-31", "9999-12-31"]) {
+      date.value = day;
+      date.fire("input");
+      await settled(r.root);
+      expect(r.root.textContent).toContain(copy.invalidDayNote);
+      expect(r.root.textContent).not.toContain("Looking at");
+      expect(r.root.textContent).not.toContain("1901");
+    }
+  });
+
   it("recomputes for the days either side and says it looked around the day", async () => {
     const r = await renderSettled(view, real());
     const window = r.root.querySelector("#otd-window") as FakeElement;

@@ -93,9 +93,11 @@ function controls(ui: ToolUi<OnThisDayParams>): HTMLElement {
 
 function daySection(r: OnThisDayResult): HTMLElement {
   const near = r.windowDays > 0;
+  // A day core refuses (a year outside what it reads) is not shown back as a date: Date.UTC would fold years 0 to 99 into the 1900s.
+  const refused = r.notes.some((n) => n.code === "invalid-target");
   return section(
     copy.dayHeading,
-    h("p", {}, copy.lookingLine(dayText(r), r.isToday, r.windowDays)),
+    refused ? null : h("p", {}, copy.lookingLine(dayText(r), r.isToday, r.windowDays)),
     h("p", {}, r.total === 0 ? copy.noneLine(near) : copy.foundLine(r.total, r.years.length, near)),
     r.total === 0
       ? null
