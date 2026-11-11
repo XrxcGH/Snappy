@@ -82,6 +82,10 @@ const FAILURES_SHOWN = 20;
 
 type Status = "extracted" | "downloaded" | "skipped-existing" | "repaired" | "failed" | "link-only" | "no-file";
 
+const MIB = 1024 * 1024;
+/** The file limits are set in binary steps (512 MiB), so a whole number of them is named that way, not as the rounded decimal MB. */
+export const limitText = (bytes: number): string => (bytes >= MIB && bytes % MIB === 0 ? `${bytes / MIB} MiB` : formatBytes(bytes));
+
 /**
  * What a failure code means and what to do about it, in words that name no file, link or place.
  * Printed once per code (a full disk would otherwise repeat for every remaining item).
@@ -91,7 +95,7 @@ function failureAdvice(code: string, maxBundledBytes: number): string {
   if (code.startsWith("http-")) return "Snapchat's server refused or was busy. Wait a while and run again.";
   switch (code) {
     case "too-large":
-      return `A file is over the ${formatBytes(maxBundledBytes)} limit and was not copied. Take it out of the ZIP file with another tool.`;
+      return `A file is over the ${limitText(maxBundledBytes)} limit and was not copied. Take it out of the ZIP file with another tool.`;
     case "missing-file":
       return "A file named in the list is not in these ZIP files. Add every part of your export and run again.";
     case "corrupt":

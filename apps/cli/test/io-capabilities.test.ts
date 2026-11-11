@@ -5,6 +5,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { limitText } from "../src/commands/memories.ts";
 import { CliError, fsError } from "../src/errors.ts";
 import type { FsPort } from "../src/ports.ts";
 import { makeIo, run, tempDir, writeSyntheticParts } from "./helpers.ts";
@@ -33,6 +34,13 @@ describe("a size limit set by the host", () => {
     const result = await run(["memories", dir, "--out", out, "--no-color"], makeIo({ limits: { maxBundledBytes: 1 } }));
     expect(result.code).toBe(3);
     expect(result.out.replace(/\s+/g, " ")).toContain("over the 1 byte limit");
+  });
+
+  it("names a limit set in binary steps as MiB, so it matches the README and the limit", () => {
+    expect(limitText(512 * 1024 * 1024)).toBe("512 MiB");
+    expect(limitText(128 * 1024 * 1024)).toBe("128 MiB");
+    expect(limitText(64 * 1024 * 1024)).toBe("64 MiB");
+    expect(limitText(1)).toBe("1 byte");
   });
 });
 
