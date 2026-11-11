@@ -183,7 +183,7 @@ describe("the export used here", () => {
       const { root } = await renderSettled(tool.view, state);
       if (root.querySelectorAll("button").some((b) => b.getAttribute("data-key") === "tool-download")) withDownload.push(tool.id);
     }
-    expect(withDownload.sort()).toEqual(["export-reminder", "friends-backup", "friends-table", "reply-speed", "rescue-manifest", "since-last-export"]);
+    expect(withDownload.sort()).toEqual(["export-reminder", "friends-backup", "friends-table", "reply-speed", "rescue-manifest", "since-last-export", "year-in-review"]);
   });
 });
 

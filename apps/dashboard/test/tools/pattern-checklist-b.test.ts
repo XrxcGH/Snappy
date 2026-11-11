@@ -54,7 +54,7 @@ describe("the words of the nine pages", () => {
   it("say Save for a file: Save CSV, Save JSON, Save calendar file, and never Download for one", async () => {
     expect(await matching(/\bDownload (the |a )?(CSV|JSON|calendar|manifest|file)/i)).toEqual([]);
     const buttons = (await all()).filter((e) => /\.download(Label|Button)$/.test(e.id));
-    expect(buttons.map((b) => b.text).sort()).toEqual(["Save CSV", "Save CSV", "Save JSON", "Save calendar file"]);
+    expect(buttons.map((b) => b.text).sort()).toEqual(["Save CSV", "Save CSV", "Save CSV", "Save JSON", "Save calendar file"]);
   });
 
   it("put a thousands separator in every count, so a large export never shows 1234 next to 1,234", async () => {
