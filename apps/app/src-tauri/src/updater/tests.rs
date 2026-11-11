@@ -857,12 +857,13 @@ fn only_one_updater_runs_at_a_time() {
 }
 
 #[test]
-fn another_snappy_process_stops_the_check_too() {
+fn another_snappy_process_does_not_stop_the_check() {
     let rig = Rig::new("0.1.5");
     rig.up.set_auto(true);
     rig.probe.0.lock().unwrap().others = Some(1);
     rig.up.run_check(false);
-    assert_eq!(rig.server.requests().len(), 0);
+    assert!(!rig.server.requests().is_empty(), "only installing needs the program to be alone");
+    assert_eq!(rig.up.status().error, None);
 }
 
 #[test]

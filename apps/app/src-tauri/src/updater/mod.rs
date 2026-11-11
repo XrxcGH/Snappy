@@ -411,10 +411,7 @@ impl Updater {
             self.fail_quiet(ErrorCode::Busy, manual);
             return;
         };
-        if !alone(&*self.0.deps.probe) {
-            self.fail_quiet(ErrorCode::Busy, manual);
-            return;
-        }
+        // Another copy of the program does not stop a check: only installing needs the program to be alone.
         self.live(|l| {
             if l.phase != Phase::Staged {
                 l.phase = Phase::Checking;
