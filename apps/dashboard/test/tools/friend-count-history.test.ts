@@ -217,6 +217,20 @@ describe("the page", () => {
     expect(copy.monthsShownLine(24, 42)).toBe("Showing the latest 24 months of 42. The command lists more with --months.");
   });
 
+  it("calls what a passphrase protects the saved history, never a snapshot or turned saving on", () => {
+    const strings: string[] = [];
+    for (const value of Object.values(copy)) {
+      if (typeof value === "string") strings.push(value);
+      else if (typeof value === "function") for (const n of [0, 1, 2]) strings.push(String((value as (...a: number[]) => unknown)(n, n, n)));
+    }
+    expect(strings.length).toBeGreaterThan(40);
+    expect(strings.filter((t) => /snapshot|turned saving on|saving turned on|turn saving on/i.test(t))).toEqual([]);
+    expect(copy.noSnapshotsNote).toBe("No saved history was compared. Save your history with a passphrase in Settings to keep exports.");
+    expect(copy.compareCaption).toBe("Saved exports compared with the curve");
+    expect(copy.oneSnapshotNote).toBe("Only one saved export was found, so the comparison is a single point.");
+    expect(copy.disagreeNote(1, 2, 27)).toBe("The curve and your saved history differ at 1 of 2 saved exports. The largest gap is 27 friends.");
+  });
+
   it("writes each note as a short hedged sentence that shows no code", async () => {
     const lists: Lists = {
       friends: [person("a", at(2025, 1)), person("b"), person("c", at(2030, 1))],

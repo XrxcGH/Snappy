@@ -54,7 +54,7 @@ export const copy = {
     `Showing the latest ${countOf(shown, "month", "months")} of ${formatCount(total)}. The command lists more with --months.`,
 
   compareHeading: "Against your saved history",
-  compareCaption: "Saved snapshots compared with the curve",
+  compareCaption: "Saved exports compared with the curve",
   savedOnHeader: "Saved on",
   savedHeader: "Saved",
   curveHeader: "Curve",
@@ -64,7 +64,7 @@ export const copy = {
   unitCurve: (n: number) => `${formatCount(n)} on the curve`,
   unitGap: (gap: number) => (gap === 0 ? "no gap" : gap > 0 ? `${formatCount(gap)} more saved` : `${formatCount(-gap)} fewer saved`),
   statuses: { close: "Close", differs: "Differs" },
-  comparisonsShownLine: (shown: number, total: number) => `Showing the latest ${formatCount(shown)} of ${countOf(total, "snapshot", "snapshots")}.`,
+  comparisonsShownLine: (shown: number, total: number) => `Showing the latest ${formatCount(shown)} of ${countOf(total, "saved export", "saved exports")}.`,
 
   noDatesNote: "No friend in your export has a usable date, so Snappy cannot draw a curve.",
   curveHighNote: "Anyone who left your list on their own is not on the curve. Earlier months may run high.",
@@ -74,13 +74,13 @@ export const copy = {
   leaveBeforeJoinNote: (n: number) =>
     `${countOf(n, "removed friend", "removed friends")} ${n === 1 ? "has" : "have"} a removal date before the start date. Snappy leaves ${n === 1 ? "that removal" : "those removals"} out.`,
   reAddedNote: (n: number) => `${countOf(n, "friend", "friends")} ${n === 1 ? "is" : "are"} in both lists, so you may have added ${them(n)} back.`,
-  badSnapshotsNote: (n: number) => `${countOf(n, "saved snapshot", "saved snapshots")} had a missing or odd date. Snappy left ${n === 1 ? "it" : "them"} out.`,
-  noSnapshotsNote: "No saved history was compared. Snapshots are kept only if you turned saving on.",
+  badSnapshotsNote: (n: number) => `${countOf(n, "saved export", "saved exports")} had a missing or odd date. Snappy left ${n === 1 ? "it" : "them"} out.`,
+  noSnapshotsNote: "No saved history was compared. Save your history with a passphrase in Settings to keep exports.",
   noEarlierNote: "No earlier export is saved yet, so there was nothing to compare.",
-  oneSnapshotNote: "Only one snapshot was saved, so the comparison is a single point.",
-  agreeNote: (n: number) => `The curve and your saved history are close at ${countOf(n, "snapshot", "snapshots")}.`,
+  oneSnapshotNote: "Only one saved export was found, so the comparison is a single point.",
+  agreeNote: (n: number) => `The curve and your saved history are close at ${countOf(n, "saved export", "saved exports")}.`,
   disagreeNote: (disagreeing: number, compared: number, gap: number) =>
-    `The curve and your saved history differ at ${formatCount(disagreeing)} of ${countOf(compared, "snapshot", "snapshots")}. The largest gap is ${countOf(gap, "friend", "friends")}.`,
+    `The curve and your saved history differ at ${formatCount(disagreeing)} of ${countOf(compared, "saved export", "saved exports")}. The largest gap is ${countOf(gap, "friend", "friends")}.`,
   exportErrorsNote: "Your export has errors, so the curve may be off. Run the export check for details.",
   otherNote: tools.otherNote,
 } as const;
