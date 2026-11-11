@@ -86,6 +86,8 @@ export const shell = {
 
 export const common = {
   copy: "Copy",
+  /** The body of a findings page while the saved history is still locked. The title and button are the Overview's. */
+  lockedBody: "Unlock your saved history on the Start page to see this.",
   copyFailed: "Snappy could not copy. Select the text and copy it yourself.",
   copyUsername: (u: string) => `Copy username ${u}`,
   copiedUsername: (u: string) => `Copied ${u}`,

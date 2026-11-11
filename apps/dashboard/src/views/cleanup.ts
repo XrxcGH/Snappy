@@ -28,6 +28,7 @@ import { displayUsername } from "../safe.ts";
 import { region } from "../reactive.ts";
 import type { CleanupView } from "../reducer.ts";
 import { dataDeps } from "./context.ts";
+import { lockedState } from "./locked.ts";
 import type { View, ViewContext } from "./context.ts";
 
 /** Whether the "Protected" disclosure is open. Kept here so a Keep click does not close it again. */
@@ -43,11 +44,12 @@ export const cleanupView: View = (ctx) =>
     { class: "view cat-cleanup" },
     pageHeader(routes.cleanup.title, cleanup.lead, { icon: "queue", category: "cleanup" }),
     toastHost(),
-    region(ctx.store, (s) => [...dataDeps(s), s.cleanup], (s) => render(ctx, analyze(s), s.cleanup), { className: "region region-tight" }),
+    region(ctx.store, (s) => [...dataDeps(s), s.cleanup, s.vault.phase], (s) => render(ctx, analyze(s), s.cleanup, s.vault.phase === "locked"), { className: "region region-tight" }),
   );
 
-function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
+function render(ctx: ViewContext, a: Analysis, view: CleanupView, locked: boolean): Child[] {
   const { actions } = ctx;
+  if (a.source === "none" && locked) return [lockedState("cleanup")];
   if (a.source === "none") {
     return [emptyState({ icon: "queue", spot: "import", category: "cleanup", title: cleanup.emptyTitle, body: cleanup.emptyBody, actions: [routeLink("start", common.addExport, "primary")] })];
   }

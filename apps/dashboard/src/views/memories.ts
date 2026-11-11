@@ -16,13 +16,15 @@ import { pairingFacts } from "../pairing-facts.ts";
 import { parseCapGiB } from "../parse-input.ts";
 import { region } from "../reactive.ts";
 import { dataDeps } from "./context.ts";
+import { lockedState } from "./locked.ts";
 import type { View, ViewContext } from "./context.ts";
 
 export const memoriesView: View = (ctx) =>
-  h("div", { class: "view cat-memories" }, pageHeader(routes.memories.title, memories.lead, { icon: "memories", category: "memories" }), region(ctx.store, dataDeps, (s) => render(ctx, analyze(s), s.capGiB)));
+  h("div", { class: "view cat-memories" }, pageHeader(routes.memories.title, memories.lead, { icon: "memories", category: "memories" }), region(ctx.store, (s) => [...dataDeps(s), s.vault.phase], (s) => render(ctx, analyze(s), s.capGiB, s.vault.phase === "locked")));
 
-function render(ctx: ViewContext, a: Analysis, capGiB: number): Child[] {
+function render(ctx: ViewContext, a: Analysis, capGiB: number, locked: boolean): Child[] {
   const addExport = routeLink("start", common.addExport, "primary");
+  if (a.source === "none" && locked) return [lockedState("memories")];
   if (a.source === "none") return [emptyState({ icon: "memories", spot: "import", category: "memories", title: memories.noExportTitle, body: memories.noExportBody, actions: [addExport] })];
   if (a.source === "ledger") return [emptyState({ icon: "memories", spot: "memories", category: "memories", title: memories.ledgerOnlyTitle, body: memories.ledgerOnly, actions: [addExport] })];
   const plan = a.plan;

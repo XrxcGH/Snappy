@@ -22,6 +22,7 @@ import { pagedList, resetPaging } from "../components/pagedList.ts";
 import { toastHost } from "../components/toast.ts";
 import { region } from "../reactive.ts";
 import { dataDeps } from "./context.ts";
+import { lockedState } from "./locked.ts";
 import type { View, ViewContext } from "./context.ts";
 
 const addExport = (): HTMLElement => routeLink("start", common.addExport, "primary");
@@ -71,7 +72,7 @@ function searchableList(a: Analysis, items: readonly Candidate[], actions: Actio
   return h("div", { class: "list-block" }, search, slot);
 }
 
-function view(id: CategoryId, title: string, lead: string, inference: string, body: (ctx: ViewContext) => (a: Analysis) => Child[]): View {
+function view(id: CategoryId, title: string, lead: string, inference: string, body: (ctx: ViewContext) => (a: Analysis, locked: boolean) => Child[]): View {
   return (ctx) => {
     const render = body(ctx);
     return h(
@@ -80,12 +81,13 @@ function view(id: CategoryId, title: string, lead: string, inference: string, bo
       pageHeader(title, lead, { icon: CATEGORY_ICON[id], category: id }),
       notice("info", inference),
       toastHost(),
-      region(ctx.store, dataDeps, (s) => render(analyze(s))),
+      region(ctx.store, (s) => [...dataDeps(s), s.vault.phase], (s) => render(analyze(s), s.vault.phase === "locked")),
     );
   };
 }
 
-export const disappearedView: View = view("disappeared", routes.disappeared.title, disappeared.lead, disappeared.inference, (ctx) => (a) => {
+export const disappearedView: View = view("disappeared", routes.disappeared.title, disappeared.lead, disappeared.inference, (ctx) => (a, locked) => {
+  if (a.source === "none" && locked) return [lockedState("disappeared")];
   if (a.source === "none") return [emptyState({ icon: "vanished", spot: "import", category: "disappeared", title: disappeared.noExportTitle, body: disappeared.noExportBody, actions: [addExport()] })];
   if (a.snapshotCount < 2) {
     const sealed = ctx.store.get().vault.phase === "unlocked";
@@ -122,13 +124,15 @@ export const disappearedView: View = view("disappeared", routes.disappeared.titl
   ];
 });
 
-export const requestsView: View = view("requests", routes.requests.title, requests.lead, requests.inference, (ctx) => (a) => {
+export const requestsView: View = view("requests", routes.requests.title, requests.lead, requests.inference, (ctx) => (a, locked) => {
+  if (a.source === "none" && locked) return [lockedState("requests")];
   if (a.source === "none") return [emptyState({ icon: "one-way", spot: "import", category: "requests", title: requests.noExportTitle, body: requests.noExportBody, actions: [addExport()] })];
   if (a.oneWay.length === 0) return [emptyState({ icon: "one-way", spot: "overview", category: "requests", title: requests.emptyTitle, body: a.source === "ledger" ? requests.emptyLedger : requests.emptyBody })];
   return [searchableList(a, a.oneWay, ctx.actions, "one-way", requests.listCount), relatedTools(["lookalike-usernames"])];
 });
 
-export const quietView: View = view("quiet", routes.quiet.title, quiet.lead, quiet.inference, (ctx) => (a) => {
+export const quietView: View = view("quiet", routes.quiet.title, quiet.lead, quiet.inference, (ctx) => (a, locked) => {
+  if (a.source === "none" && locked) return [lockedState("quiet")];
   if (a.source === "none") return [emptyState({ icon: "quiet", spot: "import", category: "quiet", title: quiet.noExportTitle, body: quiet.noExportBody, actions: [addExport()] })];
   if (!a.hasChats) {
     return [

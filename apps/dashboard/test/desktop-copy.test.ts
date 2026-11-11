@@ -144,6 +144,7 @@ describe("desktop wording versus web wording", () => {
     // link and the developer tools hint). A new string with one of these words fails here until someone has read it in the app.
     const REVIEWED = new Set([
       "themeNote", // the web sentence; the app reads desktopThemeNote
+      "common.lockedBody", // "the Start page"
       "common.openInSnapchatFor", // the profile link is not drawn in the app
       "start.sampleBody", // "this window" is Snappy's own window
       "overview.healthMemoriesNote", // "the Memories page" is a page of Snappy
