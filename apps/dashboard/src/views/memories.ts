@@ -151,7 +151,7 @@ function rescueSection(ctx: ViewContext): HTMLElement {
     ...(platform().desktop === undefined
       ? []
       : [
-          h("p", {}, lists.rescueLimitNote(Math.round(ctx.terminal.outCap / (1024 * 1024)))),
+          h("p", {}, lists.rescueLimitNote(Math.round(ctx.terminal.outCap / 1_000_000))),
           h("p", {}, lists.rescueGuideLine),
           h("div", { class: "actions" }, routeLink("guide", common.openGuide)),
         ]),

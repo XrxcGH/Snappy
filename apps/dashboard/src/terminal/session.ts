@@ -16,10 +16,10 @@ import { createRunner } from "./runner.ts";
 import { canUseSample, sampleRunFiles } from "./sample-files.ts";
 import type { Channel, RunFile } from "./run-types.ts";
 
-const MIB = 1024 * 1024;
-/** Most the virtual output folder may hold: less on a phone or tablet. */
-export const OUT_CAP_DESKTOP = 256 * MIB;
-export const OUT_CAP_TOUCH = 96 * MIB;
+const MB = 1000 * 1000;
+/** Most the virtual output folder may hold: less on a phone or tablet. Decimal, because the page shows it as "MB". */
+export const OUT_CAP_DESKTOP = 250 * MB;
+export const OUT_CAP_TOUCH = 100 * MB;
 
 export interface TerminalSession {
   controller: TerminalController;

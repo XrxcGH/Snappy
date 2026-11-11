@@ -26,9 +26,9 @@ describe("Memories rescue in the desktop app", () => {
   it("names the limit as a number, says a full rescue needs the command line tool, and links to the guide", () => {
     setPlatform({ desktop: "windows", profileLinks: false });
     const { root } = mount(memoriesView, sample);
-    const mb = OUT_CAP_DESKTOP / (1024 * 1024);
+    const mb = OUT_CAP_DESKTOP / 1_000_000;
     expect(textOf(root)).toContain(lists.rescueLimitNote(mb));
-    expect(textOf(root)).toContain("up to 256 MB");
+    expect(textOf(root)).toContain("up to 250 MB");
     expect(textOf(root)).toContain("A full rescue needs the command line tool.");
     const link = byLabel(root, common.openGuide);
     expect(link?.getAttribute("href")).toBe("#/guide");

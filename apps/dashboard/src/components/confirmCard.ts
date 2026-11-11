@@ -26,7 +26,7 @@ export function confirmCard(options: ConfirmCardOptions): HTMLElement {
     "div",
     { class: "card card-pad card-tint command-confirm", role: "group", "aria-labelledby": `${id}-title`, "aria-describedby": `${id}-body` },
     h("h3", { id: `${id}-title`, class: "section-title" }, store ? terminal.confirmStoreTitle : terminal.confirmFolderTitle),
-    h("p", { id: `${id}-body` }, store ? terminal.confirmStoreBody : terminal.confirmFolderBody(Math.round(options.outCap / (1024 * 1024)))),
+    h("p", { id: `${id}-body` }, store ? terminal.confirmStoreBody : terminal.confirmFolderBody(Math.round(options.outCap / 1_000_000))),
     h(
       "div",
       { class: "actions" },

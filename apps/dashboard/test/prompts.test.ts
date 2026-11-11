@@ -81,7 +81,7 @@ describe("the passphrase prompt", () => {
 });
 
 describe("the write confirmation", () => {
-  const card = (effect: "store" | "folder", outCap = 256 * 1024 * 1024) => {
+  const card = (effect: "store" | "folder", outCap = 250_000_000) => {
     const calls = { approve: 0, cancel: 0 };
     const el = confirmCard({ effect, outCap, key: "x", onApprove: () => void calls.approve++, onCancel: () => void calls.cancel++ }) as unknown as FakeElement;
     return { el, calls };
@@ -91,8 +91,8 @@ describe("the write confirmation", () => {
     const { el } = card("folder");
     expect(el.getAttribute("role")).toBe("group");
     expect(el.querySelector("h3")?.textContent).toBe("Save these files in Snappy?");
-    expect(el.textContent).toContain("Files stay in this page until you save them. Up to 256 MB.");
-    expect(card("folder", 96 * 1024 * 1024).el.textContent).toContain("Up to 96 MB.");
+    expect(el.textContent).toContain("Files stay in this page until you save them. Up to 250 MB.");
+    expect(card("folder", 100_000_000).el.textContent).toContain("Up to 100 MB.");
     expect(el.querySelectorAll("button").map((b) => b.textContent)).toEqual(["Save files", "Cancel"]);
   });
 
