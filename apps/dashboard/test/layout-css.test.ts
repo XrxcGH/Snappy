@@ -202,6 +202,13 @@ describe("keyboard and focus rules", () => {
     expect(nav[0]?.body).toMatch(/overscroll-behavior:\s*contain/);
   });
 
+  it("keeps a gutter on the left of the sidebar and the logo, so the ring of a menu link is not clipped below the shell's cap", () => {
+    const nav = rules.filter((r) => r.selector === ".nav" && /overflow-y:\s*auto/.test(r.body) === false && r.media.join(" ") === "(min-width: 64rem)");
+    expect(nav[0]?.body).toMatch(/padding:\s*var\(--space-6\) var\(--space-4\) var\(--space-6\) var\(--gutter\)/);
+    const header = rules.filter((r) => r.selector === ".site-header-inner" && r.media.length > 0);
+    for (const r of header) expect(r.body).not.toMatch(/padding-inline-start:\s*0/);
+  });
+
   it("draws the focus ring of a disclosure inside its 44 px target, so it does not strike through the text above", () => {
     expect(declared(".disclosure:focus-visible")).toMatch(/outline-offset:\s*-2px/);
     // The target is still made with padding and a negative margin, so the ring must not be drawn outside it.

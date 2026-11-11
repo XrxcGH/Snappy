@@ -240,11 +240,10 @@ img, svg { max-width: 100%; }
 
 @media (min-width: 64rem) {
   .site-header .menu-button { display: none; }
-  /* Beside the sidebar the logo starts at the sidebar's edge, and the toggle ends at the column's edge. */
-  .site-header-inner { padding-inline-start: 0; }
+  /* Beside the sidebar the logo and the menu start one gutter in, the same gutter as the right edge of the column. */
   .layout { display: grid; grid-template-columns: 16rem minmax(0, 1fr); align-items: start; }
   .site-footer-inner { padding-left: calc(16rem + var(--gutter)); }
-  .nav { display: block; position: sticky; top: 0; border-bottom: 0; background: transparent; padding: var(--space-6) var(--space-4) var(--space-6) 0; }
+  .nav { display: block; position: sticky; top: 0; border-bottom: 0; background: transparent; padding: var(--space-6) var(--space-4) var(--space-6) var(--gutter); }
   /* In a short window the menu scrolls inside its own column, so the last links (Export guide, Privacy, Settings) are never below the fold. */
   .nav { max-height: 100vh; max-height: 100dvh; overflow-y: auto; overscroll-behavior: contain; }
 }
