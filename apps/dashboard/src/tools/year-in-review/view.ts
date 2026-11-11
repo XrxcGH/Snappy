@@ -16,7 +16,7 @@ import { copy } from "./copy.ts";
 import { availableYears, computeYear, DEFAULT_PARAMS } from "./model.ts";
 import type { YearParams, YearView } from "./model.ts";
 
-export const meta: ToolMeta = { id: "year-in-review", group: "your-export", category: "cleanup", icon: "calendar", needs: ["export"] };
+export const meta: ToolMeta = { id: "year-in-review", group: "your-export", category: "cleanup", icon: "snapshots", needs: ["export"] };
 
 type Note = insights.yearInReview.YearNote;
 type Counts = insights.yearInReview.DirectionCounts;

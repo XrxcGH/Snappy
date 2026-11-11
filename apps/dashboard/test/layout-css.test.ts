@@ -321,3 +321,15 @@ describe("form rows line up at the top", () => {
     expect(declared(".facts-n-5 .fact:nth-child(5)")).toMatch(/grid-column:\s*7 \/ span 4/);
   });
 });
+
+describe("the Tools hub tile status", () => {
+  it("keeps a gap above the status, so a two-line description never sits tight on it", () => {
+    expect(declared(".tool-status")).toMatch(/margin:\s*var\(--space-2\) 0 0/);
+  });
+
+  it("gives the tools of Your export different icons, so the tiles side by side are not twins", () => {
+    const tools = groupedTools().find((g) => g.group.id === "your-export")?.tools ?? [];
+    expect(tools.length).toBeGreaterThan(1);
+    expect(new Set(tools.map((t) => t.icon)).size).toBe(tools.length);
+  });
+});

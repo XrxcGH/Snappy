@@ -717,7 +717,7 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
 }
 /* Below the wide layout every group has the same two columns, so a tile is the same width in every group and on the whole page; a last odd tile stays at the left. */
 .tool-line { margin: 0; font-size: var(--text-14); color: var(--text-muted); text-wrap: balance; }
-.tool-status { margin: 0; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-14); font-weight: 600; color: var(--text-muted); }
+.tool-status { margin: var(--space-2) 0 0; display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-14); font-weight: 600; color: var(--text-muted); }
 .tool-status-ready { color: var(--text); }
 .tool-status-ready .icon { color: var(--success-fg); }
 

@@ -14,7 +14,7 @@ import { copy } from "./copy.ts";
 import { DEFAULT_PARAMS, GROUPS, computeSinceLastExport, csvFileName, csvRows, isComparable, peopleByChange, pickableSnapshots } from "./model.ts";
 import type { ChangeKind, SinceNote, SinceParams, SinceResult } from "./model.ts";
 
-export const meta: ToolMeta = { id: "since-last-export", group: "your-export", category: "cleanup", icon: "calendar", needs: ["export", "friends"] };
+export const meta: ToolMeta = { id: "since-last-export", group: "your-export", category: "cleanup", icon: "file-zip", needs: ["export", "friends"] };
 
 /** A long list would make a very long table, so the page shows the first rows of each list and says how many it left out. The CSV holds everyone. */
 const ROWS_SHOWN = 25;
