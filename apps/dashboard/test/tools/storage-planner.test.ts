@@ -349,7 +349,7 @@ describe("the controls", () => {
     select.value = "oldest-first";
     select.fire("change");
     await settled(r.root);
-    expect(input.getAttribute("value") ?? input.value).toBe("2");
+    expect(input.value).toBe("2");
     expect(input.hasAttribute("aria-invalid")).toBe(false);
     expect(r.root.querySelector(".field-error")?.textContent).toBe("");
     expect(text(r.root, ".facts dd")).toEqual(["8", "4", "3"]);
