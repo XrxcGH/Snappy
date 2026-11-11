@@ -131,7 +131,7 @@ describe("layoutSummary", () => {
     expect(text.toLowerCase()).not.toContain("other_private");
     expect(text).toContain("Folder totals (names of files are never shown)");
     expect(text).toContain("part 1: 10 files");
-    expect(text).toContain("  chat_media/  3 files, 3 KB  [jpg 2, mp4 1]");
+    expect(text).toContain("  chat_media/  3 files, 4 KB  [jpg 2, mp4 1]");
     expect(text).toContain("      3 more with name shapes seen fewer than 3 times (not listed)");
     expect(text).toContain("  (top level)  1 files, 8 bytes  [html 1]");
   });

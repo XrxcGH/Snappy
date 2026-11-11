@@ -97,7 +97,7 @@ function fileNameShape(text: string): string {
   return out + nameShape(text.slice(last));
 }
 
-const sizeText = (n: number): string => (n < 1024 ? `${n} bytes` : n >= 1024 ** 3 ? `${(n / 1024 ** 3).toFixed(1)} GB` : n >= 1024 ** 2 ? `${(n / 1024 ** 2).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`);
+const sizeText = (n: number): string => (n < 1000 ? `${n} bytes` : n >= 1000 ** 3 ? `${(n / 1000 ** 3).toFixed(1)} GB` : n >= 1000 ** 2 ? `${(n / 1000 ** 2).toFixed(1)} MB` : `${Math.round(n / 1000)} KB`);
 
 function tally(): { bump(label: string): void; top(n: number): Count[] } {
   const map = new Map<string, number>();
