@@ -355,6 +355,15 @@ describe("the page", () => {
     expect(text(none.root, ".tool-notes li")).toEqual([copy.noLastNote]);
   });
 
+  it("shows only the note that applies to the final date when a clamped day has also passed", async () => {
+    const r = await utcPage(real({ exportedAt: Date.UTC(2025, 0, 31, 12) }));
+    expect(text(r.root, ".tool-notes li")).toEqual([copy.passedNote]);
+    // A clamped day that is still ahead keeps its own note.
+    await enter(r, "reminder-last", "2026-05-31");
+    await enter(r, "reminder-months", "9");
+    expect(text(r.root, ".tool-notes li")).toEqual([copy.clampedNote]);
+  });
+
   it("builds the calendar file only when the button is pressed, and it is core's text", async () => {
     const r = await utcPage(real());
     await enter(r, "reminder-months", "6");

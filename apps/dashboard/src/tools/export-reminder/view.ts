@@ -44,6 +44,12 @@ function noteText(n: insights.exportReminder.ReminderNote, result: ReminderResul
 
 const WARNINGS = new Set(["due-date-passed", "last-export-in-future"]);
 
+/** Core reports every adjustment. A day moved to the last of a month, then to tomorrow, is only about tomorrow in the end. */
+function notesFor(result: ReminderResult): insights.exportReminder.ReminderNote[] {
+  const passed = result.notes.some((n) => n.code === "due-date-passed");
+  return passed ? result.notes.filter((n) => n.code !== "day-clamped") : result.notes;
+}
+
 /**
  * The page opens in the zone the person's device is in (or the one chosen in Settings), read each time the page opens. A zone
  * picked on this page stays on this page: it is not remembered for the next one.
@@ -119,7 +125,7 @@ export const view = toolView<ReminderResult, ReminderParams>({
       ]),
     ),
   ],
-  notes: (result): ToolNote[] => result.notes.map((n) => ({ kind: WARNINGS.has(n.code) ? "warning" : "info", text: noteText(n, result) })),
+  notes: (result): ToolNote[] => notesFor(result).map((n) => ({ kind: WARNINGS.has(n.code) ? "warning" : "info", text: noteText(n, result) })),
   download: { label: copy.downloadLabel, note: copy.downloadNote, build: buildReminderFile },
   command: "remind",
 });
