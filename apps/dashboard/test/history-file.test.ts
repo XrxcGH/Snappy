@@ -126,11 +126,11 @@ describe("Settings", () => {
     let form: FakeElement | null = first.parentNode;
     while (form && form.tagName !== "form") form = form.parentNode;
     if (!form) throw new Error("no form element");
-    return { form, fields: form.querySelectorAll("input").filter((i) => i.getAttribute("type") === "password" || i.getAttribute("type") === "text") };
+    return { form, fields: form.querySelectorAll("input").filter((i) => i.getAttribute("autocomplete") !== "username" && (i.getAttribute("type") === "password" || i.getAttribute("type") === "text")) };
   };
   /** Type into the form's password fields and press its button. What the form does with it is asynchronous: wait for the effect. */
   const submit = (form: FakeElement, ...values: string[]): void => {
-    const fields = form.querySelectorAll("input").filter((i) => i.getAttribute("type") !== "checkbox");
+    const fields = form.querySelectorAll("input").filter((i) => i.getAttribute("type") !== "checkbox" && i.getAttribute("autocomplete") !== "username");
     values.forEach((v, i) => void ((fields[i] as FakeElement).value = v));
     form.fire("submit");
   };
