@@ -159,7 +159,7 @@ export function build() {
       "These packages name their license in their manifest but publish no license file. They are used under the license named",
       "here, whose standard text is among the license texts below, and the copyright is held by the authors their manifest names.",
       "",
-      ...unfiled.map((c) => `- ${c.name} ${c.version}: ${c.license}${c.authors.length ? `; authors: ${c.authors.map((a) => a.replace(/\s*<[^>]*>/, "")).join(", ")}` : ""}`),
+      ...unfiled.map((c) => `- ${c.name} ${c.version}: ${c.license}${c.authors.length ? `; authors: ${c.authors.map((a) => a.split("<")[0].trim()).join(", ")}` : ""}`),
     );
   }
   push("", "License texts", "-------------", "Each text is shown once, followed by the packages whose license file it is.", "");
