@@ -9,6 +9,7 @@ import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
 import type { View, ViewContext } from "../../views/context.ts";
 import type { ToolMeta } from "../types.ts";
+import { compareBox } from "./compare.ts";
 import { copy } from "./copy.ts";
 import { backupFileName, computeFriendsBackup, LIST_NAMES } from "./model.ts";
 import type { BackupNote, FriendsBackupResult } from "./model.ts";
@@ -40,8 +41,8 @@ function noteText(n: BackupNote): string {
 }
 
 /**
- * The page. The compare command is a Copy-only block in the result: it names a saved file that this page cannot open, so a terminal has
- * to run it, and the block needs the page's context to be drawn.
+ * The page. A saved backup can be compared here, with a file the person chooses. The compare command is also a Copy-only block, for
+ * a terminal: it names a saved file by its path, which a page cannot open, and the block needs the page's context to be drawn.
  */
 const page = (ctx: ViewContext): HTMLElement =>
   toolPage<FriendsBackupResult>(ctx, {
@@ -50,7 +51,7 @@ const page = (ctx: ViewContext): HTMLElement =>
     compute: computeFriendsBackup,
     summary: ({ counts }) => copy.doneAnnounce(counts.friends.people, counts.blocked.people, counts.ignored.people),
     isEmpty: ({ total }) => total === 0,
-    render: ({ backup, counts }) => [
+    render: ({ backup, counts }, ui) => [
       section(
         copy.contentsHeading,
         dataTable(
@@ -65,6 +66,7 @@ const page = (ctx: ViewContext): HTMLElement =>
         h("p", {}, backup.takenAt === null ? copy.unknownTimeLine : copy.madeLine(formatDate(backup.takenAt))),
       ),
       section(copy.nextHeading, stepCards([copy.saveStep, copy.keepStep, copy.compareStep])),
+      section(copy.compareFileHeading, compareBox(ui.data)),
       section(copy.compareHeading, commandBlock(ctx, "backup", { key: "friends-backup-compare", copyOnly: true, title: copy.compareTitle, append: ["--compare", "<file.json>"] })),
     ],
     notes: ({ notes }): ToolNote[] => notes.map((n) => ({ kind: n.code === "friends-empty" || n.code === "lists-overlap" ? "warning" : "info", text: noteText(n) })),

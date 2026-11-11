@@ -134,7 +134,7 @@ describe("computeFriendsBackup", () => {
 describe("the page", () => {
   it("shows what the backup holds as a table of counts, the next steps, the download and the command", async () => {
     const { root } = await renderSettled(view, sample);
-    expect(root.querySelectorAll(".section-title").map((t) => t.textContent)).toEqual([copy.contentsHeading, copy.nextHeading, copy.compareHeading, tools.downloadHeading, tools.commandHeading]);
+    expect(root.querySelectorAll(".section-title").map((t) => t.textContent)).toEqual([copy.contentsHeading, copy.nextHeading, copy.compareFileHeading, copy.compareHeading, tools.downloadHeading, tools.commandHeading]);
     const table = root.querySelector("table") as FakeElement;
     expect(table.querySelector("caption")?.textContent).toBe(copy.contentsCaption);
     expect(text(table, "thead th")).toEqual([copy.listHeader, copy.peopleHeader, copy.datedHeader]);
@@ -223,6 +223,103 @@ describe("the page", () => {
     // The sample's own friend names stay out of the page too.
     const parsed = base.latest as ParsedExport;
     for (const name of new Set(parsed.friends.friends.map((f) => f.username).filter((n) => n.length >= 5))) expect((await renderSettled(view, sample)).root.textContent, name).not.toContain(name);
+  });
+});
+
+/** A backup file as the page reads one: a size and its text. */
+const fileOf = (text: string, size = text.length): { size: number; text: () => Promise<string> } => ({ size, text: async () => text });
+const backupText = (lists: { friends: string[]; blocked?: string[]; ignored?: string[] }, takenAt: number): string =>
+  insights.friendsBackup.backupToJson(
+    insights.friendsBackup.createFriendsBackup(
+      { friends: lists.friends.map((u) => person(u)), blocked: (lists.blocked ?? []).map((u) => person(u)), ignored: (lists.ignored ?? []).map((u) => person(u)) },
+      takenAt,
+    ).backup,
+  );
+
+/** Choose a file in the compare box, as a person does, and wait for the result to be drawn. */
+async function choose(root: FakeElement, file: unknown): Promise<FakeElement> {
+  const input = root.querySelector("input[type=file]") as FakeElement;
+  input.files = [file];
+  input.fire("change");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  return root.querySelector(".backup-compare-result") as FakeElement;
+}
+
+describe("compare with a backup file", () => {
+  it("offers a Choose backup file button and says Snappy reads the file here and changes nothing", async () => {
+    const { root } = await renderSettled(view, crafted());
+    const box = root.querySelector(".backup-compare") as FakeElement;
+    expect(box).not.toBeNull();
+    expect(box.querySelectorAll("button").map((b) => b.textContent)).toEqual([copy.compareFileButton]);
+    expect(copy.compareFileButton).toBe("Choose backup file");
+    expect(box.textContent).toContain(copy.compareFileLine);
+    expect(box.querySelector("input[type=file]")?.getAttribute("accept")).toContain(".json");
+    expect(box.querySelectorAll("table")).toHaveLength(0);
+  });
+
+  it("compares the file with the export by counts: new, missing and in both for each list", async () => {
+    const { root } = await renderSettled(view, crafted());
+    const file = backupText({ friends: ["zqcanary_ann", "zqcanary_bo", "zqcanary_gone"], blocked: ["zqcanary_cy"] }, base.now - 5 * DAY);
+    const result = await choose(root, fileOf(file));
+    const table = result.querySelector("table") as FakeElement;
+    expect(table.querySelector("caption")?.textContent).toBe(copy.compareCaption);
+    expect(text(table, "thead th")).toEqual([copy.listHeader, copy.compareInBackupHeader, copy.compareNewHeader, copy.compareMissingHeader, copy.compareSameHeader]);
+    const rows = table.querySelectorAll("tbody tr");
+    expect(rows.map((r) => text(r, "th"))).toEqual([["Friends"], ["Blocked"], ["Ignored"]]);
+    // Friends: 3 in the backup; the export holds ann, bo and cy, so cy is new and gone is missing.
+    expect(rows[0]?.querySelectorAll("td").map(shown)).toEqual(["3", "1", "1", "2"]);
+    expect(text(rows[0] as FakeElement, "td")).toEqual([copy.unitInBackup(3), copy.unitNew(1), copy.unitMissing(1), copy.unitInBoth(2)]);
+    expect(rows[1]?.querySelectorAll("td").map(shown)).toEqual(["1", "0", "0", "1"]);
+    // The backup holds no ignored list, and the export has one person in it.
+    expect(rows[2]?.querySelectorAll("td").map(shown)).toEqual(["0", "1", "0", "0"]);
+    expect(result.textContent).toContain(copy.compareLegendLine);
+    expect(result.textContent).toMatch(/The backup was made [A-Z][a-z]{2} \d{1,2}, \d{4}\./);
+    expect(result.querySelectorAll(".tool-note").map((n) => n.textContent)).toEqual([copy.namesLeftOutNote(1)]);
+    expect(said.at(-1)).toBe(copy.compareAnnounce(1, 2));
+  });
+
+  it("says when the export matches the backup, and leaves out a list the export does not hold", async () => {
+    const { root } = await renderSettled(view, real({ friends: [person("zqcanary_ann"), person("zqcanary_bo")], blocked: [], ignored: [] }));
+    const result = await choose(root, fileOf(backupText({ friends: ["zqcanary_bo", "ZQCANARY_ANN"], blocked: ["zqcanary_cy"] }, base.now)));
+    expect(result.textContent).toContain(copy.compareSameLine);
+    expect(result.querySelectorAll("tbody tr").map((r) => text(r, "th"))).toEqual([["Friends"]]);
+    expect(result.querySelectorAll(".tool-note").map((n) => n.textContent)).toEqual([copy.notComparedNote("blocked, ignored")]);
+    expect(said.at(-1)).toBe(copy.compareSameAnnounce);
+  });
+
+  it("warns when the export has no friends, or most of the backup is missing", async () => {
+    const empty = await renderSettled(view, real({ friends: [person("zqcanary_ann")], blocked: [], ignored: [] }));
+    const names = Array.from({ length: 12 }, (_, i) => `zqcanary_${i}x`);
+    const many = await choose(empty.root, fileOf(backupText({ friends: names }, base.now)));
+    expect(many.querySelectorAll(".tool-note").map((n) => n.textContent)).toEqual([copy.notComparedNote("blocked, ignored"), copy.manyMissingNote(12, 12)]);
+    expect(copy.manyMissingNote(12, 12)).toBe("12 of the 12 friends in the backup are missing. This export may be cut short.");
+  });
+
+  it("says plainly what is wrong with a file that is not a backup, a bigger file than one can be, or text that cannot be read", async () => {
+    const { root } = await renderSettled(view, crafted());
+    expect((await choose(root, fileOf("not json at all"))).textContent).toBe(copy.fileNotBackupNote);
+    expect(said.at(-1)).toBe(copy.fileNotBackupNote);
+    expect((await choose(root, fileOf(JSON.stringify({ format: "snappy-friends-backup", version: 99, friends: [] })))).textContent).toBe(copy.fileVersionNote);
+    expect((await choose(root, fileOf("{}", 1e9))).textContent).toBe(copy.fileTooLargeNote);
+    const broken = { size: 5, text: async () => Promise.reject(new Error("zq secret path")) };
+    const failed = await choose(root, broken);
+    expect(failed.textContent).toBe(copy.fileUnreadableNote);
+    expect(failed.textContent).not.toContain("zq");
+    // A failed file leaves no table behind.
+    expect(root.querySelectorAll(".backup-compare table")).toHaveLength(0);
+  });
+
+  it("shows and announces no username and no file name, and changes nothing in the page's own backup", async () => {
+    const { root } = await renderSettled(view, crafted());
+    const before = computeFriendsBackup(dataOf(crafted())).counts;
+    const result = await choose(root, { ...fileOf(backupText({ friends: ["zqcanary_ann", "zqcanary_gone"] }, base.now)), name: "zqcanary_file.json" });
+    for (const name of [...CANARIES, "zqcanary_gone", "zqcanary_file"]) {
+      expect(root.textContent, name).not.toContain(name);
+      for (const line of said) expect(line, name).not.toContain(name);
+    }
+    expect(result.querySelectorAll("code.username")).toHaveLength(0);
+    expect(computeFriendsBackup(dataOf(crafted())).counts).toEqual(before);
+    expect(saved).toEqual([]);
   });
 });
 
