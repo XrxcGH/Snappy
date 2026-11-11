@@ -1,6 +1,6 @@
 import { zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import { visibleIssues } from "../../src/export/parse.ts";
+import { mediaNotOpenedIssue, visibleIssues } from "../../src/export/parse.ts";
 import { bytesReader, mergeParsedExports, parseExportFromReader } from "../../src/export/zip-reader.ts";
 import { emptyFriends } from "../../src/export/friends.ts";
 import type { ParsedExport } from "../../src/types.ts";
@@ -58,12 +58,12 @@ describe("the media note says how many of the files are Memories files", () => {
 
   it("adds the Memories share when other media files are counted too", async () => {
     const merged = mergeParsedExports([await mixed(5, 2, 1), await mixed(10, 0, 2)]);
-    expect(mediaNotes(merged)[0]?.message).toBe("Snappy listed 17 media files by name and size only, 15 of them Memories files. It did not open them.");
+    expect(mediaNotes(merged)[0]?.message).toBe("Snappy listed 17 media files by name and size only, including 15 Memories files. It did not open them.");
   });
 
   it("reads in the singular for one Memories file", async () => {
     const one = await mixed(1, 2, 1);
-    expect(mediaNotes(one)[0]?.message).toBe("Snappy listed 3 media files by name and size only, 1 of them a Memories file. It did not open them.");
+    expect(mediaNotes(one)[0]?.message).toBe("Snappy listed 3 media files by name and size only, including 1 Memories file. It did not open them.");
   });
 
   it("says nothing more when every file is a Memories file, or none is", async () => {
@@ -75,7 +75,22 @@ describe("the media note says how many of the files are Memories files", () => {
     const parts = [await mixed(5, 2, 1), await mixed(10, 0, 2)];
     const merged = mergeParsedExports(parts);
     expect(mediaNotes(mergeParsedExports([merged, parts[1] as ParsedExport]))[0]?.message).toContain("17 media files");
-    expect(mediaNotes(mergeParsedExports([merged, parts[1] as ParsedExport]))[0]?.message).toContain("15 of them");
+    expect(mediaNotes(mergeParsedExports([merged, parts[1] as ParsedExport]))[0]?.message).toContain("including 15 Memories files");
+  });
+});
+
+describe("the media note when two copies of a part differ in their Memories count", () => {
+  const withNote = (memories: Record<number, number>): ParsedExport => ({ friends: emptyFriends(), chats: [], memories: [], fileList: [], issues: [mediaNotOpenedIssue({ 1: 7, 2: 10 }, memories)] });
+
+  it("keeps the larger count for each part instead of dropping one copy", () => {
+    const a = withNote({ 1: 5, 2: 10 });
+    const b = withNote({ 1: 3, 2: 12 });
+    // Same text and same file counts, so only the Memories counts tell them apart: 5 + 12 is every file.
+    expect(a.issues[0]?.message).toBe(b.issues[0]?.message);
+    const merged = mediaNotes(mergeParsedExports([a, b]));
+    expect(merged).toHaveLength(1);
+    expect(merged[0]?.partMemories).toEqual({ 1: 5, 2: 12 });
+    expect(merged[0]?.message).toBe("Snappy listed 17 media files by name and size only. It did not open them.");
   });
 });
 

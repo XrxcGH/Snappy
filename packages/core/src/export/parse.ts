@@ -196,8 +196,8 @@ export function capFileList(list: string[], issues: ExportIssue[]): string[] {
 export function mediaNotOpenedIssue(partCounts: Record<number, number>, partMemories: Record<number, number> = {}): ExportIssue {
   const total = Object.values(partCounts).reduce((n, c) => n + c, 0);
   const memories = Object.values(partMemories).reduce((n, c) => n + c, 0);
-  // The Export check counts Memories files only, so say how many of the listed files those are.
-  const share = memories > 0 && memories < total ? `, ${memories} of them ${memories === 1 ? "a Memories file" : "Memories files"}` : "";
+  // The Export check counts Memories files only, so say how many of the listed files those are (overlays count as Memories files).
+  const share = memories > 0 && memories < total ? `, including ${memories} ${memories === 1 ? "Memories file" : "Memories files"}` : "";
   return {
     ...issue("info", "media-not-opened", `Snappy listed ${total} media ${total === 1 ? "file" : "files"} by name and size only${share}. It did not open ${total === 1 ? "it" : "them"}.`),
     partCounts: { ...partCounts },
