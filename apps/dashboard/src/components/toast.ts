@@ -6,8 +6,9 @@
  * the same sentence is spoken through the polite live region by whoever shows it, so this element is not a live
  * region and nothing is read twice. Usernames reach it as text, only through displayUsername, and never the title.
  *
- * A page that can show a toast draws `toastHost()` once; `showToast` does nothing where no host is drawn. Leaving the
- * page removes the host and its timer. Nothing is stored.
+ * A page that can show a toast draws `toastHost()` once; the shell draws `shellToastHost()` for the pages that do not. A
+ * note and a Keep toast sit side by side, each with its own time, so neither takes the other away. Leaving the page
+ * removes its host and its timers. Nothing is stored.
  */
 import { lists } from "../copy-lists.ts";
 import { h } from "../dom.ts";
@@ -39,12 +40,13 @@ interface Host {
   dismiss(): void;
 }
 
+/** The host of the page on screen, and the shell's own host that serves every page that draws none. */
 let active: Host | null = null;
+let fallback: Host | null = null;
 
-/** The element a page draws once to be able to show toasts. Fixed at the bottom of the window; empty when no toast is showing. */
-export function toastHost(): HTMLElement {
-  const element = h("div", { class: "toast-host" });
-  let count = 0;
+/** One place in a host: it holds one toast with its own eight seconds, paused while the pointer or focus is on it. */
+function makeSlot(paint: () => void) {
+  let toast: HTMLElement | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let remaining = TOAST_MS;
   let startedAt = 0;
@@ -56,9 +58,9 @@ export function toastHost(): HTMLElement {
   };
   const dismiss = (): void => {
     stop();
-    count = 0;
     held = false;
-    element.replaceChildren();
+    toast = null;
+    paint();
   };
   const arm = (ms: number): void => {
     stop();
@@ -78,12 +80,37 @@ export function toastHost(): HTMLElement {
     held = false;
     arm(remaining);
   };
+  const place = (next: HTMLElement): void => {
+    held = false;
+    next.addEventListener("mouseenter", hold);
+    next.addEventListener("mouseleave", release);
+    next.addEventListener("focusin", hold);
+    next.addEventListener("focusout", release);
+    next.addEventListener("keydown", (event) => {
+      if ((event as KeyboardEvent).key === "Escape") dismiss();
+    });
+    toast = next;
+    paint();
+    arm(TOAST_MS);
+  };
+  return { place, dismiss, current: (): HTMLElement | null => toast };
+}
+
+function makeHost(): Host {
+  const element = h("div", { class: "toast-host" });
+  let count = 0;
+  // A Keep toast with Undo and a note (a copy, a save) have a place each, so a note never takes Undo away before its time.
+  const slots = {} as { action: ReturnType<typeof makeSlot>; note: ReturnType<typeof makeSlot> };
+  const paint = (): void => {
+    const shown = [slots.action?.current(), slots.note?.current()].filter((t): t is HTMLElement => t !== null && t !== undefined);
+    element.replaceChildren(...shown);
+  };
+  slots.action = makeSlot(paint);
+  slots.note = makeSlot(paint);
 
   const show = (options: ToastOptions): void => {
-    // A note has no count to keep: it starts the next Keep at one.
     const acts = options.actionLabel !== undefined && options.onAction !== undefined;
-    count = acts ? count + 1 : 0;
-    held = false;
+    if (acts) count += 1;
     const undo = acts
       ? button({
           label: options.actionLabel!,
@@ -91,7 +118,8 @@ export function toastHost(): HTMLElement {
           variant: "secondary",
           key: "toast-action",
           onclick: () => {
-            dismiss();
+            slots.action.dismiss();
+            count = 0;
             options.onAction!();
             options.afterAction?.(element);
           },
@@ -104,30 +132,41 @@ export function toastHost(): HTMLElement {
       h("p", { class: "toast-text" }, options.text(Math.max(count, 1))),
       undo,
     );
-    toast.addEventListener("mouseenter", hold);
-    toast.addEventListener("mouseleave", release);
-    toast.addEventListener("focusin", hold);
-    toast.addEventListener("focusout", release);
-    toast.addEventListener("keydown", (event) => {
-      if ((event as KeyboardEvent).key === "Escape") dismiss();
-    });
-    element.replaceChildren(toast);
-    arm(TOAST_MS);
+    (acts ? slots.action : slots.note).place(toast);
   };
-
-  const host: Host = { element, show, dismiss };
-  active = host;
-  onDispose(() => {
-    dismiss();
-    if (active === host) active = null;
-  });
-  return element;
+  const dismiss = (): void => {
+    count = 0;
+    slots.action.dismiss();
+    slots.note.dismiss();
+  };
+  return { element, show, dismiss };
 }
 
-/** Show a toast on the page that drew a host. Returns false when there is none (the action itself still happened). */
+/** The element a page draws once to be able to show toasts. Fixed at the bottom of the window; empty when no toast is showing. */
+export function toastHost(): HTMLElement {
+  const host = makeHost();
+  active = host;
+  onDispose(() => {
+    host.dismiss();
+    if (active === host) active = null;
+  });
+  return host.element;
+}
+
+/**
+ * The shell's own host, drawn once for the whole window: it shows a note on a page that draws no host of its own (a guide, a
+ * tool, the year in review). Keep toasts stay with the page that draws one.
+ */
+export function shellToastHost(): HTMLElement {
+  fallback = makeHost();
+  return fallback.element;
+}
+
+/** Show a toast on the page's host, or on the shell's when the page has none. Returns false when neither is drawn (the action itself still happened). */
 export function showToast(options: ToastOptions): boolean {
-  if (active === null) return false;
-  active.show(options);
+  const host = active ?? fallback;
+  if (host === null) return false;
+  host.show(options);
   return true;
 }
 
@@ -138,5 +177,5 @@ export function showNote(text: string, kind?: "error"): boolean {
 
 /** Take the toast away now. */
 export function dismissToast(): void {
-  active?.dismiss();
+  (active ?? fallback)?.dismiss();
 }

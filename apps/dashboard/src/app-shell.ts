@@ -19,6 +19,7 @@ import { platform } from "./platform.ts";
 import { region } from "./reactive.ts";
 import type { Theme } from "./reducer.ts";
 import type { Store } from "./store.ts";
+import { shellToastHost } from "./components/toast.ts";
 import { navigate } from "./views/context.ts";
 import type { ViewContext } from "./views/context.ts";
 
@@ -192,6 +193,8 @@ export function buildShell(root: HTMLElement, ctx: ViewContext): Shell {
     h("div", { class: "layout" }, nav, h("div", { class: "content" }, main)),
     // The legal line appears once on every page, here. No page repeats it. It starts at the content column.
     h("footer", { class: "site-footer" }, h("div", { class: "site-footer-inner" }, h("p", { class: "caption" }, brand.nonAffiliation), betaLine(), shortcutsHint())),
+    // A page that draws no toast host of its own still shows the note after a copy or a save here.
+    shellToastHost(),
   );
 
   // One listener for the whole app: ? lists the shortcuts, / jumps to the search box, g then a letter goes to a page.
