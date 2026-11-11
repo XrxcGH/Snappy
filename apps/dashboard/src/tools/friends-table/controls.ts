@@ -90,6 +90,8 @@ export function controls(ui: ToolUi<FriendsTableParams>): HTMLElement {
       h("div", { class: "field-row" }, input, button({ label: copy.applyButton, type: "submit", key: "friends-table-apply" }), clear),
     ),
   );
+  // The text applies as it is typed, so it never waits unseen while another control changes the result; the button and Enter stay as a way to send it at once.
+  input.addEventListener("input", apply);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     apply();

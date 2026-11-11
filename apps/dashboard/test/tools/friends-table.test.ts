@@ -328,6 +328,23 @@ describe("the page", () => {
     expect(rowNames(r.root)).toHaveLength(6);
   });
 
+  it("applies typed text as it is typed, and keeps it when another control changes", async () => {
+    const r = await renderSettled(view, crafted());
+    const input = r.root.querySelector("input#friends-table-starts") as FakeElement;
+    input.value = "ZQ.B";
+    input.fire("input");
+    await settled(r.root);
+    expect(rowNames(r.root)).toEqual([NAMES.ben]);
+    expect(r.root.querySelector("input#friends-table-starts")).toBe(input);
+    expect(input.value).toBe("ZQ.B");
+    const show = select(r.root, "friends-table-show");
+    show.value = "all";
+    show.fire("change");
+    await settled(r.root);
+    expect(rowNames(r.root)).toEqual([NAMES.ben]);
+    expect(input.value).toBe("ZQ.B");
+  });
+
   it("keeps the controls and says so in a line when no friend matches", async () => {
     const r = await renderSettled(view, crafted());
     const input = r.root.querySelector("input#friends-table-starts") as FakeElement;
