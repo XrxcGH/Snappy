@@ -29,7 +29,7 @@ use readonly::{Picked, PickedFile};
 use tauri::ipc::Response;
 use tauri::webview::NewWindowResponse;
 use tauri::{AppHandle, Manager, State, Url, WebviewWindow, WebviewWindowBuilder};
-use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 type PickedState = Mutex<Picked>;
 
@@ -285,6 +285,57 @@ fn build_updater(app: &tauri::App) -> Option<updater::Updater> {
 /// this with `bundle.publisher` in tauri.conf.json, which the installer uses.
 const INSTALLER_PUBLISHER: &str = "Snappy contributors";
 
+/// Builds the main window with the handlers that keep it on the app's own page (see the top of this file).
+fn main_window(app: &tauri::App, config: &tauri::utils::config::WindowConfig) -> tauri::Result<WebviewWindow> {
+    #[allow(unused_mut)]
+    let mut builder = WebviewWindowBuilder::from_config(app.handle(), config)?
+        .on_navigation(allow_navigation)
+        .on_new_window(|_url, _features| NewWindowResponse::Deny);
+    #[cfg(target_os = "macos")]
+    {
+        builder = builder.on_download(allow_download);
+    }
+    // Test builds only: lets the network experiments try other browser switches without a rebuild.
+    #[cfg(all(windows, feature = "dev-hooks"))]
+    if let Ok(args) = std::env::var("SNAPPY_WEBVIEW_ARGS") {
+        builder = builder.additional_browser_args(&args);
+    }
+    builder.build()
+}
+
+/// Window creation is tried this many times, this long apart (about six seconds in all).
+const WINDOW_ATTEMPTS: u32 = 24;
+const WINDOW_RETRY_DELAY: Duration = Duration::from_millis(250);
+
+/// True when WebView2 refused with "The requested resource is in use" (ERROR_BUSY, 0x800700AA). That is what it says in the
+/// first seconds after a copy that was ended by force (a crash, End task, an installer or a test harness that killed it)
+/// when this copy starts, because the dead copy's browser process still holds the profile folder. It passes by itself.
+/// RAN: relaunching at once after a force kill ended in this error in 7 of 10 launches; every one was an abort (0xc0000409).
+fn profile_busy(error: &tauri::Error) -> bool {
+    error.to_string().to_ascii_uppercase().contains("0X800700AA")
+}
+
+/// True when the web engine is not installed at all. Tauri has already told the person so in a message (release builds).
+fn engine_missing(error: &tauri::Error) -> bool {
+    format!("{error:?}").contains("WebviewRuntimeNotInstalled")
+}
+
+/// Runs `step` until it succeeds, fails in a way `again` rejects, or `attempts` runs have failed, calling `wait` between
+/// runs. The last error is returned.
+fn retry<T, E>(attempts: u32, mut step: impl FnMut() -> Result<T, E>, again: impl Fn(&E) -> bool, mut wait: impl FnMut()) -> Result<T, E> {
+    let mut run = 1;
+    loop {
+        match step() {
+            Ok(value) => return Ok(value),
+            Err(error) if run >= attempts || !again(&error) => return Err(error),
+            Err(_) => {
+                run += 1;
+                wait();
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     scrub_webview_environment();
@@ -314,20 +365,24 @@ pub fn run() {
                 .iter()
                 .find(|w| w.label == "main")
                 .ok_or("the main window is missing from tauri.conf.json")?;
-            #[allow(unused_mut)]
-            let mut builder = WebviewWindowBuilder::from_config(app.handle(), config)?
-                .on_navigation(allow_navigation)
-                .on_new_window(|_url, _features| NewWindowResponse::Deny);
-            #[cfg(target_os = "macos")]
-            {
-                builder = builder.on_download(allow_download);
-            }
-            // Test builds only: lets the network experiments try other browser switches without a rebuild.
-            #[cfg(all(windows, feature = "dev-hooks"))]
-            if let Ok(args) = std::env::var("SNAPPY_WEBVIEW_ARGS") {
-                builder = builder.additional_browser_args(&args);
-            }
-            let window = builder.build()?;
+            // The engine can refuse for a moment right after a copy that was ended by force (see `profile_busy`). Failing there
+            // ended the program with a crash report, so it waits and tries again. Any other failure, or one that lasts, is
+            // said in a message and the program ends normally.
+            let created = retry(WINDOW_ATTEMPTS, || main_window(app, config), profile_busy, || std::thread::sleep(WINDOW_RETRY_DELAY));
+            let window = match created {
+                Ok(window) => window,
+                Err(error) => {
+                    if !engine_missing(&error) {
+                        app.dialog()
+                            .message("Snappy could not open its window. Close any other Snappy window and start it again.")
+                            .title("Snappy")
+                            .kind(MessageDialogKind::Error)
+                            .blocking_show();
+                    }
+                    app.handle().exit(1);
+                    return Ok(());
+                }
+            };
             harden_webview2(&window);
             if let Some(u) = &app.state::<UpdaterState>().0 {
                 u.schedule(); // a few seconds from now, only if the setting is on; never blocks start-up
@@ -344,6 +399,58 @@ mod tests {
 
     fn allowed(s: &str) -> bool {
         allow_navigation(&Url::parse(s).unwrap())
+    }
+
+    #[test]
+    fn a_window_that_fails_for_a_moment_is_tried_again() {
+        let mut calls = 0;
+        let mut waits = 0;
+        let got = retry(24, || { calls += 1; if calls < 4 { Err("in use") } else { Ok(calls) } }, |_| true, || waits += 1);
+        assert_eq!(got, Ok(4));
+        assert_eq!(waits, 3);
+    }
+
+    #[test]
+    fn a_window_that_never_opens_gives_up_with_the_last_error() {
+        let mut calls = 0;
+        let mut waits = 0;
+        let got: Result<(), u32> = retry(5, || { calls += 1; Err(calls) }, |_| true, || waits += 1);
+        assert_eq!(got, Err(5));
+        assert_eq!((calls, waits), (5, 4)); // no wait after the last run
+    }
+
+    #[test]
+    fn a_failure_that_will_not_pass_is_not_tried_again() {
+        let mut calls = 0;
+        let got: Result<(), &str> = retry(24, || { calls += 1; Err("no engine") }, |e| *e == "in use", || panic!("must not wait"));
+        assert_eq!(got, Err("no engine"));
+        assert_eq!(calls, 1);
+    }
+
+    #[test]
+    fn a_window_that_opens_at_once_does_not_wait() {
+        let mut waits = 0;
+        assert_eq!(retry::<_, ()>(24, || Ok(1), |_| true, || waits += 1), Ok(1));
+        assert_eq!(waits, 0);
+    }
+
+    fn failure(text: &str) -> tauri::Error {
+        tauri::Error::Io(std::io::Error::other(text.to_string()))
+    }
+
+    #[test]
+    fn only_the_profile_in_use_error_is_waited_out() {
+        // the text of the real failure, from the crash it caused
+        let busy = failure("failed to create webview: WebView2 error: WindowsError(Error { code: HRESULT(0x800700AA), message: \"The requested resource is in use.\" })");
+        assert!(profile_busy(&busy));
+        // another HRESULT is not
+        assert!(!profile_busy(&failure("WebView2 error: WindowsError(Error { code: HRESULT(0x8007139F), message: \"state\" })")));
+    }
+
+    #[test]
+    fn a_missing_engine_is_told_apart() {
+        assert!(engine_missing(&failure("WebviewRuntimeNotInstalled")));
+        assert!(!engine_missing(&failure("WebView2 error: in use")));
     }
 
     #[test]
