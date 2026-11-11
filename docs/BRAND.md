@@ -448,7 +448,7 @@ Easing is `cubic-bezier(0.2, 0, 0, 1)`.
 | `i-memories` | Memories rescue |
 | `i-seal` | Backup |
 | `i-content-blind` | Your export stays on this device |
-| `i-import`, `i-export`, `i-file-zip` | Add your export, save a report, the export file |
+| `i-import`, `i-export`, `i-save`, `i-file-zip` | Add your export, sent requests, the Save buttons, the export file |
 | `i-overview` | Overview |
 | `i-people` | Friends, new friends |
 | `i-snapshots` | Exports in your saved history |

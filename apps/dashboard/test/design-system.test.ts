@@ -168,6 +168,12 @@ describe("icons", () => {
     expect([...named].sort()).toEqual([...inSprite].sort());
   });
 
+  it("gives the save glyph its own shape, so a Save button never looks like the Choose-file (import) button", () => {
+    const shape = (id: string) => new RegExp(`<symbol id="i-${id}"[^>]*>(.*?)</symbol>`, "s").exec(sprite)?.[1];
+    expect(shape("save")).toBeDefined();
+    for (const other of ["import", "export"]) expect(shape("save"), `i-save vs i-${other}`).not.toBe(shape(other));
+  });
+
   it("draws every save button with the save glyph (arrow into a tray), never the upward export arrow", () => {
     for (const file of [["components", "listActions.ts"], ["components", "toolPage.ts"], ["tools", "year-in-review", "view.ts"]]) {
       const src = read("apps", "dashboard", "src", ...file);
