@@ -289,8 +289,10 @@ export function mountUpdates(bridge: Bridge): Mounted {
   const cardToggle = h("input", { type: "checkbox", class: "check-input", role: "switch", id: "update-auto", "data-key": "update:auto" });
   cardToggle.addEventListener("change", () => {
     // The last check's answer belongs to that check, not to the switch: it goes when the switch moves.
+    // Only the result line changes here: the switch keeps the position the person just gave it.
     result = null;
-    paintCard();
+    cardResult.textContent = "";
+    cardLast.hidden = false;
     void bridge.setAuto(cardToggle.checked).then(() => refresh());
   });
   const card = section(
