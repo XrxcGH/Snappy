@@ -44,7 +44,7 @@ export const startView: View = (ctx) => {
     region(store, (s) => [s.import.phase, s.import.sample, s.import.message, s.import.issues, s.import.addedToHistory, s.import.canOverride, s.vault.hasSaved, s.real.ledger.snapshots.length], (s) => importStatus(ctx, s)),
     h("div", { class: "step-list" }, getExportSection(), countSection(ctx), addSection(ctx)),
   );
-  // The chooser, the drop zone and the sample button wait while a read is going, so a second run cannot start on top of it.
+  // The chooser, the folder button, the drop zone and the sample button wait while a read is going, so a second run cannot start on top of it.
   syncBusy(view, store.get());
   // Registered after the status region above, so its repaint has happened when this runs.
   onDispose(
@@ -81,7 +81,7 @@ function reloadNote(s: State): Child {
 
 function syncBusy(view: HTMLElement, s: State): void {
   const busy = s.import.phase === "reading";
-  for (const key of ["choose-files", "try-sample"]) {
+  for (const key of ["choose-files", "choose-folder", "try-sample"]) {
     for (const control of view.querySelectorAll<HTMLElement>(`[data-key=${key}]`)) {
       if (busy) control.setAttribute("disabled", "");
       else control.removeAttribute("disabled");
