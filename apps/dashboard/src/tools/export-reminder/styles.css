@@ -1,4 +1,5 @@
-/* The months, time of day and alert boxes: one row of equal columns, as wide as the date and time zone fields above, where they fit; stacked where they do not. */
-.tool-export-reminder .reminder-row { display: grid; min-width: 0; max-width: var(--field-w); gap: var(--gap-card) var(--space-4); grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); align-items: start; }
+/* The months, time of day and alert boxes: one row of three equal columns, as wide as the date and time zone fields above; stacked on a phone, so no box sits alone in half a row. */
+.tool-export-reminder .reminder-row { display: grid; min-width: 0; max-width: var(--field-w); gap: var(--gap-card) var(--space-4); grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+@media (max-width: 40rem) { .tool-export-reminder .reminder-row { grid-template-columns: minmax(0, 1fr); } }
 .tool-export-reminder .reminder-row > .field { min-width: 0; }
 .tool-export-reminder .reminder-row .input-narrow { max-width: none; }

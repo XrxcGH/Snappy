@@ -410,10 +410,21 @@ describe("the form layout", () => {
     const css = readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../src/tools/export-reminder/styles.css"), "utf8");
     // The row is as wide as the date and time zone fields (one text width), in equal columns, with the boxes at the width of their column.
     expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*max-width: var\(--field-w\)/);
-    expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*grid-template-columns: repeat\(auto-fit, minmax\(9rem, 1fr\)\)/);
+    expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+    // On a phone the three boxes stack, so the last one never sits alone in half a row.
+    expect(css).toMatch(/@media \(max-width: 40rem\) \{ \.tool-export-reminder \.reminder-row \{ grid-template-columns: minmax\(0, 1fr\); \} \}/);
     // The row may shrink below the width of its columns, so on a phone it never widens the form (it measured 464 px in a 343 px page).
     expect(css).toMatch(/\.tool-export-reminder \.reminder-row \{[^}]*min-width: 0/);
     expect(css).toMatch(/\.tool-export-reminder \.reminder-row \.input-narrow \{ max-width: none; \}/);
+  });
+});
+
+describe("the three small boxes' help", () => {
+  it("is short enough for a column of about 180 px: two lines at most, no last line of one word", () => {
+    // The row's columns are a third of one text width, so each help stays within about 45 characters, and the time and months help in one line.
+    for (const help of [copy.monthsHelp, copy.timeHelp, copy.alertHelp]) expect(help.length, help).toBeLessThanOrEqual(45);
+    expect(copy.timeHelp.length).toBeLessThanOrEqual(24);
+    expect(copy.monthsHelp.length).toBeLessThanOrEqual(24);
   });
 });
 
