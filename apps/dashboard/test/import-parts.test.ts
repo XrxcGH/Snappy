@@ -62,7 +62,7 @@ describe("checkParts", () => {
   });
 
   it("calls parts later parts when none of them holds a JSON or HTML page, whatever the names", () => {
-    expect(checkParts(named("holiday.zip", "mydata~1.zip"), [media, media])).toEqual({ kind: "later-only" });
+    expect(checkParts(named("holiday.zip", "mydata~1.zip"), [media, media])).toEqual({ kind: "later-only", numbered: false });
     // A part with HTML pages only is an export in the wrong format, which the reader explains.
     expect(checkParts(named("mydata~1.zip"), [{ listed: true, friends: false, pages: true, media: false }]).kind).toBe("ok");
   });
@@ -73,7 +73,7 @@ describe("checkParts", () => {
   });
 
   it("judges a part it could not list by its name alone, so reading it can say why it failed", () => {
-    expect(checkParts(named("mydata~1-2.zip"), [unlisted])).toEqual({ kind: "later-only" });
+    expect(checkParts(named("mydata~1-2.zip"), [unlisted])).toEqual({ kind: "later-only", numbered: true });
     expect(checkParts(named("broken.zip"), [unlisted]).kind).toBe("ok");
     expect(checkParts(named("mydata~1.zip", "mydata~1-2.zip"), [unlisted, unlisted]).kind).toBe("ok");
   });
@@ -143,10 +143,21 @@ describe("importing parts by what they hold", () => {
   it("asks for the part with the lists when the chosen parts hold only photos and videos, whatever they are called", async () => {
     const [, second, third] = partFiles(2) as [File, File, File];
     const { store, actions } = setup({ runImport: never });
+    expect(await actions.importZips([rename(second, "mydata~1700000000000-2.zip"), rename(third, "mydata~1700000000000-3.zip")])).toBe("failed");
+    expect(store.get().import.message).toBe(start.laterPartsOnly);
     expect(await actions.importZips([rename(second, "holiday-photos.zip"), rename(third, "more photos.zip")])).toBe("failed");
-    expect(store.get().import.message).toBe(start.laterPartsOnly);
+    expect(store.get().import.message).toBe(start.photosOnly);
     expect(await actions.importZips([rename(second, "mydata~1700000000000.zip")])).toBe("failed");
-    expect(store.get().import.message).toBe(start.laterPartsOnly);
+    expect(store.get().import.message).toBe(start.photosOnly);
+  });
+
+  it("does not call a photos-only ZIP one of the numbered parts when it is not named like one", async () => {
+    const [, second] = partFiles(2) as [File, File];
+    const { store, actions } = setup({ runImport: never });
+    await actions.importZips([rename(second, "holiday-photos.zip")]);
+    expect(store.get().import.message).toBe(start.photosOnly);
+    expect(start.photosOnly).not.toMatch(/numbered part/);
+    expect(start.photosOnly).toMatch(/only photos and videos/);
   });
 
   it("does not call a ZIP of other ZIP files or of text files the numbered parts", async () => {

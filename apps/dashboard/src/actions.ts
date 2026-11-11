@@ -190,7 +190,9 @@ export function createActions(store: Store, deps: Deps): Actions {
     const check = checkParts(zips, await Promise.all(zips.map((zip) => scanPart(zip))));
     if (check.kind === "later-only") {
       // With an export already loaded, the lists are there: the person needs to choose every part together instead.
-      store.dispatch({ type: "import-failed", message: store.get().real.latest ? start.laterPartsLoaded : start.laterPartsOnly });
+      // A ZIP of photos that is not named like a numbered part (-2, -3) is not one of "the numbered parts": say what it holds.
+      const message = !check.numbered ? start.photosOnly : store.get().real.latest ? start.laterPartsLoaded : start.laterPartsOnly;
+      store.dispatch({ type: "import-failed", message });
       return "failed";
     }
     if (check.kind === "mixed") {

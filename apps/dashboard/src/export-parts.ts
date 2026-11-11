@@ -74,8 +74,8 @@ export async function scanPart(blob: Blob): Promise<PartScan> {
 export type PartsCheck<T> =
   /** Read these, in this order: the part with the lists first. */
   | { kind: "ok"; ordered: T[] }
-  /** Only photo and video parts: the lists are in a part that was not chosen. */
-  | { kind: "later-only" }
+  /** Only photo and video parts: the lists are in a part that was not chosen. `numbered` is true when every one is named like a later part (-2, -3). */
+  | { kind: "later-only"; numbered: boolean }
   /** Parts of different exports: the two smallest export numbers, as digits. */
   | { kind: "mixed"; ids: readonly [string, string] };
 
@@ -94,7 +94,7 @@ export function checkParts<T extends NamedPart>(files: readonly T[], scans: read
 
   const withScan = files.map((file, i) => ({ name: file.name, file, scan: scans[i] as PartScan }));
   const mediaOnly = withScan.every(({ file, scan }) => (scan.listed ? !scan.pages && scan.media : LATER_PART.test(file.name ?? "")));
-  if (withScan.length > 0 && mediaOnly) return { kind: "later-only" };
+  if (withScan.length > 0 && mediaOnly) return { kind: "later-only", numbered: isLaterPartsOnly(files) };
 
   const byName = orderParts(withScan);
   const first = byName.filter((p) => p.scan.friends);

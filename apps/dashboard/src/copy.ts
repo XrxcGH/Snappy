@@ -178,6 +178,7 @@ export const start = {
   readingPercent: (fraction: number) => `${Math.round(Math.min(1, Math.max(0, fraction)) * 100)}% done`,
   skippedFiles: (n: number) => `${n === 1 ? "1 file was skipped because it is not a ZIP file." : `${formatCount(n)} files were skipped because they are not ZIP files.`} Your results may be incomplete.`,
   laterPartsOnly: "These are the numbered parts, which hold photos and videos. Add the file that has no number at the end of its name.",
+  photosOnly: "These ZIP files hold only photos and videos. Add the file with your lists, usually the one with no number at the end.",
   laterPartsLoaded: "Parts cannot be added one at a time. Choose all the parts of this export together, with the file that has no number.",
   // An unzipped export (a folder, or JSON files) instead of the ZIP files. The Mac tip is a second line because Safari does the unzipping.
   unzipped: "This looks like an unzipped export. Choose the ZIP files instead.",
