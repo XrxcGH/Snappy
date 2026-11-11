@@ -116,7 +116,12 @@ export function mountUpdates(bridge: Bridge): Mounted {
 
   // tabindex -1: a place for focus to go when the button that had it is replaced (see paintBanner).
   const slot = h("div", { class: "update-slot", role: "status", "aria-live": "polite", tabindex: "-1" });
-  document.getElementById("main")?.prepend(slot);
+  // Right after the skip link, ahead of the header, menu and page, so the keyboard reaches the banner's buttons (the first-run
+  // notice's OK and Turn off) early instead of after everything else. It is out of the flow, so its place in the document does
+  // not change how the page looks.
+  const skip = document.querySelector(".skip-link");
+  if (skip) skip.after(slot);
+  else document.getElementById("main")?.prepend(slot);
 
   // ---- place -----------------------------------------------------------------------------------------------------------
   // The banner floats over the bottom of the window (see update.css), so it takes no room at the top of the page. It lines up

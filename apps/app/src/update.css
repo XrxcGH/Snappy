@@ -4,7 +4,7 @@
 /* The banner floats at the bottom of the window, over the page and out of the flow, so it never pushes the page heading down
    when it appears or changes. It sits in the content column: update-ui.ts measures the column and sets --update-left and
    --update-width, and --update-slot-h (its height, 0 when empty). The page keeps that much room at its end and focus is
-   scrolled clear of it, so it hides nothing for good. It is first in the document, so the keyboard reaches it early. */
+   scrolled clear of it, so it hides nothing for good. It is placed right after the skip link, so the keyboard reaches it early. */
 .update-slot {
   position: fixed; z-index: 25; bottom: var(--space-4);
   left: var(--update-left, var(--gutter)); width: var(--update-width, calc(100% - 2 * var(--gutter)));

@@ -41,6 +41,18 @@ describe("the update banner takes no room at the top of the page", () => {
   });
 });
 
+describe("the update banner's place in the keyboard order", () => {
+  it("is put right after the skip link, ahead of the header, menu and page, not inside the main area", () => {
+    expect(ui).toMatch(/skip-link/);
+    expect(ui).toMatch(/if \(skip\) skip\.after\(slot\);\s*else /);
+  });
+
+  it("is described in update.css as right after the skip link", () => {
+    expect(css).not.toMatch(/first in the document/);
+    expect(css).toMatch(/right after the skip link/);
+  });
+});
+
 describe("the Updates card spacing", () => {
   it("adds no margin of its own under the Check now row: the card's own 16 px gap is the only space", () => {
     expect(css).not.toMatch(/\.update-card\s+\.actions\s*\{[^}]*margin/);
