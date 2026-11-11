@@ -33,15 +33,15 @@ export const wasWere = (n: number): string => noun(n, "was", "were");
 const SIZE_NUMBER = new Intl.NumberFormat("en-US");
 
 /**
- * "512 bytes", "2.21 KB", "340 MB", "1.2 GB". Binary steps (1024), the way file managers report sizes.
+ * "512 bytes", "2.21 KB", "340 MB", "1.2 GB". Decimal steps (1,000), the way the cap is typed.
  * Two decimals under 10, one under 100, none above: the same rule and words as the dashboard, so one
  * size reads the same on every surface.
  */
 export function formatBytes(bytes: number): string {
   let value = Math.max(0, bytes);
   let unit = 0;
-  while (value >= 1024 && unit < UNITS.length - 1) {
-    value /= 1024;
+  while (value >= 1000 && unit < UNITS.length - 1) {
+    value /= 1000;
     unit++;
   }
   const digits = unit === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 2;

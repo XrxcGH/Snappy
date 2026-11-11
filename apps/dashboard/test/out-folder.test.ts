@@ -99,7 +99,7 @@ describe("the files list in the panel", () => {
     const { el } = await drawn([file("memories/a.jpg", 1500), file("memories/b.mp4", 2_500_000)]);
     const section = el.querySelector(".out-files") as FakeElement;
     expect(section.querySelector("h3")?.textContent).toBe(terminal.outHeading);
-    expect(section.querySelector(".caption")?.textContent).toBe("2 files, 2.39 MB");
+    expect(section.querySelector(".caption")?.textContent).toBe("2 files, 2.5 MB");
     expect(section.querySelectorAll(".out-file-name").map((n) => n.textContent)).toEqual(["memories/a.jpg", "memories/b.mp4"]);
     const labels = section.querySelectorAll("button").map((b) => b.getAttribute("aria-label") ?? b.textContent);
     // Save all and Clear come before the one-by-one list, so the Tab order is the reading order.

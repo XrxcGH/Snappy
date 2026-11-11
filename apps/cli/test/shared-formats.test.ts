@@ -24,10 +24,10 @@ const COMMANDS = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "com
 
 describe("the shared formatters", () => {
   it("writes a size the way the dashboard does, so one size reads the same everywhere", () => {
-    for (const bytes of [0, 2, 512, 1000, 1023, 1024, 2263, 10_240, 61_440, 102_400, 1_048_576, 6_900_000, 340 * 1024 ** 2, 5 * 1024 ** 3, 1.5 * 1024 ** 4]) {
+    for (const bytes of [0, 2, 512, 1000, 1023, 1024, 2263, 10_240, 61_440, 102_400, 1_048_576, 6_900_000, 340 * 1000 ** 2, 5 * 1000 ** 3, 1.5 * 1000 ** 4]) {
       expect(formatBytes(bytes), String(bytes)).toBe(dashboardBytes(bytes));
     }
-    expect(formatBytes(2263)).toBe("2.21 KB");
+    expect(formatBytes(2263)).toBe("2.26 KB");
     // The one place it differs on purpose: a single byte is "1 byte".
     expect(formatBytes(1)).toBe("1 byte");
   });
@@ -109,8 +109,8 @@ describe("what the commands print", () => {
       { id: "a", date: Date.UTC(2026, 0, 1), mediaType: "image" as const, sizeBytes: 2263 },
       { id: "b", date: Date.UTC(2026, 0, 2), mediaType: "image" as const },
     ];
-    const text = renderStorage(insights.storagePlanner.planMemoryStorage(items, 5 * 1024 ** 3, { now: NOW }), term, false);
-    expect(text).toMatch(/At least 2\.21 KB/);
+    const text = renderStorage(insights.storagePlanner.planMemoryStorage(items, 5 * 1000 ** 3, { now: NOW }), term, false);
+    expect(text).toMatch(/At least 2.26 KB/);
     expect(text).not.toMatch(/\bKB\+|\bB\+/);
     expect(text).toContain("Photos");
     expect(text).not.toMatch(/^ *Videos/m);

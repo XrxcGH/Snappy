@@ -45,8 +45,17 @@ describe("format", () => {
     expect(formatCount(1234567)).toBe("1,234,567");
     expect(formatBytes(0)).toBe("0 bytes");
     expect(formatBytes(gibToBytes(5))).toBe("5 GB");
-    expect(formatBytes(1536)).toBe("1.5 KB");
+    expect(formatBytes(1500)).toBe("1.5 KB");
     expect(formatBytes(-1)).toBe("unknown size");
+  });
+
+  it("counts a typed GB as 1,000 MB, so what is typed is what is shown", () => {
+    expect(gibToBytes(0.5)).toBe(500_000_000);
+    expect(formatBytes(gibToBytes(0.5))).toBe("500 MB");
+    expect(formatBytes(gibToBytes(0.1))).toBe("100 MB");
+    expect(formatBytes(gibToBytes(10_000))).toBe("10 TB");
+    expect(formatBytes(999)).toBe("999 bytes");
+    expect(formatBytes(1000)).toBe("1 KB");
   });
 });
 

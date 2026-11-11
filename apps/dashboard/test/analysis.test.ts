@@ -51,7 +51,7 @@ describe("analyze", () => {
     const s2 = reduce(s1, { type: "cap", gib: 10 });
     const a2 = analyze(s2);
     expect(a2.queue).toBe(a1.queue);
-    expect(a2.plan?.meter.capBytes).toBe(10 * 1024 ** 3);
+    expect(a2.plan?.meter.capBytes).toBe(10 * 1000 ** 3);
     expect(a2.plan).not.toBe(a1.plan);
   });
 

@@ -164,10 +164,10 @@ describe("format", () => {
     expect(formatDate(Date.UTC(2026, 10, 6, 23, 59))).toBe("Nov 6, 2026");
     expect(formatBytes(0)).toBe("0 bytes");
     expect(formatBytes(1)).toBe("1 byte");
-    expect(formatBytes(1536)).toBe("1.5 KB");
-    expect(formatBytes(2263)).toBe("2.21 KB");
-    expect(formatBytes(5 * 1024 ** 3)).toBe("5 GB");
-    expect(formatBytes(340 * 1024 ** 2)).toBe("340 MB");
+    expect(formatBytes(1500)).toBe("1.5 KB");
+    expect(formatBytes(2263)).toBe("2.26 KB");
+    expect(formatBytes(5 * 1000 ** 3)).toBe("5 GB");
+    expect(formatBytes(340 * 1000 ** 2)).toBe("340 MB");
     expect(plural(1, "friend")).toBe("1 friend");
     expect(plural(1234, "friend")).toBe("1,234 friends");
     expect(plural(2, "Memory", "Memories")).toBe("2 Memories");

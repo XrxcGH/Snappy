@@ -11,7 +11,7 @@ import { expectBrandSafe, expectNoLeaks, expectValidDescriptor, runInsight } fro
 
 type Plan = insights.storagePlanner.StoragePlan;
 const term = createTerm({ env: {}, isTTY: false, columns: 100 });
-const GB = 1024 ** 3;
+const GB = 1000 ** 3;
 
 /** Hand-built Memories: `n` items spread over `years` years, alternating photo and video. */
 function memories(n: number, opts: { years?: number; size?: number | null; part?: number } = {}): MemoryItem[] {
@@ -237,7 +237,7 @@ describe("errors", () => {
     const r = await runInsight(storageCommand, [zip, "--goal-gb", "2.5", "--batch-gb", "0.5"]);
     expect(r.code).toBe(0);
     expect(r.out).toContain("of 2.5 GB");
-    expect(r.out).toContain("of up to 512 MB");
+    expect(r.out).toContain("of up to 500 MB");
   });
 });
 

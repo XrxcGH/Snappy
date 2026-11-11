@@ -41,7 +41,7 @@ describe("snappy-export memories: dry run", () => {
     const zip = writeSyntheticZip(tempDir("mem"), "later.zip", { bundleMedia: true });
     const { code, out } = await run(["memories", zip, "--dry-run", "--cap-gb", "0.5"]);
     expect(code).toBe(0);
-    expect(out).toContain("of 512 MB");
+    expect(out).toContain("of 500 MB");
   });
 
   it("never prints a download link, even though the export is full of them", async () => {

@@ -42,7 +42,7 @@ type Fit = insights.storagePlanner.PlanFit;
 /** How many download groups and batches the text shows. The JSON has them all. */
 const PRIORITY_ROWS = 12;
 const BATCH_ROWS = 10;
-const GB = 1024 ** 3;
+const GB = 1000 ** 3;
 
 const TYPE_LABEL = { image: "Photos", video: "Videos", unknown: "Other" } as const;
 const FIT_LABEL: Record<Fit, string> = { all: "Yes", part: "Partly", none: "No", unsized: "Unknown" };

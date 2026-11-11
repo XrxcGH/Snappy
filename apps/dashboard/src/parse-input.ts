@@ -9,7 +9,7 @@ export function parseFriendCount(text: string): number | null | undefined {
   return n <= 100_000 ? n : undefined;
 }
 
-/** Storage cap in GB from the text field; undefined when it is not a sensible number. */
+/** Storage cap in decimal GB (1 GB is 1,000 MB) from the text field; undefined when it is not a sensible number. */
 export function parseCapGiB(text: string): number | undefined {
   const raw = text.trim();
   // Commas are accepted only as thousands groups, so "1,5" is rejected instead of read as 15.

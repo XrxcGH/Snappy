@@ -23,17 +23,18 @@ export function formatCount(n: number): string {
   return NUMBER.format(n);
 }
 
-const GIB = 1024 ** 3;
-export const gibToBytes = (gib: number): number => Math.round(gib * GIB);
+const GB = 1000 ** 3;
+/** A size typed in GB, as bytes. The unit is decimal (1 GB is 1,000 MB), like the label, so 0.5 shows as 500 MB. The name and the "GiB" in capGiB and goalGiB are from when it was binary. */
+export const gibToBytes = (gb: number): number => Math.round(gb * GB);
 
-/** Binary units labelled the way Snapchat labels its cap: "5 GB". */
+/** Decimal units, the way the cap is typed and Snapchat labels it: "5 GB" is 5,000 MB. */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "unknown size";
   const units = ["bytes", "KB", "MB", "GB", "TB"];
   let value = bytes;
   let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
+  while (value >= 1000 && unit < units.length - 1) {
+    value /= 1000;
     unit++;
   }
   const digits = unit === 0 || value >= 100 ? 0 : value >= 10 ? 1 : 2;

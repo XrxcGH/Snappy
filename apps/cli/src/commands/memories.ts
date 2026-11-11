@@ -219,7 +219,7 @@ export async function memoriesCommand(args: string[], io: Io): Promise<number> {
   if (flags["cap-gb"] !== undefined) {
     const gb = Number(flags["cap-gb"]);
     if (!Number.isFinite(gb) || gb <= 0 || gb > 100_000) throw new CliError("usage", "--cap-gb must be a number above 0, for example --cap-gb 5.");
-    capBytes = gb * 1024 ** 3;
+    capBytes = gb * 1000 ** 3;
   }
   if (flags.out !== undefined && flags.out.trim() === "") {
     // An empty value (an unset shell variable, say) would otherwise mean the current folder.

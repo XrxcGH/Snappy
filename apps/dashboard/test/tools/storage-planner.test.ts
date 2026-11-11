@@ -23,7 +23,7 @@ import { render, renderSettled, sampleState, sampleWorkspace, settled, stateWith
 const said: string[] = [];
 vi.mock("../../src/announce.ts", () => ({ announce: (text: string) => void said.push(text) }));
 
-const MIB = 1024 ** 2;
+const MB = 1000 ** 2;
 const NOW = Date.UTC(2026, 5, 1);
 let base: ParsedExport;
 let sample: State;
@@ -38,7 +38,7 @@ beforeEach(() => {
 
 let counter = 0;
 /** One made-up Memory. Its id, link and path hold a canary that must never be shown. */
-function memory(year: number | null, mediaType: MemoryItem["mediaType"], mib: number | null, extra: Partial<MemoryItem> = {}): MemoryItem {
+function memory(year: number | null, mediaType: MemoryItem["mediaType"], mb: number | null, extra: Partial<MemoryItem> = {}): MemoryItem {
   counter++;
   return {
     id: `ZQCANARY-id-${counter}`,
@@ -46,7 +46,7 @@ function memory(year: number | null, mediaType: MemoryItem["mediaType"], mib: nu
     mediaType,
     downloadUrl: `https://example.invalid/ZQCANARY/${counter}`,
     zipPath: `memories/ZQCANARY-${counter}.bin`,
-    ...(mib === null ? {} : { sizeBytes: mib * MIB }),
+    ...(mb === null ? {} : { sizeBytes: mb * MB }),
     ...extra,
   };
 }
@@ -158,12 +158,12 @@ describe("the page", () => {
     const { root } = await renderSettled(view, real(crafted(), 2));
     const p = text(root, ".section p");
     expect(text(root, ".meter-head .meter-name")).toEqual([copy.meterName]);
-    expect(text(root, ".meter-head .meter-text")).toEqual(["At least 2.69 GB of 2 GB (134%)"]);
+    expect(text(root, ".meter-head .meter-text")).toEqual(["At least 2.75 GB of 2 GB (138%)"]);
     expect(p).toContain(copy.fitsPartLine(4, 3));
     expect(text(root, ".facts dt")).toEqual([copy.countedHeader, copy.fitsHeader, copy.waitsHeader]);
     expect(text(root, ".facts dd")).toEqual(["8", "4", "3"]);
     expect(root.querySelector("[role=progressbar]")?.getAttribute("aria-valuenow")).toBe("100");
-    expect(root.querySelector("[role=progressbar]")?.getAttribute("aria-valuetext")).toBe("At least 2.69 GB of 2 GB (134%)");
+    expect(root.querySelector("[role=progressbar]")?.getAttribute("aria-valuetext")).toBe("At least 2.75 GB of 2 GB (138%)");
   });
 
   it("says everything fits when it does", async () => {
@@ -179,9 +179,9 @@ describe("the page", () => {
     expect(text(table, "thead th")).toEqual([copy.yearHeader, copy.memoriesHeader, copy.sizeHeader, copy.shareHeader, copy.fitHeader]);
     const rows = rowsOf(table);
     expect(rows.map((r) => r[0])).toEqual(["2024", "2025", "2026", "No date"]);
-    expect(rows[2]).toEqual(["2026", "3 Memories", "1.17 GB", "44% of total", "Fits"]);
+    expect(rows[2]).toEqual(["2026", "3 Memories", "1.2 GB", "44% of total", "Fits"]);
     // 2025 holds a photo with no size: its size is a floor.
-    expect(rows[1]?.[2]).toBe("At least 1.37 GB");
+    expect(rows[1]?.[2]).toBe("At least 1.4 GB");
     expect(text(table, ".pill")).toEqual(["Waits", "Partly fits", "Fits", "Waits"]);
     expect(table.querySelectorAll(".pill-yes")).toHaveLength(1);
     expect(table.querySelectorAll(".pill-no")).toHaveLength(2);
@@ -196,7 +196,7 @@ describe("the page", () => {
     expect(rowsOf(types).map((r) => r[0])).toEqual(["Photos", "Videos"]);
     expect(rowsOf(parts)).toEqual([
       ["Part 1", "2 Memories", "800 MB"],
-      ["Part 2", "2 Memories", "1.07 GB"],
+      ["Part 2", "2 Memories", "1.1 GB"],
       ["Part 3", "2 Memories", "800 MB"],
       ["No file", "2 Memories", "At least 50 MB"],
     ]);
@@ -255,10 +255,10 @@ describe("the page", () => {
 
   it("announces the plan politely once, in one short sentence", async () => {
     await renderSettled(view, real(crafted(), 2));
-    expect(said).toEqual(["Storage plan ready. At least 2.69 GB of 2 GB, and 3 Memories would wait for more space."]);
+    expect(said).toEqual(["Storage plan ready. At least 2.75 GB of 2 GB, and 3 Memories would wait for more space."]);
     said.length = 0;
     await renderSettled(view, real(crafted(), 10));
-    expect(said).toEqual(["Storage plan ready. At least 2.69 GB of 10 GB, and everything with a known size fits."]);
+    expect(said).toEqual(["Storage plan ready. At least 2.75 GB of 10 GB, and everything with a known size fits."]);
     expect(said[0]?.length).toBeLessThanOrEqual(140);
   });
 
