@@ -22,12 +22,18 @@ export const copy = {
     body: "Snappy found no pairs of usernames that look alike. It only compares names, so check in Snapchat if you are unsure.",
   },
 
-  doneAnnounce: (found: number): string => (found > 0 ? `Check finished. ${pairs(found)} may be worth a second look.` : "Check finished. No lookalike pairs found."),
+  /** `worth` counts the very close and close pairs, which are the ones worth a second look; `slight` the pairs that are only slightly alike. */
+  doneAnnounce: (worth: number, slight = 0): string =>
+    worth > 0
+      ? `Check finished. ${pairs(worth)} may be worth a second look.`
+      : slight > 0
+        ? `Check finished. ${pairs(slight)} ${slight === 1 ? "is" : "are"} only slightly alike.`
+        : "Check finished. No lookalike pairs found.",
 
   countsHeading: "At a glance",
-  facts: { names: "Names compared", high: "Very close pairs", medium: "Close pairs", low: "Slight pairs" },
+  facts: { names: "Names compared", high: "Very close pairs", medium: "Close pairs", low: "Slightly alike pairs" },
 
-  pairsHeading: "Worth a second look",
+  pairsHeading: "Pairs found",
   pairsLine: "Two real people can have names like these. Check a pair before you trust a new request.",
   levels: { high: "Very close", medium: "Close", low: "Slight" },
   reasons: {
@@ -47,6 +53,7 @@ export const copy = {
   readOnlyNote: "Snappy only compares the names in your export. It looks no one up and changes nothing in Snapchat.",
   noPeopleNote: "Snappy found no usernames to compare. The export may be short.",
   foundNote: (n: number): string => `${pairs(n)} may be worth a second look.`,
+  slightNote: (n: number): string => `${pairs(n)} ${n === 1 ? "is" : "are"} only slightly alike.`,
   truncatedNote: (shown: number, total: number): string => `Snappy lists the closest ${countOf(shown, "pair", "pairs")} of ${formatCount(total)}.`,
   duplicatesNote: (n: number): string => `${countOf(n, "extra row", "extra rows")} ${n === 1 ? "repeats" : "repeat"} a person already listed. Snappy counts each person once.`,
   blankNote: (n: number): string => `${countOf(n, "row", "rows")} ${has(n)} no username. Snappy leaves ${them(n)} out.`,

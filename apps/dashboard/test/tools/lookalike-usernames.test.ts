@@ -204,6 +204,30 @@ describe("the notes", () => {
   });
 });
 
+/** Two names that differ by a digit only: a slight pair, listed but not one to worry about. */
+const SLIGHT: Partial<ParsedFriends> = { friends: [rec("zqpal_1"), rec("zqpal_2"), rec("zqother")], pendingRequests: [], sentRequests: [], blocked: [], ignored: [], hiddenSuggestions: [] };
+
+describe("a list of only slightly alike pairs", () => {
+  it("is headed Pairs found, counts them as Slightly alike pairs, and does not say they are worth a second look", async () => {
+    expect(copy.pairsHeading).toBe("Pairs found");
+    expect(copy.facts.low).toBe("Slightly alike pairs");
+    const { root } = await renderSettled(view, real(SLIGHT));
+    expect(text(root, ".fact dd")).toEqual(["3", "0", "0", "1"]);
+    expect(text(root, ".section-title")).toContain("Pairs found");
+    const notes = text(root, ".tool-notes li");
+    expect(notes).toContain(copy.slightNote(1));
+    expect(notes.join(" ")).not.toMatch(/worth a second look/);
+    expect(said).toEqual([copy.doneAnnounce(0, 1)]);
+    expect(said[0]).toBe("Check finished. 1 pair is only slightly alike.");
+  });
+
+  it("keeps the second-look words for the very close and close pairs", async () => {
+    const { root } = await renderSettled(view, real(CRAFTED));
+    expect(text(root, ".tool-notes li")).toContain("4 pairs may be worth a second look.");
+    expect(copy.slightNote(2)).toBe("2 pairs are only slightly alike.");
+  });
+});
+
 describe("when nothing is found", () => {
   it("says so honestly instead of showing an empty result, keeps the notes, and still offers the command", async () => {
     const { root } = await renderSettled(view, real(PLAIN));

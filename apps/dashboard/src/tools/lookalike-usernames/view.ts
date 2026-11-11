@@ -14,13 +14,17 @@ export const meta: ToolMeta = { id: "lookalike-usernames", group: "friends", cat
 
 const num = (v: number | undefined): number => (typeof v === "number" ? v : 0);
 
+/** The pairs worth a second look: very close and close. A slight pair is listed, but it is not one. */
+const worthOf = (result: Lookalikes): number => result.totals.byLevel.high + result.totals.byLevel.medium;
+
 /** The sentence for one note. Counts only, never a person. Hedged where Snappy infers. */
-function noteText(n: LookalikeNote): string | null {
+function noteText(n: LookalikeNote, result: Lookalikes): string | null {
   switch (n.code) {
     case "no-people":
       return copy.noPeopleNote;
     case "lookalikes-found":
-      return copy.foundNote(num(n.params.count));
+      // Only the very close and close pairs are worth a second look; a list of slight pairs says so.
+      return worthOf(result) > 0 ? copy.foundNote(worthOf(result)) : copy.slightNote(num(n.params.count));
     case "list-truncated":
       return copy.truncatedNote(num(n.params.shown), num(n.params.total));
     case "case-duplicates":
@@ -59,7 +63,7 @@ export const view = toolView<Lookalikes, Record<string, never>>({
   meta,
   copy,
   compute: computeLookalikes,
-  summary: (result) => copy.doneAnnounce(result.totals.pairs),
+  summary: (result) => copy.doneAnnounce(worthOf(result), result.totals.byLevel.low),
   render: (result) => {
     // The empty state is drawn here, not by the frame, so the notes below it still say what was left out and why.
     if (result.totals.pairs === 0) return [emptyState({ icon: meta.icon, spot: "empty", category: meta.category, title: copy.empty.title, body: copy.empty.body })];
@@ -79,7 +83,7 @@ export const view = toolView<Lookalikes, Record<string, never>>({
   notes: (result): ToolNote[] => [
     { kind: "info", text: copy.readOnlyNote },
     ...result.notes.flatMap((n): ToolNote[] => {
-      const text = noteText(n);
+      const text = noteText(n, result);
       return text === null ? [] : [{ kind: n.code === "blank-entries" || n.code === "overlong-entries" ? "warning" : "info", text }];
     }),
   ],
