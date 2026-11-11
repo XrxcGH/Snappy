@@ -746,6 +746,7 @@ export const terminal = {
   startedAnnounce: "Running",
   askingAnnounce: "Needs your passphrase",
   stoppingAnnounce: "Stopping",
+  declinedAnnounce: "Canceled.",
   /** The line next to a Stop that was pressed, until the helper ends. */
   stoppingStatus: "Stopping",
   copiedCommandAnnounce: "Command copied.",

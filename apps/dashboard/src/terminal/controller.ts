@@ -283,7 +283,10 @@ export function createTerminalController(deps: ControllerDeps): TerminalControll
       void start(id);
     },
     decline(id) {
-      if (entry(id).state.kind === "confirming") set(id, { kind: "idle" });
+      if (entry(id).state.kind !== "confirming") return;
+      set(id, { kind: "idle" });
+      // Short, so an older sentence does not stay in the live region.
+      deps.announce(terminal.declinedAnnounce);
     },
     stop(id) {
       const e = entry(id);

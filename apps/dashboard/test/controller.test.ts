@@ -190,6 +190,17 @@ describe("a command that writes", () => {
     expect(started).toHaveLength(1);
   });
 
+  it("says something short when the question is declined, so an older sentence does not stay in the live region", () => {
+    const { controller, announced } = setup();
+    controller.request("memories-rescue");
+    controller.decline("memories-rescue");
+    expect(announced.at(-1)).toEqual([terminal.declinedAnnounce, false]);
+    // Declining with nothing asked says nothing.
+    const before = announced.length;
+    controller.decline("memories-rescue");
+    expect(announced).toHaveLength(before);
+  });
+
   it("does not run when approve is called without a question, or while another Run is going", async () => {
     const { controller, started } = setup();
     controller.approve("memories-rescue");
