@@ -93,6 +93,8 @@ export const copy = {
   unitWaitingThem: "waiting on them",
 
   downloadLabel: "Save CSV",
+  /** The column names of the CSV file: the table's columns and the ones it does not show. */
+  csvHeaders: ["Username", "Added", "First chat or Snap", "Last chat or Snap", "Chats and Snaps (90 days)", "Chats and Snaps (total)", "Sent", "Received", "Unknown direction", "Quiet", "One-sided", "Waiting on"],
   downloadNote: "The file lists the friends in the table above, with usernames. Keep it private.",
 
   hintNote: "Hints are guesses from saved chats and Snaps. An export can miss messages, so check in Snapchat.",

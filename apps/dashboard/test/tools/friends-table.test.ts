@@ -20,6 +20,7 @@ import { FakeElement } from "../fake-dom.ts";
 import { phrase, shown } from "./cell-text.ts";
 import { emptyState, render, renderSettled, sampleState, sampleWorkspace, settled, stateWith } from "./harness.ts";
 
+const headerLine = `\uFEFF${copy.csvHeaders.map((head) => `"${head}"`).join(",")}\r\n`;
 const said: string[] = [];
 const saved: { fileName: string; text: string; mime: string }[] = [];
 vi.mock("../../src/announce.ts", () => ({ announce: (text: string) => void said.push(text) }));
@@ -210,28 +211,44 @@ describe("computeFriendsTable", () => {
   });
 
   it("names the file for the day of the data and writes safe CSV", () => {
-    expect(csvFileName(NOW)).toBe("friends-table-2026-11-06.csv");
-    expect(csvFileName(null)).toBe("friends-table.csv");
+    expect(csvFileName(NOW)).toBe("snappy-friends-table-2026-11-06.csv");
+    expect(csvFileName(null)).toBe("snappy-friends-table.csv");
     const rows = computeFriendsTable(toolData(crafted())).rows;
-    expect(csvText(rows)).toBe(insights.friendsTable.toCsv(rows));
-    expect(csvText(rows).startsWith(`${insights.friendsTable.FRIENDS_CSV_HEADER.join(",")}\r\n`)).toBe(true);
+    expect(csvText(rows).startsWith(headerLine)).toBe(true);
+  });
+
+  it("writes the same kind of file as the other downloads: a byte order mark, quoted Title case headers, every cell quoted", () => {
+    const rows = computeFriendsTable(toolData(crafted())).rows;
+    const text = csvText(rows);
+    expect(text.startsWith('\uFEFF"Username","Added",')).toBe(true);
+    const lines = text.slice(1).split("\r\n");
+    expect(lines.at(-1)).toBe("");
+    expect(lines).toHaveLength(rows.length + 2);
+    for (const line of lines.slice(0, -1)) expect(line, line).toMatch(/^"(?:[^"]|"")*"(?:,"(?:[^"]|"")*")*$/);
+    for (const head of copy.csvHeaders) expect(head).toMatch(/^[A-Z]/);
+    const first = rows[0]!;
+    const cells = lines[1]!.slice(1, -1).split('","');
+    expect(cells).toHaveLength(copy.csvHeaders.length);
+    expect(cells.slice(1, 4)).toEqual([first.addedDay ?? "", first.firstDay ?? "", first.lastDay ?? ""]);
+    expect(cells.slice(4, 9)).toEqual([first.recent, first.total, first.sent, first.received, first.unknown].map(String));
+    expect(cells.slice(9)).toEqual([first.quiet ? "yes" : "no", first.oneSided ? "yes" : "no", first.waitingOn ?? ""]);
   });
 
   it("leaves a spreadsheet no way to run a name as a formula, and shows hidden characters as question marks", () => {
     const odd = ["=cmd|zq", "+sum", "-1", "@zq.at", "zq‮evil", "zq,\"quote\"", "zq\ttab"];
     const rows = computeFriendsTable(toolData(real(odd.map((u) => friend(u, day(2024, 1, 1))), []))).rows;
-    const lines = csvText(rows).split("\r\n");
+    const lines = csvText(rows).slice(1).split("\r\n");
     expect(lines.at(-1)).toBe("");
     const body = lines.slice(1, -1);
     expect(body).toHaveLength(odd.length);
-    for (const line of body) expect(line, line).not.toMatch(/^[=+\-@\t\r]/);
-    expect(body.some((l) => l.startsWith("'=cmd|zq,"))).toBe(true);
-    expect(body.some((l) => l.startsWith("'+sum,"))).toBe(true);
-    expect(body.some((l) => l.startsWith("'-1,"))).toBe(true);
-    expect(body.some((l) => l.startsWith("'@zq.at,"))).toBe(true);
-    expect(body.some((l) => l.startsWith("zq?evil,"))).toBe(true);
+    for (const line of body) expect(line, line).toMatch(/^"[^=+\-@\t\r]/);
+    expect(body.some((l) => l.startsWith('"\'=cmd|zq",'))).toBe(true);
+    expect(body.some((l) => l.startsWith('"\'+sum",'))).toBe(true);
+    expect(body.some((l) => l.startsWith('"\'-1",'))).toBe(true);
+    expect(body.some((l) => l.startsWith('"\'@zq.at",'))).toBe(true);
+    expect(body.some((l) => l.startsWith('"zq?evil",'))).toBe(true);
     expect(body.some((l) => l.startsWith('"zq,""quote""",'))).toBe(true);
-    expect(body.some((l) => l.startsWith("zq?tab,"))).toBe(true);
+    expect(body.some((l) => l.startsWith('"zq?tab",'))).toBe(true);
     expect(csvText(rows)).not.toMatch(/[‮\t]/);
   });
 });
@@ -358,7 +375,7 @@ describe("the page", () => {
     expect(r.root.querySelector("input#friends-table-starts")).toBe(input);
     // The file still holds whatever is shown: here, only the header.
     (r.root.querySelectorAll("button").find((b) => b.textContent === copy.downloadLabel) as FakeElement).click();
-    expect(saved[0]?.text).toBe(`${insights.friendsTable.FRIENDS_CSV_HEADER.join(",")}\r\n`);
+    expect(saved[0]?.text).toBe(headerLine);
   });
 
   it("draws a long list in pages of fifty, then Show more adds fifty more", async () => {
@@ -529,6 +546,8 @@ describe("the page", () => {
       expect(long.textContent, `cell ${i}`).toContain(short.textContent);
     }
     expect(cells[5]?.querySelectorAll(".cell-short")).toHaveLength(0);
+    // The two dates are marked, so a wide page keeps each on one line.
+    expect(cells.map((c) => c.classList.contains("cell-date"))).toEqual([true, true, false, false, false, false]);
     expect(shown(cells[0] as FakeElement)).toBe("Feb 29, 2024");
     expect(phrase(cells[0] as FakeElement)).toBe(copy.addedCell("Feb 29, 2024"));
     expect(shown(cells[2] as FakeElement)).toBe("2");
@@ -553,7 +572,7 @@ describe("the download", () => {
     said.length = 0;
     press();
     const all = computeFriendsTable(toolData(crafted())).rows;
-    expect(saved[0]).toEqual({ fileName: "friends-table-2026-11-06.csv", text: insights.friendsTable.toCsv(all), mime: "text/csv" });
+    expect(saved[0]).toEqual({ fileName: "snappy-friends-table-2026-11-06.csv", text: csvText(all), mime: "text/csv" });
     expect(said).toEqual([tools.downloadSaved]);
     // Sorted and filtered, the file follows the table.
     const show = select(r.root, "friends-table-show");
@@ -565,7 +584,7 @@ describe("the download", () => {
     order.fire("change");
     await settled(r.root);
     press();
-    expect(saved[1]?.text.split("\r\n").slice(1, -1).map((l) => l.split(",")[0])).toEqual([NAMES.eli, NAMES.dee]);
+    expect(saved[1]?.text.split("\r\n").slice(1, -1).map((l) => l.split(",")[0])).toEqual([`"${NAMES.eli}"`, `"${NAMES.dee}"`]);
     expect(saved[1]?.text.endsWith("\r\n")).toBe(true);
   });
 

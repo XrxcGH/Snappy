@@ -14,13 +14,15 @@
   .tool-friends-table .table { table-layout: fixed; }
   .tool-friends-table .table td { white-space: normal; overflow-wrap: break-word; }
   .tool-friends-table .table th, .tool-friends-table .table td { min-width: 0; }
-  .tool-friends-table .table th:nth-child(1) { width: 21%; }
-  .tool-friends-table .table th:nth-child(2) { width: 13%; }
-  .tool-friends-table .table th:nth-child(3) { width: 13%; }
+  /* A date keeps its own line: its column is wide enough for the longest one. */
+  .tool-friends-table .table td.cell-date { white-space: nowrap; }
+  .tool-friends-table .table th:nth-child(1) { width: 18%; }
+  .tool-friends-table .table th:nth-child(2) { width: 16%; }
+  .tool-friends-table .table th:nth-child(3) { width: 16%; }
   .tool-friends-table .table th:nth-child(4) { width: 8%; }
   .tool-friends-table .table th:nth-child(5) { width: 8%; }
   .tool-friends-table .table th:nth-child(6) { width: 11%; }
-  .tool-friends-table .table th:nth-child(7) { width: 26%; }
+  .tool-friends-table .table th:nth-child(7) { width: 23%; }
 }
 @media (max-width: 40rem) {
   /* A stacked card may be narrower than its text: the row can shrink and the long name wraps. */

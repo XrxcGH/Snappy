@@ -7,8 +7,10 @@
  * The table itself is built once per data object: changing the sort or a filter only reorders and trims rows.
  */
 import { insights } from "@snappy-export/core";
+import { toCsv } from "../../csv.ts";
 import { displayUsername } from "../../safe.ts";
 import type { ToolData } from "../data.ts";
+import { copy } from "./copy.ts";
 
 export type FriendRow = insights.friendsTable.FriendRow;
 export type FriendsTable = insights.friendsTable.FriendsTable;
@@ -113,13 +115,31 @@ export function computeFriendsTable(data: ToolData, params: FriendsTableParams =
 
 /** The file name: the day of the data, so the same table always gets the same name. */
 export function csvFileName(asOf: number | null): string {
-  return asOf === null ? "friends-table.csv" : `friends-table-${new Date(asOf).toISOString().slice(0, 10)}.csv`;
+  return asOf === null ? "snappy-friends-table.csv" : `snappy-friends-table-${new Date(asOf).toISOString().slice(0, 10)}.csv`;
 }
 
 /**
- * The CSV text for the rows shown. Core neutralizes anything a spreadsheet could run as a formula; here characters that reorder
- * or hide text become "?" first, exactly as on screen, so a spreadsheet shows the name the page did.
+ * The CSV text for the rows shown, written like the other downloads: a byte order mark, Title case headers and every cell quoted.
+ * The shared writer neutralizes anything a spreadsheet could run as a formula; here characters that reorder or hide text become
+ * "?" first, exactly as on screen, so a spreadsheet shows the name the page did. The command line keeps core's own plain file.
  */
 export function csvText(rows: readonly FriendRow[]): string {
-  return insights.friendsTable.toCsv(rows.map((r) => ({ ...r, username: displayUsername(r.username) })));
+  const yesNo = (flag: boolean): string => (flag ? "yes" : "no");
+  return toCsv(
+    copy.csvHeaders,
+    rows.map((r) => [
+      displayUsername(r.username),
+      r.addedDay ?? "",
+      r.firstDay ?? "",
+      r.lastDay ?? "",
+      String(r.recent),
+      String(r.total),
+      String(r.sent),
+      String(r.received),
+      String(r.unknown),
+      yesNo(r.quiet),
+      yesNo(r.oneSided),
+      r.waitingOn ?? "",
+    ]),
+  );
 }

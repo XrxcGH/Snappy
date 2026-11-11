@@ -63,6 +63,9 @@ describe("a very long username keeps its row inside the frame", () => {
     expect(shares).toHaveLength(7);
     expect(shares.reduce((a, b) => a + b, 0)).toBe(100);
     expect(declared("friends-table", `${t} td`, /min-width:\s*72rem/)).toMatch(/overflow-wrap:\s*break-word/);
+    expect(declared("friends-table", `${t} td.cell-date`, /min-width:\s*72rem/)).toMatch(/white-space:\s*nowrap/);
+    expect(shares[1]).toBeGreaterThanOrEqual(15);
+    expect(shares[2]).toBeGreaterThanOrEqual(15);
     expect(declared("friends-table", `${t} td`, /max-width:\s*40rem/)).toMatch(/min-width:\s*0/);
     expect(declared("friends-table", `${t} td`, /max-width:\s*40rem/)).toMatch(/overflow-wrap:\s*anywhere/);
   });
