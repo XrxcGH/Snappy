@@ -46,10 +46,12 @@ describe("the checks that need the built program", () => {
     for (const label of ["Save list", "Save JSON", "Save calendar", "Save CSV", "Save all"]) expect(downloads).toContain(label);
   });
 
-  it("gets the Save all files from Memories rescue, which demo --run does not produce", () => {
-    const downloads = find(/Downloads, on Windows and on macOS/);
-    expect(downloads).toMatch(/Memories rescue/);
-    expect(downloads).toContain("Save files");
+  it("gets the Save all files from the Memories page rescue Run, which demo --run does not produce", () => {
+    const downloads = find(/Downloads, on Windows and on macOS/).replace(/\s+/g, " ");
+    expect(downloads).toMatch(/on the Memories page, Run on the rescue command \(`memories` with `--out`\), then "Save files" on the confirm card/);
+    expect(downloads).toMatch(/When Run ends, press one output file's "Save" and then "Save all"/);
+    expect(downloads).toMatch(/`demo --run` on the Guide page makes no files/);
+    expect(downloads).not.toMatch(/Guide page, after/);
     expect(downloads).not.toMatch(/after `demo --run`/);
   });
 
