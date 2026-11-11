@@ -103,7 +103,7 @@ Never send your export, or any file from it, to anyone, including the people who
 
 The installer does not include the Snappy command line tool, `snappy-export`. It is a separate download for people who are comfortable in a terminal. It is in the Snappy repository on GitHub, it needs Node 22.18 or later, and its README (`apps/cli/README.md`) says how to install and run it.
 
-Inside the app, **Run** works on a copy of the command and keeps what it writes in the app, up to 256 MB, so a small test works. A real Memories rescue copies several gigabytes into a folder you choose, and that needs the command line tool. Copy the command from the Memories rescue page into a terminal where the tool is installed. Nothing else in the app needs it.
+Inside the app, **Run** works on a copy of the command and keeps what it writes in the app, up to 250 MB, so a small test works. A real Memories rescue copies several gigabytes into a folder you choose, and that needs the command line tool. Copy the command from the Memories rescue page into a terminal where the tool is installed. Nothing else in the app needs it.
 
 ## What to try first
 

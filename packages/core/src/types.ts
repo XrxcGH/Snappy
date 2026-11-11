@@ -309,7 +309,7 @@ export interface CleanupQueue {
 export interface MemoriesPlanOptions {
   /** Output folder layout; default "year-month" => "2023/2023-04/". */
   layout?: "flat" | "year" | "year-month";
-  /** Cap used for the storage meter, in bytes. Default 5 GiB (unverified policy value). */
+  /** Cap used for the storage meter, in bytes. Default 5 GB (unverified policy value). */
   capBytes?: number;
 }
 
