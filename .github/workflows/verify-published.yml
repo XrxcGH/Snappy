@@ -26,8 +26,30 @@ env:
   LATEST_URL: https://github.com/XrxcGH/Snappy/releases/latest/download/latest.json
 
 jobs:
+  any-release:
+    # Before the first release is published there is nothing to check: skip quietly instead of sending the daily alarm.
+    name: Is any release published?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      count: ${{ steps.count.outputs.count }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - id: count
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=$(gh api "repos/$GH_REPO/releases" --paginate --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name' | grep -cE '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          echo "published releases: $count"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
   verify:
     name: Check the published update files
+    needs: any-release
+    if: needs.any-release.outputs.count != '0' || github.event_name == 'release'
     runs-on: windows-latest
     timeout-minutes: 45
     permissions:
