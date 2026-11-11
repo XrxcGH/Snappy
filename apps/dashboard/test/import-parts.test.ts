@@ -181,5 +181,9 @@ describe("importing parts by what they hold", () => {
     expect(start.laterPartsLoaded).not.toBe(start.laterPartsOnly);
     expect(start.laterPartsLoaded).toMatch(/together/);
     expect(store.get().real.latest).toBe(loaded);
+    // A photos-only ZIP that is not named like a part gets the same note: the lists are already loaded, so it must not ask for them.
+    expect(await actions.importZips([rename(second, "holiday-photos.zip")])).toBe("failed");
+    expect(store.get().import.message).toBe(start.laterPartsLoaded);
+    expect(store.get().real.latest).toBe(loaded);
   });
 });

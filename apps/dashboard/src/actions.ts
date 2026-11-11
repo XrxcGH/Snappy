@@ -191,7 +191,8 @@ export function createActions(store: Store, deps: Deps): Actions {
     if (check.kind === "later-only") {
       // With an export already loaded, the lists are there: the person needs to choose every part together instead.
       // A ZIP of photos that is not named like a numbered part (-2, -3) is not one of "the numbered parts": say what it holds.
-      const message = !check.numbered ? start.photosOnly : store.get().real.latest ? start.laterPartsLoaded : start.laterPartsOnly;
+      // With an export loaded the lists are already there, so "add the file with your lists" would be wrong: that note comes first.
+      const message = store.get().real.latest ? start.laterPartsLoaded : check.numbered ? start.laterPartsOnly : start.photosOnly;
       store.dispatch({ type: "import-failed", message });
       return "failed";
     }
