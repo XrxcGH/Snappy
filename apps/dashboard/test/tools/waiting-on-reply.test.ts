@@ -201,7 +201,7 @@ describe("the page", () => {
     const { root } = await renderSettled(view, state);
     const d = insights.waitingOnReply.WAITING_DEFAULTS;
     expect(text(root, ".caption")).toContain(copy.limitsLine(d.waitingOnYouDays, d.waitingOnThemDays));
-    expect(copy.limitsLine(3, 7)).toBe("The limits are fixed here: 3 days of silence for you and 7 days for them. The command line tool changes them with --you-days and --them-days.");
+    expect(copy.limitsLine(3, 7)).toBe("The limits are fixed: 3 days for you and 7 days for them. The command line tool changes them with --you-days and --them-days.");
   });
 
   it("announces the counts politely once, and without a name", async () => {

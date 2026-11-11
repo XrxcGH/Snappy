@@ -43,7 +43,7 @@ export const copy = {
 
   /** Under the result, also when nothing was found: the limits are fixed on this page, and the command line tool takes others. */
   limitsLine: (you: number, them: number): string =>
-    `The limits are fixed here: ${countOf(you, "day", "days")} of silence for you and ${countOf(them, "day", "days")} for them. The command line tool changes them with --you-days and --them-days.`,
+    `The limits are fixed: ${countOf(you, "day", "days")} for you and ${countOf(them, "day", "days")} for them. The command line tool changes them with --you-days and --them-days.`,
 
   unitDays: (n: number): string => countOf(n, "day", "days"),
   unitSince: (date: string): string => `since ${date}`,

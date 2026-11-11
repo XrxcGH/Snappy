@@ -45,7 +45,7 @@ const tile = (label: string, value: number, icon: IconName): HTMLElement => stat
  * block starts from the bare `rescue` word. It can only be copied: this page cannot open a folder, so a terminal has to run it.
  */
 export function verifyText(): string {
-  return displayTextWith({ ...COMMANDS["rescue-manifest"], argv: ["rescue"] }, ["--verify", copy.verifyManifestExample, "--folder", copy.verifyFolderExample]);
+  return displayTextWith({ ...COMMANDS["rescue-manifest"], argv: ["rescue"] }, ["--verify", copy.unitVerifyManifest, "--folder", copy.unitVerifyFolder]);
 }
 
 /** The check, as the shared copy-only command block: no export is named, and the check's own words follow the bare `rescue`. */
@@ -55,7 +55,7 @@ const verifyBlock = (ctx: ViewContext): HTMLElement =>
     copyOnly: true,
     withoutExport: true,
     title: copy.verifyTitle,
-    append: ["--verify", copy.verifyManifestExample, "--folder", copy.verifyFolderExample],
+    append: ["--verify", copy.unitVerifyManifest, "--folder", copy.unitVerifyFolder],
   });
 
 export const view: View = (ctx) =>
