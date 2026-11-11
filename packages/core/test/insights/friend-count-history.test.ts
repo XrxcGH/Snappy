@@ -254,22 +254,29 @@ describe("snapshots and the disagreement note", () => {
     const disagrees = (size: number, options?: { disagreeMinGap?: number; disagreeFraction?: number }) =>
       buildFriendCountHistory({ ...big, deletedFriends: [], now: NOW, ledger: withSnap(size) }, options).comparisons[0]!.disagrees;
 
-    it("tolerates a gap below 10% of a large snapshot, even when it is above the 5 friend floor", () => {
-      expect(disagrees(215)).toBe(false); // gap 15 < 21.5
-      expect(disagrees(222)).toBe(false); // gap 22 < 22.2
-      expect(disagrees(185)).toBe(false); // negative gaps use the same rule
+    it("tolerates a gap below 5% of a large snapshot, even when it is above the 5 friend floor", () => {
+      expect(disagrees(205)).toBe(false); // gap 5 is not above the floor
+      expect(disagrees(210)).toBe(false); // gap 10 < 10.5
+      expect(disagrees(195)).toBe(false); // negative gaps use the same rule: gap -5 is not above the floor
     });
 
-    it("flags a gap above 10% of a large snapshot", () => {
-      expect(disagrees(230)).toBe(true); // gap 30 > 23
-      expect(disagrees(223)).toBe(true); // gap 23 > 22.3
-      expect(disagrees(150)).toBe(true); // gap -50 > 15
+    it("flags a gap above 5% of a large snapshot", () => {
+      expect(disagrees(215)).toBe(true); // gap 15 > 10.75
+      expect(disagrees(211)).toBe(true); // gap 11 > 10.55
+      expect(disagrees(150)).toBe(true); // gap -50 > 7.5
+    });
+
+    it("does not call a 9% gap close", () => {
+      const sample = { friends: names(117).map((n) => fr(n, at(2024, 1))) };
+      const h = buildFriendCountHistory({ ...sample, deletedFriends: [], now: NOW, ledger: ledgerOf(snap("s1", at(2025, 2), names(129))) });
+      expect(h.comparisons[0]).toMatchObject({ snapshotCount: 129, curveCount: 117, gap: 12, disagrees: true });
+      expect(note(h, "sources-disagree")?.params).toEqual({ compared: 1, disagreeing: 1, largestGap: 12 });
     });
 
     it("falls back to the defaults when an option is not a finite number", () => {
     const bad = { disagreeMinGap: Number.NaN, disagreeFraction: Number.POSITIVE_INFINITY };
     expect(disagrees(230, bad)).toBe(true);
-    expect(disagrees(215, bad)).toBe(false);
+    expect(disagrees(210, bad)).toBe(false);
     expect(disagrees(230, { disagreeMinGap: Number.NaN })).toBe(true);
     expect(disagrees(230, { disagreeFraction: Number.NaN })).toBe(true);
   });

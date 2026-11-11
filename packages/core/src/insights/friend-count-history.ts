@@ -21,7 +21,7 @@
  * Defaults (all overridable through the options):
  *  - Dates before Jan 1, 2011 or after `now` are unusable (they are ignored and counted in a note).
  *  - The sources "disagree" at a snapshot when the curve differs from the snapshot's size by more than
- *    max(5 friends, 10% of the snapshot's size).
+ *    max(5 friends, 5% of the snapshot's size).
  *  - The "unusable dates" count is of bad date values, not of people: someone in both lists can add 2 or more.
  *  - A `now` past Dec 31, 9999 UTC is treated as that moment, so the series stays a sane length.
  *  - A threshold option that is not a finite number falls back to its default.
@@ -35,7 +35,7 @@ import { normUser } from "../util.ts";
 const EARLIEST_PLAUSIBLE_MS = Date.UTC(2011, 0, 1);
 
 export const DEFAULT_DISAGREE_MIN_GAP = 5;
-export const DEFAULT_DISAGREE_FRACTION = 0.1;
+export const DEFAULT_DISAGREE_FRACTION = 0.05;
 
 /** The latest moment the month labels (4-digit years) can show; a later `now` is clamped to it. */
 const LATEST_MS = Date.UTC(9999, 11, 31, 23, 59, 59, 999);
@@ -54,7 +54,7 @@ export interface FriendCountInput {
 export interface FriendCountOptions {
   /** Smallest gap, in friends, that counts as a disagreement. Default 5. */
   disagreeMinGap?: number;
-  /** Gap as a share of the snapshot's size that counts as a disagreement. Default 0.1. */
+  /** Gap as a share of the snapshot's size that counts as a disagreement. Default 0.05. */
   disagreeFraction?: number;
 }
 
