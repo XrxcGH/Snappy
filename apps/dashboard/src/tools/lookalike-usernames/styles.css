@@ -12,3 +12,5 @@
 @media (min-width: 40rem) {
   .tool-lookalike-usernames .pair-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
+/* The level and the reasons share one width and one box, so their right edges line up on a very wide page. */
+.tool-lookalike-usernames .pair-level, .tool-lookalike-usernames .pair-reasons { box-sizing: border-box; max-width: 36rem; margin: 0; padding: 0; }
