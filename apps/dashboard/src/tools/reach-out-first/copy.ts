@@ -44,9 +44,9 @@ export const copy = {
   youCaption: "Chats where you start most exchanges",
   youRuleLine: (min: number, percent: number): string => `In chats with at least ${countOf(min, "exchange", "exchanges")}, you started ${percent}% or more.`,
   youNoneLine: "No chat shows you starting most of the exchanges.",
-  /** Under the result, also when nothing was found: the rule is fixed on this page, and the command line tool takes others. */
-  limitsLine: (min: number, percent: number): string =>
-    `A chat needs ${countOf(min, "exchange", "exchanges")}, and one side must start ${percent}% or more. The command line tool changes these with --min-exchanges and --share.`,
+  /** Under the result, also when nothing was found: the rule is fixed on this page (two short lines), and the command line tool takes others. */
+  limitsLine: (min: number, percent: number): string => `A chat needs ${countOf(min, "exchange", "exchanges")}, and one side must start ${percent}% or more.`,
+  limitsToolLine: "The command line tool takes --min-exchanges and --share.",
   moreLine: (n: number): string => `${countOf(n, "more chat", "more chats")} not shown.`,
 
   friendHeader: "Friend",

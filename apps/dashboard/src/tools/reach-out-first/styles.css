@@ -1,0 +1,2 @@
+/* The fixed rule under the result: two short lines close together. */
+.tool-reach-out-first .limits-lines { display: grid; gap: var(--space-1); }

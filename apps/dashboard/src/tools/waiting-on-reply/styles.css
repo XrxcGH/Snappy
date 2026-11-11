@@ -21,3 +21,5 @@
   .tool-waiting-on-reply .rows > :last-child:nth-child(3n + 1) { grid-column: 1 / -1; }
   .tool-waiting-on-reply .rows > :nth-last-child(2):nth-child(3n + 1), .tool-waiting-on-reply .rows > :last-child:nth-child(3n + 2) { grid-column: span 3; }
 }
+/* The fixed limits under the result: two short lines close together. */
+.tool-waiting-on-reply .limits-lines { display: grid; gap: var(--space-1); }

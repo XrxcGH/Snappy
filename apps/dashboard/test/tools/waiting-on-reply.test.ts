@@ -200,8 +200,11 @@ describe("the page", () => {
     const { state } = crafted();
     const { root } = await renderSettled(view, state);
     const d = insights.waitingOnReply.WAITING_DEFAULTS;
-    expect(text(root, ".caption")).toContain(copy.limitsLine(d.waitingOnYouDays, d.waitingOnThemDays));
-    expect(copy.limitsLine(3, 7)).toBe("The limits are fixed: 3 days for you and 7 days for them. The command line tool changes them with --you-days and --them-days.");
+    expect(text(root, ".limits-lines p")).toEqual([copy.limitsLine(d.waitingOnYouDays, d.waitingOnThemDays), copy.limitsToolLine]);
+    expect(root.querySelectorAll(".limits-lines .caption")).toHaveLength(0);
+    expect(copy.limitsLine(3, 7)).toBe("The limits are fixed: 3 days for you and 7 days for them.");
+    expect(copy.limitsToolLine).toBe("The command line tool takes --you-days and --them-days.");
+    for (const t of [copy.limitsLine(3, 7), copy.limitsToolLine]) expect(t.length).toBeLessThanOrEqual(70);
   });
 
   it("announces the counts politely once, and without a name", async () => {
@@ -222,7 +225,7 @@ describe("when nothing is waiting", () => {
     expect(root.querySelectorAll("ul.rows")).toHaveLength(0);
     expect(text(root, ".tool-notes li")).toEqual([copy.hintNote]);
     // The limits matter most when nothing was found, so they are said here too.
-    expect(text(root, ".caption")).toContain(copy.limitsLine(3, 7));
+    expect(text(root, ".limits-lines p")).toEqual([copy.limitsLine(3, 7), copy.limitsToolLine]);
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.replies));
   });
 
