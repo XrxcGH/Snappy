@@ -1,0 +1,10 @@
+/* Friendship anniversaries: a very long username wraps inside its cell instead of pushing the other columns out of the frame. Tokens only. */
+.tool-anniversaries .table td, .tool-anniversaries .table th { min-width: 0; overflow-wrap: anywhere; }
+@media (min-width: 40.01rem) {
+  /* Four columns with the username given the room: fixed widths, so the cell wraps the name and the dates stay whole. */
+  .tool-anniversaries .table { table-layout: fixed; }
+  .tool-anniversaries .table th:nth-child(1) { width: 22%; }
+  .tool-anniversaries .table th:nth-child(2) { width: 36%; }
+  .tool-anniversaries .table th:nth-child(3) { width: 24%; }
+  .tool-anniversaries .table th:nth-child(4) { width: 18%; }
+}

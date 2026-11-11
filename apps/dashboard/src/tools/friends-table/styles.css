@@ -9,3 +9,20 @@
 .tool-friends-table .paged, .tool-friends-table .friends-table-host { min-width: 0; }
 /* A long username wraps inside its row instead of widening the table on a phone. */
 .tool-friends-table .table tbody th code { overflow-wrap: anywhere; }
+/* On a wide page the columns have fixed shares, so a long username wraps in its own column and the dates and counts stay in theirs. A phone stacks the rows; the page between scrolls the table. */
+@media (min-width: 72rem) {
+  .tool-friends-table .table { table-layout: fixed; }
+  .tool-friends-table .table td { white-space: normal; overflow-wrap: break-word; }
+  .tool-friends-table .table th, .tool-friends-table .table td { min-width: 0; }
+  .tool-friends-table .table th:nth-child(1) { width: 21%; }
+  .tool-friends-table .table th:nth-child(2) { width: 13%; }
+  .tool-friends-table .table th:nth-child(3) { width: 13%; }
+  .tool-friends-table .table th:nth-child(4) { width: 8%; }
+  .tool-friends-table .table th:nth-child(5) { width: 8%; }
+  .tool-friends-table .table th:nth-child(6) { width: 11%; }
+  .tool-friends-table .table th:nth-child(7) { width: 26%; }
+}
+@media (max-width: 40rem) {
+  /* A stacked card may be narrower than its text: the row can shrink and the long name wraps. */
+  .tool-friends-table .table td, .tool-friends-table .table th { min-width: 0; overflow-wrap: anywhere; }
+}
