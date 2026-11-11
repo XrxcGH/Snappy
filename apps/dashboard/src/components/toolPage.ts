@@ -32,6 +32,7 @@ import { commandBlock } from "./commandBlock.ts";
 import { offerFile } from "./fileOffer.ts";
 import { icon } from "./icon.ts";
 import { emptyState, pageHeader, section } from "./layout.ts";
+import { toastHost } from "./toast.ts";
 import { progressBar } from "./progressBar.ts";
 
 /** A short, hedged line about a result. `info` is a plain observation; `warning` asks the person to look. */
@@ -202,6 +203,7 @@ export function toolPage<R, P extends object = Record<string, never>>(ctx: ViewC
     // The back link and the header are one block, a heading gap apart, so the page still starts the way every page does.
     h("div", { class: "tool-top" }, h("div", { class: "tool-back" }, h("a", { class: "back-link", href: "#/tools" }, tools.backLink)), header),
     reads,
+    toastHost(),
     body,
     o.command ? section(tools.commandHeading, commandBlock(ctx, o.command, { key: `${meta.id}-command`, cliLink: true, note: o.controls ? commandNotes.defaultView : undefined })) : null,
   );

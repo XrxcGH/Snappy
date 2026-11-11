@@ -874,6 +874,8 @@ details[open] > .disclosure .icon { transform: rotate(90deg); }
   padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
   background: var(--surface-raised); box-shadow: var(--shadow-lg); color: var(--text);
 }
+.toast-error { border-color: var(--danger-border); background: var(--danger-bg); }
+.toast-error > .icon { color: var(--danger-fg); flex: none; }
 .toast-text { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: no-preference) {
   .toast { animation: toast-in var(--dur-base) var(--ease) both; }

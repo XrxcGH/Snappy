@@ -12,6 +12,7 @@ import { h } from "../dom.ts";
 import { saveTextFile } from "../download.ts";
 import { queueToCsv, queueToText } from "../queue-export.ts";
 import { button } from "./button.ts";
+import { showNote } from "./toast.ts";
 
 export interface ListActionsOptions {
   /** The name of the saved file, such as "snappy-disappeared.csv". */
@@ -22,13 +23,19 @@ export interface ListActionsOptions {
 
 let counter = 0;
 
-/** A button that copies one piece of text, and says so through the live region. The text is read at the moment of the press. */
+/** Say how a copy or a save went: spoken through the live region, and shown as a note (an error when it failed). */
+export function say(ok: boolean, done: string, failed: string): void {
+  announce(ok ? done : failed);
+  showNote(ok ? done : failed, ok ? undefined : "error");
+}
+
+/** A button that copies one piece of text, and says so on the page and through the live region. The text is read at the moment of the press. */
 export function copyTextButton(options: { label: string; text: () => string; done: string; key: string }): HTMLButtonElement {
   return button({
     label: options.label,
     icon: "copy",
     key: options.key,
-    onclick: () => void copyText(options.text()).then((ok) => announce(ok ? options.done : common.copyFailed)),
+    onclick: () => void copyText(options.text()).then((ok) => say(ok, options.done, common.copyFailed)),
   });
 }
 
@@ -39,14 +46,14 @@ export function listActions(items: readonly Candidate[], options: ListActionsOpt
     icon: "export",
     key: "save-list",
     disabled: items.length === 0,
-    onclick: () => announce(saveTextFile(options.fileName, queueToCsv(items, options.profileLinks), "text/csv") ? cleanup.listSaved : cleanup.saveFailed),
+    onclick: () => say(saveTextFile(options.fileName, queueToCsv(items, options.profileLinks), "text/csv"), cleanup.listSaved, cleanup.saveFailed),
   });
   const copy = button({
     label: cleanup.copyList,
     icon: "copy",
     key: "copy-list",
     disabled: items.length === 0,
-    onclick: () => void copyText(queueToText(items)).then((ok) => announce(ok ? cleanup.listCopied : common.copyFailed)),
+    onclick: () => void copyText(queueToText(items)).then((ok) => say(ok, cleanup.listCopied, common.copyFailed)),
   });
   save.setAttribute("aria-describedby", helpId);
   copy.setAttribute("aria-describedby", helpId);

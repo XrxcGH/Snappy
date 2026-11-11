@@ -14,6 +14,7 @@ import { icon } from "../components/icon.ts";
 import { emptyState, noticeGroup, pageHeader, section, stat, statGrid, subsection } from "../components/layout.ts";
 import { issueNotice, notice } from "../components/notice.ts";
 import { relatedTools } from "../components/relatedTools.ts";
+import { toastHost } from "../components/toast.ts";
 import { region } from "../reactive.ts";
 import { TOOLS } from "../tools/registry.ts";
 import { dataDeps } from "./context.ts";
@@ -23,7 +24,7 @@ import type { View } from "./context.ts";
 let healthOpen: boolean | undefined;
 
 export const overviewView: View = ({ store }) =>
-  h("div", { class: "view" }, pageHeader(routes.overview.title, undefined, { icon: "overview" }), region(store, (s) => [...dataDeps(s), s.vault.phase], (s) => render(analyze(s), s.vault.phase === "locked")));
+  h("div", { class: "view" }, pageHeader(routes.overview.title, undefined, { icon: "overview" }), toastHost(), region(store, (s) => [...dataDeps(s), s.vault.phase], (s) => render(analyze(s), s.vault.phase === "locked")));
 
 function render(a: Analysis, locked: boolean): Child[] {
   if (a.source === "none") {

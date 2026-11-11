@@ -1,9 +1,9 @@
-import { announce } from "../announce.ts";
 import { copyText } from "../clipboard.ts";
 import { common } from "../copy.ts";
 import { h } from "../dom.ts";
 import { displayUsername } from "../safe.ts";
 import { icon } from "./icon.ts";
+import { say } from "./listActions.ts";
 
 /** The username itself, in the mono font. Written as text only. */
 export function usernameText(username: string): HTMLElement {
@@ -23,7 +23,7 @@ export function copyUsernameButton(username: string, key?: string): HTMLButtonEl
     icon("copy", 20),
   );
   btn.addEventListener("click", () => {
-    void copyText(username).then((ok) => announce(ok ? common.copiedUsername(displayUsername(username)) : common.copyFailed));
+    void copyText(username).then((ok) => say(ok, common.copiedUsername(displayUsername(username)), common.copyFailed));
   });
   return btn;
 }

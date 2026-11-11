@@ -1,9 +1,8 @@
-import { announce } from "../announce.ts";
 import { tools } from "../copy.ts";
 import { terminalTools } from "../copy-tools.ts";
 import { h } from "../dom.ts";
 import { saveTextFile } from "../download.ts";
-import { copyTextButton } from "./listActions.ts";
+import { copyTextButton, say } from "./listActions.ts";
 
 export interface OfferedFile {
   fileName: string;
@@ -27,6 +26,6 @@ export function copyFallback(file: Pick<OfferedFile, "fileName" | "text">): HTML
  */
 export function offerFile(file: OfferedFile): { saved: boolean; fallback: HTMLElement } {
   const saved = saveTextFile(file.fileName, file.text, file.mime);
-  announce(saved ? tools.downloadSaved : tools.downloadFailedNote);
+  say(saved, tools.downloadSaved, tools.downloadFailedNote);
   return { saved, fallback: copyFallback(file) };
 }
