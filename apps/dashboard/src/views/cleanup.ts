@@ -107,6 +107,8 @@ function render(ctx: ViewContext, a: Analysis, view: CleanupView): Child[] {
     a.hasChats ? null : notice("warning", cleanup.noChatProtection(a.source === "ledger")),
     controls(view, {
       onFilter: (patch) => {
+        // A new filter is a new list: it starts at the first page, as a search or an order does.
+        resetPaging();
         actions.setCleanupView(patch);
         announce(statusOf({ ...view, ...patch }));
       },
