@@ -42,6 +42,7 @@ export const startFlow = {
   // A ZIP and a folder in one drop: neither is read, and Start says why.
   dropMixed: "You dropped ZIP files and a folder together. Drop the ZIP files or the folder, not both.",
   dropOverlayTitle: "Drop your ZIP files or folder to add them",
+  dropOverlayTitle: "Drop ZIP files or a folder here",
 
   // An unzipped folder read directly (a browser's folder chooser, or a folder dropped on the drop zone).
   chooseFolder: "Choose a folder",

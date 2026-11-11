@@ -72,7 +72,7 @@ describe("the note over the window", () => {
     expect(page.note().hasAttribute("hidden")).toBe(true);
     expect(page.note().getAttribute("aria-hidden")).toBe("true");
     expect(page.note().textContent).toBe(startFlow.dropOverlayTitle);
-    expect(startFlow.dropOverlayTitle).toBe("Drop your ZIP files or folder to add them");
+    expect(startFlow.dropOverlayTitle).toBe("Drop ZIP files or a folder here");
   });
 
   it("shows while files are dragged over, stays through nested enters and leaves, and hides when the drag leaves", () => {
