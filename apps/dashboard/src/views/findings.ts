@@ -124,7 +124,7 @@ export const disappearedView: View = view("disappeared", routes.disappeared.titl
 
 export const requestsView: View = view("requests", routes.requests.title, requests.lead, requests.inference, (ctx) => (a) => {
   if (a.source === "none") return [emptyState({ icon: "one-way", spot: "import", category: "requests", title: requests.noExportTitle, body: requests.noExportBody, actions: [addExport()] })];
-  if (a.oneWay.length === 0) return [emptyState({ icon: "one-way", spot: "overview", category: "requests", title: requests.emptyTitle, body: requests.emptyBody })];
+  if (a.oneWay.length === 0) return [emptyState({ icon: "one-way", spot: "overview", category: "requests", title: requests.emptyTitle, body: a.source === "ledger" ? requests.emptyLedger : requests.emptyBody })];
   return [searchableList(a, a.oneWay, ctx.actions, "one-way", requests.listCount), relatedTools(["lookalike-usernames"])];
 });
 

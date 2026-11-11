@@ -313,8 +313,7 @@ export const disappeared = {
   changeAdded: "New friends",
   changeAccepted: "Requests accepted",
   listHeading: "May have removed you",
-  // The count is already on the Disappeared card above; the list line only says the order.
-  listCount: (_n: number) => "Most likely first",
+  listCount: (n: number) => `${countOf(n, "friend", "friends")}, most likely first`,
 };
 
 export const requests = {
@@ -323,6 +322,7 @@ export const requests = {
   inference: "Snapchat does not say why a request is open. The person may not have seen it.",
   emptyTitle: "No unaccepted requests found",
   emptyBody: "Snappy found none. Check that you selected User information when you requested your export.",
+  emptyLedger: "Snappy found none in your saved history.",
   noExportTitle: "No export yet",
   noExportBody: "Add your export to see unaccepted requests.",
   listCount: (n: number) => `${countOf(n, "request", "requests")}, most likely first`,

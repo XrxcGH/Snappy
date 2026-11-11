@@ -78,7 +78,7 @@ export const shellCopy = {
   /** Joins the two keys of a chord: g, then o. */
   unitThen: "then",
   goPendingStatus: "Go to…",
-  goPendingAnnounce: "Go to. Press o, c, t, m, s or h.",
+  goPendingAnnounce: "Press o, c, t, m, s or h to choose where to go.",
 };
 
 /**

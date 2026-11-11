@@ -15,7 +15,7 @@ export const lists = {
   // The toast after Keep. The sentence for one person is common.kept; a second Keep in the same eight seconds counts up.
   toastLabel: "Keep list update",
   undoButton: "Undo",
-  keptCount: (n: number) => `${n} kept.`,
+  keptCount: (n: number) => `${formatCount(n)} people are on your keep list.`,
   /** The queue's summary line, with how many people are on the keep list: "43 people to review, 1 kept". */
   summaryKept: (summary: string, kept: number) => `${summary}, ${kept} kept`,
 
@@ -24,7 +24,7 @@ export const lists = {
   searchPlaceholder: "Part of a name",
   searchClearButton: "Clear",
   searchClearAria: "Clear search",
-  matchCount: (shown: number, total: number) => `${shown} of ${total} match`,
+  matchCount: (shown: number, total: number) => `${formatCount(shown)} of ${formatCount(total)} match`,
   noMatchSearch: "No one matches. Clear the search to see more.",
   sortLabel: "Sort",
   sortOptions: { likely: "Most likely", newest: "Newest signal", oldest: "Oldest signal", confidence: "Confidence" },
@@ -41,6 +41,7 @@ export const lists = {
   keepAddLabel: "Add a username",
   keepAddButton: "Add username",
   keepAddError: "Enter one username, with no spaces.",
+  keepAddTooLong: "That username is too long.",
   keepAlready: (u: string) => `${u} is already on your keep list.`,
   keepRemoveButton: "Remove",
   keepRemoveFor: (u: string) => `Remove ${u} from your keep list`,
