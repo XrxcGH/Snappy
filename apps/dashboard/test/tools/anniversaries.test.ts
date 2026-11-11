@@ -178,6 +178,13 @@ describe("the page", () => {
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.anniversaries));
   });
 
+  it("writes each username in the shared username element, like the other tools", async () => {
+    const { root } = await renderSettled(view, real(friends()));
+    const codes = root.querySelectorAll("tbody td code.username");
+    expect(codes.map((c) => c.textContent)).toEqual(["zqcanary_soon", "zqcanary_later"]);
+    expect(root.querySelectorAll("tbody tr").map((tr) => tr.querySelectorAll("td")[0]?.querySelector("code.username")?.textContent)).toEqual(["zqcanary_soon", "zqcanary_later"]);
+  });
+
   it("says today and tomorrow in words", async () => {
     const two = [{ username: "zqcanary_a", createdAt: created(2, 0) }, { username: "zqcanary_b", createdAt: created(1, 1) }];
     const { root } = await renderSettled(view, real(two));

@@ -2,9 +2,9 @@ import { dataTable } from "../../components/dataTable.ts";
 import { factList, section } from "../../components/layout.ts";
 import { toolView } from "../../components/toolPage.ts";
 import type { ToolNote } from "../../components/toolPage.ts";
+import { usernameText } from "../../components/usernameChip.ts";
 import { h } from "../../dom.ts";
 import { formatCount, formatDate } from "../../format.ts";
-import { displayUsername } from "../../safe.ts";
 import type { ToolMeta } from "../types.ts";
 import { controls } from "./controls.ts";
 import { copy } from "./copy.ts";
@@ -42,14 +42,26 @@ function dayText(on: string): string {
   return formatDate(Date.UTC(y, m - 1, d));
 }
 
-/** The date names the row (the list is in date order); the username is a cell, written as text with invisible characters hidden. */
-const rowCells = (r: AnniversaryRow): string[] => [dayText(r.on), displayUsername(r.username), copy.yearsCell(r.years, r.milestone), copy.whenCell(r.daysUntil)];
+/** The date names the row (the list is in date order). The username cell is rewritten by nameCells. */
+const rowCells = (r: AnniversaryRow): string[] => [dayText(r.on), r.username, copy.yearsCell(r.years, r.milestone), copy.whenCell(r.daysUntil)];
+
+/**
+ * dataTable writes plain text, so each username is put in the shared username element: still text only, with invisible and
+ * direction-changing characters shown as question marks, in the same style as the other tools.
+ */
+function nameCells(table: HTMLElement, names: readonly string[]): HTMLElement {
+  table.querySelectorAll("tbody tr").forEach((tr, i) => tr.querySelector("td")?.replaceChildren(usernameText(names[i] ?? "")));
+  return table;
+}
 
 function upcomingSection(result: AnniversariesResult): HTMLElement {
   const shown = result.rows.slice(0, ROW_LIMIT);
   return section(
     copy.upcomingHeading,
-    dataTable(copy.upcomingCaption, [copy.dateHeader, copy.friendHeader, copy.reachesHeader, copy.whenHeader], shown.map(rowCells)),
+    nameCells(
+      dataTable(copy.upcomingCaption, [copy.dateHeader, copy.friendHeader, copy.reachesHeader, copy.whenHeader], shown.map(rowCells)),
+      shown.map((r) => r.username),
+    ),
     shown.length < result.rows.length ? h("p", { class: "caption" }, copy.moreLine(shown.length, result.rows.length)) : null,
   );
 }
