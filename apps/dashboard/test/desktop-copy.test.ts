@@ -24,7 +24,7 @@ vi.mock("snappy:licenses", () => ({ licenses: [] }));
 vi.mock("../src/announce.ts", () => ({ announce: () => undefined }));
 
 const WEB: Platform = {};
-const DESKTOP: Platform = { desktop: "windows", profileLinks: false, release: { version: "0.1.0-beta.2", beta: true } };
+const DESKTOP: Platform = { desktop: "windows", profileLinks: false, release: { version: "0.1.0-beta.3", beta: true } };
 const DESKTOP_MAC: Platform = { desktop: "macos" };
 const DESKTOP_OTHER: Platform = { desktop: "other" };
 
@@ -307,7 +307,7 @@ describe("the pages the desktop app draws", () => {
     expect(start).toContain("Closing Snappy clears your results");
     const settings = text((await renderSettled(views.settings as View, initialState())).root);
     expect(settings).toContain("Closing Snappy clears them.");
-    expect(settings).toContain("Version 0.1.0-beta.2");
+    expect(settings).toContain("Version 0.1.0-beta.3");
     const privacy = text((await renderSettled(views.privacy as View, initialState())).root);
     expect(privacy).toContain("Closing Snappy clears them.");
     expect(privacy).toContain("on this device, encrypted");

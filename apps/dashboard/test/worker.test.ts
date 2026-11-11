@@ -80,8 +80,8 @@ describe("the helper", () => {
   });
 
   it("reports the app's own version label when the page sends one, and the command line's version otherwise", async () => {
-    const withLabel = await runInHelper(["help"], { version: "0.1.0-beta.2" });
-    expect(withLabel.out).toContain("Version 0.1.0-beta.2\n");
+    const withLabel = await runInHelper(["help"], { version: "0.1.0-beta.3" });
+    expect(withLabel.out).toContain("Version 0.1.0-beta.3\n");
     expect(withLabel.out).not.toContain("Version 0.1.0\n");
     const plain = await runInHelper(["help"]);
     expect(plain.out).toMatch(/Version \d+\.\d+\.\d+\n/);

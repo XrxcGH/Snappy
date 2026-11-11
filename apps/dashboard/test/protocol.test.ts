@@ -102,10 +102,10 @@ describe("parseToWorker", () => {
   });
 
   it("carries the app's version label, and drops one that is not a version", () => {
-    expect(parseToWorker({ ...clone(run), version: "0.1.0-beta.2" })).toMatchObject({ version: "0.1.0-beta.2" });
+    expect(parseToWorker({ ...clone(run), version: "0.1.0-beta.3" })).toMatchObject({ version: "0.1.0-beta.3" });
     expect(parseToWorker({ ...clone(run), version: "1.2.3" })).toMatchObject({ version: "1.2.3" });
     expect(Object.keys(parseToWorker(clone(run)) as object)).not.toContain("version");
-    for (const bad of ["", "v1.2.3", "1.2", "0.1.0-beta.2 ", "0.1.0-beta 2", "0.1.0-<b>", 5, null, "1.2.3-" + "x".repeat(40)]) {
+    for (const bad of ["", "v1.2.3", "1.2", "0.1.0-beta.3 ", "0.1.0-beta 2", "0.1.0-<b>", 5, null, "1.2.3-" + "x".repeat(40)]) {
       expect(parseToWorker({ ...clone(run), version: bad }), JSON.stringify(bad)).toBeNull();
     }
   });

@@ -125,9 +125,9 @@ const tick = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
 describe("the version the commands report", () => {
   it("is sent with the run request when the app has its own label", () => {
-    const { runner, channels } = setup({ version: () => "0.1.0-beta.2" });
+    const { runner, channels } = setup({ version: () => "0.1.0-beta.3" });
     runner.run(input(COMMANDS["analyze-preview"]), hooks());
-    expect((channels[0] as FakeChannel).sent[0]).toMatchObject({ type: "run", version: "0.1.0-beta.2" });
+    expect((channels[0] as FakeChannel).sent[0]).toMatchObject({ type: "run", version: "0.1.0-beta.3" });
   });
 });
 

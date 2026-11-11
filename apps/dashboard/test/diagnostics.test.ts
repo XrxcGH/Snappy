@@ -51,9 +51,9 @@ describe("the shape of the diagnostics", () => {
   });
 
   it("names the installed build and its version, and the three words about the saved history", () => {
-    const platform = { desktop: "windows", release: { version: "0.1.0-beta.2", beta: true } } as const;
+    const platform = { desktop: "windows", release: { version: "0.1.0-beta.3", beta: true } } as const;
     const first = buildDiagnostics(initialState(), platform, { userAgent: EDGE }).split("\n");
-    expect(first[0]).toBe("Snappy 0.1.0-beta.2 (Windows desktop)");
+    expect(first[0]).toBe("Snappy 0.1.0-beta.3 (Windows desktop)");
     const unlocked: State = { ...initialState(), vault: { supported: true, hasSaved: true, phase: "unlocked", busy: false } };
     expect(buildDiagnostics(unlocked, platform, {})).toContain("Saved history: sealed, unlocked");
     expect(buildDiagnostics({ ...initialState(), vault: { supported: false, hasSaved: false, phase: "session", busy: false } }, platform, {})).toContain("Saved history: unavailable");
@@ -97,7 +97,7 @@ describe("what the diagnostics never hold", () => {
     const state = store.get();
     const names = state.real.latest?.friends.friends.map((f) => f.username) ?? [];
     expect(names.length).toBeGreaterThan(10);
-    const text = buildDiagnostics(state, { desktop: "windows", release: { version: "0.1.0-beta.2", beta: true } }, { userAgent: EDGE });
+    const text = buildDiagnostics(state, { desktop: "windows", release: { version: "0.1.0-beta.3", beta: true } }, { userAgent: EDGE });
 
     // Premise: there is something to count, so the check is not passing on an empty page.
     expect(text).toMatch(/Exports read: 2, latest export parts: 1\b/);
@@ -164,7 +164,7 @@ describe("Settings: help and feedback", () => {
     expect(open().root.textContent).not.toContain(shellCopy.whatsNewHeading);
 
     // An installed beta: the list for its version.
-    setPlatform({ desktop: "windows", release: { version: "0.1.0-beta.2", beta: true } });
+    setPlatform({ desktop: "windows", release: { version: "0.1.0-beta.3", beta: true } });
     const installed = open().root;
     expect(installed.textContent).toContain(shellCopy.whatsNewHeading);
     for (const line of whatsNew[0]?.lines ?? []) expect(installed.textContent).toContain(line);

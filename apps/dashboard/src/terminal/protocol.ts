@@ -29,7 +29,7 @@ export interface RunRequest {
   version?: string;
 }
 
-/** A version label as the app writes it: 0.1.0 or 0.1.0-beta.2. Anything else is dropped. */
+/** A version label as the app writes it: 0.1.0 or 0.1.0-beta.3. Anything else is dropped. */
 export const isVersionLabel = (v: unknown): v is string => typeof v === "string" && /^\d{1,5}\.\d{1,5}\.\d{1,6}(-[0-9A-Za-z.]{1,32})?$/.test(v);
 
 export type ToWorker =

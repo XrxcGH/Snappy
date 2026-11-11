@@ -30,7 +30,7 @@ describe("desktop platform", () => {
   });
 
   it("calls a pre-release a beta and names its version, so the footer and Settings can show it", () => {
-    expect(releaseOf("0.1.0-beta.2")).toEqual({ version: "0.1.0-beta.2", beta: true });
+    expect(releaseOf("0.1.0-beta.3")).toEqual({ version: "0.1.0-beta.3", beta: true });
     expect(releaseOf("0.1.0-beta")).toEqual({ version: "0.1.0-beta", beta: true });
     expect(releaseOf("0.1.0")).toEqual({ version: "0.1.0", beta: false });
     expect(releaseOf("0.1.0-rc.1").beta).toBe(false);

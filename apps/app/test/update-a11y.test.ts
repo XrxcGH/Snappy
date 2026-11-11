@@ -16,7 +16,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const source = (name: string): string => readFileSync(path.join(here, "..", "src", name), "utf8");
 
 const downloading = (percent: number): UpdateStatus => {
-  const s = sanitizeStatus({ state: "downloading", percent, version: "0.2.0", current: "0.1.0-beta.2", auto: true, last_checked_unix: 0, notice_pending: false, link_enabled: false, supported: true, error: null, updated_to: null });
+  const s = sanitizeStatus({ state: "downloading", percent, version: "0.2.0", current: "0.1.0-beta.3", auto: true, last_checked_unix: 0, notice_pending: false, link_enabled: false, supported: true, error: null, updated_to: null });
   if (!s) throw new Error("fixture rejected");
   return s;
 };

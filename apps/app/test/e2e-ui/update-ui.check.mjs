@@ -21,7 +21,7 @@ if (!indexHtml || !process.env.PLAYWRIGHT_DIR) {
 const { chromium } = createRequire(path.join(process.env.PLAYWRIGHT_DIR, "package.json"))("playwright");
 if (shots) mkdirSync(shots, { recursive: true });
 
-const BASE = { state: "idle", percent: 0, version: null, current: "0.1.0-beta.2", auto: true, last_checked_unix: 0, notice_pending: false, link_enabled: false, supported: true, error: null, updated_to: null };
+const BASE = { state: "idle", percent: 0, version: null, current: "0.1.0-beta.3", auto: true, last_checked_unix: 0, notice_pending: false, link_enabled: false, supported: true, error: null, updated_to: null };
 const URL_OF = pathToFileURL(path.resolve(indexHtml)).href;
 let failures = 0;
 const ok = (cond, name, extra = "") => {
@@ -256,7 +256,7 @@ const shot = async (page, name, full = false) => shots && (await page.screenshot
   const card = page.locator(".update-card");
   ok((await card.count()) === 1, "the Updates card is in Settings");
   const text = await card.innerText();
-  ok(text.includes("Updates") && text.includes("Version 0.1.0-beta.2") && text.includes("Last checked") && text.includes("Check for updates on launch"), "with the version, the last check and the switch", text);
+  ok(text.includes("Updates") && text.includes("Version 0.1.0-beta.3") && text.includes("Last checked") && text.includes("Check for updates on launch"), "with the version, the last check and the switch", text);
   ok(text.includes("Asks github.com for the newest version. Sends no ID and none of your data."), "and the one-line note");
   ok(await card.locator("#update-auto").isChecked(), "the switch shows the shell's value");
   const order = await page.locator(".cols > section > h2").allInnerTexts();

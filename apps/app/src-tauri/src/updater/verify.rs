@@ -222,7 +222,7 @@ mod tests {
     }
 
     fn running() -> Version {
-        Version::running("0.1.0-beta.2").unwrap()
+        Version::running("0.1.0-beta.3").unwrap()
     }
 
     /// Runs the whole check the updater runs, with the keys [x, z].
