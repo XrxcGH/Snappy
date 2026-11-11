@@ -6,19 +6,23 @@ This page is for people who want to try Snappy on a Mac. It says which file to d
 
 ## What the beta is
 
-Snappy is the dashboard from this repository in its own window: the cleanup queue, Memories rescue, the Tools page and the in-app commands. It reads the Snapchat export that you already have, on your computer. This is an early test build, version `0.1.0-beta.1`. Expect rough edges, and please report them.
+Snappy is the dashboard from this repository in its own window: the cleanup queue, Memories rescue, the Tools page and the in-app commands. It reads the Snapchat export that you already have, on your computer. This is an early test build, version `0.1.0-beta.3`. Expect rough edges, and please report them.
 
 - It is **unsigned** (see below), so macOS warns you the first time you open it.
-- It **does not update itself and never checks for updates**. The Windows app has an update check; the macOS app has none. To get a newer beta, download the newer disk image. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
+- It **does not update itself and never checks for updates**. The Windows app has an update check; the macOS app has none. To get a newer beta, download the newer disk image. Settings can save your history to a file locked with your passphrase. Keep your original Snapchat export too: you can add it again.
 - It has **no telemetry** and no account, and Snappy itself sends nothing over a network.
+
+## What is new in beta 3
+
+Beta 3 is the first macOS beta that carries the audit fixes made after Windows beta 2. In short: clearer import errors and status, import from an unzipped export folder, **Copy diagnostics** in Settings, keyboard shortcuts (press `?`), a **Find a tool** field, a **Saved history** card and a history file in Settings, shorter wording, tidier layouts and better tool pages. [BETA.md](BETA.md) lists them in full. The macOS app has no update check. Which parts were run on a real Mac: none, see the status above.
 
 ## Which file, and why
 
-The file is `Snappy_0.1.0-beta.1_universal.dmg`.
+The file is `Snappy_0.1.0-beta.3_universal.dmg`.
 
 - **`.dmg` (a disk image) holding `Snappy.app`.** You open it and drag Snappy to Applications. That is how most Mac apps are shared, and removing the app later means dragging it to the Trash.
 - **Universal.** One app that runs natively on Apple silicon (M1 and later) and on Intel Macs. You do not choose.
-- **No `.pkg` installer.** A package runs installer scripts as part of the install. Snappy needs none, and a package is only needed for the App Store or for putting files outside the app. The same app is also packed as `Snappy_0.1.0-beta.1_universal.app.tar.gz`, for the updater that a later version may have. For now that archive is only a file kept by the automated build for 14 days, not part of a release, and you do not need it.
+- **No `.pkg` installer.** A package runs installer scripts as part of the install. Snappy needs none, and a package is only needed for the App Store or for putting files outside the app. The same app is also packed as `Snappy_0.1.0-beta.3_universal.app.tar.gz`, for the updater that a later version may have. For now that archive is only a file kept by the automated build for 14 days, not part of a release, and you do not need it.
 
 ## What it needs
 
@@ -27,7 +31,7 @@ macOS 13.3 (Ventura) or newer. The app is a single page that macOS draws with it
 ## Install
 
 1. Download the `.dmg` and the `SHA256SUMS` file from the Releases page of the Snappy repository.
-2. Check the file. In Terminal, run `shasum -a 256 ~/Downloads/Snappy_0.1.0-beta.1_universal.dmg` and compare the result with the `universal.dmg` line of `SHA256SUMS` (`grep universal.dmg ~/Downloads/SHA256SUMS`). A match shows the file is complete and is the one that was published with that checksum.
+2. Check the file. In Terminal, run `shasum -a 256 ~/Downloads/Snappy_0.1.0-beta.3_universal.dmg` and compare the result with the `universal.dmg` line of `SHA256SUMS` (`grep universal.dmg ~/Downloads/SHA256SUMS`). A match shows the file is complete and is the one that was published with that checksum.
 3. Open the `.dmg`, and drag **Snappy** onto **Applications**. Then eject the disk image.
 4. Open Snappy from Applications. The first time, macOS will not open it (see the next section).
 
@@ -59,7 +63,7 @@ Snappy puts files in these places on a Mac. The list comes from starting the app
 
 ## Remove Snappy and everything it stored
 
-1. The beta cannot export or back up a saved history, and deleting it cannot be undone. Keep your original Snapchat export, which you can add again. Then, in Snappy, open Settings and choose **Delete data**.
+1. Deleting the saved history cannot be undone. To keep it, save a history file first (Settings, History file). Keep your original Snapchat export, which you can add again. Then, in Snappy, open Settings and choose **Delete data**.
 2. Quit Snappy (**Snappy**, **Quit Snappy**, or Cmd+Q).
 3. Drag `Snappy.app` from Applications to the Trash and empty it. This removes the program only. macOS leaves the folders in the table above in place.
 4. To remove the rest, move these to the Trash: `~/Library/WebKit/com.snappy.export` and `~/Library/Caches/com.snappy.export`, and the two window-state paths above if they exist.

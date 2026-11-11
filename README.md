@@ -39,7 +39,7 @@ These were made in a headless browser, and the iPhone sizes in Safari’s engine
 
 ## Desktop app (Windows beta)
 
-The Windows beta shows this same dashboard in its own window. Beta 2 adds an automatic update check, which you can turn off in Settings. [docs/BETA.md](docs/BETA.md) says how to install it and what to expect.
+The Windows beta shows this same dashboard in its own window. It has an automatic update check (added in beta 2), which you can turn off in Settings. [docs/BETA.md](docs/BETA.md) says how to install it and what to expect.
 
 ![The Windows app showing the Overview page in the dark theme](docs/images/windows-app-overview-dark.webp)
 ![The Windows app showing the Tools page in the light theme](docs/images/windows-app-tools-light.webp)
@@ -59,7 +59,7 @@ The Windows beta shows this same dashboard in its own window. Beta 2 adds an aut
 
 ### 1. Get the app
 
-The current build is **Windows beta 2** (`0.1.0-beta.2`). It is unsigned, so Windows shows a warning. New in beta 2: the app checks GitHub for an update when it opens, and an **Update now** button and an **Updates** card in Settings let you check by hand or turn the check off. The check asks github.com for a small file and sends no ID and none of your data (the wording awaits the project owner’s approval; [docs/UPDATES.md](docs/UPDATES.md) is the decision record). Beta 1 had no updater, so moving from beta 1 to beta 2 takes one manual install. [docs/BETA.md](docs/BETA.md) says how to install it, where it keeps its data, how to remove it and how to report a problem without sharing anything personal. [docs/RELEASES.md](docs/RELEASES.md) says where installers come from and how to check one. A **macOS beta** (one universal app, unsigned) is built by CI but has not been run on a real Mac yet; [docs/MACOS.md](docs/MACOS.md) says how to install it.
+The current build is **Windows beta 3** (`0.1.0-beta.3`). It is unsigned, so Windows shows a warning. New in beta 3, from an audit of beta 2: clearer import errors and status, import from an unzipped export folder, **Copy diagnostics** in Settings, keyboard shortcuts (press `?`), a **Find a tool** field, a **Saved history** card and a saved history file in Settings, shorter wording, tidier layouts and better tool pages. Since beta 2 the app checks GitHub for an update when it opens, and an **Update now** button and an **Updates** card in Settings let you check by hand or turn the check off. The check asks github.com for a small file and sends no ID and none of your data (the wording awaits the project owner’s approval; [docs/UPDATES.md](docs/UPDATES.md) is the decision record). Beta 1 had no updater, and no release is published yet, so moving from beta 1 or beta 2 to beta 3 takes one manual install. [docs/BETA.md](docs/BETA.md) says how to install it, where it keeps its data, how to remove it and how to report a problem without sharing anything personal. [docs/RELEASES.md](docs/RELEASES.md) says where installers come from and how to check one. A **macOS beta** (one universal app, unsigned) is built by CI but has not been run on a real Mac yet; [docs/MACOS.md](docs/MACOS.md) says how to install it.
 
 ### 2. Get your export
 

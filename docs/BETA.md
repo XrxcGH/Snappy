@@ -6,15 +6,31 @@ This page is for people testing the Snappy installer for Windows. It says what t
 
 Snappy is the dashboard from this repository in its own window: the cleanup queue, Memories rescue, the Tools page and the in-app commands. It reads the Snapchat export that you already have, on your computer.
 
-This is an early test build, version `0.1.0-beta.2`. Expect rough edges, and please report them.
+This is an early test build, version `0.1.0-beta.3`. Expect rough edges, and please report them.
 
 - It is **unsigned**. Windows warns you before it runs the installer (see below).
-- It **checks for updates by itself** (new in beta 2). See [Updates](#updates) below, which says what the check sends and how to turn it off. The beta cannot export your saved history, so keep your original Snapchat export: you can add it again.
+- It **checks for updates by itself** (new in beta 2). See [Updates](#updates) below, which says what the check sends and how to turn it off. Keep your original Snapchat export: you can always add it again. Settings can also save your history to a file, locked with your passphrase (see below).
 - It has **no telemetry** and no account. Apart from the update check, Snappy itself sends nothing over a network.
 - It installs **for your user only**. It does not need administrator rights.
 - It is the 64-bit Windows build only. It needs Windows 10 or 11 and Microsoft’s WebView2 runtime, which Windows 11 includes. If the runtime is missing, the installer downloads it from Microsoft.
 
-## What is new in beta 2
+## What is new in beta 3
+
+Beta 3 is mostly the result of an audit of beta 2. These are the changes you will notice.
+
+- **Importing is clearer.** Start shows the import status above the steps and scrolls to it, and tells the parts of an export apart by what they hold. A wrong file gets a plain error. A long read has a **Cancel** button and a hint that it can take a while.
+- **You can add an unzipped export.** If your browser or computer unzipped it, choose its folder on Start, or drop the folder on the page. Only the few JSON files are read, so a folder has no photos or videos and cannot be used for Memories rescue: that needs the ZIP files. A drop anywhere on the page adds the export. The command line tool reads an unzipped folder too.
+- **Start shows your latest export** and says when it was made. Snappy asks before a reload or close would lose results that were not saved.
+- **Settings has more.** **Copy diagnostics** copies the version, your system and counts, never names or files. **What is new** lists the changes. A **Saved history** card lists your exports by date and friend count, and deletes one at a time. **History file** saves your history to a file locked with your passphrase, and opens one. The data folder is shown as text with a **Copy folder path** button.
+- **Keyboard shortcuts.** Press `?` for the list. Shortcuts work when you are not typing in a field. The page returns to where you were on Back and Forward, and Ctrl and plus zoom the window.
+- **Search and filters.** The Tools page has a **Find a tool** field. Lists keep keyboard focus when a filter changes.
+- **Tool pages.** Files are saved with buttons named **Save CSV**, **Save JSON** and **Save calendar file**, and a **Copy** button is offered if a save does not work. Counts have thousands separators and hours read like 7 PM. Time zone pages start in your device’s zone and say which zone they use. The friends backup page compares your export with a backup file, the since-last-export page can compare with an older saved export, and the year in review can be saved as a name-free image and a CSV file. Memories rescue has its own menu group.
+- **Commands in the app.** **Run** can use the sample data for commands that only read. **Close all** closes several outputs at once. Commands that name a file show a copy-only block.
+- **Wording and layout.** The sample friends are called sample data everywhere. Notes are shorter, and say “check in Snapchat” where Snapchat is meant. The wide layout starts at a larger width, the phone layouts stack, and bars, busy days and focus rings show in Windows high contrast.
+- **The installer** carries the third-party notices and says what Snappy is for.
+- **Updates.** The update banner stays out of the way, and the download is announced once to screen readers. The wording about the update check is still a draft that the project owner has not approved.
+
+## What was new in beta 2
 
 - **It checks for updates by itself.** When Snappy opens, it asks GitHub whether a newer version exists, and it can install a signed update for you. See [Updates](#updates).
 - **The in-app terminal says the same version as the app.** Beta 1 printed `Version 0.1.0` in the help text while the app said `0.1.0-beta.1`.
@@ -25,8 +41,8 @@ This is an early test build, version `0.1.0-beta.2`. Expect rough edges, and ple
 
 ## Install
 
-1. Download `Snappy_0.1.0-beta.2_x64-setup.exe` and, if you have it, `Snappy_0.1.0-beta.2_x64-setup.exe.sha256`.
-2. Check the file. In PowerShell, run `(Get-FileHash .\Snappy_0.1.0-beta.2_x64-setup.exe -Algorithm SHA256).Hash` and compare the result with the text in the `.sha256` file. The letters and digits must be the same, whatever the case. A match shows the file is complete and is the one that was published with that checksum.
+1. Download `Snappy_0.1.0-beta.3_x64-setup.exe` and, if you have it, `Snappy_0.1.0-beta.3_x64-setup.exe.sha256`.
+2. Check the file. In PowerShell, run `(Get-FileHash .\Snappy_0.1.0-beta.3_x64-setup.exe -Algorithm SHA256).Hash` and compare the result with the text in the `.sha256` file. The letters and digits must be the same, whatever the case. A match shows the file is complete and is the one that was published with that checksum.
 3. Open the installer. Windows may show a blue window titled “Windows protected your PC”. Choose **More info**, then **Run anyway**.
 4. Follow the installer. It has one language (English) and installs to your user folder, `%LOCALAPPDATA%\Snappy` unless you pick another. The pages are Welcome, License, Install location and Finish. The Finish page has two boxes: **Run Snappy** (checked) and **Create desktop shortcut** (not checked, so a desktop shortcut is your choice). Snappy always gets a Start menu shortcut. If you leave **Run Snappy** checked, Snappy starts when you choose Finish; on the maintainers’ busy test computer that took about a minute and a half, and the cause was not found, so if nothing happens, wait, or start Snappy from the Start menu.
 
@@ -36,7 +52,7 @@ If Windows 11 has **Smart App Control** turned on, it blocks unsigned installers
 
 ## Where Snappy keeps its data
 
-Snappy puts files in these places on Windows. The list comes from installing, running and uninstalling beta 2 through the installer’s own pages on one Windows 11 computer, with sample data.
+Snappy puts files in these places on Windows. The list comes from installing, running and uninstalling beta 3 through the installer’s own pages on one Windows 11 computer, with sample data.
 
 | What | Where |
 | --- | --- |
@@ -52,7 +68,7 @@ Snappy writes nothing next to your export and nothing in your Documents folder. 
 
 ## Remove Snappy and everything it stored
 
-1. The beta cannot export or back up a saved history, and deleting it cannot be undone. Keep your original Snapchat export, which you can add again.
+1. Deleting the saved history cannot be undone. To keep it, save a history file first (Settings, History file) and put the file somewhere safe. Also keep your original Snapchat export, which you can add again.
 2. Close Snappy.
 3. Open Windows Settings, then Apps, then Installed apps, find **Snappy** and choose **Uninstall**. You can also run `uninstall.exe` from the install folder. The first page of the uninstaller has one box, **Also delete Snappy’s saved data (history and settings)**. It is **not selected** unless you select it.
 4. **With the box checked**, the uninstaller removes the program, the shortcuts, the Apps and features entry, the installer’s registry key, and the folder `%LOCALAPPDATA%\com.snappy.export` with everything in it (the web engine’s profile, your saved history and the update notes).
@@ -63,13 +79,13 @@ The uninstaller does not delete data unless its checkbox is selected, and it doe
 
 ## Updates
 
-New in beta 2. The wording on this page about what the check sends is a draft that the project owner has not approved yet, and it is hedged on purpose: [UPDATES.md](UPDATES.md) is the decision record, and it is what the program was built to do.
+Added in beta 2. The wording on this page about what the check sends is a draft that the project owner has not approved yet, and it is hedged on purpose: [UPDATES.md](UPDATES.md) is the decision record, and it is what the program was built to do.
 
 - **What it does.** A few seconds after the window opens, Snappy asks one fixed address on github.com for a small file that names the newest version, at most once an hour. If the file names a newer version, Snappy downloads the installer from GitHub, checks its signature against two keys built into the program, and keeps it ready. It applies the update the next time Snappy opens, or when you choose **Update now** (or **Restart now**) and nothing is in progress. It does not install a lower version, and it does not run while another Snappy window or a copy outside the install folder is open.
 - **The first time.** The first launch shows a short notice, “Snappy checks GitHub for updates when it opens. Change this in Settings.”, with **OK** and **Turn off**. The launch that shows the notice makes no check at all. The notice counts as shown when it appears, and the next launch is the first to check, whether or not you pressed a button. (A build made earlier on the same day sent its first check about four seconds after the first window opened, with the notice still on screen. That was found and fixed, and the final installer was watched making none on its first launch.) Whether the first check should also wait for your answer to the notice is an open decision for the project owner.
 - **Where to see it and turn it off.** Settings has an **Updates** card with the version, a **Check now** button, the box **Check for updates on launch** (check or clear it at any time) and a line saying when the last check was made. Turning the box off stops every automatic request.
 - **What it sends.** According to [UPDATES.md](UPDATES.md): one request for the small file and, only if a newer version exists, one request for the installer. The only header the program sets is `User-Agent: Snappy-Updater`. There is no query string, no ID, no version number and none of your data. GitHub, your network and any proxy on the way can see your IP address, the time and that a Snappy app asked. Windows may look up a proxy configuration. The request is made by `snappy.exe` and never by the page, whose security policy still forbids every connection. This says nothing about Microsoft’s WebView2 (see below).
-- **What was seen.** In the maintainers’ test of the installed beta 2 on one computer, pressing **Check now** made one connection from `snappy.exe` to `github.com` on port 443 and no other connection left the computer from any process of the app, WebView2’s included, in the minutes watched. There is no published release yet, so GitHub answers “not found”: Settings then says “Couldn’t check. Try again.” and nothing else appears. That is one computer at one moment.
+- **What was seen.** In the maintainers’ test of the installed beta 3 on one computer, pressing **Check now** made one connection from `snappy.exe` to `github.com` on port 443 and no other connection left the computer from any process of the app, WebView2’s included, in the minutes watched. There is no published release yet, so GitHub answers “not found”: Settings then says “Couldn’t check. Try again.” and nothing else appears. That is one computer at one moment.
 - **Not verified.** An update through a proxy, the real GitHub redirects (they need a published release), and a check made on launch after the first hour. The update drill in `apps/app/test/e2e-update` runs the whole update path (found, signature checked, installed per user at the next launch, data kept, and every kind of broken release refused) against a test server on the same computer with test keys, not against GitHub; all 34 of its checks passed in its last full run, after it found and fixed three problems ([UPDATES.md](UPDATES.md) lists them).
 
 ## Use it with your own export
