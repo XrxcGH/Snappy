@@ -29,6 +29,8 @@ export function fileChip(session: TerminalSession, options: { key: string }): HT
   const label = choose.querySelector("span");
 
   const show = (): void => {
+    // A message about a file that was not a .zip is stale once the list changes (files added here or in another block, or cleared).
+    problem.textContent = "";
     const n = picked.count();
     // Files that came from Start say so; once the person chose another file here, the plain count says how many there are.
     if (label) label.textContent = n === 0 ? terminal.chooseButton : picked.fromStart() === n ? startFlow.filesFromStart(n) : terminal.filesChosen(n);
@@ -39,6 +41,7 @@ export function fileChip(session: TerminalSession, options: { key: string }): HT
     const chosen = [...(input.files ?? [])] as (Blob & { name?: string })[];
     input.value = ""; // lets the same file be chosen again
     const { added, skipped } = picked.add(chosen);
+    // add() tells subscribers (and so show()) about a real change first; the message goes on after.
     problem.textContent = skipped > 0 && added === 0 ? terminal.notZipNote : "";
     if (added > 0) announce(terminal.filesChosen(picked.count()));
   });

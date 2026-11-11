@@ -61,6 +61,8 @@ export function passphraseForm(options: PassphraseFormOptions): HTMLFormElement 
     meter.dataset.level = estimate.level;
   };
   if (options.mode === "set") first.input.addEventListener("input", showStrength);
+  // A message about what was typed goes away as soon as either field changes.
+  for (const input of inputs) input.addEventListener("input", () => (error.textContent = ""));
 
   const showId = `${id}-show`;
   const show = h("input", { id: showId, type: "checkbox", class: "check-input", "data-key": `${options.key}:show` });
