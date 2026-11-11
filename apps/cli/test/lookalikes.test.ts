@@ -70,7 +70,7 @@ describe("the command", () => {
     expect(out).toMatch(/Very close\s+1\n/);
     expect(out).toMatch(/Close\s+3\n/);
     expect(out).toMatch(/Slight\s+0\n/);
-    expect(flat(out)).toContain("Worth a second look");
+    expect(flat(out)).toContain("Pairs found");
     const text = flat(out);
     expect(text).toMatch(/t0m_lee\s+tom_lee\s+Very close\s+Blocked \/ Friend\s+Similar-looking characters, resembles someone you blocked/);
     expect(text).toMatch(/jordan_p\s+jordann_p\s+Close\s+Friend \/ Request in\s+Repeated letters, a request resembles a friend/);
@@ -107,7 +107,7 @@ describe("the command", () => {
     expect(flat(out)).toContain("3 usernames compared.");
     expect(flat(out)).toContain("Snappy found no pairs of names that look alike.");
     expect(out).not.toContain("How alike");
-    expect(out).not.toContain("Worth a second look");
+    expect(out).not.toContain("Pairs found");
     expectBrandSafe(out, "none");
   });
 
@@ -138,7 +138,7 @@ describe("the command", () => {
     expect(code).toBe(0);
     expect(flat(out)).toContain("How alike");
     expect(out).toMatch(/Very close\s+1\n/);
-    expect(out).not.toContain("Worth a second look");
+    expect(out).not.toContain("Pairs found");
     expect(out).not.toMatch(NAMES);
     const json = JSON.parse((await runInsight(lookalikesCommand, [zip, "--counts", "--json"])).out) as LookalikeUsernames;
     expect(json.pairs).toEqual([]);
@@ -268,7 +268,7 @@ describe("privacy", () => {
     expect(notes).toContain("code: lookalikes-found");
     expect(notes).toContain("code: case-duplicates");
     expect(notes).not.toMatch(NAMES);
-    const head = out.slice(0, out.indexOf("Worth a second look"));
+    const head = out.slice(0, out.indexOf("Pairs found"));
     expect(head).not.toMatch(NAMES);
     const json = JSON.parse((await runInsight(lookalikesCommand, [zip, "--json"])).out) as LookalikeUsernames;
     expect(JSON.stringify(json.notes)).not.toMatch(NAMES);
@@ -352,6 +352,26 @@ describe("wording", () => {
     expect(text).toContain("person_5");
     expect(text).not.toContain("person_6");
     expect(text).toContain("And 7 more. Use --limit to see more.");
+  });
+
+  it("counts only the very close and close pairs as worth a second look", () => {
+    const base = fullResult(2);
+    const slightPair = (i: number): LookalikePair => ({ ...(base.pairs[0] as LookalikePair), a: `slight_${i}`, b: `sliight_${i}`, level: "low" });
+    const mixed: LookalikeUsernames = {
+      ...base,
+      pairs: [...base.pairs, slightPair(1), slightPair(2), slightPair(3)],
+      totals: { people: 9, pairs: 5, byLevel: { low: 3, medium: 0, high: 2 } },
+    };
+    const text = flat(renderLookalikes(mixed, term, false));
+    expect(text).not.toContain("Worth a second look");
+    expect(text).toContain("Pairs found");
+    expect(text).toContain("2 pairs may be worth a second look.");
+    expect(text).not.toContain("5 pairs may be worth a second look.");
+    const slight = flat(renderLookalikes({ ...mixed, pairs: mixed.pairs.slice(2), totals: { people: 9, pairs: 3, byLevel: { low: 3, medium: 0, high: 0 } }, notes: [{ code: "lookalikes-found", params: { count: 3 } }] }, term, false));
+    expect(slight).not.toContain("worth a second look");
+    expect(slight).toContain("3 pairs are only slightly alike.");
+    const one = flat(renderLookalikes({ ...mixed, totals: { people: 9, pairs: 4, byLevel: { low: 3, medium: 1, high: 0 } }, notes: [{ code: "lookalikes-found", params: { count: 4 } }] }, term, false));
+    expect(one).toContain("1 pair may be worth a second look.");
   });
 
   it("keeps every sentence short and in sentence case", () => {

@@ -81,8 +81,11 @@ const CONTEXT_LABEL: Record<LookalikeContext, string> = {
 const num = (v: number | undefined): number => (typeof v === "number" ? v : 0);
 const capital = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** The pairs worth a second look: very close and close. A slight pair is listed, but it is not one. */
+const worthOf = (result: LookalikeUsernames): number => result.totals.byLevel.high + result.totals.byLevel.medium;
+
 /** The sentence for one note. Counts only, never a person. Hedged where Snappy infers. */
-function noteText(n: LookalikeNote): string | null {
+function noteText(n: LookalikeNote, result: LookalikeUsernames): string | null {
   const count = num(n.params.count);
   switch (n.code) {
     case "no-people":
@@ -90,7 +93,8 @@ function noteText(n: LookalikeNote): string | null {
     case "no-lookalikes":
       return "Snappy found no pairs of names that look alike.";
     case "lookalikes-found":
-      return `${plural(count, "pair")} may be worth a second look.`;
+      // Only the very close and close pairs are worth a second look; a list of slight pairs says so.
+      return worthOf(result) > 0 ? `${plural(worthOf(result), "pair")} may be worth a second look.` : `${plural(count, "pair")} ${noun(count, "is", "are")} only slightly alike.`;
     case "list-truncated":
       return `Snappy kept the closest ${formatCount(num(n.params.shown))} of ${formatCount(num(n.params.total))} pairs.`;
     case "case-duplicates":
@@ -142,11 +146,11 @@ export function renderLookalikes(result: LookalikeUsernames, term: Term, verbose
     );
     const rest = result.totals.pairs - shown.length;
     if (rest > 0) lines.push(`And ${formatCount(rest)} more. Use --limit to see more.`);
-    out.push(...section(term, "Worth a second look", lines));
+    out.push(...section(term, "Pairs found", lines));
   }
 
   const notes: NoteLine[] = result.notes.flatMap((n) => {
-    const text = noteText(n);
+    const text = noteText(n, result);
     return text === null ? [] : [{ severity: noteSeverity(n.code), code: n.code, text }];
   });
   const noteLines = renderNotes(notes, term, { heading: "Notes", verbose });
