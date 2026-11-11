@@ -168,6 +168,14 @@ describe("icons", () => {
     expect([...named].sort()).toEqual([...inSprite].sort());
   });
 
+  it("draws every save button with the save glyph (arrow into a tray), never the upward export arrow", () => {
+    for (const file of [["components", "listActions.ts"], ["components", "toolPage.ts"], ["tools", "year-in-review", "view.ts"]]) {
+      const src = read("apps", "dashboard", "src", ...file);
+      expect(src, file.join("/")).toMatch(/icon: "save"/);
+      expect(src, file.join("/")).not.toMatch(/icon: "export"/);
+    }
+  });
+
   it("has a g-* symbol for every spot illustration name", () => {
     const union = /export type SpotName =([^;]+);/.exec(iconSource)?.[1] ?? "";
     const names = [...union.matchAll(/"([\w-]+)"/g)].map((m) => m[1] as string);

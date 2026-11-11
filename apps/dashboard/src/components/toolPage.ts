@@ -220,7 +220,7 @@ function downloadSection<R>(download: ToolDownload<R>, result: R): HTMLElement {
       { class: "actions" },
       button({
         label: download.label,
-        icon: "export",
+        icon: "save",
         variant: "secondary",
         key: "tool-download",
         onclick: () => fallback.replaceChildren(offerFile(download.build(result)).fallback),

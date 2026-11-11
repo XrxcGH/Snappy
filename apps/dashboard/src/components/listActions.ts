@@ -43,7 +43,7 @@ export function listActions(items: readonly Candidate[], options: ListActionsOpt
   const helpId = `list-actions-help-${++counter}`;
   const save = button({
     label: cleanup.saveList,
-    icon: "export",
+    icon: "save",
     key: "save-list",
     disabled: items.length === 0,
     onclick: () => say(saveTextFile(options.fileName, queueToCsv(items, options.profileLinks), "text/csv"), cleanup.listSaved, cleanup.saveFailed),

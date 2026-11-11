@@ -172,7 +172,7 @@ function cardSection(v: YearView): HTMLElement {
       { class: "actions" },
       button({
         label: copy.imageButton,
-        icon: "export",
+        icon: "save",
         variant: "secondary",
         key: "year-card-save",
         onclick: () => fallback.replaceChildren(offerFile({ fileName: cardFileName(v, "svg"), text: cardSvg(v), mime: "image/svg+xml" }).fallback),

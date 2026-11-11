@@ -12,6 +12,7 @@ export type IconName =
   | "seal"
   | "import"
   | "export"
+  | "save"
   | "file-zip"
   | "settings"
   | "search"

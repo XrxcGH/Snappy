@@ -308,6 +308,8 @@ describe("the name-free card and the CSV", () => {
   it("saves the CSV with the shared Save CSV button", async () => {
     const { root } = await year2025();
     expect(root.querySelector("button[data-key='tool-download']")?.textContent).toBe("Save CSV");
+    expect(root.querySelector("button[data-key='tool-download'] use")?.getAttribute("href")).toBe("#i-save");
+    expect(root.querySelector("button[data-key='year-card-save'] use")?.getAttribute("href")).toBe("#i-save");
     expect(root.textContent).toContain(copy.downloadNote);
     root.querySelector("button[data-key='tool-download']")?.click();
     expect(savedFiles).toHaveLength(1);
