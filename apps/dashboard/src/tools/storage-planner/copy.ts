@@ -88,6 +88,7 @@ export const copy = {
   doneAnnounce: (used: string, goal: string, waits: number) =>
     waits === 0 ? `Storage plan ready. ${used} of ${goal}, and everything with a known size fits.` : `Storage plan ready. ${used} of ${goal}, and ${memoriesOf(waits)} would wait for more space.`,
 
+  utcNote: "Years use UTC dates, so they can differ from Memories on this day.",
   unsizedNote: (n: number) => `${memoriesOf(n)} ${n === 1 ? "has" : "have"} no known size, so sizes and totals may be short.`,
   undatedNote: (n: number) => `${memoriesOf(n)} ${n === 1 ? "has" : "have"} no usable date and ${n === 1 ? "comes" : "come"} last.`,
   futureNote: (n: number) => `${memoriesOf(n)} ${n === 1 ? "has" : "have"} a date in the future. Snappy treats ${n === 1 ? "it" : "them"} as undated.`,

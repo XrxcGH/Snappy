@@ -177,6 +177,6 @@ export const view = toolView<StoragePlannerResult, StoragePlannerParams>({
       plan.batches.length > 0 ? batchSection(plan) : null,
     ];
   },
-  notes: ({ plan }): ToolNote[] => plan.notes.filter((n) => !SAID_ELSEWHERE.has(n.code)).map(noteText),
+  notes: ({ plan }): ToolNote[] => [{ kind: "info", text: copy.utcNote }, ...plan.notes.filter((n) => !SAID_ELSEWHERE.has(n.code)).map(noteText)],
   command: "storage",
 });

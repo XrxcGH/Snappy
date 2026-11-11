@@ -280,6 +280,12 @@ describe("the page", () => {
     expect(notes.join(" ")).toMatch(/may be short/);
   });
 
+  it("says the years use UTC dates, so they can differ from Memories on this day", async () => {
+    const { root } = await renderSettled(view, real(crafted(), 2));
+    expect(text(root, ".tool-notes li")).toContain(copy.utcNote);
+    expect(copy.utcNote).toMatch(/UTC/);
+  });
+
   it("shows an honest empty state, with its controls, when no Memory has a known size", async () => {
     const { root } = await renderSettled(view, real([memory(2025, "image", null), memory(2024, "video", null)]));
     expect(text(root, ".empty-title")).toEqual([copy.empty.title]);
