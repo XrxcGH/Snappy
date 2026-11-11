@@ -190,13 +190,30 @@ describe("Settings", () => {
     submit(form, PASS);
     await vi.waitFor(() => expect(store.get().real.ledger.snapshots.map((s) => s.id)).toEqual(["a", "b", "c"]), { timeout: 20_000 });
     expect(store.get().real.allowlist).toEqual(["theirs"]);
-    expect(announce).toHaveBeenCalledWith(shellCopy.fileOpened(2));
+    expect(announce).toHaveBeenCalledWith(shellCopy.fileOpened(2, true));
     // The form is gone, so a visible note says it worked and how many exports it added.
-    expect(root.querySelectorAll(".toast")[0]?.textContent).toBe(shellCopy.fileOpened(2));
+    expect(root.querySelectorAll(".toast")[0]?.textContent).toBe(shellCopy.fileOpened(2, true));
     // The section is drawn again with its two buttons back, and the Saved history card lists all three.
     expect(root.textContent).toContain(shellCopy.fileChooseButton);
     expect(root.querySelectorAll("li.history-row")).toHaveLength(3);
   }, 30_000);
+
+  it("says what opening did: new exports, only changes to what was saved, or nothing new", async () => {
+    const openWith = async (current: Ledger, file: { allowlist?: string[]; ledger: Ledger }): Promise<string> => {
+      const bytes = await buildHistoryFile(saved(file.ledger, { allowlist: file.allowlist ?? [] }), PASS);
+      const { root } = open(withHistory(current));
+      choose(root, asFile(bytes));
+      submit(formOf(root, "history-file-open").form, PASS);
+      await vi.waitFor(() => expect(root.querySelectorAll(".toast")).toHaveLength(1), { timeout: 20_000 });
+      return root.querySelectorAll(".toast")[0]!.textContent;
+    };
+    // Only the keep list differs: the old wording would have said there was nothing to add.
+    expect(await openWith(FILE_LEDGER, { ledger: FILE_LEDGER, allowlist: ["theirs"] })).toBe(shellCopy.fileOpened(0, true));
+    // The same exports and nothing else: nothing changed.
+    expect(await openWith(FILE_LEDGER, { ledger: FILE_LEDGER })).toBe(shellCopy.fileOpened(0, false));
+    // One new export.
+    expect(await openWith(ledger(snap("c", Date.UTC(2026, 10, 6), ["zqcanary_three"])), { ledger: FILE_LEDGER })).toBe(shellCopy.fileOpened(2, true));
+  }, 60_000);
 
   it("backs out of the passphrase question with Escape or Cancel and keeps what is on screen", () => {
     const { root, store } = open(withHistory(FILE_LEDGER));

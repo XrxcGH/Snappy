@@ -315,10 +315,14 @@ function openFileBox(ctx: ViewContext): HTMLElement {
           return false;
         }
         // The browser's clock is only used when no export was read yet; see the reducer.
-        const before = ctx.store.get().real.ledger.snapshots.length;
+        const before = ctx.store.get().real;
         ctx.store.dispatch({ type: "history-merged", saved: result.saved, now: Date.now() });
-        // The form goes away, so the note is what says it worked and how many exports it brought.
-        const opened = shellCopy.fileOpened(ctx.store.get().real.ledger.snapshots.length - before);
+        // The form goes away, so the note is what says it worked: how many exports it brought, or else whether anything saved changed.
+        const after = ctx.store.get().real;
+        const known = new Set(before.ledger.snapshots.map((snap) => snap.id));
+        const added = after.ledger.snapshots.filter((snap) => !known.has(snap.id)).length;
+        const changed = JSON.stringify([before.ledger, before.allowlist, before.checkedOff, before.ticks]) !== JSON.stringify([after.ledger, after.allowlist, after.checkedOff, after.ticks]);
+        const opened = shellCopy.fileOpened(added, changed);
         announce(opened);
         showNote(opened);
         showChoose(false);

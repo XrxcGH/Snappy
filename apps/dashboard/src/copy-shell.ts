@@ -60,7 +60,9 @@ export const shellCopy = {
   fileChosenNote: "A file is chosen. Enter its passphrase to open it.",
   fileOpenButton: "Open history file",
   fileCancelButton: "Cancel",
-  fileOpened: (added: number) => (added === 0 ? "History file opened. Nothing new to add." : `History file opened. ${added} ${added === 1 ? "export" : "exports"} added.`),
+  // What opening a history file did: new exports, changes to what was already saved (keep list, checkmarks, ticks, a refreshed export), or nothing.
+  fileOpened: (added: number, changed: boolean) =>
+    added > 0 ? `History file opened. ${added} ${added === 1 ? "export" : "exports"} added.` : changed ? "History file opened. It updated what was already saved." : "History file opened. It had nothing new.",
   fileWrongNote: "That passphrase did not open the file, or it is not a Snappy history file.",
   fileUnreadableNote: "Snappy could not read that file. A different version may have made it.",
   fileTooBigNote: "That file is too big to be a Snappy history file.",
