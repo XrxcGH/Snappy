@@ -3,7 +3,9 @@
  * who installed the app is told what the tool is, what it needs and where to get it, before the first command.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { shellCopy } from "../src/copy-shell.ts";
 import { cliTool } from "../src/copy-tools.ts";
+import { REPOSITORY_ADDRESS } from "../src/diagnostics.ts";
 import { setPlatform } from "../src/platform.ts";
 import type { State } from "../src/reducer.ts";
 import { TOOLS } from "../src/tools/registry.ts";
@@ -34,7 +36,25 @@ describe("the Export guide section on the command line tool", () => {
     expect(all.indexOf(section)).toBeLessThan(all.indexOf(root.querySelector(".command") as FakeElement));
     // The command is text here: a command shown outside a command block would break the one-way-to-show-a-command rule.
     expect(section.querySelectorAll("pre")).toHaveLength(0);
-    expect(section.querySelectorAll("code")).toHaveLength(0);
+    // The one code element is the repository address, the same text Settings shows; it is not a command.
+    expect(section.querySelectorAll("code").map((c) => c.textContent)).toEqual([REPOSITORY_ADDRESS]);
+    expect(section.textContent).toContain(`${shellCopy.repositoryLabel}: ${REPOSITORY_ADDRESS}`);
+  });
+
+  it("has a Copy address button that copies the repository address, as Settings has", async () => {
+    const copied: string[] = [];
+    vi.stubGlobal("navigator", { clipboard: { writeText: (t: string) => { copied.push(t); return Promise.resolve(); } } });
+    try {
+      const { root } = render(guideView, emptyState());
+      const section = sections(root).find((s) => titleOf(s) === cliTool.heading) as FakeElement;
+      const copy = section.querySelectorAll("button").find((b) => b.textContent.includes(shellCopy.copyAddressButton));
+      expect(copy).toBeDefined();
+      (copy as FakeElement).click();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(copied).toEqual([REPOSITORY_ADDRESS]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("says the commands start with npm run on the web page and with the plain name in the desktop app", () => {
