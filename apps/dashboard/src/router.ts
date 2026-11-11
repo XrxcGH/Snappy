@@ -8,6 +8,7 @@
  * about the export, and nothing is stored). An entry counts as visited once its history state is marked, so a link
  * click (a new entry, no mark) is told apart from Back and Forward (an old entry, marked).
  */
+import { clearAnnouncements } from "./announce.ts";
 import { resetPaging } from "./components/pagedList.ts";
 import { routes } from "./copy.ts";
 import type { RouteId } from "./copy.ts";
@@ -69,6 +70,7 @@ export function startRouter(outlet: HTMLElement, ctx: ViewContext, onRoute: (id:
 
   const show = ({ id, tool }: Location, moveFocus: boolean, restoreTo: number): void => {
     scope?.dispose();
+    clearAnnouncements();
     resetPaging();
     scope = new Scope(true);
     // Tools share one route, so the menu keeps Tools marked while a tool is open. A tool's page is its own view and title.
