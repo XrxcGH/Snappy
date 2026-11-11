@@ -482,6 +482,23 @@ for (const [width, height] of [[1280, 800], [420, 700]]) {
   await page.context().close();
 }
 
+// ---------------------------------------------------------------------------------------------- the first-run notice in the keyboard order
+{
+  const page = await open({ notice_pending: true });
+  const names = [];
+  for (let i = 0; i < 3; i++) {
+    await page.keyboard.press("Tab");
+    names.push(await page.evaluate(() => document.activeElement?.textContent?.trim() ?? ""));
+  }
+  ok(names[1] === "OK" && names[2] === "Turn off", "the notice's OK and Turn off come right after the skip link in the keyboard order", JSON.stringify(names));
+  await page.getByRole("button", { name: "OK" }).focus();
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(300);
+  const after = await page.evaluate(() => document.activeElement?.id);
+  ok(after === "main", "after OK focus goes to the main area, so the next Tab starts the page content", String(after));
+  await page.context().close();
+}
+
 // ---------------------------------------------------------------------------------------------- text from an export
 if (hostileZip) {
   const page = await open({}, { hash: "#/start" });
