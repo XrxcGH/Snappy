@@ -88,7 +88,7 @@ Snappy reads your export and never changes it: it opens the ZIP files read-only.
 
 Open an issue in the Snappy repository and include only this:
 
-- **The version.** It is at the bottom of every page (“Beta version …”) and on the Settings page.
+- **The version.** It is on the Settings page, under About.
 - **Your macOS version and whether your Mac is Apple silicon or Intel.** Both are under the Apple menu, **About This Mac**.
 - **What you did,** step by step, in plain words.
 - **What you saw,** and what you expected instead.

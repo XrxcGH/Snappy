@@ -31,7 +31,7 @@ export const shellCopy = {
   themeMatchAnnounce: "Theme follows your device.",
 
   // Settings: the saved history as a list of exports, by date and friend count, never by name.
-  historyHeading: "Saved history",
+  historyHeading: "Saved exports",
   historyNote: "Exports Snappy has read are listed by date, with a friend count and no names. Deleting one cannot be undone.",
   historyEmpty: "No exports are in your history yet. Add one on Start.",
   historyRow: (date: string, friends: number) => `${date}, ${countOf(friends, "friend", "friends")}`,

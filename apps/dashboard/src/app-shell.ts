@@ -69,11 +69,8 @@ export const NAV: NavGroup[] = [
   },
 ];
 
-/** The footer's second line, in an installed beta only: the build's version, so a bug report can name it. Nothing in the web build. */
-const betaLine = (): HTMLElement | null => {
-  const release = platform().release;
-  return release?.beta ? h("p", { class: "caption" }, shell.betaLine(release.version)) : null;
-};
+/** The footer's second line, in an installed beta only. The version is in Settings, About, once. Nothing in the web build. */
+const betaLine = (): HTMLElement | null => (platform().release?.beta ? h("p", { class: "caption" }, shell.betaLine) : null);
 
 /** A quiet footer button that opens the list of keyboard shortcuts. The stylesheet shows it only where a keyboard is likely (wide windows with a pointer). */
 const shortcutsHint = (): HTMLElement =>

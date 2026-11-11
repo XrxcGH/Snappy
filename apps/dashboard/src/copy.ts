@@ -77,7 +77,7 @@ export const shell = {
   sealedOn: "History saved",
   lockNow: "Lock now",
   /** Shown in the footer of an installed beta only, so a bug report can name the build. */
-  betaLine: (version: string) => `Beta version ${version}`,
+  betaLine: "Beta",
   navFindings: "Findings",
   navMore: "More",
   themeChangedDark: "Dark theme on.",
@@ -611,10 +611,10 @@ export const settings = {
   lockBody: "Clears your results from the screen and keeps your saved history. You need your passphrase to open it again.",
   deleteHeading: "Delete saved history",
   deleteBody: "Removes your saved history and clears the screen. This cannot be undone.",
-  deleteButton: "Delete data",
+  deleteButton: "Delete history",
   deleteConfirmTitle: "Delete saved history?",
   deleteConfirmBody: "This deletes your saved history, keep list, checkmarks, and checklist marks, and cannot be undone. Your export files are not touched.",
-  deleteConfirm: "Delete data",
+  deleteConfirm: "Delete history",
   deleteCancel: "Cancel",
   deleted: "Saved history deleted.",
   get deleteFailed(): string {

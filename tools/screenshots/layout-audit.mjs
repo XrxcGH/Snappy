@@ -1559,7 +1559,7 @@ async function themeProbes(browser, url, results) {
 async function confirmPass(page, { theme, width, touch, results }) {
   const start = page.locator("[data-key=delete-start]").first();
   if ((await start.count()) === 0) {
-    results.push({ route: "settings", theme, width, check: "confirm-dialog", sel: "[data-key=delete-start]", text: "", detail: "the Settings page has no Delete data button to open the confirmation" });
+    results.push({ route: "settings", theme, width, check: "confirm-dialog", sel: "[data-key=delete-start]", text: "", detail: "the Settings page has no Delete history button to open the confirmation" });
     return;
   }
   await start.scrollIntoViewIfNeeded();
@@ -1571,7 +1571,7 @@ async function confirmPass(page, { theme, width, touch, results }) {
     const R = (e) => e.getBoundingClientRect();
     const px = (n) => Math.round(n * 10) / 10 + "px";
     const box = document.querySelector(".confirm");
-    if (!box) return [{ sel: "", detail: "pressing Delete data did not open a confirmation panel (.confirm)" }];
+    if (!box) return [{ sel: "", detail: "pressing Delete history did not open a confirmation panel (.confirm)" }];
     const view = document.querySelector("main .view") || document.querySelector("main");
     const r = R(box);
     const vw = document.documentElement.clientWidth;

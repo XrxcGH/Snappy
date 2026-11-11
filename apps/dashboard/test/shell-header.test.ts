@@ -335,13 +335,13 @@ describe("beta label in the footer", () => {
     expect(footerOf(page)).not.toMatch(/beta|version/i);
   });
 
-  it.each(ROUTE_IDS)("%s: an installed beta names its version once, under the legal line", (id) => {
+  it.each(ROUTE_IDS)("%s: an installed beta is marked Beta under the legal line, and Settings has the version", (id) => {
     setPlatform({ desktop: "windows", release: { version: "0.1.0-beta.3", beta: true } });
     const page = openPage({ ...initialState(), sample });
     page.go(id);
     const lines = page.root.querySelectorAll("footer.site-footer .caption").map((p) => p.textContent);
-    expect(lines).toEqual([brand.nonAffiliation, "Beta version 0.1.0-beta.3"]);
-    expect(lines[1]).toBe(shellCopy.betaLine("0.1.0-beta.3"));
+    expect(lines).toEqual([brand.nonAffiliation, "Beta"]);
+    expect(lines[1]).toBe(shellCopy.betaLine);
   });
 
   it("shows no beta line for a final release", () => {

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import * as copy from "../src/copy.ts";
+import { shellCopy } from "../src/copy-shell.ts";
 import { setPlatform } from "../src/platform.ts";
 import { SAMPLE_ARGS, loadCopyModules } from "./copy-rules.ts";
 
@@ -362,6 +363,14 @@ describe("one name for what a passphrase protects: the saved history", () => {
     expect(copy.settings.deleted).toBe("Saved history deleted.");
     expect(copy.vaultMessages.nothingSaved).toBe("No saved history was found on this device.");
     expect(copy.start.unlockedAnnounce).toBe("Saved history unlocked.");
+  });
+
+  it("gives each thing in Settings one label: one Saved history heading, one name for deleting it", () => {
+    expect(shellCopy.historyHeading).not.toBe(copy.settings.storageHeading);
+    expect(copy.settings.deleteHeading).toBe("Delete saved history");
+    expect(copy.settings.deleteButton).toBe("Delete history");
+    expect(copy.settings.deleteConfirm).toBe(copy.settings.deleteButton);
+    expect(copy.shell.betaLine).not.toMatch(/version/i);
   });
 
   it("says in two short sentences that Snappy cannot check marks and when they are kept", () => {

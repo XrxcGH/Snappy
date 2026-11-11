@@ -81,7 +81,7 @@ describe("Settings", () => {
     expect(ids.map(nameOf).join(" ")).toBe("License text for Example font");
   });
 
-  it("cancels the delete confirmation with Escape, as Cancel does, and keeps focus on Delete data (A11Y-21)", async () => {
+  it("cancels the delete confirmation with Escape, as Cancel does, and keeps focus on Delete history (A11Y-21)", async () => {
     const { root } = await openSettings();
     buttonLabelled(root, settings.deleteButton).click();
     const confirm = root.querySelector(".confirm") as FakeElement;
