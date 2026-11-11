@@ -1072,15 +1072,17 @@ function measurePage(opts) {
       const buttons = head ? [...head.querySelectorAll("button")].filter(vis) : [];
       const copy = buttons.find((x) => /^copy$/i.test(norm(x.textContent)));
       const runButton = buttons.find((x) => /^run$/i.test(norm(x.textContent)));
-      if (!copy || !runButton) { add("code-copy", frame, "a command needs a Copy button and a Run button in the header row above its code"); continue; }
+      // A command that needs a terminal of its own (reads no export the app can pass) is Copy only, and says so.
+      const copyOnly = frame.classList.contains("command-copy-only");
+      if (!copy || (!runButton && !copyOnly)) { add("code-copy", frame, "a command needs a Copy button and a Run button in the header row above its code"); continue; }
       const cr = R(copy);
-      const rr = R(runButton);
-      for (const [name, x, r] of [["Copy", copy, cr], ["Run", runButton, rr]]) {
+      const rr = runButton ? R(runButton) : null;
+      for (const [name, x, r] of [["Copy", copy, cr], ...(runButton ? [["Run", runButton, rr]] : [])]) {
         if (r.left < fr.left - 1 || r.right > fr.right + 1) add("code-copy", x, name + " button is outside the command frame");
         if (r.bottom > pr.top + 1) add("code-copy", x, name + " button is not above the code (the button ends at " + px(r.bottom) + ", the code starts at " + px(pr.top) + ")");
         if (r.width > fr.width * 0.5 && fr.width > 200) add("code-copy", x, name + " button is " + px(r.width) + " wide in a " + px(fr.width) + " frame; make it compact");
       }
-      if (!(cr.left < rr.left - 1 || cr.top < rr.top - 1)) add("code-copy", copy, "Copy must come before Run");
+      if (rr && !(cr.left < rr.left - 1 || cr.top < rr.top - 1)) add("code-copy", copy, "Copy must come before Run");
       if (pr.right > fr.right + 1 || pr.left < fr.left - 1) add("code-copy", pre, "the code is wider than its frame (" + px(pr.left) + " to " + px(pr.right) + " in " + px(fr.left) + " to " + px(fr.right) + ")");
     }
   }

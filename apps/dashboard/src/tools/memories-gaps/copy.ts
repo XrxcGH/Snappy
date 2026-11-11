@@ -23,7 +23,7 @@ export const copy = {
 
   minGapLabel: "Shortest gap",
   stretchLabel: "Busiest stretch",
-  zoneLabel: zone.selectLabel,
+  zoneLabel: "Time zone",
   /** "1 month", "6 months". */
   unitMonths: (n: number): string => countOf(n, "month", "months"),
   /** "Mar 2021". */
