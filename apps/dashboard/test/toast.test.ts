@@ -183,3 +183,21 @@ describe("the Keep toast", () => {
     });
   });
 });
+
+describe("the Keep toast after its time is up", () => {
+  it("starts counting again and leaves the U key with nothing to press", () => {
+    vi.useFakeTimers();
+    try {
+      const { root, store } = mount(cleanupView, sample);
+      keepButtons(root)[0]!.click();
+      vi.advanceTimersByTime(9000);
+      expect(toastOf(root)).toBeUndefined();
+      expect(undoToast(), "no toast, nothing to undo").toBe(false);
+      expect(store.get().sample?.allowlist).toHaveLength(1);
+      keepButtons(root)[0]!.click();
+      expect(toastOf(root)?.textContent ?? "").not.toMatch(/2 people/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

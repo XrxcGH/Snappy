@@ -50,7 +50,7 @@ let active: Host | null = null;
 let fallback: Host | null = null;
 
 /** One place in a host: it holds one toast with its own eight seconds, paused while the pointer or focus is on it. */
-function makeSlot(paint: () => void) {
+function makeSlot(paint: () => void, gone?: () => void) {
   let toast: HTMLElement | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let remaining = TOAST_MS;
@@ -65,6 +65,7 @@ function makeSlot(paint: () => void) {
     stop();
     held = false;
     toast = null;
+    gone?.();
     paint();
   };
   const arm = (ms: number): void => {
@@ -111,7 +112,11 @@ function makeHost(): Host {
     const shown = [slots.action?.current(), slots.note?.current()].filter((t): t is HTMLElement => t !== null && t !== undefined);
     element.replaceChildren(...shown);
   };
-  slots.action = makeSlot(paint);
+  // When the Keep toast goes (its time is up, Escape, Undo), the count starts again and the U key has nothing to press.
+  slots.action = makeSlot(paint, () => {
+    count = 0;
+    press = undefined;
+  });
   slots.note = makeSlot(paint);
 
   const show = (options: ToastOptions): void => {
