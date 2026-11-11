@@ -53,6 +53,8 @@ export const copy = {
   unitDays: (n: number) => countOf(n, "day", "days"),
   unitAgo: (days: number) => (days === 0 ? "today" : `${countOf(days, "day", "days")} ago`),
   madeLine: (date: string, ago: string) => `Made ${date}, ${ago}.`,
+  /** An export made today: "Made today, Nov 6, 2026." */
+  madeTodayLine: (date: string) => `Made today, ${date}.`,
   madeOnlyLine: (date: string) => `Made ${date}.`,
   activityLine: (date: string) => `No export date found. The newest activity is from ${date}.`,
   unknownDateLine: "Snappy could not tell when this export was made.",

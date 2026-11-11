@@ -95,7 +95,8 @@ function ageLine(age: insights.exportCheck.ExportAge): string {
   if (age.at === null) return copy.unknownDateLine;
   const when = formatDate(age.at);
   if (age.basis === "newest-activity") return copy.activityLine(when);
-  return age.ageDays === null ? copy.madeOnlyLine(when) : copy.madeLine(when, copy.unitAgo(age.ageDays));
+  if (age.ageDays === null) return copy.madeOnlyLine(when);
+  return age.ageDays === 0 ? copy.madeTodayLine(when) : copy.madeLine(when, copy.unitAgo(age.ageDays));
 }
 
 /** A section that is there counts as yes; a missing optional one is optional; anything else is a no. */

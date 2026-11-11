@@ -167,9 +167,17 @@ describe("the page", () => {
     const dates = root.querySelectorAll("table")[1] as FakeElement;
     expect(text(dates, "tbody th")).toEqual(["Chats", "Snaps", "Memories"]);
     expect(dates.textContent).toMatch(/\d{4}/);
-    expect(root.textContent).toMatch(/Made [A-Z][a-z]{2} \d{1,2}, \d{4}, today\./);
+    expect(root.textContent).toMatch(/Made today, [A-Z][a-z]{2} \d{1,2}, \d{4}\./);
+    expect(root.textContent).not.toMatch(/, today\./);
 
     expect(root.querySelector(".command code")?.textContent).toBe(displayText(COMMANDS.check));
+  });
+
+  it("writes a day count after the date, and Made today first when the export was made today", async () => {
+    const sixDays = (await renderSettled(view, real({}, { now: base.now + 6 * DAY }))).root.textContent;
+    expect(sixDays).toMatch(/Made [A-Z][a-z]{2} \d{1,2}, \d{4}, 6 days ago\./);
+    expect(copy.madeTodayLine("Nov 6, 2026")).toBe("Made today, Nov 6, 2026.");
+    expect(copy.madeLine("Nov 1, 2026", copy.unitAgo(6))).toBe("Made Nov 1, 2026, 6 days ago.");
   });
 
   it("says nothing about the number of parts for sample data, and states it for a real import", async () => {
