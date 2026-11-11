@@ -85,6 +85,14 @@ export const shellCopy = {
  */
 export const whatsNew: readonly { version: string; lines: readonly [string, string, string] }[] = [
   {
+    version: "0.1.0-beta.3",
+    lines: [
+      "You can add an unzipped export folder, and import errors and status are clearer.",
+      "Press ? to see the keyboard shortcuts. The Tools list has a search box.",
+      "Settings can copy diagnostics and save or open a history file.",
+    ],
+  },
+  {
     version: "0.1.0-beta.2",
     lines: [
       "Snappy checks for updates when it opens. You can turn that off in Settings.",
