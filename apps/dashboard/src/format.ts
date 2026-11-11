@@ -9,6 +9,11 @@ export function formatDate(ms: number): string {
   return Number.isFinite(ms) ? DATE.format(new Date(ms)) : "unknown date";
 }
 
+/** The date at `ms` in a zone `offsetMinutes` east of UTC: "Nov 6, 2026". Same rules as formatDate otherwise. */
+export function formatDateIn(ms: number, offsetMinutes: number): string {
+  return formatDate(ms + (Number.isFinite(offsetMinutes) ? offsetMinutes : 0) * 60_000);
+}
+
 /** "November 2026" */
 export function formatMonth(ms: number): string {
   return Number.isFinite(ms) ? MONTH.format(new Date(ms)) : "unknown date";
