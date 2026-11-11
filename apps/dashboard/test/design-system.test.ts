@@ -174,7 +174,7 @@ describe("icons", () => {
     for (const other of ["import", "export"]) expect(shape("save"), `i-save vs i-${other}`).not.toBe(shape(other));
   });
 
-  it("draws every save button with the save glyph (arrow into a tray), never the upward export arrow", () => {
+  it("draws every save button with the save glyph (the floppy disk), never the upward export arrow", () => {
     for (const file of [["components", "listActions.ts"], ["components", "toolPage.ts"], ["tools", "year-in-review", "view.ts"]]) {
       const src = read("apps", "dashboard", "src", ...file);
       expect(src, file.join("/")).toMatch(/icon: "save"/);
