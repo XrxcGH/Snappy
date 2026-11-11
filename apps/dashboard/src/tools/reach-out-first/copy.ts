@@ -46,7 +46,7 @@ export const copy = {
   youNoneLine: "No chat shows you starting most of the exchanges.",
   /** Under the result, also when nothing was found: the rule is fixed on this page (two short lines), and the command line tool takes others. */
   limitsLine: (min: number, percent: number): string => `A chat needs ${countOf(min, "exchange", "exchanges")}, and one side must start ${percent}% or more.`,
-  limitsToolLine: "The command line tool takes --min-exchanges and --share.",
+  limitsToolLine: "To change them, use --min-exchanges and --share in the command line tool.",
   moreLine: (n: number): string => `${countOf(n, "more chat", "more chats")} not shown.`,
 
   friendHeader: "Friend",

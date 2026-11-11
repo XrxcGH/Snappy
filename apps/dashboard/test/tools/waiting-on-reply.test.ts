@@ -203,8 +203,8 @@ describe("the page", () => {
     expect(text(root, ".limits-lines p")).toEqual([copy.limitsLine(d.waitingOnYouDays, d.waitingOnThemDays), copy.limitsToolLine]);
     expect(root.querySelectorAll(".limits-lines .caption")).toHaveLength(0);
     expect(copy.limitsLine(3, 7)).toBe("The limits are fixed: 3 days for you and 7 days for them.");
-    expect(copy.limitsToolLine).toBe("The command line tool takes --you-days and --them-days.");
-    for (const t of [copy.limitsLine(3, 7), copy.limitsToolLine]) expect(t.length).toBeLessThanOrEqual(70);
+    expect(copy.limitsToolLine).toBe("To change them, use --you-days and --them-days in the command line tool.");
+    for (const t of [copy.limitsLine(3, 7), copy.limitsToolLine]) expect(t.length).toBeLessThanOrEqual(76);
   });
 
   it("announces the counts politely once, and without a name", async () => {

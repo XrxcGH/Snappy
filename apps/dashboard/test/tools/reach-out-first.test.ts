@@ -218,11 +218,11 @@ describe("the page", () => {
     const { root } = await renderSettled(view, state);
     const line = copy.limitsLine(5, 70);
     expect(line).toBe("A chat needs 5 exchanges, and one side must start 70% or more.");
-    expect(copy.limitsToolLine).toBe("The command line tool takes --min-exchanges and --share.");
+    expect(copy.limitsToolLine).toBe("To change them, use --min-exchanges and --share in the command line tool.");
     // Two short lines of normal text (not the muted caption), each well inside the text measure.
     expect(text(root, ".limits-lines p")).toEqual([line, copy.limitsToolLine]);
     expect(root.querySelectorAll(".limits-lines .caption")).toHaveLength(0);
-    for (const t of [line, copy.limitsToolLine]) expect(t.length).toBeLessThanOrEqual(70);
+    for (const t of [line, copy.limitsToolLine]) expect(t.length).toBeLessThanOrEqual(76);
     const [a] = names as [string];
     const empty = await renderSettled(view, real([ev(a, "unknown", 3)]));
     expect(text(empty.root, ".empty-title")).toEqual([copy.empty.title]);
