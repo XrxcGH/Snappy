@@ -13,7 +13,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tauri = path.join(root, "src-tauri");
 const script = path.join(root, "tools", "make-installer-images.mjs");
 const conf = JSON.parse(readFileSync(path.join(tauri, "tauri.conf.json"), "utf8")) as {
-  bundle: { windows: { nsis: { headerImage?: string; sidebarImage?: string; installerHooks?: string; customLanguageFiles?: Record<string, string>; languages?: string[] } } };
+  bundle: { windows: { nsis: { installerIcon?: string; headerImage?: string; sidebarImage?: string; installerHooks?: string; customLanguageFiles?: Record<string, string>; languages?: string[] } } };
 };
 const nsis = conf.bundle.windows.nsis;
 
@@ -21,6 +21,16 @@ const dims = (file: string): { w: number; h: number; bits: number; magic: string
   const b = readFileSync(file);
   return { magic: b.toString("latin1", 0, 2), size: b.readUInt32LE(2), w: b.readInt32LE(18), h: b.readInt32LE(22), bits: b.readUInt16LE(28), bytes: b.length };
 };
+
+describe("the installer's own icon", () => {
+  it("is Snappy's icon with the sizes a taskbar, title bar and file list ask for, not the stock installer globe", () => {
+    expect(nsis.installerIcon).toBe("icons/icon.ico");
+    const ico = readFileSync(path.join(tauri, nsis.installerIcon ?? "missing"));
+    const count = ico.readUInt16LE(4);
+    const sizes = Array.from({ length: count }, (_, i) => ico[6 + i * 16] || 256);
+    expect(sizes).toEqual(expect.arrayContaining([16, 32, 48, 256]));
+  });
+});
 
 describe("the wizard pictures", () => {
   it("are the sizes the wizard expects, as plain 24-bit bitmaps", () => {
