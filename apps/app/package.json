@@ -16,7 +16,7 @@
   "dependencies": {
     "@snappy-export/core": "*",
     "@snappy-export/dashboard": "*",
-    "@tauri-apps/api": "^2.0.0"
+    "@tauri-apps/api": "^2.12.5"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.0.0"
